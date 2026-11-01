@@ -61,7 +61,6 @@ jobs:
             'const HOLD_TO_REMOVE_MS=600',
             'function toggleDoor(door)',
             'function drawVoxelDoor(queue,cam,w,h,door)',
-            'id="doorShade"',
             "id:'door'"
           ];
           for (const marker of required) {
@@ -69,8 +68,8 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
-          if (!html.includes('id="customBlockShade"')) {
-            throw new Error('Custom block designer panel is missing.');
+          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"')) {
+            throw new Error('A block or door designer panel is missing.');
           }
 
           fs.writeFileSync('/tmp/diycraft-inline.js', source);
