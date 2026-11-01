@@ -2,539 +2,192 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>DIYCraft — Cozy Build & Create</title>
+<meta name="theme-color" content="#9bc7d8">
+<title>DIYCraft — Peaceful Voxel World</title>
 <style>
-:root{--ink:#33443b;--muted:#718078;--green:#477b58;--green2:#dcebdc;--cream:#fbf8ef;--panel:#fffdf7;--line:#d8dfd3;--blue:#dcebf2;--gold:#f5e7b7;--shadow:0 8px 24px rgba(49,68,55,.10)}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--cream);color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 12px;color:var(--ink);font-weight:650;transition:.14s}button:hover{transform:translateY(-1px);border-color:#91b49a;background:#f7fbf6}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #9fc7a6;outline-offset:2px}button:disabled{opacity:.45;cursor:not-allowed;transform:none}.primary{background:var(--green);color:white;border-color:var(--green)}.primary:hover{background:#376647;color:white}.soft{background:var(--green2)}.danger{color:#8b4e4e}.app{max-width:1600px;margin:auto;padding:14px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}.brand{display:flex;align-items:center;gap:10px}.brand-mark{width:42px;height:42px;border-radius:14px;background:#e3efdd;display:grid;place-items:center;font-size:24px}.brand h1{font-size:22px;margin:0;letter-spacing:.3px}.brand p{font-size:12px;color:var(--muted);margin:2px 0 0}.top-actions{display:flex;gap:7px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted);min-height:18px;padding:4px 2px}.layout{display:grid;grid-template-columns:220px minmax(320px,1fr) 220px;gap:12px;align-items:stretch}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px;min-width:0}.panel h2{font-size:15px;margin:0 0 10px}.panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 8px}.toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.toolgrid button{padding:9px 5px;font-size:12px}.toolgrid button.active,.block-btn.active{border-color:var(--green);background:var(--green2);box-shadow:inset 0 0 0 1px var(--green)}.palette{display:grid;grid-template-columns:1fr 1fr;gap:6px}.block-btn{display:flex;align-items:center;gap:6px;justify-content:flex-start;font-size:11px;padding:7px 6px;min-width:0}.swatch{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.14);flex:none}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);margin:8px 0}.field input,.field select{border:1px solid var(--line);border-radius:10px;padding:8px;background:white;color:var(--ink);width:100%}.color-row{display:flex;gap:8px;align-items:center}.color-row input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;padding:2px;background:white}.world-card{overflow:hidden;display:flex;flex-direction:column;min-width:0}.world-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}.world-head strong{font-size:14px}.world-head span{font-size:11px;color:var(--muted)}.canvas-wrap{position:relative;background:linear-gradient(#eaf3ef,#dbe9df);min-height:520px;overflow:hidden;touch-action:pan-y}.canvas-wrap canvas{display:block;width:100%;height:100%;min-height:520px;outline:none;touch-action: none}.canvas-hint{position:absolute;left:12px;bottom:10px;padding:7px 10px;background:rgba(255,253,247,.88);border:1px solid rgba(120,150,125,.35);border-radius:10px;font-size:11px;color:#627269;pointer-events:none}.controls{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 13px;border-top:1px solid var(--line)}.movement{display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(2,30px);gap:3px}.movement button{padding:2px;font-size:13px}.movement button:first-child{grid-column:2}.movement button:nth-child(2){grid-column:1;grid-row:2}.movement button:nth-child(3){grid-column:2;grid-row:2}.movement button:nth-child(4){grid-column:3;grid-row:2}.hint-text{font-size:11px;color:var(--muted);line-height:1.5}.right-actions{display:grid;grid-template-columns:1fr;gap:7px}.right-actions button{text-align:left}.neighbor-card,.animal-card{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--line);border-radius:12px;margin:6px 0;background:white;font-size:12px}.avatar-icon{width:32px;height:32px;border-radius:10px;background:#edf4e9;display:grid;place-items:center;font-size:19px}.small-note{font-size:11px;color:var(--muted);line-height:1.45}.badge{display:inline-block;font-size:10px;border-radius:999px;background:#edf3e8;padding:3px 7px;color:#52715a}.footer-note{margin:10px 2px 0;font-size:11px;color:var(--muted);line-height:1.5}.modal-backdrop{position:fixed;inset:0;background:rgba(34,49,40,.42);z-index:10;display:none;align-items:center;justify-content:center;padding:14px}.modal-backdrop.open{display:flex}.modal{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(20,40,25,.24);width:min(780px,100%);max-height:90vh;overflow:auto;padding:18px}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.modal-head h2{font-size:18px;margin:0}.close-btn{font-size:12px;padding:6px 10px}.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button.active{background:var(--green2);border-color:#85a98c}.slot-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}.slot{min-height:62px;border:1px dashed #cbd6ca;border-radius:9px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;text-align:center;min-width:0}.slot .emoji{font-size:18px}.slot .slot-name{font-size:9px;line-height:1.1;overflow-wrap:anywhere}.slot .count{font-size:9px;color:var(--muted)}.recipe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.recipe{border:1px solid var(--line);border-radius:12px;padding:11px;background:white}.recipe strong{display:block;font-size:13px;margin-bottom:4px}.recipe p{font-size:11px;color:var(--muted);margin:0 0 9px;line-height:1.4}.recipe button{width:100%;font-size:11px}.character-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.draw-wrap{background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}.draw-wrap canvas{display:block;width:100%;height:auto;touch-action:none}.draw-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}.art-item{border:1px solid var(--line);border-radius:12px;padding:7px;background:white}.art-item img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#fff;border-radius:7px}.art-item div{font-size:11px;margin-top:4px;overflow-wrap:anywhere}.empty{text-align:center;padding:30px 12px;color:var(--muted);font-size:13px}.hidden{display:none!important}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#334b3b;color:white;padding:10px 16px;border-radius:999px;font-size:12px;box-shadow:var(--shadow);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}.toast.show{opacity:1}.file-label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:white;font-weight:650;font-size:13px;cursor:pointer}.file-label input{display:none}
-@media(max-width:1050px){.layout{grid-template-columns:190px minmax(280px,1fr)}.right-panel{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.right-panel section{min-width:0}.canvas-wrap,.canvas-wrap canvas{min-height:480px}}
-@media(max-width:680px){.app{padding:8px}.brand h1{font-size:18px}.top-actions button,.file-label{font-size:11px;padding:7px 9px}.layout{grid-template-columns:1fr}.left-panel{order:2}.world-card{order:1}.right-panel{order:3;grid-template-columns:1fr 1fr}.canvas-wrap,.canvas-wrap canvas{min-height:430px}.slot-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.character-grid{grid-template-columns:1fr}.panel{padding:11px}.canvas-hint{font-size:10px;max-width:80%}}
+:root{--ink:#263c32;--green:#39784e;--green2:#dff0df;--cream:#fffdf4;--line:#d8e2d6;--shadow:0 8px 26px #203b3026}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc7d8;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;overscroll-behavior:none}button,input,select{font:inherit}button{border:1px solid #cbd9cb;border-radius:13px;background:#fffdf4;color:#294235;font-weight:750;padding:9px 12px;box-shadow:0 2px 0 #29423512;touch-action:manipulation;cursor:pointer}button:active{transform:translateY(1px);background:#e5f0df}button:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}.primary{background:#39784e;color:white;border-color:#39784e}.soft{background:#e2f0df}.app{position:fixed;inset:0;background:#9bc7d8}.world{position:absolute;inset:0;overflow:hidden;touch-action:none}.world canvas{display:block;width:100%;height:100%;touch-action:none;outline:0}.top-hud{position:absolute;z-index:5;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.hud-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}.brand{background:#fffdf0e8;border:1px solid #fff;border-radius:15px;padding:6px 11px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}.brand .flower{font-size:22px}.brand strong{font-size:15px;letter-spacing:.3px}.hud-actions{flex-wrap:wrap;justify-content:flex-end}.hud-actions button{font-size:12px;padding:9px 11px;background:#fffdf0ed}.hud-actions .primary{background:#39784e;color:#fff}.crosshair{position:absolute;left:50%;top:50%;z-index:3;width:13px;height:13px;transform:translate(-50%,-50%);pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#fff;border:1px solid #243d30;opacity:.9;border-radius:2px}.crosshair:before{width:13px;height:2px;left:0;top:5px}.crosshair:after{height:13px;width:2px;left:5px;top:0}.top-hint{position:absolute;z-index:2;left:50%;top:calc(max(9px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);max-width:92%;border-radius:999px;padding:6px 10px;background:#fffdf0bd;color:#3b5947;font-size:11px;white-space:nowrap;pointer-events:none}.hotbar{position:absolute;z-index:5;left:50%;bottom:max(9px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#fffffff0;border:1px solid #ffffff;border-radius:16px;box-shadow:var(--shadow);max-width:95vw;overflow-x:auto}.hotbar button{width:42px;height:46px;flex:0 0 42px;padding:2px;display:grid;place-items:center;gap:0;border-radius:10px;background:#f9fbf5}.hotbar button.active{outline:3px solid #4b9660;background:#e1f0df}.hotbar .emoji{font-size:19px;line-height:1}.hotbar small{font-size:8px;color:#5c6c5e;line-height:1}.touch-controls{position:absolute;z-index:5;inset:0;pointer-events:none}.dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:112px;height:104px;display:grid;grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,31px);gap:3px;pointer-events:auto}.dpad button,.action-pad button{padding:0;background:#fffdf0d9;border:1px solid #fff;box-shadow:0 3px 12px #29423526;backdrop-filter:blur(6px);font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad [data-move="0,-1"]{grid-column:2;grid-row:1}.dpad [data-move="-1,0"]{grid-column:1;grid-row:2}.dpad [data-move="0,1"]{grid-column:2;grid-row:2}.dpad [data-move="1,0"]{grid-column:3;grid-row:2}.dpad [data-move="up"]{grid-column:2;grid-row:3;font-size:12px}.action-pad{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,52px);grid-template-rows:repeat(2,43px);gap:7px;pointer-events:auto}.action-pad button{font-size:12px;font-weight:800}.action-pad #placeBtn{background:#39784ee8;color:white}.action-pad #removeBtn{background:#fff7e8ed}.action-pad #flyDownBtn{background:#edf5ffed}.action-pad #flyUpBtn{background:#edf5ffed}.show-controls{position:absolute;z-index:7;left:10px;bottom:10px;display:none;background:#fffdf4ed}.status{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 15px;border-radius:999px;background:#263f31;color:white;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}.status.show{opacity:1}.focus-exit{position:absolute;z-index:8;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:none}.focus-mode .top-hud{display:none}.focus-mode .top-hint{display:none}.focus-mode .focus-exit{display:block}.controllers-hidden .touch-controls{display:none}.controllers-hidden .show-controls{display:block}.menu-shade{position:absolute;z-index:9;inset:0;background:#1d34294b;display:none;align-items:center;justify-content:center;padding:14px}.menu-shade.open{display:flex}.menu{width:min(440px,96vw);max-height:88dvh;overflow:auto;background:#fffdf4;border:1px solid white;border-radius:22px;padding:18px;box-shadow:0 20px 70px #1735244c}.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.menu-head h2{margin:0;font-size:20px}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{min-height:49px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#617165;margin:9px 0}.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink)}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button.active{background:#dff0df;border-color:#73a581}.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.slot{min-height:57px;border:1px dashed #cad9c8;border-radius:10px;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;gap:2px}.slot .ico{font-size:18px}.slot small{font-size:9px;text-align:center;line-height:1.1;overflow-wrap:anywhere}.recipe{padding:11px;margin:7px 0;border:1px solid var(--line);border-radius:12px;background:#fff}.recipe strong{font-size:13px}.recipe p{font-size:11px;color:#647466;margin:4px 0 8px}.draw-canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note{font-size:11px;color:#647466;line-height:1.45}.hidden{display:none!important}.focus-mode .hotbar{bottom:max(5px,env(safe-area-inset-bottom))}.focus-mode .dpad,.focus-mode .action-pad{bottom:max(8px,env(safe-area-inset-bottom))}.portrait-note{display:none}
+@media(max-width:720px){.top-hint{display:none}.brand{padding:5px 8px}.brand strong{font-size:13px}.hud-actions{gap:4px}.hud-actions button{padding:8px 9px;font-size:11px}.top-hint{top:calc(max(9px,env(safe-area-inset-top)) + 48px);font-size:10px}.hotbar{gap:3px;padding:4px}.hotbar button{width:37px;height:42px;flex-basis:37px}.dpad{transform:scale(.88);transform-origin:bottom left;left:max(5px,env(safe-area-inset-left));bottom:max(7px,env(safe-area-inset-bottom))}.action-pad{transform:scale(.9);transform-origin:bottom right;right:max(5px,env(safe-area-inset-right));bottom:max(7px,env(safe-area-inset-bottom))}.slots{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:420px){.brand .flower{font-size:18px}.brand strong{font-size:12px}.hud-actions button{padding:7px 8px;font-size:10px}.action-pad{grid-template-columns:repeat(2,52px);grid-template-rows:repeat(2,43px)}.dpad{transform:scale(.8)}}
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true">🌼</div><div><h1>DIYCraft</h1><p>A cozy place to build, make art, and be kind.</p></div></div>
-    <div class="top-actions">
-      <button id="inventoryButton" class="soft">🎒 Inventory</button>
-      <button id="craftButton">🧺 Craft</button>
-      <button id="artButton">🎨 Art Studio</button>
-      <button id="characterButton">👒 Character</button>
-      <button id="saveButton" class="primary">Save world</button>
-      <button id="exportButton">Backup</button>
-      <button id="clearBuildButton" class="danger">Clear builds</button>
-      <label class="file-label">↥ Restore<input id="importFile" type="file" accept="application/json,.json"></label>
+<div class="app" id="app">
+  <div class="world" id="world"><canvas id="game" aria-label="Peaceful first-person block building world"></canvas></div>
+  <div class="crosshair" id="crosshair"></div>
+  <div class="top-hud">
+    <div class="brand"><span class="flower">🌼</span><strong>DIYCraft</strong></div>
+    <div class="hud-actions">
+      <button id="viewBtn">👁 View: 1st</button>
+      <button id="flyBtn">🕊 Fly: Off</button>
+      <button id="controlsBtn">Hide controls</button>
+      <button id="expandBtn" class="primary">⛶ Enlarge</button>
+      <button id="inventoryBtn">🎒</button>
+      <button id="menuBtn">☰</button>
     </div>
-  </header>
-  <div class="status" id="statusLine" role="status">Your world is ready. Everything stays on this device.</div>
-  <main class="layout">
-    <aside class="panel left-panel">
-      <h2>Build tools</h2>
-      <div class="toolgrid" id="toolButtons">
-        <button data-tool="build" class="active">🧱 Build</button><button data-tool="erase">🧽 Remove</button>
-        <button data-tool="inspect">👀 Select</button><button data-tool="paint">🖌️ Recolor</button>
+  </div>
+  <div class="top-hint" id="topHint">Drag to look · Tap to build · Choose a block below</div>
+  <div class="hotbar" id="hotbar" aria-label="Block selection"></div>
+  <div class="touch-controls" id="touchControls">
+    <div class="dpad" aria-label="Movement controls">
+      <button data-move="0,-1" aria-label="Move forward">▲</button><button data-move="-1,0" aria-label="Move left">◀</button><button data-move="0,1" aria-label="Move back">▼</button><button data-move="1,0" aria-label="Move right">▶</button><span aria-hidden="true" style="grid-column:2;grid-row:3"></span>
+    </div>
+    <div class="action-pad"><button id="placeBtn">＋ BUILD</button><button id="removeBtn">− REMOVE</button><button id="flyDownBtn">↓ DOWN</button><button id="flyUpBtn">↑ UP</button></div>
+  </div>
+  <button class="show-controls" id="showControls">Show controllers</button>
+  <button class="focus-exit" id="focusExit">✕ Exit full view</button>
+  <div class="status" id="status"></div>
+  <div class="menu-shade" id="menuShade">
+    <div class="menu" id="menuContent"><div class="menu-head"><h2>🌿 DIYCraft settings</h2><button data-close>Close ✕</button></div>
+      <label class="field">World name<input id="worldName" maxlength="30" value="My Peaceful World"></label>
+      <label class="field">Choose any block color<input id="customColor" type="color" value="#aa83d8"></label><button id="useCustomColor" class="soft">Use this color for new blocks</button>
+      <div class="menu-grid">
+        <button id="menuInventory">🎒 Inventories</button><button id="craftBtn">🧺 Crafting</button><button id="artBtn">🎨 Art studio</button><button id="characterBtn">🧑 Character colors</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
+        <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn">Clear placed blocks</button><button id="neighborsBtn">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
-      <h3>Block collection</h3>
-      <div class="palette" id="blockPalette"></div>
-      <h3>Choose any color</h3>
-      <div class="color-row"><input type="color" id="customColor" value="#83b96d" aria-label="Choose block color"><span class="small-note">Use any color for your blocks.</span></div>
-      <label class="field">World name<input id="worldName" maxlength="32" value="My Cozy World"></label>
-      <label class="field">World mode<select id="worldMode"><option value="creative">Creative — unlimited building</option><option value="peaceful">Peaceful — no hostile creatures</option></select></label>
-      <p class="small-note">There are no enemies, weapons, combat, or damage mechanics in either mode. Friendly neighbors and animals are always welcome.</p>
-    </aside>
-
-    <section class="panel world-card">
-      <div class="world-head"><div><strong id="worldTitle">My Cozy World</strong><br><span id="worldSub">150 × 150 build area · Creative mode</span></div><span class="badge">OFFLINE WORLD</span></div>
-      <div class="canvas-wrap"><canvas id="gameCanvas" width="1080" height="690" tabindex="0" aria-label="Isometric building world. Click a tile to build, remove, or select."></canvas><div class="canvas-hint">Click a tile to build · WASD / arrow keys to move · Right-click to remove</div></div>
-      <div class="controls"><div class="hint-text">Your world autosaves on this device. Use Backup to keep a separate copy. Creative blocks are unlimited.</div><div class="movement" aria-label="Move character"><button data-move="0,-1" title="Up">▲</button><button data-move="-1,0" title="Left">◀</button><button data-move="0,1" title="Down">▼</button><button data-move="1,0" title="Right">▶</button></div></div>
-    </section>
-
-    <aside class="panel right-panel">
-      <section><h2>Kind neighbors</h2><div id="neighborList"></div><p class="small-note">They do not speak. They wave, make things, and enjoy the garden.</p></section>
-      <section><h2>Animal friends</h2><div id="animalList"></div><p class="small-note">Animals can be gently petted. They cannot be hurt or used for combat.</p></section>
-      <section><h2>Little activities</h2><div class="right-actions"><button id="inviteButton">🧵 Create with a neighbor</button><button id="petButton">💚 Pet an animal friend</button><button id="viewArtButton">🖼️ My artwork</button></div><p class="small-note" id="selectionNote">Select a neighbor or animal on the map to interact.</p></section>
-    </aside>
-  </main>
-  <p class="footer-note">DIYCraft is an offline-first prototype. It does not connect to chat, multiplayer, ads, analytics, outside images, or remote game servers. Keep a Backup file for important worlds.</p>
+      <p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Builds are saved on this device. Export a backup to move a world to another device.</p>
+    </div>
+  </div>
+  <div class="menu-shade" id="inventoryShade"><div class="menu"><div class="menu-head"><h2>🎒 Your pouches</h2><button data-close>Close ✕</button></div>
+    <div class="tabs"><button class="active" data-tab="materials">Resources · 60</button><button data-tab="crafted">Crafted · 60</button></div><div class="slots" id="slots"></div><p class="note">Creative building does not consume blocks. The pouches are for collecting and organizing items.</p></div></div>
+  <div class="menu-shade" id="craftShade"><div class="menu"><div class="menu-head"><h2>🧺 Peaceful crafting</h2><button data-close>Close ✕</button></div><div id="recipes"></div><p class="note">Recipes are for helpful, decorative things only. There are no weapons or harmful tools.</p></div></div>
+  <div class="menu-shade" id="artShade"><div class="menu"><div class="menu-head"><h2>🎨 Art studio</h2><button data-close>Close ✕</button></div><button id="inviteArtBtn" class="soft">Invite a neighbor to create quietly</button><div class="draw-tools"><label class="note">Color <input id="paintColor" type="color" value="#4c8d59"></label><label class="note">Brush <input id="brushSize" type="range" min="2" max="28" value="7"></label><button id="clearArt">Clear</button></div><canvas class="draw-canvas" id="artCanvas" width="640" height="390"></canvas><label class="field">Name your artwork<input id="artName" maxlength="28" value="My picture"></label><button class="primary" id="saveArt">Save to crafted pouch</button><p class="note">Artwork stays on this device. A parent should review drawings saved to the gallery.</p></div></div>
+  <div class="menu-shade" id="characterShade"><div class="menu"><div class="menu-head"><h2>🧑 My character</h2><button data-close>Close ✕</button></div><label class="field">Shirt color<input id="shirtColor" type="color" value="#5b9bd1"></label><label class="field">Hair color<input id="hairColor" type="color" value="#503523"></label><label class="field">Skin tone<input id="skinColor" type="color" value="#efc39d"></label><button class="primary" id="applyCharacter">Save character</button></div></div>
 </div>
-
-<div class="modal-backdrop" id="inventoryModal" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle"><div class="modal"><div class="modal-head"><h2 id="inventoryTitle">🎒 Inventory pouches</h2><button class="close-btn" data-close="inventoryModal">Close ✕</button></div><div class="tabs"><button class="active" data-invtab="materials">Resources, food & tools · 60 slots</button><button data-invtab="crafted">Crafted items · 60 slots</button></div><p class="small-note" id="inventoryDescription">Raw materials, food, and helpful building tools.</p><div id="inventoryGrid" class="slot-grid"></div><div id="renameRow" class="draw-tools hidden"><label class="field" style="flex:1;min-width:180px">Name selected crafted item<input id="renameCraftedName" maxlength="24" placeholder="Give your creation a name"></label><button id="renameCraftedButton" class="primary">Save name</button></div></div></div>
-
-<div class="modal-backdrop" id="craftModal" role="dialog" aria-modal="true" aria-labelledby="craftTitle"><div class="modal"><div class="modal-head"><h2 id="craftTitle">🧺 Crafting table</h2><button class="close-btn" data-close="craftModal">Close ✕</button></div><p class="small-note">All recipes create peaceful, useful objects. There are no weapons or harmful tools in the recipe collection.</p><div id="recipeGrid" class="recipe-grid"></div></div></div>
-
-<div class="modal-backdrop" id="characterModal" role="dialog" aria-modal="true" aria-labelledby="characterTitle"><div class="modal"><div class="modal-head"><h2 id="characterTitle">👒 Decorate your character</h2><button class="close-btn" data-close="characterModal">Close ✕</button></div><div class="character-grid"><label class="field">Character name<input id="characterName" maxlength="20" value="Builder"></label><label class="field">Hair style<select id="hairStyle"><option value="long">Long hair</option><option value="short">Short hair</option><option value="curl">Curly hair</option></select></label><label class="field">Hair color<input id="hairColor" type="color" value="#65452f"></label><label class="field">Outfit color<input id="shirtColor" type="color" value="#8eb6d8"></label><label class="field">Skin tone<input id="skinColor" type="color" value="#f0c6a5"></label><label class="field">Favorite accessory<select id="accessory"><option value="flower">Flower</option><option value="bow">Bow</option><option value="hat">Sun hat</option><option value="none">No accessory</option></select></label></div><p class="small-note">Your character's appearance can be changed anytime.</p><button id="applyCharacter" class="primary">Save my look</button></div></div>
-
-<div class="modal-backdrop" id="artModal" role="dialog" aria-modal="true" aria-labelledby="artTitle"><div class="modal"><div class="modal-head"><h2 id="artTitle">🎨 Art studio</h2><button class="close-btn" data-close="artModal">Close ✕</button></div><p class="small-note">Draw locally with your mouse or finger. There are no uploads or outside images. Keep artwork kind and suitable for a child.</p><div class="draw-tools"><label class="small-note">Color <input id="drawColor" type="color" value="#4d8b5a"></label><label class="small-note">Brush <input id="brushSize" type="range" min="2" max="24" value="6"></label><button id="drawFlower">Add flower stamp</button><button id="drawHeart">Add heart stamp</button><button id="clearDrawing">Clear paper</button></div><div class="draw-wrap"><canvas id="drawingCanvas" width="720" height="420" aria-label="Drawing paper"></canvas></div><label class="field">Artwork name<input id="artName" maxlength="24" value="My artwork"></label><button id="saveDrawing" class="primary">Save artwork to crafted pouch</button><p class="small-note">Artwork is stored locally with your world backup. A drawing canvas cannot automatically recognize every possible image, so a parent should review saved artwork.</p></div></div>
-
-<div class="modal-backdrop" id="artGalleryModal" role="dialog" aria-modal="true" aria-labelledby="galleryTitle"><div class="modal"><div class="modal-head"><h2 id="galleryTitle">🖼️ My artwork</h2><button class="close-btn" data-close="artGalleryModal">Close ✕</button></div><div class="art-grid" id="artGallery"></div></div></div>
-
-<div class="toast" id="toast" role="status"></div>
 <script>
-(() => {
-'use strict';
-
-const WORLD_SIZE = 150;
-const TILE_W = 42;
-const TILE_H = 22;
-const BLOCK_H = 18;
-const STORAGE_KEY = 'diycraft_offline_world_v1';
-const MAX_BLOCK_COLUMNS = 30000;
-const MAX_ARTWORKS = 12;
-const MAX_ART_DATA_LENGTH = 240000;
-const $ = (id) => document.getElementById(id);
-const canvas = $('gameCanvas');
-const ctx = canvas.getContext('2d', { alpha: false });
-const drawCanvas = $('drawingCanvas');
-const drawCtx = drawCanvas.getContext('2d');
-
-const BLOCKS = [
-  {id:'grass',name:'Grass',color:'#83b96d',icon:'🌿'},
-  {id:'dirt',name:'Soil',color:'#9b704e',icon:'🟫'},
-  {id:'stone',name:'Stone',color:'#aab1b4',icon:'🪨'},
-  {id:'wood',name:'Wood',color:'#bd8a58',icon:'🪵'},
-  {id:'brick',name:'Brick',color:'#cc806c',icon:'🧱'},
-  {id:'sand',name:'Sand',color:'#e7d49a',icon:'🏖️'},
-  {id:'water',name:'Water',color:'#75bfd8',icon:'💧'},
-  {id:'leaf',name:'Leaf',color:'#4e9a63',icon:'🍃'},
-  {id:'flower',name:'Flower',color:'#e9a7c4',icon:'🌸'},
-  {id:'glass',name:'Glass',color:'#b5dce4',icon:'🔹'},
-  {id:'cobble',name:'Cobble',color:'#8f9696',icon:'🪨'},
-  {id:'painted',name:'Painted',color:'#83b96d',icon:'🎨'},
-  {id:'tree',name:'Tree',color:'#57945c',icon:'🌳'},
-  {id:'cottage',name:'Cottage',color:'#d4ac7e',icon:'🏡'},
-  {id:'garden',name:'Garden bed',color:'#92724f',icon:'🌱'}
+(()=>{'use strict';
+const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d',{alpha:false});
+const WORLD_LIMIT=72,MAX_BLOCKS=18000,STORE_KEY='diycraft_peaceful_voxel_v1';
+const BLOCKS=[
+ {id:'grass',name:'Grass',emoji:'🟩',color:'#70b85a'}, {id:'dirt',name:'Dirt',emoji:'🟫',color:'#9a7049'},
+ {id:'stone',name:'Stone',emoji:'⬜',color:'#9ca6a1'}, {id:'wood',name:'Wood',emoji:'🪵',color:'#a97545'},
+ {id:'leaves',name:'Leaves',emoji:'🌳',color:'#4e9a59'}, {id:'brick',name:'Brick',emoji:'🧱',color:'#c87862'},
+ {id:'glass',name:'Glass',emoji:'🔹',color:'#a5dce3'}, {id:'flower',name:'Flower',emoji:'🌸',color:'#e9a4c1'},
+ {id:'sand',name:'Sand',emoji:'🟨',color:'#e8d38b'}, {id:'snow',name:'Snow',emoji:'❄️',color:'#f2f8fa'}
 ];
-const ITEMS = {
-  wood:{name:'Wood pieces',icon:'🪵'}, stone:{name:'Smooth stones',icon:'🪨'}, soil:{name:'Garden soil',icon:'🟫'},
-  flower:{name:'Flowers',icon:'🌸'}, berry:{name:'Berries',icon:'🫐'}, fiber:{name:'Soft fiber',icon:'🧶'},
-  glass:{name:'Glass pieces',icon:'🔹'}, wheat:{name:'Wheat',icon:'🌾'}, paintbrush:{name:'Paintbrush',icon:'🖌️'},
-  wateringcan:{name:'Watering can',icon:'🫗'}, shovel:{name:'Garden shovel',icon:'🥄'},
-  chair:{name:'Little chair',icon:'🪑'}, table:{name:'Craft table',icon:'🪵'}, flowerpot:{name:'Flower pot',icon:'🪴'},
-  lantern:{name:'Cozy lantern',icon:'🏮'}, pictureframe:{name:'Picture frame',icon:'🖼️'}, basket:{name:'Woven basket',icon:'🧺'},
-  flowercrown:{name:'Flower crown',icon:'🌼'}, bread:{name:'Fresh bread',icon:'🍞'}, kite:{name:'Colorful kite',icon:'🪁'}
+const ITEM_META={
+ seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
 };
-const RECIPES = [
-  {id:'chair',name:'Little chair',icon:'🪑',desc:'A small seat for a cozy home.',cost:{wood:3}},
-  {id:'table',name:'Craft table',icon:'🪵',desc:'A table for art and making things.',cost:{wood:4}},
-  {id:'flowerpot',name:'Flower pot',icon:'🪴',desc:'A home for a favorite flower.',cost:{soil:1,flower:1}},
-  {id:'lantern',name:'Cozy lantern',icon:'🏮',desc:'A gentle light for your cottage.',cost:{wood:1,glass:1}},
-  {id:'pictureframe',name:'Picture frame',icon:'🖼️',desc:'Display a favorite drawing.',cost:{wood:2}},
-  {id:'basket',name:'Woven basket',icon:'🧺',desc:'Keep little treasures together.',cost:{fiber:3}},
-  {id:'flowercrown',name:'Flower crown',icon:'🌼',desc:'A cheerful character decoration.',cost:{flower:3}},
-  {id:'bread',name:'Fresh bread',icon:'🍞',desc:'A tasty snack from the kitchen.',cost:{wheat:2}},
-  {id:'kite',name:'Colorful kite',icon:'🪁',desc:'A bright kite for a breezy afternoon.',cost:{wood:1,fiber:2}},
-  {id:'paintbrush',name:'Paintbrush',icon:'🖌️',desc:'A helpful tool for coloring and decorating.',cost:{wood:1,fiber:1}},
-  {id:'wateringcan',name:'Watering can',icon:'🫗',desc:'A gentle tool for caring for a garden.',cost:{wood:2,glass:1}},
-  {id:'shovel',name:'Garden shovel',icon:'🥄',desc:'A garden tool for planting flowers.',cost:{wood:2,stone:2}}
+const RECIPES=[
+ {id:'flowerpot',name:'Flower pot',desc:'A little pot for a bright flower.',icon:'🪴',cost:{wood:1,seed:1}},
+ {id:'bench',name:'Garden bench',desc:'A comfortable place to sit.',icon:'🪑',cost:{wood:2}},
+ {id:'picture',name:'Picture frame',desc:'Keep a favorite drawing.',icon:'🖼️',cost:{wood:1,stone:1}},
+ {id:'picnic',name:'Picnic basket',desc:'A peaceful picnic treat.',icon:'🧺',cost:{bread:1,apple:1}}
 ];
+const emptySlots=()=>Array.from({length:60},()=>null);
+function freshWorld(){
+ const blocks=[];
+ const put=(x,y,z,type)=>blocks.push({x,y,z,type});
+ // A small welcome cottage and a tree garden, all built from friendly materials.
+ for(let x=-3;x<=1;x++)for(let z=-13;z<=-9;z++){put(x,0,z,'wood');if(x===-3||x===1||z===-13||z===-9){put(x,1,z,'brick');put(x,2,z,'brick');}}
+ for(let x=-4;x<=2;x++)for(let z=-14;z<=-8;z++)put(x,3,z,'wood');
+ for(let x=-4;x<=2;x++){put(x,4,-14,'brick');put(x,4,-8,'brick');}
+ put(-1,1,-9,'glass');put(-3,1,-11,'glass');put(1,1,-11,'glass');
+ for(let y=0;y<=3;y++)put(9,y,-12,'wood');
+ for(let x=7;x<=11;x++)for(let z=-14;z<=-10;z++)put(x,3,z,'leaves');
+ for(let x=8;x<=10;x++)for(let z=-13;z<=-11;z++)put(x,4,z,'leaves');
+ for(let y=0;y<=3;y++)put(-10,y,-13,'wood');
+ for(let x=-12;x<=-8;x++)for(let z=-15;z<=-11;z++)put(x,3,z,'leaves');
+ for(let x=-11;x<=-9;x++)for(let z=-14;z<=-12;z++)put(x,4,z,'leaves');
+ for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z++)put(x,0,z,'dirt');
+ for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
+ for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
-function blankSlots(){ return Array.from({length:60}, () => null); }
-function putInitial(slots,id,count){ slots[0] = {id,count}; }
-function makeNewWorld(){
-  const materials=blankSlots();
-  const starts=[['wood',30],['stone',30],['soil',20],['flower',20],['berry',12],['fiber',15],['glass',10],['wheat',12],['paintbrush',1],['wateringcan',1],['shovel',1]];
-  starts.forEach((v,i)=>materials[i]={id:v[0],count:v[1]});
-  return {
-    version:1,name:'My Cozy World',size:WORLD_SIZE,mode:'creative',
-    player:{x:75,y:75,name:'Builder',skin:'#f0c6a5',hair:'#65452f',shirt:'#8eb6d8',hairStyle:'long',accessory:'flower'},
-    blocks:{},materials,crafted:blankSlots(),artworks:[],
-    decor:[{type:'tree',x:69,y:74},{type:'tree',x:82,y:80},{type:'flower',x:72,y:81},{type:'flower',x:80,y:70},{type:'cottage',x:77,y:68},{type:'garden',x:80,y:83}],
-    neighbors:[{id:'neighbor1',name:'Mila',x:78,y:77,shirt:'#d58eb4',hair:'#5c473c',activity:'garden'},{id:'neighbor2',name:'Noah',x:72,y:77,shirt:'#7da9cc',hair:'#4e4035',activity:'craft'}],
-    animals:[{id:'animal1',kind:'sheep',name:'Fluffy',x:70,y:79},{id:'animal2',kind:'bunny',name:'Clover',x:81,y:76},{id:'animal3',kind:'cat',name:'Mochi',x:84,y:73},{id:'animal4',kind:'bird',name:'Pip',x:75,y:71}],
-    selected:null
-  };
+ return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#5b9bd1',hair:'#503523',skin:'#efc39d'},materials:emptySlots(),crafted:emptySlots(),artworks:[]};
 }
-let world = loadWorld();
-let tool = 'build';
-let selectedBlock = 'grass';
-let selectedColor = '#83b96d';
-let selectedEntity = null;
-let inventoryTab = 'materials';
-let selectedInventorySlot = null;
-let lastToastTimer = null;
-let hearts = [];
-let drawActive = false;
-let drawLast = null;
-
-function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
-function cleanName(v,fallback,max=32){
-  const s=String(v ?? '').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,max);
-  return s || fallback;
+function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
+function validWorld(d){
+ if(!d||typeof d!=='object')throw new Error('That file is not a DIYCraft world.');
+ const w=freshWorld();w.name=String(d.name||w.name).slice(0,30);
+ if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||''))));
+ if(d.player&&typeof d.player==='object'){w.player.x=Number.isFinite(d.player.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,d.player.x)):0;w.player.y=Number.isFinite(d.player.y)?Math.max(0,Math.min(60,d.player.y)):0;w.player.z=Number.isFinite(d.player.z)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,d.player.z)):4;w.player.yaw=Number.isFinite(d.player.yaw)?d.player.yaw:0;w.player.pitch=Number.isFinite(d.player.pitch)?Math.max(-1.25,Math.min(1.25,d.player.pitch)):0;w.player.shirt=validHex(d.player.shirt,w.player.shirt);w.player.hair=validHex(d.player.hair,w.player.hair);w.player.skin=validHex(d.player.skin,w.player.skin);}
+ for(const key of ['materials','crafted'])if(Array.isArray(d[key]))w[key]=d[key].slice(0,60).map(s=>s&&ITEM_META[s.id]?{id:s.id,count:Math.max(1,Math.min(99,Number(s.count)||1)),label:typeof s.label==='string'?s.label.slice(0,28):''}:null).concat(emptySlots()).slice(0,60);
+ if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&a.data.startsWith('data:image/png;base64,')&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
+ return w;
 }
-function validColor(v,fallback){ return (typeof v==='string' && /^#[0-9a-f]{6}$/i.test(v)) ? v : fallback; }
-function safeCoord(v){ return Number.isInteger(v) ? clamp(v,0,WORLD_SIZE-1) : 75; }
-function validSlotArray(arr, allowed){
-  const out=blankSlots();
-  if(!Array.isArray(arr)) return out;
-  arr.slice(0,60).forEach((entry,i)=>{
-    if(entry && typeof entry==='object' && allowed[entry.id] && Number.isFinite(entry.count)){
-      const count=clamp(Math.floor(entry.count),1,999);
-      out[i]={id:entry.id,count};
-      if(typeof entry.label==='string') out[i].label=cleanName(entry.label,ITEMS[entry.id].name,24);
-    }
-  });
-  return out;
+let toastTimer=0,storageUnavailable=false;
+function load(){try{const s=localStorage.getItem(STORE_KEY);if(s)return validWorld(JSON.parse(s));}catch(e){storageUnavailable=true;showStatus('Device storage is unavailable. Use Backup to keep your world.');}return freshWorld();}
+let world=load(),selected='grass',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,artDrawing=false,artLast=null,inventoryTab='materials',drag=null;
+const blockMap=new Map(BLOCKS.map(b=>[b.id,b]));
+function showStatus(s){const el=$('status');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2100);}
+function save(silent=true){try{world.name=$('worldName').value.trim().slice(0,30)||world.name;localStorage.setItem(STORE_KEY,JSON.stringify(world));if(!silent)showStatus('World saved on this device.');}catch(e){if(!storageUnavailable){storageUnavailable=true;if(!silent)showStatus('Device storage is unavailable. Use Backup to keep your world.');}}}
+function addItem(id,target='crafted',label=''){const arr=world[target];const same=arr.find(v=>v&&v.id===id&&v.count<99);if(same){same.count++;return true;}const i=arr.findIndex(v=>!v);if(i<0)return false;arr[i]={id,count:1,label};return true;}
+function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'My color',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=$('customColor').value;btn.style.background='linear-gradient(135deg,'+$('customColor').value+'44,#fffdf4)';}else btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});root.append(btn);});}
+function keyBlock(x,y,z){return x+','+y+','+z;}
+let blockLookup=new Map();function rebuildLookup(){blockLookup=new Map();for(const b of world.blocks)blockLookup.set(keyBlock(b.x,b.y,b.z),b);}
+function solid(x,y,z){if(y<0)return Math.abs(x)<=WORLD_LIMIT&&Math.abs(z)<=WORLD_LIMIT;return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
+function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z);if(blockLookup.has(k))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom')b.color=validHex($('customColor').value,'#aa83d8');world.blocks.push(b);blockLookup.set(k,b);save();return true;}
+function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(k);save();return true;}
+function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x,y:p.y+1.1,z:p.z},pos={x:p.x-sy*5.6,y:p.y+3.0,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
+function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
+const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
+function cubeVerts(x,y,z,sx=1,sy=1,sz=1){return [{x,y,z},{x:x+sx,y,z},{x:x+sx,y,z:z+sz},{x,y,z:z+sz},{x,y:y+sy,z},{x:x+sx,y:y+sy,z},{x:x+sx,y:y+sy,z:z+sz},{x,y:y+sy,z:z+sz}];}
+function shadeColor(hex,mul){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.max(0,Math.round(((n>>16)&255)*mul))),g=Math.min(255,Math.max(0,Math.round(((n>>8)&255)*mul))),b=Math.min(255,Math.max(0,Math.round((n&255)*mul)));return `rgb(${r},${g},${b})`;}
+function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline});}}
+function line3(queue,cam,w,h,a,b,color,width=1){const p=project(a,cam,w,h),q=project(b,cam,w,h);if(p&&q)queue.push({line:true,p,q,depth:(p.d+q.d)/2,color,width});}
+function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.6),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
+ const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#8fc6e2');sky.addColorStop(.7,'#d8e9d2');sky.addColorStop(1,'#b3d39a');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+ // Sun and soft cloud blocks
+ ctx.fillStyle='#fff2bc';ctx.beginPath();ctx.arc(w*.80,h*.16,Math.min(w,h)*.055,0,Math.PI*2);ctx.fill();
+ const cam=cameraState(),polys=[];
+ // Ground plane polygon
+ const ground=[{x:-WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:WORLD_LIMIT},{x:-WORLD_LIMIT,y:0,z:WORLD_LIMIT}].map(p=>project(p,cam,w,h));
+ if(ground.every(Boolean)){ctx.beginPath();ground.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle='#80bd65';ctx.fill();ctx.strokeStyle='#70a75b';ctx.lineWidth=1;ctx.stroke();}
+ // Nearby grid lines for spatial building guidance
+ for(let i=-WORLD_LIMIT;i<=WORLD_LIMIT;i+=2){line3(polys,cam,w,h,{x:i,y:.008,z:-WORLD_LIMIT},{x:i,y:.008,z:WORLD_LIMIT},'#6b9e5842',.6);line3(polys,cam,w,h,{x:-WORLD_LIMIT,y:.008,z:i},{x:WORLD_LIMIT,y:.008,z:i},'#6b9e5842',.6);}
+ // Blocks
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>18||Math.abs(b.z-cam.pos.z)>18)continue;const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color);}
+ // Silent friendly neighbors: simple block people, no dialogue or hostile behavior.
+ const tick=performance.now()/1000,neighbors=[{x:-5+Math.sin(tick*.22)*.45,z:-8+Math.cos(tick*.18)*.35,shirt:'#e1a0b7',hair:'#79543b',skin:'#f0c7a3'},{x:5+Math.cos(tick*.19)*.4,z:-11+Math.sin(tick*.17)*.3,shirt:'#9baddc',hair:'#4b382d',skin:'#dfab83'}];
+ for(const n of neighbors){const bob=Math.sin(tick*1.7+n.x)*.035;pushCube(polys,cam,w,h,n.x-.34,.05+bob,n.z-.22,n.shirt,.68,.9,.44);pushCube(polys,cam,w,h,n.x-.29,.95+bob,n.z-.28,n.skin,.58,.58,.56);pushCube(polys,cam,w,h,n.x-.31,1.38+bob,n.z-.30,n.hair,.62,.18,.60);pushCube(polys,cam,w,h,n.x-.15,1.19+bob,n.z+.285,'#3c443a',.07,.07,.025);pushCube(polys,cam,w,h,n.x+.06,1.19+bob,n.z+.285,'#3c443a',.07,.07,.025);pushCube(polys,cam,w,h,n.x-.04,1.08+bob,n.z+.29,'#9a6c5c',.12,.025,.02);}
+ // Gentle animals: a sheep and a cat, never attackable or removable.
+ const sheepX=-2+Math.sin(tick*.32)*.55,sheepZ=-7+Math.cos(tick*.27)*.45;pushCube(polys,cam,w,h,sheepX,.12,-7+(sheepZ+7),'#f4f0e4',.85,.6,1.1);pushCube(polys,cam,w,h,sheepX+.35,.37,sheepZ+1,'#f4f0e4',.45,.38,.4);pushCube(polys,cam,w,h,sheepX+.59,.56,sheepZ+1.36,'#47443f',.05,.05,.025);for(const x of [-1.9,-1.4])for(const z of [-6.75,-6.05])pushCube(polys,cam,w,h,x,.0,z,'#d7d0c5',.14,.3,.14);
+ const catX=3+Math.sin(tick*.28)*.5,catZ=-7+Math.cos(tick*.25)*.4;pushCube(polys,cam,w,h,catX,.1,catZ,'#e8c48c',.72,.5,.7);pushCube(polys,cam,w,h,catX+.12,.42,catZ+.47,'#e8c48c',.42,.36,.35);pushCube(polys,cam,w,h,catX+.04,.76,catZ+.45,'#e8c48c',.18,.28,.18);pushCube(polys,cam,w,h,catX+.42,.76,catZ+.45,'#e8c48c',.18,.28,.18);pushCube(polys,cam,w,h,catX+.13,.52,catZ+.48,'#3a3935',.06,.06,.025);pushCube(polys,cam,w,h,catX+.34,.52,catZ+.48,'#3a3935',.06,.06,.025);
+ // Third-person avatar; in first-person the child sees through the character's eyes.
+ if(cameraMode==='third'){const p=world.player;pushCube(polys,cam,w,h,p.x-.34,p.y+.05,p.z-.22,p.shirt,.68,.95,.44);pushCube(polys,cam,w,h,p.x-.29,p.y+1.0,p.z-.28,p.skin,.58,.58,.56);pushCube(polys,cam,w,h,p.x-.31,p.y+1.43,p.z-.30,p.hair,.62,.18,.60);pushCube(polys,cam,w,h,p.x-.15,p.y+1.24,p.z+.285,'#3c443a',.07,.07,.025);pushCube(polys,cam,w,h,p.x+.06,p.y+1.24,p.z+.285,'#3c443a',.07,.07,.025);}
+ polys.sort((a,b)=>b.depth-a.depth);
+ for(const poly of polys){if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}}
+ // Soft horizon landscape
+ ctx.fillStyle='#6b9f68';ctx.globalAlpha=.45;ctx.fillRect(0,h*.66,w,2);ctx.globalAlpha=1;
 }
-function normalizeWorld(data){
-  if(!data || typeof data!=='object' || data.version!==1) throw new Error('This is not a supported DIYCraft backup.');
-  const w=makeNewWorld();
-  w.name=cleanName(data.name,'My Cozy World',32);
-  w.mode=data.mode==='peaceful'?'peaceful':'creative';
-  if(data.player && typeof data.player==='object'){
-    w.player={...w.player,...data.player};
-    w.player.x=safeCoord(data.player.x); w.player.y=safeCoord(data.player.y);
-    w.player.name=cleanName(data.player.name,'Builder',20);
-    w.player.skin=validColor(data.player.skin,w.player.skin);w.player.hair=validColor(data.player.hair,w.player.hair);w.player.shirt=validColor(data.player.shirt,w.player.shirt);
-    w.player.hairStyle=['long','short','curl'].includes(data.player.hairStyle)?data.player.hairStyle:'long';
-    w.player.accessory=['flower','bow','hat','none'].includes(data.player.accessory)?data.player.accessory:'flower';
-  }
-  const allowedBlocks=Object.fromEntries(BLOCKS.map(b=>[b.id,true]));
-  if(data.blocks && typeof data.blocks==='object' && !Array.isArray(data.blocks)){
-    let n=0;
-    for(const [key,val] of Object.entries(data.blocks)){
-      if(n++>=MAX_BLOCK_COLUMNS) break;
-      if(!/^\d{1,3},\d{1,3}$/.test(key) || !Array.isArray(val)) continue;
-      const [x,y]=key.split(',').map(Number); if(x>=WORLD_SIZE || y>=WORLD_SIZE) continue;
-      const stack=val.slice(0,64).filter(b=>b && allowedBlocks[b.id]).map(b=>({id:b.id,color:validColor(b.color,BLOCKS.find(z=>z.id===b.id).color)}));
-      if(stack.length) w.blocks[key]=stack;
-    }
-  }
-  w.materials=validSlotArray(data.materials,ITEMS);
-  w.crafted=validSlotArray(data.crafted,ITEMS);
-  if(Array.isArray(data.artworks)) w.artworks=data.artworks.slice(0,MAX_ARTWORKS).filter(a=>a && typeof a==='object' && typeof a.data==='string' && a.data.startsWith('data:image/png;base64,') && a.data.length<=MAX_ART_DATA_LENGTH).map(a=>({name:cleanName(a.name,'My artwork',24),data:a.data}));
-  if(Array.isArray(data.decor)){
-    w.decor=[];
-    data.decor.slice(0,500).forEach(d=>{if(d && ['tree','cottage','flower','garden'].includes(d.type))w.decor.push({type:d.type,x:safeCoord(d.x),y:safeCoord(d.y)});});
-  }
-  // Keep the built-in friendly residents; saved coordinates are accepted only for known IDs.
-  if(Array.isArray(data.neighbors)) data.neighbors.slice(0,4).forEach((n,i)=>{ if(w.neighbors[i] && n){w.neighbors[i].x=safeCoord(n.x);w.neighbors[i].y=safeCoord(n.y);} });
-  if(Array.isArray(data.animals)) data.animals.slice(0,8).forEach((a,i)=>{ if(w.animals[i] && a){w.animals[i].x=safeCoord(a.x);w.animals[i].y=safeCoord(a.y);} });
-  return w;
-}
-function loadWorld(){
-  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)return normalizeWorld(JSON.parse(raw));}
-  catch(e){console.warn('Primary save could not be loaded; trying the previous copy:',e);}
-  try{const previous=localStorage.getItem(STORAGE_KEY+'_previous');if(previous)return normalizeWorld(JSON.parse(previous));}
-  catch(e){console.warn('Previous save could not be loaded:',e);}
-  return makeNewWorld();
-}
-function notify(message){
-  const el=$('toast');el.textContent=message;el.classList.add('show');
-  clearTimeout(lastToastTimer);lastToastTimer=setTimeout(()=>el.classList.remove('show'),2300);
-  $('statusLine').textContent=message;
-}
-function saveWorld(silent=false){
-  try{
-    world.name=cleanName($('worldName').value,world.name,32);
-    world.mode=$('worldMode').value;
-    const previous=localStorage.getItem(STORAGE_KEY);
-    if(previous) localStorage.setItem(STORAGE_KEY+'_previous',previous);
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(world));
-    $('worldTitle').textContent=world.name;
-    $('worldSub').textContent='150 × 150 build area · '+(world.mode==='creative'?'Creative mode':'Peaceful mode');
-    if(!silent) notify('World saved on this device.');
-    return true;
-  }catch(e){
-    console.error(e);if(!silent)notify('Device storage is full or unavailable. Please use Backup.');return false;
-  }
-}
-function exportBackup(){
-  saveWorld(true);
-  const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');
-  a.href=url;a.download=(cleanName(world.name,'diycraft-world',24).replace(/\s+/g,'-').toLowerCase()||'diycraft-world')+'.diycraft.json';
-  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);notify('Backup file created. Keep it somewhere safe.');
-}
-async function importBackup(file){
-  if(!file)return;
-  if(file.size>5_000_000){notify('That backup is too large to restore.');return;}
-  try{const text=await file.text();const parsed=JSON.parse(text);const restored=normalizeWorld(parsed);world=restored;$('worldName').value=world.name;$('worldMode').value=world.mode;saveWorld(true);renderAll();notify('World restored successfully.');}
-  catch(e){console.error(e);notify('Backup could not be read. Your current world was kept.');}
-}
-
-function addItem(id,count=1,target='crafted'){
-  if(!ITEMS[id])return false;
-  const slots=world[target];
-  let empty=-1;
-  for(let i=0;i<slots.length;i++){
-    if(slots[i] && slots[i].id===id && slots[i].count<99){slots[i].count=Math.min(99,slots[i].count+count);return true;}
-    if(!slots[i] && empty===-1)empty=i;
-  }
-  if(empty>=0){slots[empty]={id,count:Math.min(99,count)};return true;}
-  return false;
-}
-function hasIngredients(cost){return Object.entries(cost).every(([id,n])=>world.materials.some(s=>s&&s.id===id&&s.count>=n)||world.materials.reduce((t,s)=>t+(s&&s.id===id?s.count:0),0)>=n);}
-function removeIngredients(cost){
-  for(const [id,n] of Object.entries(cost)){
-    let left=n;
-    for(const s of world.materials){if(s&&s.id===id&&left>0){const take=Math.min(left,s.count);s.count-=take;left-=take;if(s.count<=0){const idx=world.materials.indexOf(s);world.materials[idx]=null;}}}
-  }
-}
-function craftDestination(id){return ['paintbrush','wateringcan','shovel','bread'].includes(id)?'materials':'crafted';}
-function hasItemSpace(target,id){return world[target].some(x=>!x)||(world[target].some(x=>x&&x.id===id&&x.count<99));}
-function craft(recipeId){
-  const r=RECIPES.find(x=>x.id===recipeId);if(!r)return;
-  if(!hasIngredients(r.cost)){notify('You need a few more materials for that craft.');return;}
-  const destination=craftDestination(r.id);
-  if(!hasItemSpace(destination,r.id)){notify(destination==='materials'?'The resources pouch is full.':'The crafted pouch is full.');return;}
-  removeIngredients(r.cost);addItem(r.id,1,destination);renderInventory();renderRecipes();saveWorld(true);notify(r.name+' added to your '+(destination==='materials'?'resources pouch.':'crafted pouch.'));
-}
-function renderInventory(){
-  const slots=world[inventoryTab];const grid=$('inventoryGrid');grid.replaceChildren();
-  $('inventoryDescription').textContent=inventoryTab==='materials'?'Raw materials, food, and helpful building tools.':'Finished crafts, decorations, and saved art pieces.';
-  $('renameRow').classList.toggle('hidden',inventoryTab!=='crafted'||selectedInventorySlot===null||!slots[selectedInventorySlot]);
-  slots.forEach((item,i)=>{
-    const cell=document.createElement('div');cell.className='slot';cell.title='Slot '+(i+1);
-    if(item){const meta=ITEMS[item.id];const emoji=document.createElement('div');emoji.className='emoji';emoji.textContent=meta.icon;const name=document.createElement('div');name.className='slot-name';name.textContent=item.label||meta.name;const count=document.createElement('div');count.className='count';count.textContent='×'+item.count;cell.append(emoji,name,count);if(inventoryTab==='crafted'){if(selectedInventorySlot===i)cell.style.border='2px solid #477b58';cell.addEventListener('click',()=>{selectedInventorySlot=i;$('renameCraftedName').value=item.label||meta.name;renderInventory();$('renameRow').classList.remove('hidden');});}}
-    else{const n=document.createElement('div');n.className='count';n.textContent='—';cell.append(n);}
-    grid.append(cell);
-  });
-}
-function renderRecipes(){
-  const root=$('recipeGrid');root.replaceChildren();
-  RECIPES.forEach(r=>{
-    const card=document.createElement('div');card.className='recipe';
-    const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;
-    const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([id,n])=>n+' '+ITEMS[id].name).join(', ')+'.';
-    const btn=document.createElement('button');btn.textContent='Make this';const destination=craftDestination(r.id);btn.disabled=!hasIngredients(r.cost)||!hasItemSpace(destination,r.id);btn.addEventListener('click',()=>craft(r.id));
-    card.append(title,desc,btn);root.append(card);
-  });
-}
-function openModal(id){$(id).classList.add('open');}
-function closeModal(id){$(id).classList.remove('open');}
-function renderNeighbors(){
-  const root=$('neighborList');root.replaceChildren();
-  world.neighbors.forEach(n=>{const row=document.createElement('div');row.className='neighbor-card';const icon=document.createElement('div');icon.className='avatar-icon';icon.textContent='🧑';const text=document.createElement('div');text.textContent=n.name+' · '+(n.activity==='craft'?'making crafts':'gardening');row.append(icon,text);root.append(row);});
-}
-function renderAnimals(){
-  const root=$('animalList');root.replaceChildren();
-  world.animals.forEach(a=>{const row=document.createElement('div');row.className='animal-card';const icon=document.createElement('div');icon.className='avatar-icon';icon.textContent=animalEmoji(a.kind);const text=document.createElement('div');text.textContent=a.name+' · '+a.kind;row.append(icon,text);root.append(row);});
-}
-function renderAll(){
-  $('worldName').value=world.name;$('worldMode').value=world.mode;$('worldTitle').textContent=world.name;
-  $('worldSub').textContent='150 × 150 build area · '+(world.mode==='creative'?'Creative mode':'Peaceful mode');
-  renderNeighbors();renderAnimals();drawWorld();
-}
-
-function colorShade(hex,amount){
-  const v=parseInt(hex.slice(1),16);let r=(v>>16)&255,g=(v>>8)&255,b=v&255;
-  r=clamp(Math.round(r*amount),0,255);g=clamp(Math.round(g*amount),0,255);b=clamp(Math.round(b*amount),0,255);
-  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
-}
-function groundToScreen(x,y,z=0){
-  const dx=x-world.player.x,dy=y-world.player.y;
-  return {x:canvas.width/2+(dx-dy)*TILE_W/2,y:canvas.height/2+30+(dx+dy)*TILE_H/2-z*BLOCK_H};
-}
-function worldAtScreen(sx,sy){
-  const u=(sx-canvas.width/2)/(TILE_W/2);const v=(sy-(canvas.height/2+30))/(TILE_H/2);
-  const dx=(u+v)/2,dy=(v-u)/2;
-  return {x:clamp(Math.round(world.player.x+dx),0,WORLD_SIZE-1),y:clamp(Math.round(world.player.y+dy),0,WORLD_SIZE-1)};
-}
-function drawDiamond(x,y,fill,stroke){
-  ctx.beginPath();ctx.moveTo(x,y-TILE_H/2);ctx.lineTo(x+TILE_W/2,y);ctx.lineTo(x,y+TILE_H/2);ctx.lineTo(x-TILE_W/2,y);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=.7;ctx.stroke();
-}
-function drawCube(cx,baseY,color){
-  const topY=baseY-BLOCK_H;
-  ctx.beginPath();ctx.moveTo(cx-TILE_W/2,topY);ctx.lineTo(cx,topY+TILE_H/2);ctx.lineTo(cx,baseY+TILE_H/2);ctx.lineTo(cx-TILE_W/2,baseY);ctx.closePath();ctx.fillStyle=colorShade(color,.70);ctx.fill();ctx.strokeStyle='rgba(45,62,49,.22)';ctx.stroke();
-  ctx.beginPath();ctx.moveTo(cx+TILE_W/2,topY);ctx.lineTo(cx,topY+TILE_H/2);ctx.lineTo(cx,baseY+TILE_H/2);ctx.lineTo(cx+TILE_W/2,baseY);ctx.closePath();ctx.fillStyle=colorShade(color,.82);ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(cx,topY-TILE_H/2);ctx.lineTo(cx+TILE_W/2,topY);ctx.lineTo(cx,topY+TILE_H/2);ctx.lineTo(cx-TILE_W/2,topY);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.stroke();
-}
-function drawTree(x,y){
-  const p=groundToScreen(x,y);drawCube(p.x,p.y,'#916343');drawCube(p.x,p.y-BLOCK_H,'#916343');
-  ctx.fillStyle='#4f9860';ctx.fillRect(p.x-15,p.y-78,30,30);ctx.fillRect(p.x-25,p.y-66,50,22);ctx.fillStyle='#79b96c';ctx.fillRect(p.x-8,p.y-82,15,10);
-}
-function drawCottage(x,y){
-  const p=groundToScreen(x,y);const base=p.y;
-  drawCube(p.x,base,'#d3a77b');drawCube(p.x,base-BLOCK_H,'#f0d8ad');
-  ctx.fillStyle='#b96f65';ctx.beginPath();ctx.moveTo(p.x-25,base-54);ctx.lineTo(p.x,base-78);ctx.lineTo(p.x+25,base-54);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#7ba6ba';ctx.fillRect(p.x-12,base-48,9,12);ctx.fillRect(p.x+5,base-48,9,12);
-  ctx.fillStyle='#8c6548';ctx.fillRect(p.x-4,base-30,10,30);
-}
-function drawFlower(x,y){
-  const p=groundToScreen(x,y);ctx.strokeStyle='#4e8c52';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y-16);ctx.stroke();
-  ctx.fillStyle='#eaa4c3';for(let i=0;i<5;i++){const a=i*Math.PI*2/5;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*5,p.y-21+Math.sin(a)*5,4,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#eecb66';ctx.beginPath();ctx.arc(p.x,p.y-21,3,0,Math.PI*2);ctx.fill();
-}
-function drawGarden(x,y){
-  const p=groundToScreen(x,y);ctx.fillStyle='#8f6d49';ctx.beginPath();ctx.moveTo(p.x-18,p.y-3);ctx.lineTo(p.x,p.y+6);ctx.lineTo(p.x+18,p.y-3);ctx.lineTo(p.x,p.y-12);ctx.closePath();ctx.fill();
-  for(let i=-1;i<=1;i++){ctx.strokeStyle='#4f9259';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x+i*9,p.y-5);ctx.lineTo(p.x+i*9-2,p.y-17);ctx.stroke();ctx.fillStyle='#80b76c';ctx.fillRect(p.x+i*9-6,p.y-19,6,4);}
-}
-function drawPerson(x,y,shirt,hair,skin,accessory='none',scale=1){
-  const p=groundToScreen(x,y);ctx.save();ctx.translate(p.x,p.y);ctx.scale(scale,scale);
-  ctx.fillStyle='rgba(40,55,45,.18)';ctx.beginPath();ctx.ellipse(0,-2,12,5,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#5c5961';ctx.fillRect(-8,-19,6,17);ctx.fillRect(2,-19,6,17);
-  ctx.fillStyle=shirt;ctx.fillRect(-10,-39,20,22);ctx.fillRect(-14,-36,5,16);ctx.fillRect(9,-36,5,16);
-  ctx.fillStyle=skin;ctx.fillRect(-8,-56,16,16);
-  ctx.fillStyle=hair;ctx.fillRect(-9,-60,18,7);ctx.fillRect(-10,-55,5,14);
-  if(scale===1 && world.player.hairStyle==='long'){ctx.fillStyle=hair;ctx.fillRect(7,-54,4,28);ctx.fillRect(-11,-52,4,24);}
-  if(scale===1 && world.player.hairStyle==='curl'){ctx.fillStyle=hair;for(const c of [[-8,-58],[-3,-63],[3,-63],[8,-58],[-10,-52],[10,-52]]){ctx.beginPath();ctx.arc(c[0],c[1],4,0,Math.PI*2);ctx.fill();}}
-  if(accessory==='flower'){ctx.fillStyle='#e99fc0';ctx.fillRect(6,-63,7,6);ctx.fillStyle='#f5d875';ctx.fillRect(8,-61,3,3);}
-  if(accessory==='bow'){ctx.fillStyle='#d66a8b';ctx.fillRect(-12,-62,6,6);ctx.fillRect(-6,-62,6,6);}
-  if(accessory==='hat'){ctx.fillStyle='#e4c27d';ctx.fillRect(-13,-64,26,5);ctx.fillRect(-8,-70,16,7);}
-  ctx.fillStyle='#3d4a43';ctx.fillRect(-4,-49,2,2);ctx.fillRect(3,-49,2,2);
-  ctx.restore();
-}
-function animalEmoji(kind){return ({sheep:'🐑',bunny:'🐇',cat:'🐈',bird:'🐦',dog:'🐕',cow:'🐄'})[kind]||'🐾';}
-function drawAnimal(a){
-  const p=groundToScreen(a.x,a.y);const x=p.x,y=p.y;ctx.save();ctx.translate(x,y);
-  ctx.fillStyle='rgba(40,55,45,.15)';ctx.beginPath();ctx.ellipse(0,-2,11,4,0,0,Math.PI*2);ctx.fill();
-  if(a.kind==='sheep'){
-    ctx.fillStyle='#fffaf0';ctx.fillRect(-12,-24,22,15);ctx.fillRect(-8,-29,9,10);ctx.fillStyle='#d6c9bf';ctx.fillRect(7,-22,9,9);ctx.fillRect(9,-15,4,6);ctx.fillRect(-9,-15,4,6);
-  }else if(a.kind==='bunny'){
-    ctx.fillStyle='#f5eee4';ctx.fillRect(-9,-20,18,13);ctx.fillRect(-6,-32,5,14);ctx.fillRect(3,-34,5,16);ctx.fillStyle='#d99eaa';ctx.fillRect(-5,-30,2,7);ctx.fillRect(4,-31,2,8);ctx.fillStyle='#493d3b';ctx.fillRect(3,-23,2,2);
-  }else if(a.kind==='cat'||a.kind==='dog'){
-    ctx.fillStyle=a.kind==='cat'?'#d8a77e':'#bd9c78';ctx.fillRect(-10,-23,20,15);ctx.fillRect(-8,-31,16,11);ctx.fillStyle='#58473e';ctx.fillRect(-7,-34,5,6);ctx.fillRect(3,-34,5,6);ctx.fillStyle='#333';ctx.fillRect(-4,-25,2,2);ctx.fillRect(3,-25,2,2);
-  }else{
-    ctx.fillStyle='#f3d16f';ctx.fillRect(-8,-21,16,12);ctx.fillRect(-5,-29,11,10);ctx.fillStyle='#d98c62';ctx.fillRect(5,-26,5,4);ctx.fillStyle='#444';ctx.fillRect(1,-27,2,2);
-  }
-  ctx.restore();
-}
-function drawWorld(){
-  const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
-  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#eaf4f0');sky.addColorStop(1,'#cfe1d2');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
-  const px=world.player.x,py=world.player.y;
-  for(let x=Math.max(0,px-40);x<=Math.min(WORLD_SIZE-1,px+40);x++){
-    for(let y=Math.max(0,py-40);y<=Math.min(WORLD_SIZE-1,py+40);y++){
-      const p=groundToScreen(x,y);if(p.x<-TILE_W||p.x>w+TILE_W||p.y<-TILE_H||p.y>h+TILE_H)continue;
-      const key=((x+y)%2===0)?'#a9cd91':'#a3c889';drawDiamond(p.x,p.y,key,'rgba(70,105,67,.16)');
-      if(x===selectedCell.x&&y===selectedCell.y){drawDiamond(p.x,p.y,'rgba(255,244,160,.32)','#fff3a2');}
-    }
-  }
-  // Render all placed block columns in painter order.
-  const columns=Object.entries(world.blocks).map(([key,stack])=>{const [x,y]=key.split(',').map(Number);return {x,y,stack};}).filter(o=>Math.abs(o.x-px)<42&&Math.abs(o.y-py)<42).sort((a,b)=>(a.x+a.y)-(b.x+b.y));
-  columns.forEach(o=>{const p=groundToScreen(o.x,o.y);o.stack.forEach((b,i)=>{drawCube(p.x,p.y-i*BLOCK_H,b.color||BLOCKS.find(z=>z.id===b.id).color);});});
-  // Static scenery and friendly residents.
-  world.decor.filter(d=>Math.abs(d.x-px)<42&&Math.abs(d.y-py)<42).sort((a,b)=>(a.x+a.y)-(b.x+b.y)).forEach(d=>{if(d.type==='tree')drawTree(d.x,d.y);else if(d.type==='cottage')drawCottage(d.x,d.y);else if(d.type==='flower')drawFlower(d.x,d.y);else if(d.type==='garden')drawGarden(d.x,d.y);});
-  const actors=[];
-  world.animals.forEach(a=>actors.push({sum:a.x+a.y,kind:'animal',item:a}));
-  world.neighbors.forEach(n=>actors.push({sum:n.x+n.y,kind:'neighbor',item:n}));
-  actors.push({sum:px+py,kind:'player',item:world.player});actors.sort((a,b)=>a.sum-b.sum);
-  actors.forEach(a=>{if(a.kind==='animal')drawAnimal(a.item);else if(a.kind==='neighbor')drawPerson(a.item.x,a.item.y,a.item.shirt,a.item.hair,'#edc5a6','none',.92);else drawPerson(a.item.x,a.item.y,a.item.shirt,a.item.hair,a.item.skin,a.item.accessory,1);});
-  hearts=hearts.filter(v=>Date.now()-v.t<1300);hearts.forEach(v=>{const p=groundToScreen(v.x,v.y);ctx.globalAlpha=1-(Date.now()-v.t)/1300;ctx.font='19px sans-serif';ctx.fillText('💚',p.x,p.y-38-(Date.now()-v.t)/28);ctx.globalAlpha=1;});
-}
-let selectedCell={x:75,y:75};
-function screenPoint(evt){const r=canvas.getBoundingClientRect();return {x:(evt.clientX-r.left)*canvas.width/r.width,y:(evt.clientY-r.top)*canvas.height/r.height};}
-function entityAt(x,y){
-  for(const n of world.neighbors){if(Math.abs(n.x-x)<=1&&Math.abs(n.y-y)<=1)return {type:'neighbor',item:n};}
-  for(const a of world.animals){if(Math.abs(a.x-x)<=1&&Math.abs(a.y-y)<=1)return {type:'animal',item:a};}
-  return null;
-}
-function placeBlock(x,y){
-  if(['tree','cottage','garden'].includes(selectedBlock)){
-    if(world.decor.length>=500){notify('This world has reached its decoration limit.');return;}
-    if(world.decor.some(d=>d.x===x&&d.y===y)){notify('There is already a decoration on that tile.');return;}
-    world.decor.push({type:selectedBlock,x,y});saveWorld(true);drawWorld();return;
-  }
-  const key=x+','+y;const stack=world.blocks[key]||(world.blocks[key]=[]);
-  if(stack.length>=64){notify('That block column has reached its safe height limit.');return;}
-  const def=BLOCKS.find(b=>b.id===selectedBlock);stack.push({id:selectedBlock,color:selectedBlock==='painted'?selectedColor:def.color});
-  saveWorld(true);drawWorld();
-}
-function eraseBlock(x,y){const key=x+','+y;const stack=world.blocks[key];if(stack&&stack.length){stack.pop();if(!stack.length)delete world.blocks[key];saveWorld(true);drawWorld();}}
-function recolorBlock(x,y){const stack=world.blocks[x+','+y];if(stack&&stack.length){stack[stack.length-1].color=selectedColor;saveWorld(true);drawWorld();}}
-function interactAt(x,y){
-  const found=entityAt(x,y);if(!found){selectedEntity=null;$('selectionNote').textContent='Select a neighbor or animal on the map to interact.';return;}
-  selectedEntity=found;
-  if(found.type==='neighbor')$('selectionNote').textContent=found.item.name+' is ready for a quiet creative activity.';
-  else $('selectionNote').textContent=found.item.name+' is here for a gentle pet.';
-  notify(found.item.name+' is nearby. Choose a kind activity.');
-}
-function handleMapClick(evt){
-  if(evt.button===2){const p=screenPoint(evt),c=worldAtScreen(p.x,p.y);eraseBlock(c.x,c.y);return;}
-  const p=screenPoint(evt),c=worldAtScreen(p.x,p.y);selectedCell=c;
-  const found=entityAt(c.x,c.y);
-  if(found){interactAt(c.x,c.y);drawWorld();return;}
-  if(tool==='build')placeBlock(c.x,c.y);else if(tool==='erase')eraseBlock(c.x,c.y);else if(tool==='paint')recolorBlock(c.x,c.y);else {selectedEntity=null;drawWorld();}
-}
-canvas.addEventListener('pointerdown',evt=>{canvas.setPointerCapture(evt.pointerId);handleMapClick(evt);});
-canvas.addEventListener('contextmenu',evt=>evt.preventDefault());
-function movePlayer(dx,dy){world.player.x=clamp(world.player.x+dx,0,WORLD_SIZE-1);world.player.y=clamp(world.player.y+dy,0,WORLD_SIZE-1);selectedCell={x:world.player.x,y:world.player.y};drawWorld();saveWorld(true);}
-document.addEventListener('keydown',evt=>{
-  const tag=evt.target&&evt.target.tagName;if(['INPUT','SELECT','TEXTAREA'].includes(tag))return;
-  if(['ArrowUp','w','W'].includes(evt.key)){evt.preventDefault();movePlayer(0,-1);}
-  else if(['ArrowDown','s','S'].includes(evt.key)){evt.preventDefault();movePlayer(0,1);}
-  else if(['ArrowLeft','a','A'].includes(evt.key)){evt.preventDefault();movePlayer(-1,0);}
-  else if(['ArrowRight','d','D'].includes(evt.key)){evt.preventDefault();movePlayer(1,0);}
-  else if(evt.key==='e'||evt.key==='E')openModal('inventoryModal');
-  else if(evt.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(m=>m.classList.remove('open'));
-});
-document.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',()=>{const [x,y]=b.dataset.move.split(',').map(Number);movePlayer(x,y);}));
-
-function renderPalette(){
-  const root=$('blockPalette');root.replaceChildren();
-  BLOCKS.forEach(b=>{const btn=document.createElement('button');btn.className='block-btn'+(selectedBlock===b.id?' active':'');btn.type='button';const sw=document.createElement('span');sw.className='swatch';sw.style.background=b.color;const label=document.createElement('span');label.textContent=b.name;btn.append(sw,label);btn.addEventListener('click',()=>{selectedBlock=b.id;renderPalette();});root.append(btn);});
-}
-$('toolButtons').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tool=b.dataset.tool;$('toolButtons').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));}));
-$('customColor').addEventListener('input',e=>{selectedColor=validColor(e.target.value,'#83b96d');selectedBlock='painted';renderPalette();});
-$('worldName').addEventListener('change',()=>{world.name=cleanName($('worldName').value,world.name,32);saveWorld(true);});
-$('worldMode').addEventListener('change',()=>{world.mode=$('worldMode').value;saveWorld(true);renderAll();notify(world.mode==='creative'?'Creative mode: build with unlimited blocks.':'Peaceful mode: the world has no hostile creatures.');});
-
-$('inventoryButton').addEventListener('click',()=>{inventoryTab='materials';selectedInventorySlot=null;document.querySelectorAll('[data-invtab]').forEach(x=>x.classList.toggle('active',x.dataset.invtab===inventoryTab));renderInventory();openModal('inventoryModal');});
-$('craftButton').addEventListener('click',()=>{renderRecipes();openModal('craftModal');});
-$('artButton').addEventListener('click',()=>openModal('artModal'));
-$('characterButton').addEventListener('click',()=>{
-  $('characterName').value=world.player.name;$('hairColor').value=world.player.hair;$('shirtColor').value=world.player.shirt;$('skinColor').value=world.player.skin;$('hairStyle').value=world.player.hairStyle;$('accessory').value=world.player.accessory;openModal('characterModal');
-});
-$('saveButton').addEventListener('click',()=>saveWorld(false));$('exportButton').addEventListener('click',exportBackup);
-$('clearBuildButton').addEventListener('click',()=>{
-  const ok=window.confirm('Clear all placed blocks, trees, cottages, flowers, and garden decorations in this world? Your character, neighbors, animals, inventory, and saved artwork will remain. Make a Backup first if you may want these builds later.');
-  if(!ok)return;world.blocks={};world.decor=[];saveWorld(true);drawWorld();notify('The building area has been cleared.');
-});
-$('importFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];importBackup(f);e.target.value='';});
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
-document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
-document.querySelectorAll('[data-invtab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.invtab;selectedInventorySlot=null;document.querySelectorAll('[data-invtab]').forEach(x=>x.classList.toggle('active',x===b));renderInventory();}));
-$('applyCharacter').addEventListener('click',()=>{
-  world.player.name=cleanName($('characterName').value,'Builder',20);world.player.hair=validColor($('hairColor').value,'#65452f');world.player.shirt=validColor($('shirtColor').value,'#8eb6d8');world.player.skin=validColor($('skinColor').value,'#f0c6a5');world.player.hairStyle=$('hairStyle').value;world.player.accessory=$('accessory').value;saveWorld(true);drawWorld();closeModal('characterModal');notify('Your character has a new look.');
-});
-$('inviteButton').addEventListener('click',()=>{
-  const n=selectedEntity&&selectedEntity.type==='neighbor'?selectedEntity.item:world.neighbors[0];if(!n)return;
-  n.activity='craft';hearts.push({x:n.x,y:n.y,t:Date.now()});drawWorld();saveWorld(true);notify(n.name+' joined your quiet art-and-craft activity.');
-});
-$('petButton').addEventListener('click',()=>{
-  const a=selectedEntity&&selectedEntity.type==='animal'?selectedEntity.item:world.animals[0];if(!a)return;
-  hearts.push({x:a.x,y:a.y,t:Date.now()});drawWorld();notify(a.name+' enjoyed a gentle pet.');
-});
-$('renameCraftedButton').addEventListener('click',()=>{
-  if(selectedInventorySlot===null||!world.crafted[selectedInventorySlot])return;
-  world.crafted[selectedInventorySlot].label=cleanName($('renameCraftedName').value,ITEMS[world.crafted[selectedInventorySlot].id].name,24);
-  renderInventory();saveWorld(true);notify('Your crafted item has a new name.');
-});
-$('viewArtButton').addEventListener('click',()=>{renderGallery();openModal('artGalleryModal');});
-
-function resetDrawing(){drawCtx.fillStyle='#fffdf8';drawCtx.fillRect(0,0,drawCanvas.width,drawCanvas.height);drawCtx.strokeStyle='#e7e2d5';drawCtx.lineWidth=1;for(let x=24;x<drawCanvas.width;x+=24){drawCtx.beginPath();drawCtx.moveTo(x,0);drawCtx.lineTo(x,drawCanvas.height);drawCtx.stroke();}for(let y=24;y<drawCanvas.height;y+=24){drawCtx.beginPath();drawCtx.moveTo(0,y);drawCtx.lineTo(drawCanvas.width,y);drawCtx.stroke();}}
-function drawPosition(evt){const r=drawCanvas.getBoundingClientRect();return {x:(evt.clientX-r.left)*drawCanvas.width/r.width,y:(evt.clientY-r.top)*drawCanvas.height/r.height};}
-drawCanvas.addEventListener('pointerdown',evt=>{drawActive=true;drawLast=drawPosition(evt);drawCanvas.setPointerCapture(evt.pointerId);});
-drawCanvas.addEventListener('pointermove',evt=>{if(!drawActive)return;const p=drawPosition(evt);drawCtx.strokeStyle=$('drawColor').value;drawCtx.lineWidth=Number($('brushSize').value);drawCtx.lineCap='round';drawCtx.lineJoin='round';drawCtx.beginPath();drawCtx.moveTo(drawLast.x,drawLast.y);drawCtx.lineTo(p.x,p.y);drawCtx.stroke();drawLast=p;});
-drawCanvas.addEventListener('pointerup',()=>{drawActive=false;drawLast=null;});drawCanvas.addEventListener('pointercancel',()=>{drawActive=false;drawLast=null;});
-$('clearDrawing').addEventListener('click',resetDrawing);
-$('drawFlower').addEventListener('click',()=>{const x=360,y=205;drawCtx.fillStyle='#e5a2c0';for(let i=0;i<5;i++){const a=i*Math.PI*2/5;drawCtx.beginPath();drawCtx.arc(x+Math.cos(a)*16,y+Math.sin(a)*16,12,0,Math.PI*2);drawCtx.fill();}drawCtx.fillStyle='#efc968';drawCtx.beginPath();drawCtx.arc(x,y,10,0,Math.PI*2);drawCtx.fill();drawCtx.strokeStyle='#51915b';drawCtx.lineWidth=7;drawCtx.beginPath();drawCtx.moveTo(x,y+10);drawCtx.lineTo(x,y+70);drawCtx.stroke();});
-$('drawHeart').addEventListener('click',()=>{const x=360,y=210;drawCtx.fillStyle='#dc8297';drawCtx.beginPath();drawCtx.moveTo(x,y+34);drawCtx.bezierCurveTo(x-88,y-20,x-38,y-80,x,y-35);drawCtx.bezierCurveTo(x+38,y-80,x+88,y-20,x,y+34);drawCtx.fill();});
-$('saveDrawing').addEventListener('click',()=>{
-  const name=cleanName($('artName').value,'My artwork',24);let data;
-  try{data=drawCanvas.toDataURL('image/png');}catch(e){notify('Could not save this drawing.');return;}
-  if(data.length>MAX_ART_DATA_LENGTH){notify('This drawing is too large. Clear some details and try again.');return;}
-  if(world.artworks.length>=MAX_ARTWORKS){notify('The art gallery is full. Export a backup before removing old artwork.');return;}
-  if(!world.crafted.some(x=>!x)){notify('The crafted pouch is full. Make room before saving artwork.');return;}
-  world.artworks.push({name,data});addItem('pictureframe',1,'crafted');saveWorld(true);renderGallery();renderInventory();closeModal('artModal');notify('Your artwork was saved locally.');resetDrawing();
-});
-function renderGallery(){
-  const root=$('artGallery');root.replaceChildren();
-  if(!world.artworks.length){const d=document.createElement('div');d.className='empty';d.textContent='Your art gallery is waiting for its first creation.';root.append(d);return;}
-  world.artworks.forEach(a=>{const card=document.createElement('div');card.className='art-item';const img=document.createElement('img');img.alt='Saved artwork: '+a.name;img.src=a.data;const label=document.createElement('div');label.textContent=a.name;card.append(img,label);root.append(card);});
-}
-
-// Friendly characters remain silent; no dialogue, chat, or text-based interaction exists.
-// The only entities in the game are peaceful neighbors and friendly animals.
-function setupCanvas(){
-  const resize=()=>{const rect=canvas.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,1.5);const width=Math.max(320,Math.floor(rect.width*dpr));const height=Math.max(300,Math.floor(rect.height*dpr));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;drawWorld();}};
-  if('ResizeObserver' in window){const ro=new ResizeObserver(resize);ro.observe(canvas);}else window.addEventListener('resize',resize);resize();
-}
-renderPalette();renderAll();resetDrawing();setupCanvas();
-// Autosave is local-only. A separate downloadable backup is still recommended.
-setInterval(()=>saveWorld(true),10000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveWorld(true);});
-window.addEventListener('beforeunload',()=>saveWorld(true));
+function rayHit(){const cam=cameraState(),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),dir={x:sy*cp,y:sp,z:-cy*cp};let prev=null;for(let t=.2;t<24;t+=.06){const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);if(iy<0&&Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT)return {ground:true,place:{x:ix,y:0,z:iz}};const b=iy>=0?blockLookup.get(keyBlock(ix,iy,iz)):null;if(b)return {block:b,place:prev||{x:ix,y:Math.max(0,iy+1),z:iz}};prev={x:ix,y:Math.max(0,iy),z:iz};}return null;}
+function build(){const hit=rayHit();if(!hit){showStatus('Aim the small crosshair at the ground or a block.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus(blockMap.get(selected).name+' block placed.');render();}else showStatus('That space is already occupied or outside the safe build area.');}
+function erase(){const hit=rayHit();if(!hit||!hit.block){showStatus('Aim at a block you placed to remove it.');return;}if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){showStatus('Block removed.');render();}}
+function move(dt){const p=world.player,speed=flying?7:4.2;let forward=moveZ,right=moveX;if(keys.w||keys.ArrowUp)forward+=1;if(keys.s||keys.ArrowDown)forward-=1;if(keys.a||keys.ArrowLeft)right-=1;if(keys.d||keys.ArrowRight)right+=1;const len=Math.hypot(forward,right)||1;forward/=len;right/=len;p.x+= (Math.sin(p.yaw)*forward+Math.cos(p.yaw)*right)*speed*dt;p.z+=(-Math.cos(p.yaw)*forward+Math.sin(p.yaw)*right)*speed*dt;p.x=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.x));p.z=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.z));if(flying){let v=vertical;if(keys[' '])v+=1;if(keys.Shift)v-=1;p.y=Math.max(0,Math.min(60,p.y+v*speed*dt));}else p.y=0;}
+function loop(time){requestAnimationFrame(loop);if(time-lastTime<30)return;const dt=Math.min(.05,(time-lastTime)/1000||0);lastTime=time;move(dt);render();}
+function renderSlots(){const root=$('slots');root.replaceChildren();const arr=world[inventoryTab];for(let i=0;i<60;i++){const slot=document.createElement('div');slot.className='slot';const item=arr[i];if(item){const meta=ITEM_META[item.id];const ico=document.createElement('div');ico.className='ico';ico.textContent=meta.icon;const name=document.createElement('small');name.textContent=item.label||meta.name;const count=document.createElement('small');count.textContent='×'+item.count;slot.append(ico,name,count);}else{const n=document.createElement('small');n.textContent=String(i+1);n.style.color='#a7b4a7';slot.append(n);}root.append(slot);}}
+function openShade(id){$(id).classList.add('open');}function closeShades(){document.querySelectorAll('.menu-shade.open').forEach(e=>e.classList.remove('open'));}
+function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
+function downloadBackup(){save();const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(world.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft')+'.json';a.click();URL.revokeObjectURL(url);showStatus('Backup file prepared. Keep it somewhere safe.');}
+async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
+function focusToggle(){focusMode=!focusMode;document.body.classList.toggle('focus-mode',focusMode);}
+function controlsToggle(){controllersHidden=!controllersHidden;document.body.classList.toggle('controllers-hidden',controllersHidden);$('controlsBtn').textContent=controllersHidden?'Show controls':'Hide controls';}
+async function expandToggle(){if(!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen();}catch(e){showStatus('Using the larger browser view instead.');}}document.body.classList.add('focus-mode');focusMode=true;}
+// Keyboard input is simple, local and has no external communication.
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;keys[e.key===' '?' ':e.key]=true;if(e.key.toLowerCase()==='v'){cameraMode=cameraMode==='first'?'third':'first';$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}if(e.key.toLowerCase()==='f'){flying=!flying;$('flyBtn').textContent='🕊 Fly: '+(flying?'On':'Off');showStatus(flying?'Creative flight enabled.':'Flight turned off.');}if(e.key==='e'||e.key==='E')openShade('inventoryShade');if(e.key==='Escape'){closeShades();if(focusMode)focusToggle();}});
+document.addEventListener('keyup',e=>{keys[e.key===' '?' ':e.key]=false;});
+// Mouse or finger drag looks around; a short tap/click places one block.
+let activePointer=null,movedPointer=false,startPt=null,lastPt=null;
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2){erase();return;}activePointer=e.pointerId;movedPointer=false;startPt={x:e.clientX,y:e.clientY};lastPt=startPt;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(activePointer!==e.pointerId||!lastPt)return;const dx=e.clientX-lastPt.x,dy=e.clientY-lastPt.y;if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5)movedPointer=true;if(movedPointer){world.player.yaw-=dx*.006;world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));}lastPt={x:e.clientX,y:e.clientY};});
+canvas.addEventListener('pointerup',e=>{if(activePointer!==e.pointerId)return;if(!movedPointer&&e.pointerType!=='mouse')build();else if(!movedPointer&&e.pointerType==='mouse'&&e.button===0)build();activePointer=null;startPt=null;lastPt=null;});canvas.addEventListener('pointercancel',()=>{activePointer=null;startPt=null;lastPt=null;});
+// On-screen movement pads support press-and-hold on iPad.
+document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ=vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
+$('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();build();});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});
+$('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;else showStatus('Turn flight on first.');});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;else showStatus('Turn flight on first.');});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
+function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}
+$('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'third':'first';updateViewButton();showStatus(cameraMode==='first'?'First-person view':'Third-person view');});updateViewButton();$('flyBtn').addEventListener('click',()=>{flying=!flying;vertical=0;$('flyBtn').textContent='🕊 Fly: '+(flying?'On':'Off');showStatus(flying?'Creative flight enabled.':'Flight turned off.');});
+$('useCustomColor').addEventListener('click',()=>{selected='custom';renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
+$('neighborsBtn').addEventListener('click',()=>{closeShades();showStatus('Your neighbors wave quietly and enjoy their peaceful activities.');});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('inviteArtBtn').addEventListener('click',()=>showStatus('A kind neighbor has joined your quiet art activity. No talking needed.'));$('customColor').addEventListener('input',()=>{if(selected==='custom')renderHotbar();});$('controlsBtn').addEventListener('click',controlsToggle);$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('inventoryBtn').addEventListener('click',()=>{inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();$('shirtColor').value=world.player.shirt;$('hairColor').value=world.player.hair;$('skinColor').value=world.player.skin;openShade('characterShade');});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
+$('applyCharacter').addEventListener('click',()=>{world.player.shirt=$('shirtColor').value;world.player.hair=$('hairColor').value;world.player.skin=$('skinColor').value;save();closeShades();showStatus('Character colors saved.');});
+// Art studio: local pixel-free line drawing with pointer/touch support.
+const art=$('artCanvas'),actx=art.getContext('2d');function clearArt(){actx.fillStyle='#fffdf8';actx.fillRect(0,0,art.width,art.height);actx.strokeStyle='#eee8da';actx.lineWidth=1;for(let x=24;x<art.width;x+=24){actx.beginPath();actx.moveTo(x,0);actx.lineTo(x,art.height);actx.stroke();}for(let y=24;y<art.height;y+=24){actx.beginPath();actx.moveTo(0,y);actx.lineTo(art.width,y);actx.stroke();}}function artPoint(e){const r=art.getBoundingClientRect();return {x:(e.clientX-r.left)*art.width/r.width,y:(e.clientY-r.top)*art.height/r.height};}art.addEventListener('pointerdown',e=>{artDrawing=true;artLast=artPoint(e);art.setPointerCapture(e.pointerId);});art.addEventListener('pointermove',e=>{if(!artDrawing)return;const p=artPoint(e);actx.strokeStyle=$('paintColor').value;actx.lineWidth=Number($('brushSize').value);actx.lineCap='round';actx.lineJoin='round';actx.beginPath();actx.moveTo(artLast.x,artLast.y);actx.lineTo(p.x,p.y);actx.stroke();artLast=p;});['pointerup','pointercancel'].forEach(ev=>art.addEventListener(ev,()=>{artDrawing=false;artLast=null;}));$('clearArt').addEventListener('click',clearArt);$('saveArt').addEventListener('click',()=>{if(world.artworks.length>=20){showStatus('Gallery is full. Export a backup first.');return;}let data=art.toDataURL('image/png');if(data.length>550000){showStatus('Drawing is too large to save.');return;}world.artworks.push({name:$('artName').value.slice(0,28)||'My picture',data});if(!addItem('picture','crafted')){world.artworks.pop();showStatus('Crafted pouch is full.');return;}save();closeShades();clearArt();showStatus('Artwork saved in the crafted pouch.');});
+// Keep one local autosave. No networking, analytics, third-party scripts or multiplayer.
+rebuildLookup();$('worldName').value=world.name;world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
+window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);
 })();
 </script>
 </body>
