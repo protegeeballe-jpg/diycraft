@@ -3,10 +3,12 @@ name: Validate DIYCraft
 on:
   push:
     paths:
+      - index.html
       - offline/index.html
       - .github/workflows/validate-diycraft.yml
   pull_request:
     paths:
+      - index.html
       - offline/index.html
       - .github/workflows/validate-diycraft.yml
   workflow_dispatch:
@@ -16,7 +18,7 @@ permissions:
 
 jobs:
   javascript:
-    name: Check the DIYCraft browser script
+    name: Check both DIYCraft entry points
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -27,12 +29,19 @@ jobs:
         with:
           node-version: 24
 
-      - name: Extract and syntax-check the inline game script
+      - name: Verify both published pages stay in sync and syntax-check the game
         shell: bash
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          const html = fs.readFileSync('offline/index.html', 'utf8');
+          const main = fs.readFileSync('index.html', 'utf8');
+          const offline = fs.readFileSync('offline/index.html', 'utf8');
+
+          if (main !== offline) {
+            throw new Error('Main and offline DIYCraft entry points must stay identical.');
+          }
+
+          const html = main;
           const openTag = '<script';
           const closeTag = '</script>';
           const scriptCount = html.split(openTag).length - 1;
