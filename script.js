@@ -1,4 +1,4 @@
-// --- DIYCRAFT CORE GAME ENGINE: ECOSYSTEM UPDATE ---
+// --- DIYCRAFT CORE GAME ENGINE: SANCTUARY UPDATE ---
 
 // 1. Initialize Dual Inventory Pouch Data Structures (60 slots each)
 const rawInventory = new Array(60).fill(null);
@@ -11,7 +11,6 @@ const SAFE_WHITELIST = [
     "Apple", "Bread", "Cottage Door", "Window", "Tree Sapling", "Water Block"
 ];
 
-// Function to safely add items with guardrail verification
 function addItemToPouch(pouchType, itemName) {
     if (!SAFE_WHITELIST.includes(itemName)) {
         console.warn(`[SAFETY GUARD] Blocked unauthorized or harmful item attempt: "${itemName}"`);
@@ -31,7 +30,6 @@ function addItemToPouch(pouchType, itemName) {
     }
 }
 
-// Populate Inventory UI slots visually on load
 function initializeInventoryUI() {
     const rawContainer = document.getElementById('raw-slots');
     const craftedContainer = document.getElementById('crafted-slots');
@@ -52,29 +50,24 @@ function initializeInventoryUI() {
     }
 }
 
-function updateInventoryUI() {
-    // Visual syncing logic placeholder
-}
+function updateInventoryUI() {}
 
-// 3. 3D World Setup & Environment Generation
+// 3. 3D World Setup & Environment
 let scene, camera, renderer;
 const placedBlocks = [];
+const companions = []; // Stores peaceful neighbors and animals for gentle movement
 
 function initGame() {
-    // Create Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB); // Friendly sky blue
 
-    // Create Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 8, 15);
 
-    // Create Renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-container').appendChild(renderer.domElement);
 
-    // Add Friendly Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     
@@ -82,32 +75,28 @@ function initGame() {
     directionalLight.position.set(15, 30, 15);
     scene.add(directionalLight);
 
-    // --- GENERATE ENVIRONMENT: Ground, River, Mountains, and Trees ---
+    // Generate Landscape
     generateEnvironment();
 
-    // Initialize UI
-    initializeInventoryUI();
+    // Spawn Peaceful Companions (Kind Neighbors & Gentle Animals)
+    spawnCompanions();
 
-    // Start Animation Loop
+    initializeInventoryUI();
     animate();
 }
 
-// Function to procedurally build the nature landscape
+// Procedural Environment Generation
 function generateEnvironment() {
     const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-
-    // 1. Base Grass Floor
     const grassMat = new THREE.MeshLambertMaterial({ color: 0x557A46 });
     const dirtMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
     const waterMat = new THREE.MeshLambertMaterial({ color: 0x4682B4, transparent: true, opacity: 0.8 });
     const stoneMat = new THREE.MeshLambertMaterial({ color: 0x808080 });
-    const leafMat = new THREE.MeshLambertMaterial({ color: 0x2E8B57 });
 
-    // Build flat-to-rolling terrain grid
     for (let x = -15; x <= 15; x++) {
         for (let z = -15; z <= 15; z++) {
             
-            // 2. The Peaceful River (A strip where x is between -2 and -1 running down z)
+            // Peaceful River
             if (x >= -2 && x <= -1) {
                 const waterBlock = new THREE.Mesh(cubeGeo, waterMat);
                 waterBlock.position.set(x, -0.2, z);
@@ -116,7 +105,7 @@ function generateEnvironment() {
                 continue;
             }
 
-            // 3. Mountains in the far background (positive z)
+            // Mountains in the background
             if (z > 10) {
                 let mountainHeight = Math.floor(Math.abs(Math.sin(x * 0.5)) * 4) + 1;
                 for (let y = 0; y < mountainHeight; y++) {
@@ -129,27 +118,26 @@ function generateEnvironment() {
                 continue;
             }
 
-            // Standard Grass Ground Level
+            // Grass Ground Level
             const groundBlock = new THREE.Mesh(cubeGeo, grassMat);
             groundBlock.position.set(x, 0, z);
             scene.add(groundBlock);
             placedBlocks.push(groundBlock);
 
-            // 4. Scatter Initial Cozy Trees (Check specific coordinates to plant trees)
-            if ((x === -8 && z === -5) || (x === 6 && z === 4) || (x === -6 && z === 8)) {
+            // LUSH FOREST: Scatter trees procedurally across the sides
+            if ((x % 4 === 0 && z % 3 === 0) && Math.abs(x) > 3 && z < 8) {
                 spawnTree(x, 1, z);
             }
         }
     }
 }
 
-// Helper function to build a blocky voxel tree[cite: 3]
+// Voxel Tree Builder
 function spawnTree(startX, startY, startZ) {
     const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
     const woodMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
     const leafMat = new THREE.MeshLambertMaterial({ color: 0x2E8B57 });
 
-    // Trunk (3 blocks high)
     for (let y = 0; y < 3; y++) {
         let trunk = new THREE.Mesh(cubeGeo, woodMat);
         trunk.position.set(startX, startY + y, startZ);
@@ -157,13 +145,10 @@ function spawnTree(startX, startY, startZ) {
         placedBlocks.push(trunk);
     }
 
-    // Leaf canopy
     for (let lx = -1; lx <= 1; lx++) {
         for (let lz = -1; lz <= 1; lz++) {
             for (let ly = 3; ly <= 4; ly++) {
-                // Skip corners for a rounded blocky look
                 if (Math.abs(lx) === 1 && Math.abs(lz) === 1 && ly === 4) continue;
-                
                 let leaf = new THREE.Mesh(cubeGeo, leafMat);
                 leaf.position.set(startX + lx, startY + ly, startZ + lz);
                 scene.add(leaf);
@@ -173,13 +158,60 @@ function spawnTree(startX, startY, startZ) {
     }
 }
 
-// Game Loop / Render Tick
+// --- KIND NEIGHBORS & PEACEFUL ANIMALS (No talking, pure company) ---
+function spawnCompanions() {
+    // 1. Kind Neighbor (Gardening / Minding their own life)
+    const neighborGroup = new THREE.Group();
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xD2B48C }); // Tan shirt
+    const headMat = new THREE.MeshLambertMaterial({ color: 0xFFDAB9 }); // Friendly face tone
+    
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1, 0.4), bodyMat);
+    body.position.y = 0.5;
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), headMat);
+    head.position.y = 1.25;
+    
+    neighborGroup.add(body);
+    neighborGroup.add(head);
+    neighborGroup.position.set(5, 0, -4);
+    
+    // Add wandering behavior metadata
+    neighborGroup.userData = { wanderSpeed: 0.01, range: 3, startX: 5 };
+    scene.add(neighborGroup);
+    companions.push(neighborGroup);
+
+    // 2. Gentle Animal (Friendly sheep/bunny near the river)
+    const animalGroup = new THREE.Group();
+    const woolMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF }); // Soft white wool
+    const woolBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 1.2), woolMat);
+    woolBody.position.y = 0.3;
+    
+    animalGroup.add(woolBody);
+    animalGroup.position.set(-5, 0, 2);
+    animalGroup.userData = { wanderSpeed: 0.015, range: 2, startZ: 2 };
+    scene.add(animalGroup);
+    companions.push(animalGroup);
+}
+
+// Game Loop / Render Tick (Includes gentle companion pacing)
 function animate() {
     requestAnimationFrame(animate);
+
+    // Gentle, peaceful movement for neighbors and animals (minding their own business)
+    let time = Date.now() * 0.001;
+    companions.forEach((comp, index) => {
+        if (index === 0) {
+            // Neighbor gentle pacing side to side
+            comp.position.x = comp.userData.startX + Math.sin(time * 0.5) * comp.userData.range;
+        } else {
+            // Animal gentle pacing back and forth near river
+            comp.position.z = comp.userData.startZ + Math.cos(time * 0.4) * comp.userData.range;
+        }
+    });
+
     renderer.render(scene, camera);
 }
 
-// --- 4. CLICK-TO-BUILD RAYCASTER MECHANIC ---
+// --- CLICK-TO-BUILD RAYCASTER ---
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -195,9 +227,8 @@ window.addEventListener('click', (event) => {
 
     if (intersects.length > 0) {
         const hit = intersects[0];
-
         const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-        const cubeMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B }); // Cozy wood block
+        const cubeMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B }); 
         const newBlock = new THREE.Mesh(cubeGeo, cubeMat);
 
         newBlock.position.copy(hit.point).add(hit.face.normal.clone().multiplyScalar(0.5));
