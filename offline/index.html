@@ -430,19 +430,20 @@ function handleWorldTap(e,px,py){
  if(animal){flushPendingBlockTap();openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(px,py);
  if(neighbor){flushPendingBlockTap();openColoring(neighbor.name);return;}
- const hit=rayHitAtScreen(px,py),now=Date.now();
+ const now=Date.now();
  if(pendingBlockTap){
-  const pending=pendingBlockTap;
-  const sameBlock=hit.block&&keyBlock(hit.block.x,hit.block.y,hit.block.z)===pending.key;
+  const pending=pendingBlockTap,hitAgain=rayHitAtScreen(px,py);
+  const sameBlock=hitAgain.block&&keyBlock(hitAgain.block.x,hitAgain.block.y,hitAgain.block.z)===pending.key;
   const closeTap=Math.hypot(px-pending.px,py-pending.py)<=34;
   const quickTap=now-pending.at<=420;
   if(sameBlock&&closeTap&&quickTap){
    clearTimeout(pending.timer);pendingBlockTap=null;
-   if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){render();showStatus('Block removed.');}
+   if(removeBlock(hitAgain.block.x,hitAgain.block.y,hitAgain.block.z)){render();showStatus('Block removed.');}
    return;
   }
   flushPendingBlockTap();
  }
+ const hit=rayHitAtScreen(px,py);
  if(hit.block){
   const target={x:hit.block.x,y:hit.block.y,z:hit.block.z};
   const pending={...target,key:keyBlock(target.x,target.y,target.z),px,py,at:now,timer:null};
