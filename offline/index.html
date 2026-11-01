@@ -65,6 +65,23 @@
 .color-swatch:focus-visible{outline:3px solid #39784e}
 .custom-apply{width:100%;margin-top:8px}
 @media(max-width:430px){.texture-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.custom-block-menu{padding:14px}.custom-preview-wrap{gap:8px}}
+
+/* Character studio */
+.character-menu{width:min(540px,97vw)}
+.character-preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0 12px}
+.character-preset{display:flex;align-items:center;gap:8px;text-align:left;padding:8px!important;background:#fff!important;min-height:52px}
+.character-preset .look-icon{font-size:24px;line-height:1}
+.character-preset small{display:block;color:#718073;font-weight:500;font-size:10px}
+.character-preset.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
+.character-preview-card{display:flex;align-items:center;gap:12px;background:#f1f6ec;border:1px solid #dce8d9;border-radius:14px;padding:9px;margin:10px 0}
+#characterPreview{width:128px;height:142px;flex:0 0 128px;border-radius:10px;background:#dcecf0;border:1px solid #d2e0da}
+.character-preview-copy{font-size:11px;line-height:1.45;color:#586a5b}
+.character-preview-copy strong{font-size:13px;color:#304b38}
+.character-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.character-field-grid .field{min-width:0}
+.character-field-grid input[type=color]{width:100%;height:38px;padding:3px}
+.character-section-title{font-size:12px;font-weight:800;color:#49664d;margin:13px 0 5px}
+@media(max-width:380px){.character-preview-card{align-items:flex-start}.character-preview-copy{font-size:10px}.character-preset{gap:5px}.character-preset .look-icon{font-size:20px}}
 </style>
 </head>
 <body>
@@ -153,7 +170,52 @@
     </div>
   </div></div>
   <div class="menu-shade" id="animalCareShade"><div class="menu"><div class="menu-head"><h2 id="animalCareTitle">🐾 Animal care</h2><button data-close>Close ✕</button></div><p class="note" id="animalCareNote">Choose a gentle way to care for your animal friend.</p><div class="care-grid"><button data-care="snack">🍎 Offer a snack</button><button data-care="water">💧 Fresh water</button><button data-care="brush">🪮 Gentle brushing</button><button data-care="play">🧶 Play together</button></div><p class="care-feedback" id="animalCareFeedback" aria-live="polite">Your animal friend is happy to see you.</p><p class="note">No animal can be hurt, attacked, or removed. These are care-only activities.</p></div></div>
-  <div class="menu-shade" id="characterShade"><div class="menu"><div class="menu-head"><h2>🧑 My character</h2><button data-close>Close ✕</button></div><label class="field">Shirt color<input id="shirtColor" type="color" value="#5b9bd1"></label><label class="field">Hair color<input id="hairColor" type="color" value="#503523"></label><label class="field">Skin tone<input id="skinColor" type="color" value="#efc39d"></label><button class="primary" id="applyCharacter">Save character</button></div></div>
+  <div class="menu-shade" id="characterShade">
+    <div class="menu character-menu">
+      <div class="menu-head"><h2>✨ Character Studio</h2><button data-close>Close ✕</button></div>
+      <p class="note">Create a character that feels like you. Start with a look, then change the hair, clothes, accessories and every color.</p>
+      <div class="character-section-title">Choose a starter look</div>
+      <div class="character-preset-grid">
+        <button type="button" class="character-preset" data-look="explorer"><span class="look-icon">🧥</span><span><strong>Garden Explorer</strong><small>Red hoodie · teal pants</small></span></button>
+        <button type="button" class="character-preset" data-look="sunshine"><span class="look-icon">🌻</span><span><strong>Golden Sunshine</strong><small>Golden hair · bright overalls</small></span></button>
+        <button type="button" class="character-preset" data-look="artist"><span class="look-icon">🎨</span><span><strong>Cozy Artist</strong><small>Soft sweater · flower clip</small></span></button>
+        <button type="button" class="character-preset" data-look="garden"><span class="look-icon">🌸</span><span><strong>Garden Princess</strong><small>Long hair · pretty dress</small></span></button>
+      </div>
+      <div class="character-preview-card">
+        <canvas id="characterPreview" width="256" height="284" aria-label="Live preview of your character"></canvas>
+        <div class="character-preview-copy"><strong id="characterPreviewName">Your character</strong><br><span id="characterPreviewDescription">Your style, your colors, your little world.</span><br><span class="note">The preview updates as you customize.</span></div>
+      </div>
+      <div class="character-section-title">Hair, outfit and accessories</div>
+      <div class="character-field-grid">
+        <label class="field">Hairstyle
+          <select id="hairStyle">
+            <option value="short">Short</option><option value="bob">Bob</option><option value="long">Long</option><option value="ponytail">Ponytail</option><option value="pigtails">Pigtails</option><option value="curly">Curly</option><option value="buns">Buns</option>
+          </select>
+        </label>
+        <label class="field">Outfit
+          <select id="outfitStyle">
+            <option value="hoodie">Hoodie</option><option value="sweater">Sweater</option><option value="overalls">Overalls</option><option value="dress">Dress</option><option value="tee">T-shirt</option>
+          </select>
+        </label>
+        <label class="field">Accessory
+          <select id="accessory">
+            <option value="none">None</option><option value="bow">Bow</option><option value="flower">Flower clip</option><option value="glasses">Glasses</option><option value="cap">Cap</option>
+          </select>
+        </label>
+        <label class="field">Accessory color<input id="accessoryColor" type="color" value="#f4a8bb"></label>
+      </div>
+      <div class="character-section-title">Choose your colors</div>
+      <div class="character-field-grid">
+        <label class="field">Hair color<input id="hairColor" type="color" value="#503523"></label>
+        <label class="field">Skin tone<input id="skinColor" type="color" value="#efc39d"></label>
+        <label class="field">Top color<input id="shirtColor" type="color" value="#d94b3d"></label>
+        <label class="field">Bottom color<input id="pantsColor" type="color" value="#397d8f"></label>
+        <label class="field">Shoe color<input id="shoesColor" type="color" value="#bd4540"></label>
+        <label class="field">Eye color<input id="eyeColor" type="color" value="#302820"></label>
+      </div>
+      <button class="primary" id="applyCharacter" style="width:100%;margin-top:8px">Save my character</button>
+    </div>
+  </div>
 </div>
 <script>
 (()=>{'use strict';
@@ -208,7 +270,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#5b9bd1',hair:'#503523',skin:'#efc39d'},customBlock:{color:'#aa83d8',texture:'custom'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0}};
+ return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -220,7 +282,19 @@ function validWorld(d){
  }
  w.timeMode=['day','sunset','night','auto'].includes(d.timeMode)?d.timeMode:'day';
  if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>b.type==='custom'?{...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'}:b);
- if(d.player&&typeof d.player==='object'){w.player.x=Number.isFinite(d.player.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,d.player.x)):0;w.player.y=Number.isFinite(d.player.y)?Math.max(0,Math.min(60,d.player.y)):0;w.player.z=Number.isFinite(d.player.z)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,d.player.z)):4;w.player.yaw=Number.isFinite(d.player.yaw)?d.player.yaw:0;w.player.pitch=Number.isFinite(d.player.pitch)?Math.max(-1.25,Math.min(1.25,d.player.pitch)):0;w.player.shirt=validHex(d.player.shirt,w.player.shirt);w.player.hair=validHex(d.player.hair,w.player.hair);w.player.skin=validHex(d.player.skin,w.player.skin);}
+ if(d.player&&typeof d.player==='object'){
+  const p=d.player;
+  w.player.x=Number.isFinite(p.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.x)):0;
+  w.player.y=Number.isFinite(p.y)?Math.max(0,Math.min(60,p.y)):0;
+  w.player.z=Number.isFinite(p.z)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.z)):4;
+  w.player.yaw=Number.isFinite(p.yaw)?p.yaw:0;w.player.pitch=Number.isFinite(p.pitch)?Math.max(-1.25,Math.min(1.25,p.pitch)):0;
+  w.player.shirt=validHex(p.shirt,w.player.shirt);w.player.hair=validHex(p.hair,w.player.hair);w.player.skin=validHex(p.skin,w.player.skin);
+  w.player.pants=validHex(p.pants,w.player.pants);w.player.shoes=validHex(p.shoes,w.player.shoes);
+  w.player.eyes=validHex(p.eyes,w.player.eyes);w.player.accessoryColor=validHex(p.accessoryColor,w.player.accessoryColor);
+  w.player.hairStyle=['short','bob','long','ponytail','pigtails','curly','buns'].includes(p.hairStyle)?p.hairStyle:'short';
+  w.player.outfitStyle=['hoodie','sweater','overalls','dress','tee'].includes(p.outfitStyle)?p.outfitStyle:'hoodie';
+  w.player.accessory=['none','bow','flower','glasses','cap'].includes(p.accessory)?p.accessory:'none';
+ }
  for(const key of ['materials','crafted'])if(Array.isArray(d[key]))w[key]=d[key].slice(0,60).map(s=>s&&ITEM_META[s.id]?{id:s.id,count:Math.max(1,Math.min(99,Number(s.count)||1)),label:typeof s.label==='string'?s.label.slice(0,28):''}:null).concat(emptySlots()).slice(0,60);
  if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&a.data.startsWith('data:image/png;base64,')&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
  if(d.animalCare&&typeof d.animalCare==='object'){w.animalCare.sheep=Math.max(0,Math.min(999,Number(d.animalCare.sheep)||0));w.animalCare.cat=Math.max(0,Math.min(999,Number(d.animalCare.cat)||0));}
@@ -394,8 +468,8 @@ function currentNeighbors(t=performance.now()/1000){
  const mira=neighborOnRoute(NEIGHBOR_ROUTES.mira,t,0);
  const theo=neighborOnRoute(NEIGHBOR_ROUTES.theo,t,11);
  return [
-  {id:'mira',name:'Mira',...mira,phase:0,shirt:'#e1a0b7',hair:'#79543b',skin:'#f0c7a3',homeX:-13,homeZ:-7},
-  {id:'theo',name:'Theo',...theo,phase:11,shirt:'#9baddc',hair:'#4b382d',skin:'#dfab83',homeX:10,homeZ:-17}
+  {id:'mira',name:'Mira',...mira,phase:0,shirt:'#d94b3d',hair:'#493127',skin:'#f0c7a3',pants:'#287b8a',shoes:'#bd4540',eyes:'#302820',hairStyle:'bob',outfitStyle:'hoodie',accessory:'none',homeX:-13,homeZ:-7},
+  {id:'theo',name:'Theo',...theo,phase:11,shirt:'#48a78b',hair:'#efbd43',skin:'#dfab83',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',accessoryColor:'#ec83ba',homeX:10,homeZ:-17}
  ];
 }
 function neighborAtScreen(px,py){
@@ -413,25 +487,72 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const c=Math.cos(n.facing||0),s=Math.sin(n.facing||0),phase=Number.isFinite(n.phase)?n.phase:0;
  const gait=n.moving?Math.sin(tick*8+phase)*.12:Math.sin(tick*1.4+phase)*.012;
  const lift=n.moving?Math.abs(Math.cos(tick*8+phase))*.045:Math.sin(tick*1.8+phase)*.008;
- const shoe='#665348';
+ const shoe=n.shoes||'#665348',pants=n.pants||'#48617a',hairStyle=n.hairStyle||'short';
+ const outfit=n.outfitStyle||'hoodie',accessory=n.accessory||'none',accent=n.accessoryColor||'#f4a8bb';
  const cube=(dx,y,dz,color,sx,sy,sz)=>{
   const x=n.x+dx*c+dz*s,z=n.z-dx*s+dz*c;
   pushCube(queue,cam,w,h,x,y,z,color,sx,sy,sz);
  };
+ // Body and outfit silhouette.
  cube(-.34,.55+bob,-.22,n.shirt,.68,.82,.44);
+ if(outfit==='dress'){
+  cube(-.34,.20+bob,-.22,n.pants||n.shirt,.86,.58,.55);
+ }else if(outfit==='hoodie'){
+  cube(-.34,.91+bob,-.455,n.hair,.46,.13,.08);
+  cube(-.34,.30+bob,.015,shadeColor(n.shirt,.82),.30,.11,.045);
+ }else if(outfit==='sweater'){
+  cube(-.34,.34+bob,.012,shadeColor(n.shirt,1.18),.56,.12,.035);
+ }else if(outfit==='overalls'){
+  cube(-.34,.47+bob,.015,pants,.48,.68,.07);
+  cube(-.53,.75+bob,.015,pants,.13,.37,.065);
+  cube(-.15,.75+bob,.015,pants,.13,.37,.065);
+  cube(-.34,.46+bob,.058,'#e8d9ae',.09,.08,.025);
+ }
+ // Head and face.
  cube(-.29,1.36+bob,-.28,n.skin,.58,.58,.56);
- cube(-.31,1.80+bob,-.30,n.hair,.62,.18,.60);
- cube(-.15,1.62+bob,.285,'#3c443a',.07,.07,.025);
- cube(.06,1.62+bob,.285,'#3c443a',.07,.07,.025);
+ cube(-.31,1.66+bob,-.30,n.hair,.62,.22,.60);
+ // Hairstyle variations. The front of the face is the +Z side.
+ if(hairStyle==='bob'){
+  cube(-.60,1.35+bob,-.20,n.hair,.16,.52,.52);cube(.00,1.35+bob,-.20,n.hair,.16,.52,.52);
+ }else if(hairStyle==='long'){
+  cube(-.60,1.14+bob,-.20,n.hair,.16,.94,.42);cube(.00,1.14+bob,-.20,n.hair,.16,.94,.42);
+ }else if(hairStyle==='ponytail'){
+  cube(-.29,1.42+bob,-.58,n.hair,.22,.58,.24);cube(-.20,1.15+bob,-.67,n.hair,.20,.40,.22);
+ }else if(hairStyle==='pigtails'){
+  cube(-.64,1.42+bob,-.20,n.hair,.22,.38,.25);cube(.05,1.42+bob,-.20,n.hair,.22,.38,.25);
+  cube(-.64,1.12+bob,-.25,n.hair,.22,.32,.22);cube(.05,1.12+bob,-.25,n.hair,.22,.32,.22);
+ }else if(hairStyle==='curly'){
+  for(const [dx,dy,dz] of [[-.55,1.70,-.27],[-.38,1.83,-.29],[-.20,1.86,-.30],[-.02,1.76,-.27],[.04,1.58,-.24]])cube(dx,dy+bob,dz,n.hair,.22,.22,.22);
+ }else if(hairStyle==='buns'){
+  cube(-.63,1.83+bob,-.25,n.hair,.25,.25,.25);cube(.05,1.83+bob,-.25,n.hair,.25,.25,.25);
+ }else{
+  cube(-.60,1.39+bob,-.20,n.hair,.14,.38,.40);cube(.00,1.39+bob,-.20,n.hair,.14,.38,.40);
+ }
+ // Fringe, eyes and expression.
+ cube(-.15,1.62+bob,.285,n.eyes||'#302820',.07,.07,.025);
+ cube(.06,1.62+bob,.285,n.eyes||'#302820',.07,.07,.025);
  cube(-.04,1.50+bob,.29,'#9a6c5c',.12,.025,.02);
+ // Arms, hands, legs and shoes move together while walking.
  cube(-.54,.60+bob+gait,-.12,n.shirt,.20,.63,.27);
  cube(.34,.60+bob-gait,-.12,n.shirt,.20,.63,.27);
  cube(-.54,.36+bob+gait,.12,n.skin,.21,.20,.24);
  cube(.34,.36+bob-gait,.12,n.skin,.21,.20,.24);
- cube(-.25,.08+bob+lift,-.12,'#48617a',.23,.50,.28);
- cube(.02,.08+bob-lift,-.12,'#48617a',.23,.50,.28);
+ cube(-.25,.08+bob+lift,-.12,pants,.23,.50,.28);
+ cube(.02,.08+bob-lift,-.12,pants,.23,.50,.28);
  cube(-.29,.02+bob+lift,.01,shoe,.30,.14,.37);
  cube(-.01,.02+bob-lift,.01,shoe,.30,.14,.37);
+ // Optional accessories.
+ if(accessory==='bow'){
+  cube(-.58,1.83+bob,.02,accent,.20,.13,.12);cube(-.40,1.83+bob,.02,accent,.20,.13,.12);
+  cube(-.49,1.83+bob,.09,'#f7e8d0',.07,.09,.08);
+ }else if(accessory==='flower'){
+  cube(-.58,1.79+bob,.04,accent,.16,.16,.12);cube(-.58,1.63+bob,.04,'#f6d36b',.07,.07,.08);
+ }else if(accessory==='glasses'){
+  cube(-.16,1.62+bob,.32,accent,.19,.12,.055);cube(.08,1.62+bob,.32,accent,.19,.12,.055);
+  cube(.01,1.62+bob,.34,accent,.08,.035,.035);
+ }else if(accessory==='cap'){
+  cube(-.30,1.84+bob,-.28,accent,.72,.13,.66);cube(-.30,1.77+bob,.04,accent,.76,.06,.25);
+ }
 }
 function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
 function openAnimalCare(a){selectedAnimalId=a.id;$('animalCareTitle').textContent=(a.id==='sheep'?'🐑 Care for Pip':'🐱 Care for Mochi');const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=(a.id==='sheep'?'Pip the sheep enjoys gentle care.':'Mochi the cat enjoys gentle care.')+' Care activities together: '+count;$('animalCareFeedback').textContent='Your animal friend is happy to see you.';openShade('animalCareShade');}
@@ -476,7 +597,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  const cx=cat.x,cz=cat.z;pushCube(polys,cam,w,h,cx-.36,.12,cz-.3,'#e8c48c',.76,.5,.78);pushCube(polys,cam,w,h,cx-.14,.48,cz+.35,'#e8c48c',.46,.38,.42);pushCube(polys,cam,w,h,cx-.25,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx+.07,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx-.18,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx+.13,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx-.3,.02,cz-.08,'#b88754',.18,.2,.2);pushCube(polys,cam,w,h,cx+.14,.02,cz-.08,'#b88754',.18,.2,.2);
 
  // Third-person avatar; in first-person the child sees through the character's eyes.
- if(cameraMode==='third'){const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,x:p.x,z:p.z};drawNeighborFigure(polys,cam,w,h,pc,0,tick);}
+ if(cameraMode==='third'){const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,z:p.z,facing:p.yaw,phase:0,moving:false};drawNeighborFigure(polys,cam,w,h,pc,0,tick);}
  polys.sort((a,b)=>b.depth-a.depth);
  for(const poly of polys){if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}}
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
@@ -493,6 +614,91 @@ function erase(){const hit=rayHit();if(!hit||!hit.block){showStatus('Aim at a bl
 function move(dt){const p=world.player,speed=flying?7:4.2;let forward=moveZ,right=moveX;if(keys.w||keys.ArrowUp)forward+=1;if(keys.s||keys.ArrowDown)forward-=1;if(keys.a||keys.ArrowLeft)right-=1;if(keys.d||keys.ArrowRight)right+=1;const len=Math.hypot(forward,right)||1;forward/=len;right/=len;p.x+= (Math.sin(p.yaw)*forward+Math.cos(p.yaw)*right)*speed*dt;p.z+=(-Math.cos(p.yaw)*forward+Math.sin(p.yaw)*right)*speed*dt;p.x=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.x));p.z=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.z));if(flying){let v=vertical;if(keys[' '])v+=1;if(keys.Shift)v-=1;p.y=Math.max(0,Math.min(60,p.y+v*speed*dt));}else p.y=0;}
 function loop(time){requestAnimationFrame(loop);if(time-lastTime<30)return;const dt=Math.min(.05,(time-lastTime)/1000||0);lastTime=time;move(dt);render();}
 function renderSlots(){const root=$('slots');root.replaceChildren();const arr=world[inventoryTab];for(let i=0;i<60;i++){const slot=document.createElement('div');slot.className='slot';const item=arr[i];if(item){const meta=ITEM_META[item.id];const ico=document.createElement('div');ico.className='ico';ico.textContent=meta.icon;const name=document.createElement('small');name.textContent=item.label||meta.name;const count=document.createElement('small');count.textContent='×'+item.count;slot.append(ico,name,count);}else{const n=document.createElement('small');n.textContent=String(i+1);n.style.color='#a7b4a7';slot.append(n);}root.append(slot);}}
+const CHARACTER_PRESETS={
+ explorer:{hairStyle:'short',outfitStyle:'hoodie',accessory:'none',hair:'#493127',skin:'#efc39d',shirt:'#d94b3d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',accessoryColor:'#f4a8bb'},
+ sunshine:{hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',hair:'#efbd43',skin:'#f2cda9',shirt:'#48a78b',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',accessoryColor:'#ec83ba'},
+ artist:{hairStyle:'bob',outfitStyle:'sweater',accessory:'flower',hair:'#754c3c',skin:'#e8b995',shirt:'#9b79b7',pants:'#48617a',shoes:'#6b527c',eyes:'#302820',accessoryColor:'#ef82a4'},
+ garden:{hairStyle:'long',outfitStyle:'dress',accessory:'bow',hair:'#5a3827',skin:'#f0c7a3',shirt:'#e98eae',pants:'#68a96d',shoes:'#d45b80',eyes:'#302820',accessoryColor:'#f4c6dc'}
+};
+const CHARACTER_FIELDS=['hairStyle','outfitStyle','accessory','accessoryColor','hairColor','skinColor','shirtColor','pantsColor','shoesColor','eyeColor'];
+function characterValue(){
+ return {
+  hairStyle:$('hairStyle').value,outfitStyle:$('outfitStyle').value,accessory:$('accessory').value,
+  accessoryColor:$('accessoryColor').value,hair:$('hairColor').value,skin:$('skinColor').value,
+  shirt:$('shirtColor').value,pants:$('pantsColor').value,shoes:$('shoesColor').value,eyes:$('eyeColor').value
+ };
+}
+function applyPresetToStudio(key){
+ const p=CHARACTER_PRESETS[key];if(!p)return;
+ $('hairStyle').value=p.hairStyle;$('outfitStyle').value=p.outfitStyle;$('accessory').value=p.accessory;
+ $('accessoryColor').value=p.accessoryColor;$('hairColor').value=p.hair;$('skinColor').value=p.skin;
+ $('shirtColor').value=p.shirt;$('pantsColor').value=p.pants;$('shoesColor').value=p.shoes;$('eyeColor').value=p.eyes;
+ document.querySelectorAll('[data-look]').forEach(b=>b.classList.toggle('selected',b.dataset.look===key));
+ updateCharacterPreview();
+}
+function setStudioFromPlayer(p){
+ $('hairStyle').value=p.hairStyle||'short';$('outfitStyle').value=p.outfitStyle||'hoodie';$('accessory').value=p.accessory||'none';
+ $('accessoryColor').value=p.accessoryColor||'#f4a8bb';$('hairColor').value=p.hair||'#493127';$('skinColor').value=p.skin||'#efc39d';
+ $('shirtColor').value=p.shirt||'#d94b3d';$('pantsColor').value=p.pants||'#397d8f';$('shoesColor').value=p.shoes||'#bd4540';$('eyeColor').value=p.eyes||'#302820';
+ document.querySelectorAll('[data-look]').forEach(b=>b.classList.remove('selected'));
+ updateCharacterPreview();
+}
+function updateCharacterPreview(){
+ const p=characterValue(),c=$('characterPreview').getContext('2d');
+ const w=256,h=284;
+ c.clearRect(0,0,w,h);
+ const bg=c.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#d4e9ed');bg.addColorStop(1,'#eff2d8');c.fillStyle=bg;c.fillRect(0,0,w,h);
+ c.fillStyle='#94bd78';c.fillRect(0,232,w,52);
+ c.fillStyle='#6e9d57';c.fillRect(0,232,w,5);
+ // Shoes and legs.
+ c.fillStyle=p.shoes;c.fillRect(81,244,42,18);c.fillRect(136,244,42,18);
+ c.fillStyle=p.pants;c.fillRect(86,190,32,58);c.fillRect(141,190,32,58);
+ // Outfit body and sleeves.
+ c.fillStyle=p.shirt;c.fillRect(67,111,122,83);c.fillRect(45,120,26,70);c.fillRect(185,120,26,70);
+ c.fillStyle=p.skin;c.fillRect(45,184,26,20);c.fillRect(185,184,26,20);
+ if(p.outfitStyle==='dress'){
+  c.fillStyle=p.pants;c.beginPath();c.moveTo(67,168);c.lineTo(189,168);c.lineTo(205,221);c.lineTo(51,221);c.closePath();c.fill();
+  c.fillStyle=p.shoes;c.fillRect(81,244,42,18);c.fillRect(136,244,42,18);
+ }else if(p.outfitStyle==='overalls'){
+  c.fillStyle=p.pants;c.fillRect(93,126,70,75);c.fillRect(91,110,16,59);c.fillRect(149,110,16,59);
+  c.fillStyle='#f0dda7';c.fillRect(121,151,14,12);
+ }else if(p.outfitStyle==='hoodie'){
+  c.fillStyle='#00000018';c.fillRect(112,169,32,8);
+ }
+ // Neck and face.
+ c.fillStyle=p.skin;c.fillRect(111,91,34,24);c.fillRect(87,35,82,68);
+ c.fillStyle=p.hair;c.fillRect(82,27,92,24);
+ if(p.hairStyle==='bob'){c.fillRect(78,44,18,63);c.fillRect(160,44,18,63);}
+ if(p.hairStyle==='long'){c.fillRect(77,42,20,125);c.fillRect(160,42,20,125);}
+ if(p.hairStyle==='ponytail'){c.fillRect(159,35,29,56);c.fillRect(171,72,18,65);}
+ if(p.hairStyle==='pigtails'){c.fillRect(70,48,23,56);c.fillRect(158,48,23,56);c.fillRect(68,88,24,30);c.fillRect(160,88,24,30);}
+ if(p.hairStyle==='curly'){for(const [x,y] of [[82,24],[105,14],[130,14],[151,24],[72,43],[166,43]]){c.fillRect(x,y,27,28);}}
+ if(p.hairStyle==='buns'){c.fillRect(65,18,35,34);c.fillRect(157,18,35,34);}
+ // Front fringe and eyes.
+ c.fillStyle=p.hair;c.fillRect(83,46,34,15);c.fillRect(118,35,54,15);
+ c.fillStyle=p.eyes;c.fillRect(105,71,8,7);c.fillRect(145,71,8,7);
+ c.fillStyle='#9b6959';c.fillRect(124,83,13,4);
+ // Accessories.
+ if(p.accessory==='bow'){c.fillStyle=p.accessoryColor;c.fillRect(69,30,19,13);c.fillRect(90,30,19,13);c.fillRect(85,32,9,10);}
+ if(p.accessory==='flower'){c.fillStyle=p.accessoryColor;c.fillRect(75,31,19,19);c.fillStyle='#f6d36b';c.fillRect(81,37,8,8);}
+ if(p.accessory==='glasses'){c.strokeStyle=p.accessoryColor;c.lineWidth=5;c.strokeRect(96,65,27,20);c.strokeRect(137,65,27,20);c.beginPath();c.moveTo(123,74);c.lineTo(137,74);c.stroke();}
+ if(p.accessory==='cap'){c.fillStyle=p.accessoryColor;c.fillRect(78,15,100,18);c.fillRect(78,30,115,9);}
+ $('characterPreviewName').textContent='Your character';
+ $('characterPreviewDescription').textContent=p.hairStyle+' hair · '+p.outfitStyle+' · '+p.accessory;
+}
+function openCharacterStudio(){
+ setStudioFromPlayer(world.player);
+ openShade('characterShade');
+}
+for(const id of CHARACTER_FIELDS){
+ const input=$(id);
+ input.addEventListener('input',()=>{
+  document.querySelectorAll('[data-look]').forEach(b=>b.classList.remove('selected'));
+  updateCharacterPreview();
+ });
+ input.addEventListener('change',updateCharacterPreview);
+}
+document.querySelectorAll('[data-look]').forEach(b=>b.addEventListener('click',()=>applyPresetToStudio(b.dataset.look)));
 function openShade(id){$(id).classList.add('open');}function closeShades(){stopNeighborColoring();document.querySelectorAll('.menu-shade.open').forEach(e=>e.classList.remove('open'));}
 let draftCustomColor='#aa83d8',draftCustomTexture='custom';
 function renderCustomPreview(){
@@ -639,8 +845,15 @@ $('timeBtn').addEventListener('click',()=>{
 $('timeOfDay').addEventListener('change',e=>setTimeMode(e.target.value));
 $('flyBtn').addEventListener('click',()=>{flying=!flying;vertical=0;$('flyBtn').textContent='🕊 Fly: '+(flying?'On':'Off');showStatus(flying?'Creative flight enabled.':'Flight turned off.');});
 $('useCustomColor').addEventListener('click',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);selected='custom';save();renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
-$('neighborsBtn').addEventListener('click',()=>{closeShades();showStatus('Your neighbors wave quietly and enjoy their peaceful activities.');});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',controlsToggle);$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('inventoryBtn').addEventListener('click',()=>{inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();$('shirtColor').value=world.player.shirt;$('hairColor').value=world.player.hair;$('skinColor').value=world.player.skin;openShade('characterShade');});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
-$('applyCharacter').addEventListener('click',()=>{world.player.shirt=$('shirtColor').value;world.player.hair=$('hairColor').value;world.player.skin=$('skinColor').value;save();closeShades();showStatus('Character colors saved.');});
+$('neighborsBtn').addEventListener('click',()=>{closeShades();showStatus('Your neighbors wave quietly and enjoy their peaceful activities.');});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',controlsToggle);$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('inventoryBtn').addEventListener('click',()=>{inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();openCharacterStudio();});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
+$('applyCharacter').addEventListener('click',()=>{
+ const p=characterValue();
+ Object.assign(world.player,{
+  hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,
+  hair:p.hair,skin:p.skin,shirt:p.shirt,pants:p.pants,shoes:p.shoes,eyes:p.eyes
+ });
+ save();render();closeShades();showStatus('Your new character look is saved!');
+});
 // Offline coloring sheets: original vector line art is embedded in this file.
 const COLOR_PAGES=[
  {id:'cottage',name:'Cozy cottage',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><circle cx="520" cy="82" r="42" fill="white" stroke="#263c32" stroke-width="7"/><path d="M500 82h40M520 62v40M492 54l56 56M548 54l-56 56" stroke="#263c32" stroke-width="5" stroke-linecap="round"/><path d="M105 220L320 65l215 155" fill="white" stroke="#263c32" stroke-width="10" stroke-linejoin="round"/><path d="M145 204v205h350V204Z" fill="white" stroke="#263c32" stroke-width="9"/><rect x="270" y="285" width="105" height="124" rx="5" fill="white" stroke="#263c32" stroke-width="8"/><circle cx="355" cy="348" r="6" fill="#263c32"/><rect x="180" y="250" width="70" height="68" fill="white" stroke="#263c32" stroke-width="8"/><path d="M215 250v68M180 284h70" stroke="#263c32" stroke-width="6"/><rect x="405" y="250" width="65" height="68" fill="white" stroke="#263c32" stroke-width="8"/><path d="M437 250v68M405 284h65" stroke="#263c32" stroke-width="6"/><path d="M90 410h460M100 380q25-28 50 0q25-28 50 0M450 380q25-28 50 0q25-28 50 0" fill="none" stroke="#263c32" stroke-width="7" stroke-linecap="round"/><path d="M92 350q-25-25-5-45q25-12 34 10q9-23 32-10q20 24-6 45l-27 22zM520 350q-25-25-5-45q25-12 34 10q9-23 32-10q20 24-6 45l-27 22z" fill="white" stroke="#263c32" stroke-width="6"/></svg>`},
