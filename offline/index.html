@@ -45,6 +45,26 @@
 .hold-clear{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;background:#fff2e8!important;border-color:#e3b5a0!important}
 .hold-clear.holding{background:#f9d7c8!important;outline:3px solid #d98c6d;outline-offset:2px}
 @media(max-width:430px){.neighbor-live{padding:8px}.neighbor-avatar{width:36px;height:36px;flex-basis:36px}.care-grid button{font-size:12px;padding:8px 6px}}
+
+/* Custom block designer */
+.custom-block-menu{width:min(570px,97vw)}
+.custom-preview-wrap{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff;margin:8px 0 14px}
+#customPreview{width:112px;height:76px;flex:0 0 112px;border-radius:10px;border:1px solid #dce5d8;background:#f8faf4}
+.custom-preview-copy{font-size:12px;line-height:1.45;color:#536557}
+.custom-block-menu h3{font-size:13px;margin:14px 0 7px}
+.texture-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.texture-choice{min-height:58px;padding:6px 4px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#fff!important;border:1px solid #d6e2d5!important;font-size:11px}
+.texture-choice .texture-emoji{font-size:19px;line-height:1.1}
+.texture-choice.selected{outline:2px solid #4b9660;background:#e5f2e1!important;border-color:#4b9660!important}
+.custom-color-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.custom-color-fields .field{margin:5px 0}
+.custom-color-fields input[type=color]{width:100%;height:43px;padding:3px;border:1px solid var(--line);border-radius:10px;background:white}
+.custom-color-fields input[type=text]{width:100%;min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);text-transform:uppercase}
+.color-swatch-row{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px}
+.color-swatch{width:27px;height:27px;padding:0!important;border-radius:50%!important;border:2px solid #fff!important;outline:1px solid #cbd8ca;box-shadow:none!important}
+.color-swatch:focus-visible{outline:3px solid #39784e}
+.custom-apply{width:100%;margin-top:8px}
+@media(max-width:430px){.texture-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.custom-block-menu{padding:14px}.custom-preview-wrap{gap:8px}}
 </style>
 </head>
 <body>
@@ -62,7 +82,7 @@
       <button id="menuBtn">☰</button>
     </div>
   </div>
-  <div class="top-hint" id="topHint">Drag to look · Tap a block to build · Tap a neighbor to color</div>
+  <div class="top-hint" id="topHint">Drag to look · Tap to build · Double-tap a block to remove · Tap a neighbor to color</div>
   <div class="hotbar" id="hotbar" aria-label="Block selection"></div>
   <div class="touch-controls" id="touchControls">
     <div class="dpad" aria-label="Movement controls">
@@ -82,6 +102,26 @@
         <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
       <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Builds are saved on this device. Export a backup to move a world to another device.</p>
+    </div>
+  </div>
+  <div class="menu-shade" id="customBlockShade">
+    <div class="menu custom-block-menu">
+      <div class="menu-head"><h2>🎨 Design a custom block</h2><button data-close>Close ✕</button></div>
+      <p class="note">Choose a surface texture, then pick any color in the spectrum. Your design will be used for every new Custom block.</p>
+      <div class="custom-preview-wrap">
+        <canvas id="customPreview" width="224" height="152" aria-label="Custom block preview"></canvas>
+        <div class="custom-preview-copy"><strong id="customPreviewName">Custom block</strong><br><span id="customPreviewDetails">Purple · Speckled</span><br>Each block keeps its own saved design.</div>
+      </div>
+      <h3>1. Choose a texture</h3>
+      <div class="texture-choice-grid" id="customTextureChoices"></div>
+      <h3>2. Choose any color</h3>
+      <div class="custom-color-fields">
+        <label class="field">Full color spectrum<input id="customBlockColor" type="color" value="#aa83d8" aria-label="Choose any color"></label>
+        <label class="field">HEX color code<input id="customBlockHex" type="text" value="#AA83D8" maxlength="7" spellcheck="false" aria-label="Hex color code"></label>
+      </div>
+      <div class="note">Quick color choices</div>
+      <div class="color-swatch-row" id="customColorSwatches"></div>
+      <button id="applyCustomBlock" class="primary custom-apply">Use this custom block</button>
     </div>
   </div>
   <div class="menu-shade" id="inventoryShade"><div class="menu"><div class="menu-head"><h2>🎒 Your pouches</h2><button data-close>Close ✕</button></div>
@@ -117,6 +157,20 @@ const BLOCKS=[
  {id:'glass',name:'Glass',emoji:'🔹',color:'#a5dce3'}, {id:'flower',name:'Flower',emoji:'🌸',color:'#e9a4c1'},
  {id:'sand',name:'Sand',emoji:'🟨',color:'#e8d38b'}, {id:'snow',name:'Snow',emoji:'❄️',color:'#f2f8fa'}
 ];
+const CUSTOM_TEXTURES=[
+ {id:'grass',name:'Grass',emoji:'🌿'},
+ {id:'dirt',name:'Dirt',emoji:'🟫'},
+ {id:'stone',name:'Stone',emoji:'🪨'},
+ {id:'wood',name:'Wood grain',emoji:'🪵'},
+ {id:'leaves',name:'Leafy',emoji:'🍃'},
+ {id:'brick',name:'Brick',emoji:'🧱'},
+ {id:'glass',name:'Glass',emoji:'🔹'},
+ {id:'flower',name:'Flower',emoji:'🌸'},
+ {id:'sand',name:'Sand',emoji:'🏖️'},
+ {id:'snow',name:'Snow',emoji:'❄️'},
+ {id:'custom',name:'Speckled',emoji:'✨'}
+];
+const CUSTOM_COLORS=['#F44336','#FF9800','#FFC107','#FFEB3B','#8BC34A','#4CAF50','#009688','#00BCD4','#03A9F4','#3F51B5','#673AB7','#9C27B0','#E91E63','#795548','#607D8B','#FFFFFF','#222222'];
 const ITEM_META={
  seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
 };
@@ -145,13 +199,17 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#5b9bd1',hair:'#503523',skin:'#efc39d'},materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0}};
+ return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#5b9bd1',hair:'#503523',skin:'#efc39d'},customBlock:{color:'#aa83d8',texture:'custom'},materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
  if(!d||typeof d!=='object')throw new Error('That file is not a DIYCraft world.');
  const w=freshWorld();w.name=String(d.name||w.name).slice(0,30);
- if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||''))));
+ if(d.customBlock&&typeof d.customBlock==='object'){
+  w.customBlock.color=validHex(d.customBlock.color,w.customBlock.color);
+  w.customBlock.texture=CUSTOM_TEXTURES.some(t=>t.id===d.customBlock.texture)?d.customBlock.texture:'custom';
+ }
+ if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>b.type==='custom'?{...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'}:b);
  if(d.player&&typeof d.player==='object'){w.player.x=Number.isFinite(d.player.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,d.player.x)):0;w.player.y=Number.isFinite(d.player.y)?Math.max(0,Math.min(60,d.player.y)):0;w.player.z=Number.isFinite(d.player.z)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,d.player.z)):4;w.player.yaw=Number.isFinite(d.player.yaw)?d.player.yaw:0;w.player.pitch=Number.isFinite(d.player.pitch)?Math.max(-1.25,Math.min(1.25,d.player.pitch)):0;w.player.shirt=validHex(d.player.shirt,w.player.shirt);w.player.hair=validHex(d.player.hair,w.player.hair);w.player.skin=validHex(d.player.skin,w.player.skin);}
  for(const key of ['materials','crafted'])if(Array.isArray(d[key]))w[key]=d[key].slice(0,60).map(s=>s&&ITEM_META[s.id]?{id:s.id,count:Math.max(1,Math.min(99,Number(s.count)||1)),label:typeof s.label==='string'?s.label.slice(0,28):''}:null).concat(emptySlots()).slice(0,60);
  if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&a.data.startsWith('data:image/png;base64,')&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
@@ -166,13 +224,13 @@ const blockMap=new Map(BLOCKS.map(b=>[b.id,b]));blockMap.set('custom',{id:'custo
 function showStatus(s){const el=$('status');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2100);}
 function save(silent=true){try{world.name=$('worldName').value.trim().slice(0,30)||world.name;localStorage.setItem(STORE_KEY,JSON.stringify(world));if(!silent)showStatus('World saved on this device.');}catch(e){if(!storageUnavailable){storageUnavailable=true;if(!silent)showStatus('Device storage is unavailable. Use Backup to keep your world.');}}}
 function addItem(id,target='crafted',label=''){const arr=world[target];const same=arr.find(v=>v&&v.id===id&&v.count<99);if(same){same.count++;return true;}const i=arr.findIndex(v=>!v);if(i<0)return false;arr[i]={id,count:1,label};return true;}
-function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'My color',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=$('customColor').value;btn.style.background='linear-gradient(135deg,'+$('customColor').value+'44,#fffdf4)';}else btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});root.append(btn);});}
+function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'Custom',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=world.customBlock.color;btn.style.background='linear-gradient(135deg,'+world.customBlock.color+'55,#fffdf4)';btn.title='Open custom texture and color designer';btn.addEventListener('click',openCustomBlockDesigner);}else{btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});}root.append(btn);});}
 function keyBlock(x,y,z){return x+','+y+','+z;}
 const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z)));
 function clearPlacedBlocks(){const before=world.blocks.length;world.blocks=world.blocks.filter(b=>STARTER_BLOCK_KEYS.has(keyBlock(b.x,b.y,b.z)));rebuildLookup();save();render();showStatus(Math.max(0,before-world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.');}
 let blockLookup=new Map();function rebuildLookup(){blockLookup=new Map();for(const b of world.blocks)blockLookup.set(keyBlock(b.x,b.y,b.z),b);}
 function solid(x,y,z){if(y<0)return Math.abs(x)<=WORLD_LIMIT&&Math.abs(z)<=WORLD_LIMIT;return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
-function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z);if(blockLookup.has(k))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom')b.color=validHex($('customColor').value,'#aa83d8');world.blocks.push(b);blockLookup.set(k,b);save();return true;}
+function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z);if(blockLookup.has(k))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}world.blocks.push(b);blockLookup.set(k,b);save();return true;}
 function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(k);save();return true;}
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
 function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
@@ -197,7 +255,7 @@ function makeTexturePatterns(){
  };
  for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
-function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material});}}
+function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
 function paintTexture(poly) {
     const pattern = texturePatterns.get(poly.material);
 
@@ -236,7 +294,7 @@ function paintTexture(poly) {
     ctx.closePath();
     ctx.clip();
 
-    ctx.globalAlpha = 0.72;
+    ctx.globalAlpha = poly.customTint ? 0.42 : 0.72;
     ctx.fillStyle = pattern;
 
     const xs = poly.pts.map(p => p.x);
@@ -276,7 +334,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?'custom':b.type);}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick);
  drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
@@ -305,6 +363,52 @@ function move(dt){const p=world.player,speed=flying?7:4.2;let forward=moveZ,righ
 function loop(time){requestAnimationFrame(loop);if(time-lastTime<30)return;const dt=Math.min(.05,(time-lastTime)/1000||0);lastTime=time;move(dt);render();}
 function renderSlots(){const root=$('slots');root.replaceChildren();const arr=world[inventoryTab];for(let i=0;i<60;i++){const slot=document.createElement('div');slot.className='slot';const item=arr[i];if(item){const meta=ITEM_META[item.id];const ico=document.createElement('div');ico.className='ico';ico.textContent=meta.icon;const name=document.createElement('small');name.textContent=item.label||meta.name;const count=document.createElement('small');count.textContent='×'+item.count;slot.append(ico,name,count);}else{const n=document.createElement('small');n.textContent=String(i+1);n.style.color='#a7b4a7';slot.append(n);}root.append(slot);}}
 function openShade(id){$(id).classList.add('open');}function closeShades(){stopNeighborColoring();document.querySelectorAll('.menu-shade.open').forEach(e=>e.classList.remove('open'));}
+let draftCustomColor='#aa83d8',draftCustomTexture='custom';
+function renderCustomPreview(){
+ const canvas=$('customPreview'),c=canvas.getContext('2d');
+ c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle='#f8faf4';c.fillRect(0,0,canvas.width,canvas.height);
+ c.fillStyle=draftCustomColor;c.fillRect(14,14,196,124);
+ const pattern=texturePatterns.get(draftCustomTexture);
+ if(pattern){c.save();c.globalAlpha=.48;c.fillStyle=pattern;c.fillRect(14,14,196,124);c.restore();}
+ c.strokeStyle='#31453255';c.lineWidth=3;c.strokeRect(14,14,196,124);
+ const texture=CUSTOM_TEXTURES.find(t=>t.id===draftCustomTexture);
+ $('customPreviewName').textContent='Your custom block';
+ $('customPreviewDetails').textContent=draftCustomColor.toUpperCase()+' · '+(texture?.name||'Speckled');
+}
+function renderCustomTextureChoices(){
+ const root=$('customTextureChoices');root.replaceChildren();
+ CUSTOM_TEXTURES.forEach(t=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='texture-choice'+(draftCustomTexture===t.id?' selected':'');
+  const emoji=document.createElement('span');emoji.className='texture-emoji';emoji.textContent=t.emoji;
+  const label=document.createElement('span');label.textContent=t.name;
+  btn.append(emoji,label);btn.addEventListener('click',()=>{draftCustomTexture=t.id;renderCustomTextureChoices();renderCustomPreview();});
+  root.append(btn);
+ });
+}
+function renderCustomColorSwatches(){
+ const root=$('customColorSwatches');root.replaceChildren();
+ CUSTOM_COLORS.forEach(color=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='color-swatch';btn.style.background=color;btn.title=color;btn.setAttribute('aria-label','Choose '+color);
+  btn.addEventListener('click',()=>setDraftCustomColor(color));root.append(btn);
+ });
+}
+function setDraftCustomColor(color){
+ if(!/^#[0-9a-f]{6}$/i.test(color))return;
+ draftCustomColor=color.toLowerCase();$('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();renderCustomPreview();
+}
+function openCustomBlockDesigner(){
+ draftCustomColor=world.customBlock.color||'#aa83d8';draftCustomTexture=world.customBlock.texture||'custom';
+ $('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();
+ renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();openShade('customBlockShade');
+}
+$('customBlockColor').addEventListener('input',e=>setDraftCustomColor(e.target.value));
+$('customBlockHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);});
+$('customBlockHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);else e.target.value=draftCustomColor.toUpperCase();});
+$('applyCustomBlock').addEventListener('click',()=>{
+ world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
+ $('customColor').value=draftCustomColor;selected='custom';save();renderHotbar();closeShades();
+ showStatus('Custom block ready! Choose a place to build it.');
+});
 function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
 function downloadBackup(){save();const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(world.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft')+'.json';a.click();URL.revokeObjectURL(url);showStatus('Backup file prepared. Keep it somewhere safe.');}
 async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
@@ -314,12 +418,44 @@ async function expandToggle(){if(!document.fullscreenElement&&document.documentE
 // Keyboard input is simple, local and has no external communication.
 document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;keys[e.key===' '?' ':e.key]=true;if(e.key.toLowerCase()==='v'){cameraMode=cameraMode==='first'?'third':'first';$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}if(e.key.toLowerCase()==='f'){flying=!flying;$('flyBtn').textContent='🕊 Fly: '+(flying?'On':'Off');showStatus(flying?'Creative flight enabled.':'Flight turned off.');}if(e.key==='e'||e.key==='E')openShade('inventoryShade');if(e.key==='Escape'){closeShades();if(focusMode)focusToggle();}});
 document.addEventListener('keyup',e=>{keys[e.key===' '?' ':e.key]=false;});
-// Mouse or finger drag looks around; a short tap/click places one block.
-let activePointer=null,movedPointer=false,startPt=null,lastPt=null;
+// Mouse or finger drag looks around. A single tap builds; a quick double-tap on the same block removes it.
+let activePointer=null,movedPointer=false,startPt=null,lastPt=null,pendingBlockTap=null;
+function flushPendingBlockTap(){
+ if(!pendingBlockTap)return;
+ const pending=pendingBlockTap;clearTimeout(pending.timer);pendingBlockTap=null;
+ buildAtScreen(pending.px,pending.py);
+}
+function handleWorldTap(e,px,py){
+ const animal=animalAtScreen(px,py);
+ if(animal){flushPendingBlockTap();openAnimalCare(animal);return;}
+ const neighbor=neighborAtScreen(px,py);
+ if(neighbor){flushPendingBlockTap();openColoring(neighbor.name);return;}
+ const hit=rayHitAtScreen(px,py),now=Date.now();
+ if(pendingBlockTap){
+  const pending=pendingBlockTap;
+  const sameBlock=hit.block&&keyBlock(hit.block.x,hit.block.y,hit.block.z)===pending.key;
+  const closeTap=Math.hypot(px-pending.px,py-pending.py)<=34;
+  const quickTap=now-pending.at<=420;
+  if(sameBlock&&closeTap&&quickTap){
+   clearTimeout(pending.timer);pendingBlockTap=null;
+   if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){render();showStatus('Block removed.');}
+   return;
+  }
+  flushPendingBlockTap();
+ }
+ if(hit.block){
+  const target={x:hit.block.x,y:hit.block.y,z:hit.block.z};
+  const pending={...target,key:keyBlock(target.x,target.y,target.z),px,py,at:now,timer:null};
+  pending.timer=setTimeout(()=>{if(pendingBlockTap===pending){pendingBlockTap=null;buildAtScreen(pending.px,pending.py);}},420);
+  pendingBlockTap=pending;
+ }else{
+  buildAtScreen(px,py);
+ }
+}
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2){erase();return;}activePointer=e.pointerId;movedPointer=false;startPt={x:e.clientX,y:e.clientY};lastPt=startPt;canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(activePointer!==e.pointerId||!lastPt)return;const dx=e.clientX-lastPt.x,dy=e.clientY-lastPt.y;if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5)movedPointer=true;if(movedPointer){world.player.yaw-=dx*.006;world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));}lastPt={x:e.clientX,y:e.clientY};});
-canvas.addEventListener('pointerup',e=>{if(activePointer!==e.pointerId)return;if(!movedPointer){const px=e.clientX-canvas.getBoundingClientRect().left,py=e.clientY-canvas.getBoundingClientRect().top;const a=animalAtScreen(px,py);if(a){openAnimalCare(a);activePointer=null;startPt=null;lastPt=null;return;}const n=neighborAtScreen(px,py);if(n){openColoring(n.name);activePointer=null;startPt=null;lastPt=null;return;}if(e.pointerType!=='mouse'||e.button===0)buildAtScreen(px,py);}activePointer=null;startPt=null;lastPt=null;});canvas.addEventListener('pointercancel',()=>{activePointer=null;startPt=null;lastPt=null;});
+canvas.addEventListener('pointerup',e=>{if(activePointer!==e.pointerId)return;if(!movedPointer&&(e.pointerType!=='mouse'||e.button===0)){const px=e.clientX-canvas.getBoundingClientRect().left,py=e.clientY-canvas.getBoundingClientRect().top;handleWorldTap(e,px,py);}activePointer=null;startPt=null;lastPt=null;});canvas.addEventListener('pointercancel',()=>{activePointer=null;startPt=null;lastPt=null;});
 // On-screen movement pads support press-and-hold on iPad.
 document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
 $('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();build();});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
@@ -327,8 +463,8 @@ $('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();build();});$
 $('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;else showStatus('Turn flight on first.');});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;else showStatus('Turn flight on first.');});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
 function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}
 $('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'third':'first';updateViewButton();showStatus(cameraMode==='first'?'First-person view':'Third-person view');});updateViewButton();$('flyBtn').addEventListener('click',()=>{flying=!flying;vertical=0;$('flyBtn').textContent='🕊 Fly: '+(flying?'On':'Off');showStatus(flying?'Creative flight enabled.':'Flight turned off.');});
-$('useCustomColor').addEventListener('click',()=>{selected='custom';renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
-$('neighborsBtn').addEventListener('click',()=>{closeShades();showStatus('Your neighbors wave quietly and enjoy their peaceful activities.');});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{if(selected==='custom')renderHotbar();});$('controlsBtn').addEventListener('click',controlsToggle);$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('inventoryBtn').addEventListener('click',()=>{inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();$('shirtColor').value=world.player.shirt;$('hairColor').value=world.player.hair;$('skinColor').value=world.player.skin;openShade('characterShade');});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
+$('useCustomColor').addEventListener('click',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);selected='custom';save();renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
+$('neighborsBtn').addEventListener('click',()=>{closeShades();showStatus('Your neighbors wave quietly and enjoy their peaceful activities.');});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',controlsToggle);$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('inventoryBtn').addEventListener('click',()=>{inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();inventoryTab='materials';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='materials'));renderSlots();openShade('inventoryShade');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();$('shirtColor').value=world.player.shirt;$('hairColor').value=world.player.hair;$('skinColor').value=world.player.skin;openShade('characterShade');});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
 $('applyCharacter').addEventListener('click',()=>{world.player.shirt=$('shirtColor').value;world.player.hair=$('hairColor').value;world.player.skin=$('skinColor').value;save();closeShades();showStatus('Character colors saved.');});
 // Offline coloring sheets: original vector line art is embedded in this file.
 const COLOR_PAGES=[
@@ -375,7 +511,7 @@ $('inviteArtBtn').addEventListener('click',()=>openColoring('Mira'));
 // Art studio: local pixel-free line drawing with pointer/touch support.
 const art=$('artCanvas'),actx=art.getContext('2d');function clearArt(){actx.fillStyle='#fffdf8';actx.fillRect(0,0,art.width,art.height);actx.strokeStyle='#eee8da';actx.lineWidth=1;for(let x=24;x<art.width;x+=24){actx.beginPath();actx.moveTo(x,0);actx.lineTo(x,art.height);actx.stroke();}for(let y=24;y<art.height;y+=24){actx.beginPath();actx.moveTo(0,y);actx.lineTo(art.width,y);actx.stroke();}}function artPoint(e){const r=art.getBoundingClientRect();return {x:(e.clientX-r.left)*art.width/r.width,y:(e.clientY-r.top)*art.height/r.height};}art.addEventListener('pointerdown',e=>{artDrawing=true;artLast=artPoint(e);art.setPointerCapture(e.pointerId);});art.addEventListener('pointermove',e=>{if(!artDrawing)return;const p=artPoint(e);actx.strokeStyle=$('paintColor').value;actx.lineWidth=Number($('brushSize').value);actx.lineCap='round';actx.lineJoin='round';actx.beginPath();actx.moveTo(artLast.x,artLast.y);actx.lineTo(p.x,p.y);actx.stroke();artLast=p;});['pointerup','pointercancel'].forEach(ev=>art.addEventListener(ev,()=>{artDrawing=false;artLast=null;}));$('clearArt').addEventListener('click',clearArt);$('saveArt').addEventListener('click',()=>{if(world.artworks.length>=20){showStatus('Gallery is full. Export a backup first.');return;}let data=art.toDataURL('image/png');if(data.length>550000){showStatus('Drawing is too large to save.');return;}world.artworks.push({name:$('artName').value.slice(0,28)||'My picture',data});if(!addItem('picture','crafted')){world.artworks.pop();showStatus('Crafted pouch is full.');return;}save();closeShades();clearArt();showStatus('Artwork saved in the crafted pouch.');});
 // Keep one local autosave. No networking, analytics, third-party scripts or multiplayer.
-makeTexturePatterns();rebuildLookup();$('worldName').value=world.name;world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
+makeTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('customColor').value=world.customBlock.color;draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
 window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);
 })();
 </script>
