@@ -78,7 +78,7 @@ function initGame() {
     // Add a simple green grass floor baseplate
     const floorGeometry = new THREE.PlaneGeometry(50, 50);
     const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x557A46 });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    const floor = new === THREE.Mesh(floorGeometry, floorMaterial); // (Standard mesh setup)
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
@@ -95,11 +95,24 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// Toggle Inventory Window with 'E' key
+// --- UI TOGGLE CONTROLS (At the bottom of script.js) ---
+
+// Toggle Inventory Modal using the CSS .hidden class
+function toggleInventory() {
+    const modal = document.getElementById('inventory-modal');
+    modal.classList.toggle('hidden');
+}
+
+// Toggle entire top HUD visibility
+function toggleHUD() {
+    const topPanel = document.querySelector('#ui-layer .hud-panel');
+    topPanel.classList.toggle('hidden');
+}
+
+// Keyboard shortcut listener for 'E' key
 window.addEventListener('keydown', (event) => {
     if (event.key === 'e' || event.key === 'E') {
-        const modal = document.getElementById('inventory-modal');
-        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+        toggleInventory();
     }
 });
 
