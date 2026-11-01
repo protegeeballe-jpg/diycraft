@@ -484,74 +484,112 @@ function neighborAtScreen(px,py){
 function animalPositions(t=performance.now()/1000){return [{id:'sheep',name:'Pip the sheep',x:-2+Math.sin(t*.32)*.55,z:-7+Math.cos(t*.27)*.45},{id:'cat',name:'Mochi the cat',x:3+Math.sin(t*.28)*.5,z:-7+Math.cos(t*.25)*.4}];}
 function animalAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;for(const a of animalPositions()){const p=project({x:a.x+.12,y:.56,z:a.z+.48},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<58&&d<best){best=d;hit=a;}}return hit;}
 function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
- const c=Math.cos(n.facing||0),s=Math.sin(n.facing||0),phase=Number.isFinite(n.phase)?n.phase:0;
- const gait=n.moving?Math.sin(tick*8+phase)*.12:Math.sin(tick*1.4+phase)*.012;
- const lift=n.moving?Math.abs(Math.cos(tick*8+phase))*.045:Math.sin(tick*1.8+phase)*.008;
- const shoe=n.shoes||'#665348',pants=n.pants||'#48617a',hairStyle=n.hairStyle||'short';
- const outfit=n.outfitStyle||'hoodie',accessory=n.accessory||'none',accent=n.accessoryColor||'#f4a8bb';
+ const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
+ const phase=Number.isFinite(n.phase)?n.phase:0;
+ const step=n.moving?Math.sin(tick*8+phase)*.10:Math.sin(tick*1.4+phase)*.008;
+ const lift=n.moving?Math.abs(Math.cos(tick*8+phase))*.035:0;
+ const shoe=n.shoes||'#665348',pants=n.pants||'#48617a';
+ const hairStyle=n.hairStyle||'short',outfit=n.outfitStyle||'hoodie';
+ const accessory=n.accessory||'none',accent=n.accessoryColor||'#f4a8bb';
  const cube=(dx,y,dz,color,sx,sy,sz)=>{
   const x=n.x+dx*c+dz*s,z=n.z-dx*s+dz*c;
   pushCube(queue,cam,w,h,x,y,z,color,sx,sy,sz);
  };
- // Body and outfit silhouette.
- cube(-.34,.55+bob,-.22,n.shirt,.68,.82,.44);
- if(outfit==='dress'){
-  cube(-.34,.20+bob,-.22,n.pants||n.shirt,.86,.58,.55);
- }else if(outfit==='hoodie'){
-  cube(-.34,.91+bob,-.455,n.hair,.46,.13,.08);
-  cube(-.34,.30+bob,.015,shadeColor(n.shirt,.82),.30,.11,.045);
+
+ // Centered body: head, torso, sleeves, legs and shoes now share one axis.
+ // The face points toward local +Z; the body turns with the character.
+ cube(0,.78+bob,0,n.shirt,.70,.82,.46);
+
+ // Outfit details sit on the front of the torso instead of floating beside it.
+ if(outfit==='hoodie'){
+  cube(0,1.13+bob,-.25,n.hair,.44,.20,.08);
+  cube(0,.57+bob,.245,shadeColor(n.shirt,.78),.34,.17,.035);
+  cube(-.12,.58+bob,.27,'#f2e5d4',.025,.07,.015);
+  cube(.12,.58+bob,.27,'#f2e5d4',.025,.07,.015);
  }else if(outfit==='sweater'){
-  cube(-.34,.34+bob,.012,shadeColor(n.shirt,1.18),.56,.12,.035);
+  cube(0,.40+bob,.02,shadeColor(n.shirt,1.16),.58,.10,.035);
+  cube(-.25,.55+bob,.24,shadeColor(n.shirt,.82),.13,.12,.035);
+  cube(.25,.55+bob,.24,shadeColor(n.shirt,.82),.13,.12,.035);
  }else if(outfit==='overalls'){
-  cube(-.34,.47+bob,.015,pants,.48,.68,.07);
-  cube(-.53,.75+bob,.015,pants,.13,.37,.065);
-  cube(-.15,.75+bob,.015,pants,.13,.37,.065);
-  cube(-.34,.46+bob,.058,'#e8d9ae',.09,.08,.025);
+  cube(0,.76+bob,.245,pants,.43,.57,.055);
+  cube(-.18,1.04+bob,.245,pants,.105,.30,.055);
+  cube(.18,1.04+bob,.245,pants,.105,.30,.055);
+  cube(0,.78+bob,.282,'#f0dda7',.12,.10,.025);
+ }else if(outfit==='dress'){
+  cube(0,.43+bob,.015,n.pants||n.shirt,.86,.48,.54);
+  cube(0,.22+bob,.025,shadeColor(n.shirt,.90),.74,.08,.55);
+ }else if(outfit==='tee'){
+  cube(-.22,.78+bob,.245,shadeColor(n.shirt,1.12),.12,.45,.035);
+  cube(.22,.78+bob,.245,shadeColor(n.shirt,1.12),.12,.45,.035);
  }
- // Head and face.
- cube(-.29,1.36+bob,-.28,n.skin,.58,.58,.56);
- cube(-.31,1.66+bob,-.30,n.hair,.62,.22,.60);
- // Hairstyle variations. The front of the face is the +Z side.
+
+ // Two legs are evenly spaced under the centered torso.
+ cube(-.18,.31+bob+lift,-.025,pants,.25,.62,.30);
+ cube(.18,.31+bob-lift,-.025,pants,.25,.62,.30);
+ cube(-.19,.075+bob+lift,.045,shoe,.32,.15,.39);
+ cube(.19,.075+bob-lift,.045,shoe,.32,.15,.39);
+
+ // Neck and centered head meet cleanly at the shoulders.
+ cube(0,1.16+bob,0,n.skin,.22,.22,.24);
+ cube(0,1.49+bob,0,n.skin,.60,.62,.56);
+ cube(0,1.77+bob,-.025,n.hair,.62,.20,.58);
+
+ // Hair is built close to the head; long styles stop at the shoulders.
  if(hairStyle==='bob'){
-  cube(-.60,1.35+bob,-.20,n.hair,.16,.52,.52);cube(.00,1.35+bob,-.20,n.hair,.16,.52,.52);
+  cube(-.30,1.45+bob,-.015,n.hair,.16,.48,.48);
+  cube(.30,1.45+bob,-.015,n.hair,.16,.48,.48);
  }else if(hairStyle==='long'){
-  cube(-.60,1.14+bob,-.20,n.hair,.16,.94,.42);cube(.00,1.14+bob,-.20,n.hair,.16,.94,.42);
+  cube(-.30,1.18+bob,-.035,n.hair,.15,.82,.42);
+  cube(.30,1.18+bob,-.035,n.hair,.15,.82,.42);
+  cube(0,1.12+bob,-.285,n.hair,.52,.88,.12);
  }else if(hairStyle==='ponytail'){
-  cube(-.29,1.42+bob,-.58,n.hair,.22,.58,.24);cube(-.20,1.15+bob,-.67,n.hair,.20,.40,.22);
+  cube(.27,1.50+bob,-.32,n.hair,.24,.25,.24);
+  cube(.34,1.24+bob,-.40,n.hair,.20,.42,.20);
  }else if(hairStyle==='pigtails'){
-  cube(-.64,1.42+bob,-.20,n.hair,.22,.38,.25);cube(.05,1.42+bob,-.20,n.hair,.22,.38,.25);
-  cube(-.64,1.12+bob,-.25,n.hair,.22,.32,.22);cube(.05,1.12+bob,-.25,n.hair,.22,.32,.22);
+  cube(-.39,1.48+bob,-.04,n.hair,.22,.30,.25);
+  cube(.39,1.48+bob,-.04,n.hair,.22,.30,.25);
+  cube(-.41,1.23+bob,-.075,n.hair,.19,.30,.20);
+  cube(.41,1.23+bob,-.075,n.hair,.19,.30,.20);
  }else if(hairStyle==='curly'){
-  for(const [dx,dy,dz] of [[-.55,1.70,-.27],[-.38,1.83,-.29],[-.20,1.86,-.30],[-.02,1.76,-.27],[.04,1.58,-.24]])cube(dx,dy+bob,dz,n.hair,.22,.22,.22);
+  for(const [dx,dy,dz] of [[-.27,1.77,-.08],[-.14,1.88,-.08],[0,1.91,-.08],[.14,1.88,-.08],[.27,1.77,-.08],[-.33,1.63,-.07],[.33,1.63,-.07]]){
+   cube(dx,dy+bob,dz,n.hair,.20,.20,.20);
+  }
  }else if(hairStyle==='buns'){
-  cube(-.63,1.83+bob,-.25,n.hair,.25,.25,.25);cube(.05,1.83+bob,-.25,n.hair,.25,.25,.25);
+  cube(-.32,1.88+bob,-.03,n.hair,.26,.25,.26);
+  cube(.32,1.88+bob,-.03,n.hair,.26,.25,.26);
  }else{
-  cube(-.60,1.39+bob,-.20,n.hair,.14,.38,.40);cube(.00,1.39+bob,-.20,n.hair,.14,.38,.40);
+  cube(-.30,1.49+bob,-.035,n.hair,.14,.34,.40);
+  cube(.30,1.49+bob,-.035,n.hair,.14,.34,.40);
  }
- // Fringe, eyes and expression.
- cube(-.15,1.62+bob,.285,n.eyes||'#302820',.07,.07,.025);
- cube(.06,1.62+bob,.285,n.eyes||'#302820',.07,.07,.025);
- cube(-.04,1.50+bob,.29,'#9a6c5c',.12,.025,.02);
- // Arms, hands, legs and shoes move together while walking.
- cube(-.54,.60+bob+gait,-.12,n.shirt,.20,.63,.27);
- cube(.34,.60+bob-gait,-.12,n.shirt,.20,.63,.27);
- cube(-.54,.36+bob+gait,.12,n.skin,.21,.20,.24);
- cube(.34,.36+bob-gait,.12,n.skin,.21,.20,.24);
- cube(-.25,.08+bob+lift,-.12,pants,.23,.50,.28);
- cube(.02,.08+bob-lift,-.12,pants,.23,.50,.28);
- cube(-.29,.02+bob+lift,.01,shoe,.30,.14,.37);
- cube(-.01,.02+bob-lift,.01,shoe,.30,.14,.37);
- // Optional accessories.
+ // A neat fringe frames the forehead without forming a tall side wall.
+ cube(0,1.70+bob,.245,n.hair,.42,.13,.065);
+
+ // Face details are aligned symmetrically on the front surface.
+ cube(-.13,1.50+bob,.292,n.eyes||'#302820',.065,.065,.025);
+ cube(.13,1.50+bob,.292,n.eyes||'#302820',.065,.065,.025);
+ cube(0,1.39+bob,.298,'#9a6c5c',.10,.025,.018);
+
+ // Arms attach to both shoulders; hands stay directly below the sleeves.
+ cube(-.44,.78+bob+step,-.005,n.shirt,.22,.62,.28);
+ cube(.44,.78+bob-step,-.005,n.shirt,.22,.62,.28);
+ cube(-.44,.40+bob+step,.025,n.skin,.20,.20,.22);
+ cube(.44,.40+bob-step,.025,n.skin,.20,.20,.22);
+
+ // Small accessories follow the hairline or the face, never float off to one side.
  if(accessory==='bow'){
-  cube(-.58,1.83+bob,.02,accent,.20,.13,.12);cube(-.40,1.83+bob,.02,accent,.20,.13,.12);
-  cube(-.49,1.83+bob,.09,'#f7e8d0',.07,.09,.08);
+  cube(-.34,1.87+bob,.04,accent,.19,.12,.12);
+  cube(-.17,1.87+bob,.04,accent,.19,.12,.12);
+  cube(-.255,1.87+bob,.11,'#f7e8d0',.065,.08,.06);
  }else if(accessory==='flower'){
-  cube(-.58,1.79+bob,.04,accent,.16,.16,.12);cube(-.58,1.63+bob,.04,'#f6d36b',.07,.07,.08);
+  cube(-.34,1.83+bob,.055,accent,.15,.15,.12);
+  cube(-.34,1.69+bob,.07,'#f6d36b',.07,.07,.06);
  }else if(accessory==='glasses'){
-  cube(-.16,1.62+bob,.32,accent,.19,.12,.055);cube(.08,1.62+bob,.32,accent,.19,.12,.055);
-  cube(.01,1.62+bob,.34,accent,.08,.035,.035);
+  cube(-.13,1.50+bob,.335,accent,.18,.11,.045);
+  cube(.13,1.50+bob,.335,accent,.18,.11,.045);
+  cube(0,1.50+bob,.355,accent,.07,.03,.025);
  }else if(accessory==='cap'){
-  cube(-.30,1.84+bob,-.28,accent,.72,.13,.66);cube(-.30,1.77+bob,.04,accent,.76,.06,.25);
+  cube(0,1.88+bob,-.035,accent,.70,.13,.62);
+  cube(0,1.81+bob,.20,accent,.73,.055,.23);
  }
 }
 function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
