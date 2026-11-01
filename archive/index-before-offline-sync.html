@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIYCraft</title>
+    <!-- 1. Stylesheet link restored -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- 3D Game Render Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+        <div class="hud-panel">
+            <div>
+                <h1>DIYCraft</h1>
+                <p>Press 'E' or click Inventory to open items</p>
+            </div>
+            <button id="inventory-btn" class="game-btn">Inventory</button>
+        </div>
+    </div>
+
+    <!-- Inventory Modal (Starts with .hidden class so it's closed on startup) -->
+    <div id="inventory-modal" class="inventory-container hidden">
+        <div class="inventory-header">
+            <h2>Inventory Pouches</h2>
+            <button id="close-inventory" class="game-btn">X</button>
+        </div>
+        <div class="slot-grid">
+            <!-- Sample Inventory Slots -->
+            <div class="slot">1</div><div class="slot">2</div><div class="slot">3</div><div class="slot">4</div><div class="slot">5</div>
+            <div class="slot">6</div><div class="slot">7</div><div class="slot">8</div><div class="slot">9</div><div class="slot">10</div>
+            <div class="slot">11</div><div class="slot">12</div><div class="slot">13</div><div class="slot">14</div><div class="slot">15</div>
+            <div class="slot">16</div><div class="slot">17</div><div class="slot">18</div><div class="slot">19</div><div class="slot">20</div>
+        </div>
+    </div>
+
+    <!-- 2. Scripts loaded at the bottom with correct paths -->
+    <script src="js/three.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
