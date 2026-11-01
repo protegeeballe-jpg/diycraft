@@ -468,8 +468,7 @@ const NEIGHBOR_ROUTES={
   {x:15,z:-5,pause:2.8,activity:'🌸'}
  ]
 };
-function neighborOnRoute(route,tick,phase){
- const speed=1.05;
+function neighborOnRoute(route,tick,phase,speed=1.05){
  const segments=route.map((point,i)=>{
   const next=route[(i+1)%route.length],distance=Math.hypot(next.x-point.x,next.z-point.z);
   return {point,next,travel:Math.max(1.8,distance/speed),pause:point.pause||1};
@@ -493,22 +492,52 @@ function neighborOnRoute(route,tick,phase){
  }
  return {...route[0],facing:0,moving:false,walk:0};
 }
+const FAMILY_ROUTES={
+ dad:[
+  {x:14,z:-4.8,pause:1.4,activity:'👋'},
+  {x:14,z:-1.4,pause:2.0,activity:'🌳'},
+  {x:17,z:-.8,pause:1.0,activity:'☀️'},
+  {x:19.5,z:-2.0,pause:1.8,activity:'🏡'},
+  {x:17,z:-3.3,pause:1.1,activity:'🌼'}
+ ],
+ mom:[
+  {x:22,z:-4.4,pause:2.4,activity:'🌸'},
+  {x:23.5,z:-1.8,pause:2.1,activity:'🌷'},
+  {x:20.8,z:-.5,pause:2.8,activity:'☀️'},
+  {x:19.8,z:-2.5,pause:2.0,activity:'🏡'}
+ ],
+ lia:[
+  {x:15.2,z:-1.1,pause:1.4,activity:'🦋'},
+  {x:16.5,z:-.4,pause:1.0,activity:'🌼'},
+  {x:17.3,z:-1.7,pause:1.2,activity:'🌷'},
+  {x:16.2,z:-2.7,pause:1.0,activity:'💐'}
+ ],
+ maya:[
+  {x:19.2,z:-1.2,pause:1.1,activity:'🌻'},
+  {x:21.4,z:-.8,pause:1.5,activity:'🐾'},
+  {x:22.3,z:-2.2,pause:1.0,activity:'🌺'},
+  {x:20.4,z:-3.2,pause:1.3,activity:'🌿'}
+ ],
+ nico:[
+  {x:13.2,z:-7.7,pause:.7,activity:'🏃'},
+  {x:13.6,z:-5.5,pause:.6,activity:'🐕'},
+  {x:14.8,z:-3.9,pause:.9,activity:'⚽'},
+  {x:13.7,z:-2.5,pause:.6,activity:'🌳'},
+  {x:12.8,z:-4.7,pause:.8,activity:'🏃'}
+ ]
+};
 function familyMembers(t){
- const base=neighborOnRoute(NEIGHBOR_ROUTES.family,t,23);
  const people=[
-  {id:'dad',name:'Miguel',dx:-.66,dz:.24,scale:1.10,phase:0,shirt:'#477b9a',hair:'#392b24',skin:'#c9916d',pants:'#40516c',shoes:'#493b35',eyes:'#302820',hairStyle:'short',outfitStyle:'tee',accessory:'none'},
-  {id:'mom',name:'Ana',dx:.66,dz:.24,scale:1.02,phase:1.1,shirt:'#bd7896',hair:'#493127',skin:'#edc19e',pants:'#557c65',shoes:'#88516c',eyes:'#302820',hairStyle:'long',outfitStyle:'dress',accessory:'flower',accessoryColor:'#f2c768'},
-  {id:'lia',name:'Lia',dx:-.68,dz:-.72,scale:.78,phase:2.0,shirt:'#e58eaa',hair:'#57372b',skin:'#f0c9a9',pants:'#83a86c',shoes:'#c75e7c',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'dress',accessory:'bow',accessoryColor:'#f4c4d5'},
-  {id:'maya',name:'Maya',dx:.08,dz:-.92,scale:.75,phase:2.8,shirt:'#e6bb58',hair:'#3f3028',skin:'#e8b995',pants:'#5593a0',shoes:'#b87845',eyes:'#302820',hairStyle:'bob',outfitStyle:'overalls',accessory:'flower',accessoryColor:'#f28cae'},
-  {id:'nico',name:'Nico',dx:.78,dz:-.70,scale:.82,phase:3.6,shirt:'#6d9b70',hair:'#382921',skin:'#dba77f',pants:'#526d8c',shoes:'#5d4b3e',eyes:'#302820',hairStyle:'curly',outfitStyle:'hoodie',accessory:'none'}
+  {id:'dad',name:'Miguel',route:FAMILY_ROUTES.dad,speed:1.12,pace:7.2,phase:1.5,scale:1.10,shirt:'#477b9a',hair:'#392b24',skin:'#c9916d',pants:'#40516c',shoes:'#493b35',eyes:'#302820',hairStyle:'short',outfitStyle:'tee',accessory:'none'},
+  {id:'mom',name:'Ana',route:FAMILY_ROUTES.mom,speed:.92,pace:6.8,phase:8.2,scale:1.02,shirt:'#bd7896',hair:'#493127',skin:'#edc19e',pants:'#557c65',shoes:'#88516c',eyes:'#302820',hairStyle:'long',outfitStyle:'dress',accessory:'flower',accessoryColor:'#f2c768'},
+  {id:'lia',name:'Lia',route:FAMILY_ROUTES.lia,speed:1.42,pace:10.2,phase:3.4,scale:.78,shirt:'#e58eaa',hair:'#57372b',skin:'#f0c9a9',pants:'#83a86c',shoes:'#c75e7c',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'dress',accessory:'bow',accessoryColor:'#f4c4d5'},
+  {id:'maya',name:'Maya',route:FAMILY_ROUTES.maya,speed:1.30,pace:9.6,phase:12.7,scale:.75,shirt:'#e6bb58',hair:'#3f3028',skin:'#e8b995',pants:'#5593a0',shoes:'#b87845',eyes:'#302820',hairStyle:'bob',outfitStyle:'overalls',accessory:'flower',accessoryColor:'#f28cae'},
+  {id:'nico',name:'Nico',route:FAMILY_ROUTES.nico,speed:1.68,pace:11.4,phase:5.9,scale:.82,shirt:'#6d9b70',hair:'#382921',skin:'#dba77f',pants:'#526d8c',shoes:'#5d4b3e',eyes:'#302820',hairStyle:'curly',outfitStyle:'hoodie',accessory:'none'}
  ];
- const c=Math.cos(base.facing||0),s=Math.sin(base.facing||0);
- return people.map((p,i)=>({
+ return people.map(p=>({
   ...p,
-  x:base.x+p.dx*c+p.dz*s,
-  z:base.z-p.dx*s+p.dz*c,
-  facing:base.facing,moving:base.moving,activity:i===0?base.activity:'',
-  homeX:16,homeZ:-9
+  ...neighborOnRoute(p.route,t,p.phase,p.speed),
+  activity:undefined,homeX:16,homeZ:-9
  }));
 }
 function currentNeighbors(t=performance.now()/1000){
@@ -534,7 +563,7 @@ function animalPositions(t=performance.now()/1000){
   x:x+Math.sin(t*rate+phase)*.62,
   z:z+Math.cos(t*(rate*.82)+phase)*.42,
   facing:Math.atan2(rate*Math.cos(t*rate+phase),-rate*.82*Math.sin(t*(rate*.82)+phase)),
-  moving:true
+  moving:true,phase
  });
  return [
   {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',x:-2+Math.sin(t*.32)*.55,z:-7+Math.cos(t*.27)*.45},
@@ -550,7 +579,11 @@ function animalAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=ca
 function drawPetFigure(queue,cam,w,h,a,tick){
  const facing=a.facing||0,c=Math.cos(facing),s=Math.sin(facing);
  const dog=a.species==='dog',body=a.body||'#d6a15f',accent=a.accent||'#f1d7a8';
- const bob=a.moving?Math.abs(Math.sin(tick*7+(a.phase||0)))*.025:Math.sin(tick*1.2)*.01;
+ const phase=Number.isFinite(a.phase)?a.phase:0;
+ const gaitRate=dog?12.5:7.2;
+ const stride=Math.sin(tick*gaitRate+phase);
+ const bob=a.moving?Math.abs(Math.sin(tick*gaitRate*2+phase))*(dog?.035:.018):Math.sin(tick*1.2+phase)*.01;
+ const wag=Math.sin(tick*(dog?15:6.5)+phase);
  const cube=(dx,y,dz,color,sx,sy,sz)=>{
   const centerX=a.x+dx*c+dz*s,centerZ=a.z-dx*s+dz*c;
   pushCubeFacing(queue,cam,w,h,centerX-sx/2,y,centerZ-sz/2,color,sx,sy,sz,facing,false);
@@ -564,11 +597,14 @@ function drawPetFigure(queue,cam,w,h,a,tick){
    cube(dx,.55+bob,.57,'#292622',.055,.07,.035);
    cube(dx*1.65,.65+bob,.34,accent,.13,.22,.14);
   }
-  for(const [dx,dz] of [[-.21,-.28],[.21,-.28],[-.21,.28],[.21,.28]]){
-   cube(dx,.015+bob,dz,body,.15,.27,.16);
-   cube(dx,.03+bob,dz+(dz>0?.015:-.015),accent,.155,.06,.17);
+  for(const [dx,dz,index] of [[-.21,-.28,0],[.21,-.28,Math.PI],[-.21,.28,Math.PI],[.21,.28,0]]){
+   const step=stride*Math.cos(index),lift=Math.max(0,Math.sin(tick*gaitRate+phase+index))*.075;
+   const legZ=dz+step*.10;
+   cube(dx,.015+bob+lift,legZ,body,.15,.27,.16);
+   cube(dx,.03+bob+lift,legZ+(dz>0?.015:-.015),accent,.155,.06,.17);
   }
-  cube(0,.40+bob,-.53,body,.13,.13,.36);
+  // A wagging tail makes the dogs look excited rather than frozen.
+  cube(wag*.13,.40+bob+Math.abs(wag)*.035,-.53,body,.13,.13,.36);
  }else{
   cube(0,.16+bob,-.03,body,.48,.32,.68);
   cube(0,.43+bob,.29,body,.39,.39,.36);
@@ -578,20 +614,24 @@ function drawPetFigure(queue,cam,w,h,a,tick){
   }
   cube(0,.37+bob,.49,accent,.17,.11,.10);
   cube(0,.41+bob,.55,'#8a6b68',.055,.04,.04);
-  for(const [dx,dz] of [[-.16,-.25],[.16,-.25],[-.16,.22],[.16,.22]]){
-   cube(dx,.015+bob,dz,body,.12,.22,.13);
+  for(const [dx,dz,index] of [[-.16,-.25,0],[.16,-.25,Math.PI],[ -.16,.22,Math.PI],[.16,.22,0]]){
+   const step=stride*Math.cos(index),lift=Math.max(0,Math.sin(tick*gaitRate+phase+index))*.042;
+   const legZ=dz+step*.055;
+   cube(dx,.015+bob+lift,legZ,body,.12,.22,.13);
   }
-  cube(.28,.25+bob,-.34,body,.11,.11,.45);
+  // Cats keep their tails higher and swish them more slowly.
+  cube(.28+wag*.10,.25+bob+Math.abs(wag)*.05,-.34,body,.11,.11,.45);
  }
 }
 function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
  const phase=Number.isFinite(n.phase)?n.phase:0;
  const unitScale=Number.isFinite(n.scale)?n.scale:1;
- const walk=n.moving?Math.sin(tick*8+phase):0;
+ const pace=Number.isFinite(n.pace)?n.pace:8;
+ const walk=n.moving?Math.sin(tick*pace+phase):0;
  const legSwing=walk*.13;
- const leftLift=n.moving?Math.max(0,Math.cos(tick*8+phase))*.045:0;
- const rightLift=n.moving?Math.max(0,-Math.cos(tick*8+phase))*.045:0;
+ const leftLift=n.moving?Math.max(0,Math.cos(tick*pace+phase))*.045:0;
+ const rightLift=n.moving?Math.max(0,-Math.cos(tick*pace+phase))*.045:0;
  const armSwing=-legSwing*.72;
  const shoe=n.shoes||'#665348',pants=n.pants||'#48617a';
  const hairStyle=n.hairStyle||'short',outfit=n.outfitStyle||'hoodie';
