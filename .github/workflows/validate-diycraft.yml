@@ -58,7 +58,11 @@ jobs:
             'function getTimePalette',
             'const NEIGHBOR_ROUTES',
             'function neighborOnRoute',
-            'const HOLD_TO_REMOVE_MS=600'
+            'const HOLD_TO_REMOVE_MS=600',
+            'function toggleDoor(door)',
+            'function drawVoxelDoor(queue,cam,w,h,door)',
+            'id="doorShade"',
+            "id:'door'"]
           ];
           for (const marker of required) {
             if (!source.includes(marker)) {
