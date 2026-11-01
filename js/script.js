@@ -31,15 +31,18 @@ function init() {
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    // 5. Base Ground / Terrain Plane
+  // 5. Base Ground / Terrain Plane
     const planeGeo = new THREE.PlaneGeometry(50, 50);
     const planeMat = new THREE.MeshLambertMaterial({ color: 0x2E7D32 });
     const ground = new THREE.Mesh(planeGeo, planeMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
-    placedBlocks.push(ground); // Add ground to buildable objects
+    placedBlocks.push(ground);
 
+    // ✨ CALL IT HERE:
+    spawnWorldElements();
+    
     // 6. Raycaster & Mouse Initialization
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
@@ -59,6 +62,92 @@ function setupUI() {
     const inventoryBtn = document.getElementById('inventory-btn'); 
     const closeInventoryBtn = document.getElementById('close-inventory'); 
 
+    // --- WORLD LIFE (TREES, NPCS, ANIMALS) ---
+
+function spawnWorldElements() {
+    // 1. Spawn a forest of low-poly trees
+    for (let i = 0; i < 20; i++) {
+        // Keep them spread out, away from the immediate center spawn
+        const x = (Math.random() - 0.5) * 40;
+        const z = (Math.random() - 0.5) * 40;
+        if (Math.abs(x) > 4 || Math.abs(z) > 4) {
+            createTree(x, z);
+        }
+    }
+
+    // 2. Spawn a friendly neighbor NPC standing nearby
+    createNPC(3, 3);
+
+    // 3. Spawn a friendly animal companion
+    createAnimal(-4, 3);
+}
+
+function createTree(x, z) {
+    // Tree Trunk
+    const trunkGeo = new THREE.BoxGeometry(0.8, 3, 0.8);
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5C4033 }); // Brown wood
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.set(x, 1.5, z);
+    trunk.castShadow = true;
+    trunk.receiveShadow = true;
+    scene.add(trunk);
+    placedBlocks.push(trunk); // Make trees solid/buildable around!
+
+    // Tree Leaves
+    const leavesGeo = new THREE.BoxGeometry(3, 3, 3);
+    const leavesMat = new THREE.MeshLambertMaterial({ color: 0x2E8B57 }); // Sea green leaves
+    const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+    leaves.position.set(x, 3.5, z);
+    leaves.castShadow = true;
+    scene.add(leaves);
+    placedBlocks.push(leaves);
+}
+
+function createNPC(x, z) {
+    const npcGroup = new THREE.Group();
+    
+    // Body (Blue shirt)
+    const bodyGeo = new THREE.BoxGeometry(0.8, 1.2, 0.5);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3498DB });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 1.6;
+    body.castShadow = true;
+    npcGroup.add(body);
+
+    // Head
+    const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    const headMat = new THREE.MeshLambertMaterial({ color: 0xFFD1B3 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 2.5;
+    head.castShadow = true;
+    npcGroup.add(head);
+
+    npcGroup.position.set(x, 0, z);
+    scene.add(npcGroup);
+}
+
+function createAnimal(x, z) {
+    const animalGroup = new THREE.Group();
+
+    // Body (Fluffy white sheep body)
+    const bodyGeo = new THREE.BoxGeometry(1, 0.8, 1.4);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xECF0F1 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.6;
+    body.castShadow = true;
+    animalGroup.add(body);
+
+    // Head
+    const headGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const headMat = new THREE.MeshLambertMaterial({ color: 0xBDC3C7 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.set(0, 0.9, 0.8);
+    head.castShadow = true;
+    animalGroup.add(head);
+
+    animalGroup.position.set(x, 0, z);
+    scene.add(animalGroup);
+}
     // Toggle Inventory Modal
     window.toggleInventory = function() {
         if (!inventoryModal) return;
