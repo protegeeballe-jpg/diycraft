@@ -3,49 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIYCRAFT: Roleplay & Build</title>
-    <!-- Link to separate CSS file -->
-    <link rel="stylesheet" href="css/styles.css">
+    <title>DIYCraft</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- 3D Game Viewport -->
+    <!-- 3D Game Render Container -->
     <div id="game-container"></div>
 
-    <!-- HUD Information Layer -->
+    <!-- UI Overlay Layer -->
     <div id="ui-layer">
-        <div class="hud-panel" style="align-self: flex-start;">
+        <div class="hud-panel">
             <div>
-                <h1>DIYCRAFT</h1>
-                <p>Peaceful Creative Sanctuary 🛡️</p>
+                <h1>DIYCraft</h1>
+                <p>Press 'E' or click Inventory to open items</p>
             </div>
-            <!-- Small button to hide/show UI elements -->
-            <button onclick="toggleHUD()">Hide UI</button>
-        </div>
-
-        <div class="hud-panel" style="align-self: center;">
-            <p>Press <b>'E'</b> to open Pouches | Click screen to build</p>
+            <button id="inventory-btn" class="game-btn">Inventory</button>
         </div>
     </div>
 
-    <!-- Inventory Pouch Modal (Dual 60-Slot Architecture) - Hidden by default -->
+    <!-- Inventory Modal (Starts with .hidden class so it's closed on startup) -->
     <div id="inventory-modal" class="inventory-container hidden">
         <div class="inventory-header">
-            <h2>Pouch 1: Raw Materials & Tools (60 Slots)</h2>
-            <button onclick="toggleInventory()">Close</button>
+            <h2>Inventory Pouches</h2>
+            <button id="close-inventory" class="game-btn">X</button>
         </div>
-        <div id="raw-slots" class="slot-grid"></div>
-        
-        <div class="inventory-header">
-            <h2>Pouch 2: Crafted Items & Decor (60 Slots)</h2>
+        <div class="slot-grid">
+            <!-- Sample Inventory Slots -->
+            <div class="slot">1</div><div class="slot">2</div><div class="slot">3</div><div class="slot">4</div><div class="slot">5</div>
+            <div class="slot">6</div><div class="slot">7</div><div class="slot">8</div><div class="slot">9</div><div class="slot">10</div>
+            <div class="slot">11</div><div class="slot">12</div><div class="slot">13</div><div class="slot">14</div><div class="slot">15</div>
+            <div class="slot">16</div><div class="slot">17</div><div class="slot">18</div><div class="slot">19</div><div class="slot">20</div>
         </div>
-        <div id="crafted-slots" class="slot-grid"></div>
-        <p style="text-align: center; color: #81C784; font-size: 12px;">🔒 Guardrails Active: Zero weapons or harmful items allowed.</p>
     </div>
 
-   <!-- Local Offline Three.js 3D Library inside the js folder -->
-<script src="js/three.min.js"></script>
-<!-- Custom Game Logic inside the js folder -->
-<script src="js/script.js"></script>
+    <!-- 1. Three.js Library (Must load first) -->
+    <script src="three.js"></script>
+    
+    <!-- 2. Main Game Script (Must load second) -->
+    <script src="script.js"></script>
 </body>
 </html>
