@@ -63,7 +63,7 @@ jobs:
             'function drawVoxelDoor(queue,cam,w,h,door)',
             'function jump()',
             'function surfaceHeightAt(x,z)',
-            'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5'
+            'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
             "id:'door'"
           ];
           for (const marker of required) {
