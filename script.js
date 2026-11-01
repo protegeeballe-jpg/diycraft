@@ -82,7 +82,7 @@ function initGame() {
     // Add a simple green grass floor baseplate (Fixed syntax)
     const floorGeometry = new THREE.PlaneGeometry(50, 50);
     const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x557A46 });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial); 
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
