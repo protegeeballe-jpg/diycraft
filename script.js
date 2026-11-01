@@ -1,4 +1,4 @@
-// --- DIYCRAFT CORE GAME ENGINE ---
+// --- DIYCRAFT CORE GAME ENGINE: ECOSYSTEM UPDATE ---
 
 // 1. Initialize Dual Inventory Pouch Data Structures (60 slots each)
 const rawInventory = new Array(60).fill(null);
@@ -8,12 +8,11 @@ const craftedInventory = new Array(60).fill(null);
 const SAFE_WHITELIST = [
     "Wood Block", "Stone Block", "Flower", "Wheat Seeds", 
     "Wooden Plank", "Glass Pane", "Paintbrush", "Canvas", 
-    "Apple", "Bread", "Cottage Door", "Window"
+    "Apple", "Bread", "Cottage Door", "Window", "Tree Sapling", "Water Block"
 ];
 
 // Function to safely add items with guardrail verification
 function addItemToPouch(pouchType, itemName) {
-    // GUARDRAIL CHECK: Reject any item not on the safe whitelist
     if (!SAFE_WHITELIST.includes(itemName)) {
         console.warn(`[SAFETY GUARD] Blocked unauthorized or harmful item attempt: "${itemName}"`);
         return false;
@@ -37,7 +36,6 @@ function initializeInventoryUI() {
     const rawContainer = document.getElementById('raw-slots');
     const craftedContainer = document.getElementById('crafted-slots');
 
-    // Clear existing slots to prevent duplication if re-initialized
     rawContainer.innerHTML = '';
     craftedContainer.innerHTML = '';
 
@@ -55,11 +53,12 @@ function initializeInventoryUI() {
 }
 
 function updateInventoryUI() {
-    // Logic to visually sync inventory arrays with HTML UI can go here
+    // Visual syncing logic placeholder
 }
 
-// 3. Basic 3D World Setup using Three.js
+// 3. 3D World Setup & Environment Generation
 let scene, camera, renderer;
+const placedBlocks = [];
 
 function initGame() {
     // Create Scene
@@ -68,7 +67,7 @@ function initGame() {
 
     // Create Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 5, 10);
+    camera.position.set(0, 8, 15);
 
     // Create Renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -78,13 +77,13 @@ function initGame() {
     // Add Friendly Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(15, 30, 15);
+    scene.add(directionalLight);
 
-    // Add a simple green grass floor baseplate (Fixed syntax)
-    const floorGeometry = new THREE.PlaneGeometry(50, 50);
-    const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x557A46 });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    scene.add(floor);
+    // --- GENERATE ENVIRONMENT: Ground, River, Mountains, and Trees ---
+    generateEnvironment();
 
     // Initialize UI
     initializeInventoryUI();
@@ -93,32 +92,139 @@ function initGame() {
     animate();
 }
 
+// Function to procedurally build the nature landscape
+function generateEnvironment() {
+    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+
+    // 1. Base Grass Floor
+    const grassMat = new THREE.MeshLambertMaterial({ color: 0x557A46 });
+    const dirtMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
+    const waterMat = new THREE.MeshLambertMaterial({ color: 0x4682B4, transparent: true, opacity: 0.8 });
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x808080 });
+    const leafMat = new THREE.MeshLambertMaterial({ color: 0x2E8B57 });
+
+    // Build flat-to-rolling terrain grid
+    for (let x = -15; x <= 15; x++) {
+        for (let z = -15; z <= 15; z++) {
+            
+            // 2. The Peaceful River (A strip where x is between -2 and -1 running down z)
+            if (x >= -2 && x <= -1) {
+                const waterBlock = new THREE.Mesh(cubeGeo, waterMat);
+                waterBlock.position.set(x, -0.2, z);
+                scene.add(waterBlock);
+                placedBlocks.push(waterBlock);
+                continue;
+            }
+
+            // 3. Mountains in the far background (positive z)
+            if (z > 10) {
+                let mountainHeight = Math.floor(Math.abs(Math.sin(x * 0.5)) * 4) + 1;
+                for (let y = 0; y < mountainHeight; y++) {
+                    let mat = (y === mountainHeight - 1) ? stoneMat : dirtMat;
+                    let mBlock = new THREE.Mesh(cubeGeo, mat);
+                    mBlock.position.set(x, y, z);
+                    scene.add(mBlock);
+                    placedBlocks.push(mBlock);
+                }
+                continue;
+            }
+
+            // Standard Grass Ground Level
+            const groundBlock = new THREE.Mesh(cubeGeo, grassMat);
+            groundBlock.position.set(x, 0, z);
+            scene.add(groundBlock);
+            placedBlocks.push(groundBlock);
+
+            // 4. Scatter Initial Cozy Trees (Check specific coordinates to plant trees)
+            if ((x === -8 && z === -5) || (x === 6 && z === 4) || (x === -6 && z === 8)) {
+                spawnTree(x, 1, z);
+            }
+        }
+    }
+}
+
+// Helper function to build a blocky voxel tree[cite: 3]
+function spawnTree(startX, startY, startZ) {
+    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    const leafMat = new THREE.MeshLambertMaterial({ color: 0x2E8B57 });
+
+    // Trunk (3 blocks high)
+    for (let y = 0; y < 3; y++) {
+        let trunk = new THREE.Mesh(cubeGeo, woodMat);
+        trunk.position.set(startX, startY + y, startZ);
+        scene.add(trunk);
+        placedBlocks.push(trunk);
+    }
+
+    // Leaf canopy
+    for (let lx = -1; lx <= 1; lx++) {
+        for (let lz = -1; lz <= 1; lz++) {
+            for (let ly = 3; ly <= 4; ly++) {
+                // Skip corners for a rounded blocky look
+                if (Math.abs(lx) === 1 && Math.abs(lz) === 1 && ly === 4) continue;
+                
+                let leaf = new THREE.Mesh(cubeGeo, leafMat);
+                leaf.position.set(startX + lx, startY + ly, startZ + lz);
+                scene.add(leaf);
+                placedBlocks.push(leaf);
+            }
+        }
+    }
+}
+
 // Game Loop / Render Tick
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
 }
 
-// --- UI TOGGLE CONTROLS ---
+// --- 4. CLICK-TO-BUILD RAYCASTER MECHANIC ---
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
-// Toggle Inventory Modal using the CSS .hidden class
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('inventory-modal');
+    if (!modal.classList.contains('hidden')) return;
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children);
+
+    if (intersects.length > 0) {
+        const hit = intersects[0];
+
+        const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+        const cubeMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B }); // Cozy wood block
+        const newBlock = new THREE.Mesh(cubeGeo, cubeMat);
+
+        newBlock.position.copy(hit.point).add(hit.face.normal.clone().multiplyScalar(0.5));
+        newBlock.position.x = Math.floor(newBlock.position.x) + 0.5;
+        newBlock.position.y = Math.floor(newBlock.position.y) + 0.5;
+        newBlock.position.z = Math.floor(newBlock.position.z) + 0.5;
+
+        scene.add(newBlock);
+        placedBlocks.push(newBlock);
+    }
+});
+
+// --- UI TOGGLE CONTROLS ---
 function toggleInventory() {
     const modal = document.getElementById('inventory-modal');
     modal.classList.toggle('hidden');
 }
 
-// Toggle entire top HUD visibility
 function toggleHUD() {
     const topPanel = document.querySelector('#ui-layer .hud-panel');
     topPanel.classList.toggle('hidden');
 }
 
-// Keyboard shortcut listener for 'E' key
 window.addEventListener('keydown', (event) => {
     if (event.key === 'e' || event.key === 'E') {
         toggleInventory();
     }
 });
 
-// Run engine when window loads
 window.onload = initGame;
