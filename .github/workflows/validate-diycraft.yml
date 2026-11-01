@@ -33,23 +33,33 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const html = fs.readFileSync('offline/index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
-          if (scripts.length !== 1) {
-            throw new Error(`Expected one inline game script, found ${scripts.length}`);
+          const openTag = '<script';
+          const closeTag = '</script>';
+          const scriptCount = html.split(openTag).length - 1;
+          const open = html.indexOf(openTag);
+          const tagEnd = html.indexOf('>', open);
+          const close = html.lastIndexOf(closeTag);
+
+          if (scriptCount !== 1 || open < 0 || tagEnd < 0 || close <= tagEnd) {
+            throw new Error('Expected exactly one complete inline game script.');
           }
-          const source = scripts[0][1];
+
+          const source = html.slice(tagEnd + 1, close);
           const required = [
             'function getTimePalette',
             'const NEIGHBOR_ROUTES',
             'function neighborOnRoute',
-            'const HOLD_TO_REMOVE_MS=600',
-            'id="customBlockShade"'
+            'const HOLD_TO_REMOVE_MS=600'
           ];
           for (const marker of required) {
-            if (!html.includes(marker) && !source.includes(marker)) {
-              throw new Error(`Missing expected DIYCraft feature: ${marker}`);
+            if (!source.includes(marker)) {
+              throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
+          if (!html.includes('id="customBlockShade"')) {
+            throw new Error('Custom block designer panel is missing.');
+          }
+
           fs.writeFileSync('/tmp/diycraft-inline.js', source);
           NODE
           node --check /tmp/diycraft-inline.js
