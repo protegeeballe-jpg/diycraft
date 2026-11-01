@@ -8,14 +8,15 @@ on:
 
 permissions:
   pages: write
+  deployments: write
   contents: read
 
 jobs:
-  recover:
-    name: Cancel the stale Pages deployment
+  inspect:
+    name: Inspect the stale Pages deployment records
     runs-on: ubuntu-latest
     steps:
-      - name: Send an explicit cancellation for the stale deployment
+      - name: Compare Pages state with repository deployment records
         uses: actions/github-script@v7
         with:
           script: |
@@ -26,15 +27,45 @@ jobs:
               pages_deployment_id: deploymentId
             };
 
-            const current = await github.request(
+            const pages = await github.request(
               'GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}',
               params
             );
-            core.info(`Pages API status for ${deploymentId}: ${current.data.status || 'unknown'}`);
-            core.info('The Pages deploy action still reports this SHA as an in-progress blocker; sending the explicit cancellation request.');
+            core.info(`Pages API status for ${deploymentId}: ${pages.data.status || 'unknown'}`);
 
-            const cancelled = await github.request(
-              'POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel',
-              params
+            const listed = await github.request(
+              'GET /repos/{owner}/{repo}/deployments',
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: deploymentId,
+                per_page: 100
+              }
             );
-            core.notice(`GitHub accepted the cancellation request (HTTP ${cancelled.status}).`);
+
+            core.info(`Standard deployment records matching this SHA: ${listed.data.length}`);
+            for (const deployment of listed.data) {
+              const statusResult = await github.request(
+                'GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses',
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  deployment_id: deployment.id,
+                  per_page: 20
+                }
+              );
+              const statuses = statusResult.data || [];
+              const latest = statuses[0] || null;
+              core.info(JSON.stringify({
+                id: deployment.id,
+                sha: deployment.sha,
+                environment: deployment.environment,
+                task: deployment.task,
+                created_at: deployment.created_at,
+                latest_status: latest ? {
+                  state: latest.state,
+                  description: latest.description,
+                  created_at: latest.created_at
+                } : null
+              }));
+            }
