@@ -275,7 +275,41 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  const ground=[{x:-WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:WORLD_LIMIT},{x:-WORLD_LIMIT,y:0,z:WORLD_LIMIT}].map(p=>project(p,cam,w,h));
  if(ground.every(Boolean)){ctx.beginPath();ground.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle='#80bd65';ctx.fill();ctx.strokeStyle='#70a75b';ctx.lineWidth=1;ctx.stroke();}
  // Nearby grid lines for spatial building guidance
- for(let i=-WORLD_LIMIT;i<=WORLD_LIMIT;i+=2){line3(polys,cam,w,h,{x:i,y:.008,z:-WORLD_LIMIT},{x:i,y:.008,z:WORLD_LIMIT},'#6b9e5842',.6);line3(polys,cam,w,h,{x:-WORLD_LIMIT,y:.008,z:i},{x:WORLD_LIMIT,y:.008,z:i},'#6b9e5842',.6);}
+
+ // Soft building guide lines.
+ // Keep them close to the player and fade them
+ // gradually into the distance.
+
+ const gridRange = 24;
+ const gridStep = 2;
+
+ for (let i = -gridRange; i <= gridRange; i += gridStep) {
+
+     const opacity = Math.max(
+         0.015,
+         0.16 * (1 - Math.abs(i) / gridRange)
+     );
+
+     const gridColor =
+         `rgba(83,125,74,${opacity})`;
+
+     const x = Math.floor(world.player.x) + i;
+     const z = Math.floor(world.player.z) + i;
+
+     line3(
+         polys, cam, w, h,
+         {x, y:0.008, z:world.player.z-gridRange},
+         {x, y:0.008, z:world.player.z+gridRange},
+         gridColor, 0.6
+     );
+
+     line3(
+         polys, cam, w, h,
+         {x:world.player.x-gridRange, y:0.008, z},
+         {x:world.player.x+gridRange, y:0.008, z},
+         gridColor, 0.6
+     );
+ }
  // Blocks
  for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?'custom':b.type);}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
