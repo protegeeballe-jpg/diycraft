@@ -238,7 +238,7 @@ const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,
 function cubeVerts(x,y,z,sx=1,sy=1,sz=1){return [{x,y,z},{x:x+sx,y,z},{x:x+sx,y,z:z+sz},{x,y,z:z+sz},{x,y:y+sy,z},{x:x+sx,y:y+sy,z},{x:x+sx,y:y+sy,z:z+sz},{x,y:y+sy,z:z+sz}];}
 function shadeColor(hex,mul){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.max(0,Math.round(((n>>16)&255)*mul))),g=Math.min(255,Math.max(0,Math.round(((n>>8)&255)*mul))),b=Math.min(255,Math.max(0,Math.round((n&255)*mul)));return `rgb(${r},${g},${b})`;}
 // Small, locally generated patterns give every material its own tactile surface.
-const texturePatterns=new Map();
+const texturePatterns=new Map(),textureTiles=new Map();
 function makeTexturePatterns(){
  const makers={
   grass:c=>{c.fillStyle='#ffffff18';for(let i=0;i<34;i++){const x=(i*29)%96,y=(i*47)%96;c.strokeStyle=i%3?'#3d7a3b99':'#e1f0a899';c.lineWidth=1.5+(i%2);c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+4,y-5,x+2,y-9);c.stroke();}for(let i=0;i<18;i++){c.fillStyle=i%2?'#f2d98a88':'#417b3d77';c.beginPath();c.arc((i*31)%96,(i*19)%96,1.5+(i%3),0,Math.PI*2);c.fill();}},
@@ -253,7 +253,7 @@ function makeTexturePatterns(){
   snow:c=>{for(let i=0;i<12;i++){const x=(i*29+9)%96,y=(i*41+6)%96;c.strokeStyle=i%2?'#9bc6dcaa':'#ffffffdd';c.lineWidth=1.5;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.moveTo(x-3.5,y-3.5);c.lineTo(x+3.5,y+3.5);c.stroke();}for(let i=0;i<25;i++){c.fillStyle='#ffffffdd';c.fillRect((i*17)%96,(i*43)%96,2,2);}},
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
  };
- for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
 function paintTexture(poly) {
@@ -368,7 +368,7 @@ function renderCustomPreview(){
  const canvas=$('customPreview'),c=canvas.getContext('2d');
  c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle='#f8faf4';c.fillRect(0,0,canvas.width,canvas.height);
  c.fillStyle=draftCustomColor;c.fillRect(14,14,196,124);
- const pattern=texturePatterns.get(draftCustomTexture);
+ const tile=textureTiles.get(draftCustomTexture),pattern=tile?c.createPattern(tile,'repeat'):null;
  if(pattern){c.save();c.globalAlpha=.48;c.fillStyle=pattern;c.fillRect(14,14,196,124);c.restore();}
  c.strokeStyle='#31453255';c.lineWidth=3;c.strokeRect(14,14,196,124);
  const texture=CUSTOM_TEXTURES.find(t=>t.id===draftCustomTexture);
