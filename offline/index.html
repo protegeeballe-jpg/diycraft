@@ -574,10 +574,10 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  cube(0,1.66+bob,.298,'#9a6c5c',.10,.025,.018);
 
  // Arms swing opposite to the legs; hands meet the sleeves.
- cube(-.44,.82+bob-armSwing,-.005+armSwing,n.shirt,.22,.56,.28);
- cube(.44,.82+bob+armSwing,-.005-armSwing,n.shirt,.22,.56,.28);
- cube(-.44,.60+bob-armSwing,.025+armSwing,n.skin,.20,.22,.22);
- cube(.44,.60+bob+armSwing,.025-armSwing,n.skin,.20,.22,.22);
+ cube(-.44,.82+bob,-.005+armSwing,n.shirt,.22,.56,.28);
+ cube(.44,.82+bob,-.005-armSwing,n.shirt,.22,.56,.28);
+ cube(-.44,.60+bob,.025+armSwing,n.skin,.20,.22,.22);
+ cube(.44,.60+bob,.025-armSwing,n.skin,.20,.22,.22);
 
  // Accessories are centered and attached to the hairline or face.
  if(accessory==='bow'){
