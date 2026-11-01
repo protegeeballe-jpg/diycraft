@@ -62,7 +62,7 @@ jobs:
             'function toggleDoor(door)',
             'function drawVoxelDoor(queue,cam,w,h,door)',
             'id="doorShade"',
-            "id:'door'"]
+            "id:'door'"
           ];
           for (const marker of required) {
             if (!source.includes(marker)) {
