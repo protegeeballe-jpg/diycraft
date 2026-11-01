@@ -1,0 +1,122 @@
+/* --- DIYCRAFT GLOBAL STYLES --- */
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a;
+    color: #fff;
+    user-select: none;
+}
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+}
+
+/* UI Overlay Layer */
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.hud-panel {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    padding: 8px 12px;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+h1 { margin: 0; font-size: 18px; color: #81C784; }
+p { margin: 0; font-size: 13px; color: #ddd; }
+
+/* Small, Cozy Game Buttons */
+button, .game-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: #2E7D32;
+    color: white;
+    border: 1px solid #81C784;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background-color: #388E3C;
+}
+
+button:active {
+    background-color: #1B5E20;
+}
+
+/* Hide Option Utility Class */
+.hidden {
+    display: none !important;
+}
+
+/* Inventory Pouches Modal Styling */
+.inventory-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(20, 20, 20, 0.95);
+    border: 3px solid #81C784;
+    border-radius: 12px;
+    padding: 20px;
+    width: 550px;
+    max-height: 80vh;
+    overflow-y: auto;
+    pointer-events: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.inventory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.inventory-header h2 {
+    font-size: 15px;
+    color: #81C784;
+    margin: 0;
+}
+
+.slot-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.slot {
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #555;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #888;
+}
