@@ -802,7 +802,8 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  drawNeighborHome(polys,cam,w,h,16,-9,'#e8d5b8','#b97870','#80604e');
  // Friendly neighbors have visible arms, hands, legs and shoes.
  for(const n of neighbors){
-  const bob=n.moving?Math.abs(Math.sin(tick*8+n.phase))*.055:Math.sin(tick*1.7+n.phase)*.018;
+  const walkPace=Number.isFinite(n.pace)?n.pace:8;
+  const bob=n.moving?Math.abs(Math.sin(tick*walkPace+n.phase))*.055:Math.sin(tick*1.7+n.phase)*.018;
   drawNeighborFigure(polys,cam,w,h,n,bob,tick);
   addCharacterFaceDetails(polys,cam,w,h,n,bob);
  }
