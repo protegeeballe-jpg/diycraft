@@ -401,7 +401,8 @@ function currentNeighbors(t=performance.now()/1000){
 function neighborAtScreen(px,py){
  const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;
  for(const n of currentNeighbors()){
-  const p=project({x:n.x,y:1.18,z:n.z+.38},cam,w,h);if(!p)continue;
+  const facing=n.facing||0;
+  const p=project({x:n.x+Math.sin(facing)*.38,y:1.18,z:n.z+Math.cos(facing)*.38},cam,w,h);if(!p)continue;
   const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=n;}
  }
  return hit;
@@ -409,9 +410,9 @@ function neighborAtScreen(px,py){
 function animalPositions(t=performance.now()/1000){return [{id:'sheep',name:'Pip the sheep',x:-2+Math.sin(t*.32)*.55,z:-7+Math.cos(t*.27)*.45},{id:'cat',name:'Mochi the cat',x:3+Math.sin(t*.28)*.5,z:-7+Math.cos(t*.25)*.4}];}
 function animalAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;for(const a of animalPositions()){const p=project({x:a.x+.12,y:.56,z:a.z+.48},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<58&&d<best){best=d;hit=a;}}return hit;}
 function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
- const c=Math.cos(n.facing||0),s=Math.sin(n.facing||0);
- const gait=n.moving?Math.sin(tick*8+n.phase)*.12:Math.sin(tick*1.4+n.phase)*.012;
- const lift=n.moving?Math.abs(Math.cos(tick*8+n.phase))*.045:Math.sin(tick*1.8+n.phase)*.008;
+ const c=Math.cos(n.facing||0),s=Math.sin(n.facing||0),phase=Number.isFinite(n.phase)?n.phase:0;
+ const gait=n.moving?Math.sin(tick*8+phase)*.12:Math.sin(tick*1.4+phase)*.012;
+ const lift=n.moving?Math.abs(Math.cos(tick*8+phase))*.045:Math.sin(tick*1.8+phase)*.008;
  const shoe='#665348';
  const cube=(dx,y,dz,color,sx,sy,sz)=>{
   const x=n.x+dx*c+dz*s,z=n.z-dx*s+dz*c;
