@@ -1,0 +1,55 @@
+name: Validate DIYCraft
+
+on:
+  push:
+    paths:
+      - offline/index.html
+      - .github/workflows/validate-diycraft.yml
+  pull_request:
+    paths:
+      - offline/index.html
+      - .github/workflows/validate-diycraft.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    name: Check the DIYCraft browser script
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract and syntax-check the inline game script
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('offline/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+          if (scripts.length !== 1) {
+            throw new Error(`Expected one inline game script, found ${scripts.length}`);
+          }
+          const source = scripts[0][1];
+          const required = [
+            'function getTimePalette',
+            'const NEIGHBOR_ROUTES',
+            'function neighborOnRoute',
+            'const HOLD_TO_REMOVE_MS=600',
+            'id="customBlockShade"'
+          ];
+          for (const marker of required) {
+            if (!html.includes(marker) && !source.includes(marker)) {
+              throw new Error(`Missing expected DIYCraft feature: ${marker}`);
+            }
+          }
+          fs.writeFileSync('/tmp/diycraft-inline.js', source);
+          NODE
+          node --check /tmp/diycraft-inline.js
