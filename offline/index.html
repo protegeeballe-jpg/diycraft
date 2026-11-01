@@ -563,11 +563,11 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  // Hair cap and hairstyle pieces.
  cube(0,1.99+bob,-.025,n.hair,.64,.18,.60);
  if(hairStyle==='bob'){
-  cube(-.40,1.25+bob,-.015,n.hair,.20,.60,.48);
-  cube(.40,1.25+bob,-.015,n.hair,.20,.60,.48);
+  cube(-.30,1.25+bob,-.015,n.hair,.16,.60,.48);
+  cube(.30,1.25+bob,-.015,n.hair,.16,.60,.48);
  }else if(hairStyle==='long'){
-  cube(-.40,.98+bob,-.035,n.hair,.20,.92,.42);
-  cube(.40,.98+bob,-.035,n.hair,.20,.92,.42);
+  cube(-.30,.98+bob,-.035,n.hair,.15,.92,.42);
+  cube(.30,.98+bob,-.035,n.hair,.15,.92,.42);
   cube(0,1.02+bob,-.285,n.hair,.52,.96,.12);
  }else if(hairStyle==='ponytail'){
   cube(.27,1.58+bob,-.32,n.hair,.24,.25,.24);
@@ -585,8 +585,8 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   cube(-.32,2.00+bob,-.03,n.hair,.26,.25,.26);
   cube(.32,2.00+bob,-.03,n.hair,.26,.25,.26);
  }else{
-  cube(-.39,1.49+bob,-.035,n.hair,.18,.34,.40);
-  cube(.39,1.49+bob,-.035,n.hair,.18,.34,.40);
+  cube(-.30,1.49+bob,-.035,n.hair,.14,.34,.40);
+  cube(.30,1.49+bob,-.035,n.hair,.14,.34,.40);
  }
 
  // Face and fringe are drawn as depth-sorted decals below. They stay attached
@@ -619,35 +619,33 @@ function addCharacterFaceDetails(queue,cam,w,h,n,bob){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
  const vx=cam.pos.x-n.x,vz=cam.pos.z-n.z,dist=Math.hypot(vx,vz)||1;
  const front=(s*vx+c*vz)/dist;
- const alpha=Math.max(0,Math.min(1,(front-.10)/.34));
+ // Keep the original face visible through normal turns; fade only as it turns away.
+ const alpha=Math.max(0,Math.min(1,(front+.05)/.15));
  if(alpha<=0)return;
  const point=(dx,y,dz)=>{
   const v={x:n.x+dx*c+dz*s,y,z:n.z-dx*s+dz*c};
   return project(v,cam,w,h);
  };
- const fringe=[
-  point(-.23,2.075+bob,.345),
-  point(.23,2.075+bob,.345),
-  point(.17,1.985+bob,.345),
-  point(-.18,1.985+bob,.345)
- ];
- if(fringe.every(Boolean)){
-  const depth=fringe.reduce((sum,p)=>sum+p.d,0)/fringe.length-.012;
-  queue.push({faceMark:'fringe',pts:fringe,depth,color:n.hair||'#493127',alpha});
- }
- const eyeY=1.8125+bob,eyeZ=.345,eyeColor=n.eyes||'#302820';
- for(const dx of [-.13,.13]){
-  const p=point(dx,eyeY,eyeZ),scalePoint=point(dx+.055,eyeY,eyeZ);
-  if(!p||!scalePoint)continue;
-  const radius=Math.max(1.5,Math.min(5,Math.hypot(scalePoint.x-p.x,scalePoint.y-p.y)*.72));
-  queue.push({faceMark:'eye',depth:p.d-.012,x:p.x,y:p.y,radius,color:eyeColor,alpha});
- }
- const nose=point(0,1.6725+bob,.35);
- if(nose)queue.push({faceMark:'nose',depth:nose.d-.013,x:nose.x,y:nose.y,radius:1.5,color:'#a96f63',alpha});
- const smile=[point(-.055,1.615+bob,.35),point(0,1.59+bob,.35),point(.055,1.615+bob,.35)];
- if(smile.every(Boolean)){
-  queue.push({faceMark:'mouth',depth:smile.reduce((sum,p)=>sum+p.d,0)/smile.length-.013,pts:smile,color:'#744b48',alpha});
- }
+ // These flat front faces use the exact sizes and positions of the original
+ // little voxel details, but stay in the shared depth queue while the avatar moves.
+ const addPatch=(cx,baseY,frontZ,width,height,color)=>{
+  const pts=[
+   point(cx-width/2,baseY+height,frontZ),
+   point(cx+width/2,baseY+height,frontZ),
+   point(cx+width/2,baseY,frontZ),
+   point(cx-width/2,baseY,frontZ)
+  ];
+  if(pts.some(p=>!p))return;
+  const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length-.012;
+  queue.push({faceMark:'patch',pts,depth,color:shadeColor(color,.90),alpha,outline:true});
+ };
+ // Original fringe: 0.42 x 0.13, at the original height.
+ addPatch(0,1.94+bob,.3525,.42,.13,n.hair||'#493127');
+ // Original tiny square eyes: no oversized white sclera or highlights.
+ addPatch(-.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
+ addPatch(.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
+ // Original small, narrow nose.
+ addPatch(0,1.66+bob,.319,.10,.025,'#9a6c5c');
 }
 function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
 function openAnimalCare(a){selectedAnimalId=a.id;$('animalCareTitle').textContent=(a.id==='sheep'?'🐑 Care for Pip':'🐱 Care for Mochi');const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=(a.id==='sheep'?'Pip the sheep enjoys gentle care.':'Mochi the cat enjoys gentle care.')+' Care activities together: '+count;$('animalCareFeedback').textContent='Your animal friend is happy to see you.';openShade('animalCareShade');}
@@ -698,17 +696,9 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  for(const poly of polys){
   if(poly.faceMark){
    ctx.save();ctx.globalAlpha=poly.alpha??1;
-   if(poly.faceMark==='fringe'){
-    ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();
-   }else if(poly.faceMark==='eye'){
-    ctx.fillStyle='#fffdf3';ctx.beginPath();ctx.ellipse(poly.x,poly.y,poly.radius*1.18,poly.radius*1.42,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=poly.color;ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius*.70,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(poly.x-poly.radius*.18,poly.y-poly.radius*.22,Math.max(.7,poly.radius*.22),0,Math.PI*2);ctx.fill();
-   }else if(poly.faceMark==='nose'){
-    ctx.fillStyle=poly.color;ctx.beginPath();ctx.ellipse(poly.x,poly.y,poly.radius*.8,poly.radius*.55,0,0,Math.PI*2);ctx.fill();
-   }else if(poly.faceMark==='mouth'){
-    ctx.strokeStyle=poly.color;ctx.lineWidth=1.3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(poly.pts[0].x,poly.pts[0].y);ctx.quadraticCurveTo(poly.pts[1].x,poly.pts[1].y,poly.pts[2].x,poly.pts[2].y);ctx.stroke();
-   }
+   ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
+   ctx.fillStyle=poly.color;ctx.fill();
+   if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
    ctx.restore();continue;
   }
   if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}
