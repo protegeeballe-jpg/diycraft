@@ -198,7 +198,65 @@ function makeTexturePatterns(){
  for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material});}}
-function paintTexture(poly){const pattern=texturePatterns.get(poly.material);if(!pattern)return;ctx.save();ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.clip();ctx.globalAlpha=.72;ctx.fillStyle=pattern;const xs=poly.pts.map(p=>p.x),ys=poly.pts.map(p=>p.y);const x=Math.min(...xs),y=Math.min(...ys),right=Math.max(...xs),bottom=Math.max(...ys);ctx.fillRect(x,y,right-x,bottom-y);ctx.restore();}
+
+function paintTexture(poly) {
+    const pattern = texturePatterns.get(poly.material);
+
+    if (!pattern || poly.pts.length !== 4) return;
+
+    // Map the texture to the actual block face.
+    // This anchors the texture to the block rather
+    // than to the screen.
+    if (
+        typeof DOMMatrix === 'undefined' ||
+        typeof pattern.setTransform !== 'function'
+    ) return;
+
+    const [p0, p1, , p3] = poly.pts;
+    const size = 96;
+
+    const a = (p1.x - p0.x) / size;
+    const b = (p1.y - p0.y) / size;
+    const c = (p3.x - p0.x) / size;
+    const d = (p3.y - p0.y) / size;
+
+    pattern.setTransform(
+        new DOMMatrix([
+            a, b, c, d, p0.x, p0.y
+        ])
+    );
+
+    ctx.save();
+
+    ctx.beginPath();
+    poly.pts.forEach((p, i) => {
+        if (i) ctx.lineTo(p.x, p.y);
+        else ctx.moveTo(p.x, p.y);
+    });
+
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.globalAlpha = 0.72;
+    ctx.fillStyle = pattern;
+
+    const xs = poly.pts.map(p => p.x);
+    const ys = poly.pts.map(p => p.y);
+
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    const right = Math.max(...xs);
+    const bottom = Math.max(...ys);
+
+    ctx.fillRect(
+        x - 1,
+        y - 1,
+        right - x + 2,
+        bottom - y + 2
+    );
+
+    ctx.restore();
+}
 function line3(queue,cam,w,h,a,b,color,width=1){const p=project(a,cam,w,h),q=project(b,cam,w,h);if(p&&q)queue.push({line:true,p,q,depth:(p.d+q.d)/2,color,width});}
 function currentNeighbors(t=performance.now()/1000){return [{id:'mira',name:'Mira',x:-5+Math.sin(t*.22)*.45,z:-8+Math.cos(t*.18)*.35,shirt:'#e1a0b7',hair:'#79543b',skin:'#f0c7a3',homeX:-13,homeZ:-7},{id:'theo',name:'Theo',x:5+Math.cos(t*.19)*.4,z:-11+Math.sin(t*.17)*.3,shirt:'#9baddc',hair:'#4b382d',skin:'#dfab83',homeX:10,homeZ:-17}];}
 function neighborAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;for(const n of currentNeighbors()){const p=project({x:n.x,y:1.18,z:n.z+.38},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=n;}}return hit;}
@@ -266,7 +324,7 @@ canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button==
 canvas.addEventListener('pointermove',e=>{if(activePointer!==e.pointerId||!lastPt)return;const dx=e.clientX-lastPt.x,dy=e.clientY-lastPt.y;if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5)movedPointer=true;if(movedPointer){world.player.yaw-=dx*.006;world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));}lastPt={x:e.clientX,y:e.clientY};});
 canvas.addEventListener('pointerup',e=>{if(activePointer!==e.pointerId)return;if(!movedPointer){const px=e.clientX-canvas.getBoundingClientRect().left,py=e.clientY-canvas.getBoundingClientRect().top;const a=animalAtScreen(px,py);if(a){openAnimalCare(a);activePointer=null;startPt=null;lastPt=null;return;}const n=neighborAtScreen(px,py);if(n){openColoring(n.name);activePointer=null;startPt=null;lastPt=null;return;}if(e.pointerType!=='mouse'||e.button===0)buildAtScreen(px,py);}activePointer=null;startPt=null;lastPt=null;});canvas.addEventListener('pointercancel',()=>{activePointer=null;startPt=null;lastPt=null;});
 // On-screen movement pads support press-and-hold on iPad.
-document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ=vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
+document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
 $('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();build();});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
 
 $('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;else showStatus('Turn flight on first.');});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;else showStatus('Turn flight on first.');});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
