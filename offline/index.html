@@ -364,6 +364,28 @@ function makeTexturePatterns(){
  for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
+// Character blocks rotate as complete cuboids, not just as relocated centers.
+function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=true){
+ const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;
+ const c=Math.cos(yaw),s=Math.sin(yaw);
+ if(Math.abs(yaw)>1e-7){
+  for(const v of vs){
+   const dx=v.x-cx,dz=v.z-cz;
+   v.x=cx+dx*c+dz*s;
+   v.z=cz-dx*s+dz*c;
+  }
+ }
+ for(const f of FACES){
+  const [nx,ny,nz]=f.normal;
+  const normalX=nx*c+nz*s,normalZ=-nx*s+nz*c;
+  const viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;
+  if(normalX*viewX+ny*viewY+normalZ*viewZ<=0)continue;
+  const pts=f.ids.map(i=>project(vs[i],cam,w,h));
+  if(pts.some(p=>!p))continue;
+  const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;
+  queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material:null,customTint:false});
+ }
+}
 function paintTexture(poly) {
     const pattern = texturePatterns.get(poly.material);
 
@@ -501,7 +523,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const cube=(dx,y,dz,color,sx,sy,sz)=>{
   const centerX=n.x+dx*c+dz*s;
   const centerZ=n.z-dx*s+dz*c;
-  pushCube(queue,cam,w,h,centerX-sx/2,y,centerZ-sz/2,color,sx,sy,sz);
+  pushCubeFacing(queue,cam,w,h,centerX-sx/2,y,centerZ-sz/2,color,sx,sy,sz,facing);
  };
 
  // Torso and outfit.
@@ -568,10 +590,11 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  }
 
  // Fringe, eyes and expression on the forward surface.
- cube(0,1.94+bob,.245,n.hair,.42,.13,.065);
- cube(-.13,1.78+bob,.292,n.eyes||'#302820',.065,.065,.025);
- cube(.13,1.78+bob,.292,n.eyes||'#302820',.065,.065,.025);
- cube(0,1.66+bob,.298,'#9a6c5c',.10,.025,.018);
+ cube(0,1.94+bob,.32,n.hair,.42,.13,.065);
+ // Keep face details just ahead of the head surface to avoid depth overlap.
+ cube(-.13,1.78+bob,.302,n.eyes||'#302820',.065,.065,.025);
+ cube(.13,1.78+bob,.302,n.eyes||'#302820',.065,.065,.025);
+ cube(0,1.66+bob,.31,'#9a6c5c',.10,.025,.018);
 
  // Arms swing opposite to the legs; hands meet the sleeves.
  cube(-.44,.82+bob,-.005+armSwing,n.shirt,.22,.56,.28);
