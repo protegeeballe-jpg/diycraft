@@ -82,6 +82,15 @@
 .character-field-grid input[type=color]{width:100%;height:38px;padding:3px}
 .character-section-title{font-size:12px;font-weight:800;color:#49664d;margin:13px 0 5px}
 @media(max-width:380px){.character-preview-card{align-items:flex-start}.character-preview-copy{font-size:10px}.character-preset{gap:5px}.character-preset .look-icon{font-size:20px}}
+.door-preview-card{display:flex;align-items:center;gap:14px;background:#f1f6ec;border:1px solid #dce8d9;border-radius:14px;padding:12px;margin:10px 0}
+.door-preview-visual{--door-preview:#a97545;width:76px;height:116px;flex:0 0 76px;position:relative;border:7px solid #65442f;border-radius:5px 5px 0 0;background:var(--door-preview);box-shadow:inset 0 0 0 3px #e3b77d,inset 0 0 0 7px #70492f}
+.door-preview-visual:before{content:"";position:absolute;left:13px;right:13px;top:13px;bottom:13px;border:3px solid #e0b67b;box-shadow:inset 0 0 0 2px #70492f}
+.door-preview-visual:after{content:"";position:absolute;right:7px;top:55px;width:7px;height:7px;border-radius:50%;background:#f1d17a;box-shadow:0 0 0 2px #795431}
+.door-style-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0 12px}
+.door-style-choice{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:10px 5px!important;font-size:23px;background:#fff!important}
+.door-style-choice strong{font-size:12px}.door-style-choice small{font-size:10px;font-weight:500;color:#718073}
+.door-style-choice.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
+.door-style-grid+.field input[type=color]{width:100%;height:40px;padding:3px}
 </style>
 </head>
 <body>
@@ -100,7 +109,7 @@
       <button id="menuBtn">☰</button>
     </div>
   </div>
-  <div class="top-hint" id="topHint">Drag to look · Tap to build · Press and hold a block for 0.6s to remove · Tap a neighbor to color</div>
+  <div class="top-hint" id="topHint">Drag to look · Tap to build or open a door · Press and hold a block for 0.6s to remove · Tap a neighbor to color</div>
   <div class="hotbar" id="hotbar" aria-label="Block selection"></div>
   <div class="touch-controls" id="touchControls">
     <div class="dpad" aria-label="Movement controls">
@@ -124,7 +133,7 @@
       </label>
       <label class="field">Choose any block color<input id="customColor" type="color" value="#aa83d8"></label><button id="useCustomColor" class="soft">Use this color for new blocks</button>
       <div class="menu-grid">
-        <button id="menuInventory">🎒 Inventories</button><button id="craftBtn">🧺 Crafting</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Color with a neighbor</button><button id="characterBtn">🧑 Character colors</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
+        <button id="menuInventory">🎒 Inventories</button><button id="craftBtn">🧺 Crafting</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Color with a neighbor</button><button id="characterBtn">🧑 Character colors</button><button id="doorDesignBtn">🚪 Design a door</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
         <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
       <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Builds are saved on this device. Export a backup to move a world to another device.</p>
@@ -148,6 +157,21 @@
       <div class="note">Quick color choices</div>
       <div class="color-swatch-row" id="customColorSwatches"></div>
       <button id="applyCustomBlock" class="primary custom-apply">Use this custom block</button>
+    </div>
+  </div>
+  <div class="menu-shade" id="doorShade">
+    <div class="menu custom-block-menu">
+      <div class="menu-head"><h2>🚪 Design your door</h2><button data-close>Close ✕</button></div>
+      <p class="note">Choose a color and a door style. Then select Door in the building bar and place it where you want an entrance.</p>
+      <div class="door-preview-card"><div class="door-preview-visual" id="doorPreview"></div><div class="character-preview-copy"><strong>Your door</strong><br><span id="doorPreviewDetails">Classic wooden door</span><br>Tap a finished door in your world to open or close it.</div></div>
+      <div class="character-section-title">Choose a style</div>
+      <div class="door-style-grid">
+        <button type="button" class="door-style-choice selected" data-door-style="classic">🚪<strong>Classic</strong><small>Cozy panels</small></button>
+        <button type="button" class="door-style-choice" data-door-style="window">🪟<strong>Window</strong><small>Bright glass</small></button>
+        <button type="button" class="door-style-choice" data-door-style="garden">🌸<strong>Garden</strong><small>Flower detail</small></button>
+      </div>
+      <label class="field">Door color<input id="doorColor" type="color" value="#a97545" aria-label="Choose the door color"></label>
+      <button id="applyDoorDesign" class="primary custom-apply">Use this door design</button>
     </div>
   </div>
   <div class="menu-shade" id="inventoryShade"><div class="menu"><div class="menu-head"><h2>🎒 Your pouches</h2><button data-close>Close ✕</button></div>
@@ -226,7 +250,8 @@ const BLOCKS=[
  {id:'stone',name:'Stone',emoji:'⬜',color:'#9ca6a1'}, {id:'wood',name:'Wood',emoji:'🪵',color:'#a97545'},
  {id:'leaves',name:'Leaves',emoji:'🌳',color:'#4e9a59'}, {id:'brick',name:'Brick',emoji:'🧱',color:'#c87862'},
  {id:'glass',name:'Glass',emoji:'🔹',color:'#a5dce3'}, {id:'flower',name:'Flower',emoji:'🌸',color:'#e9a4c1'},
- {id:'sand',name:'Sand',emoji:'🟨',color:'#e8d38b'}, {id:'snow',name:'Snow',emoji:'❄️',color:'#f2f8fa'}
+ {id:'sand',name:'Sand',emoji:'🟨',color:'#e8d38b'}, {id:'snow',name:'Snow',emoji:'❄️',color:'#f2f8fa'},
+ {id:'door',name:'Door',emoji:'🚪',color:'#a97545'}
 ];
 const CUSTOM_TEXTURES=[
  {id:'grass',name:'Grass',emoji:'🌿'},
@@ -270,7 +295,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -281,7 +306,15 @@ function validWorld(d){
   w.customBlock.texture=CUSTOM_TEXTURES.some(t=>t.id===d.customBlock.texture)?d.customBlock.texture:'custom';
  }
  w.timeMode=['day','sunset','night','auto'].includes(d.timeMode)?d.timeMode:'day';
- if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>b.type==='custom'?{...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'}:b);
+ if(d.doorDesign&&typeof d.doorDesign==='object'){
+  w.doorDesign.color=validHex(d.doorDesign.color,w.doorDesign.color);
+  w.doorDesign.style=['classic','window','garden'].includes(d.doorDesign.style)?d.doorDesign.style:'classic';
+ }
+ if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>{
+  if(b.type==='custom')return {...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'};
+  if(b.type==='door')return {...b,color:validHex(b.color,w.doorDesign.color),style:['classic','window','garden'].includes(b.style)?b.style:'classic',orientation:b.orientation==='ew'?'ew':'ns',swing:b.swing===-1?-1:1,open:!!b.open};
+  return b;
+ });
  if(d.player&&typeof d.player==='object'){
   const p=d.player;
   w.player.x=Number.isFinite(p.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.x)):0;
@@ -336,10 +369,10 @@ function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choi
 function keyBlock(x,y,z){return x+','+y+','+z;}
 const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z)));
 function clearPlacedBlocks(){const before=world.blocks.length;world.blocks=world.blocks.filter(b=>STARTER_BLOCK_KEYS.has(keyBlock(b.x,b.y,b.z)));rebuildLookup();save();render();showStatus(Math.max(0,before-world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.');}
-let blockLookup=new Map();function rebuildLookup(){blockLookup=new Map();for(const b of world.blocks)blockLookup.set(keyBlock(b.x,b.y,b.z),b);}
+let blockLookup=new Map();function rebuildLookup(){blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
 function solid(x,y,z){if(y<0)return Math.abs(x)<=WORLD_LIMIT&&Math.abs(z)<=WORLD_LIMIT;return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
-function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z);if(blockLookup.has(k))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}world.blocks.push(b);blockLookup.set(k,b);save();return true;}
-function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(k);save();return true;}
+function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);save();return true;}
+function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));save();return true;}
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
 function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
 const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
@@ -386,6 +419,81 @@ function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=t
   queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material:null,customTint:false});
  }
 }
+
+// Doors are small hinged voxel assemblies. Their animation never changes their saved footprint.
+const doorMotions=new Map();
+function doorVisualAngle(door,now=performance.now()){
+ const key=keyBlock(door.x,door.y,door.z),motion=doorMotions.get(key);
+ if(!motion)return door.open?1.32:0;
+ const t=Math.max(0,Math.min(1,(now-motion.start)/260)),eased=t*t*(3-2*t);
+ if(t>=1)doorMotions.delete(key);
+ return motion.from+(motion.to-motion.from)*eased;
+}
+function toggleDoor(door){
+ const now=performance.now(),from=doorVisualAngle(door,now);
+ door.open=!door.open;
+ doorMotions.set(keyBlock(door.x,door.y,door.z),{from,to:door.open?1.32:0,start:now});
+ save();showStatus(door.open?'Door opened. Tap again to close it.':'Door closed.');render();
+}
+function pushDoorCube(queue,cam,w,h,pivot,x,y,z,sx,sy,sz,color,angle){
+ const c=Math.cos(angle),s=Math.sin(angle);
+ const local=cubeVerts(x,y,z,sx,sy,sz);
+ const rotate=v=>({x:pivot.x+v.x*c+v.z*s,y:pivot.y+v.y,z:pivot.z-v.x*s+v.z*c});
+ const vs=local.map(rotate);
+ const center=rotate({x:x+sx/2,y:y+sy/2,z:z+sz/2});
+ for(const f of FACES){
+  const [nx,ny,nz]=f.normal,normalX=nx*c+nz*s,normalZ=-nx*s+nz*c;
+  const viewX=cam.pos.x-center.x,viewY=cam.pos.y-center.y,viewZ=cam.pos.z-center.z;
+  if(normalX*viewX+ny*viewY+normalZ*viewZ<=0)continue;
+  const pts=f.ids.map(i=>project(vs[i],cam,w,h));
+  if(pts.some(p=>!p))continue;
+  const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+  queue.push({pts,depth,color:shadeColor(color,f.shade),outline:true,material:null,customTint:false});
+ }
+}
+function drawVoxelDoor(queue,cam,w,h,door){
+ const open=doorVisualAngle(door),baseAngle=door.orientation==='ew'?-Math.PI/2:0;
+ const angle=baseAngle+open*(door.swing===-1?-1:1);
+ const pivot=door.orientation==='ew'
+  ?{x:door.x+.5,y:door.y,z:door.z+.08}
+  :{x:door.x+.08,y:door.y,z:door.z+.5};
+ const draw=(x,y,z,sx,sy,sz,color)=>pushDoorCube(queue,cam,w,h,pivot,x,y,z,sx,sy,sz,color,angle);
+ const wood=validHex(door.color,'#a97545');
+ draw(0,0,-.06,.84,1.96,.12,wood);
+ // Raised inset panels on both sides, so the door looks finished from either direction.
+ for(const side of [-1,1]){
+  const face=side*.062,faceDepth=.016;
+  if(door.style==='window'){
+   draw(.18,1.14,face,.48,.48,faceDepth,'#a9dce8');
+   draw(.15,1.10,face,.055,.56,faceDepth,'#704b32');
+   draw(.63,1.10,face,.055,.56,faceDepth,'#704b32');
+   draw(.18,1.10,face,.50,.055,faceDepth,'#704b32');
+   draw(.18,1.62,face,.50,.055,faceDepth,'#704b32');
+   draw(.40,1.14,face,.045,.48,faceDepth,'#f4e7c6');
+   draw(.18,1.36,face,.48,.045,faceDepth,'#f4e7c6');
+   draw(.15,.18,face,.54,.58,faceDepth,'#87552f');
+   draw(.19,.22,face,.46,.50,faceDepth,'#b77b48');
+  }else{
+   draw(.13,1.08,face,.58,.66,faceDepth,'#70482f');
+   draw(.17,1.12,face,.50,.58,faceDepth,'#c18a55');
+   draw(.13,.18,face,.58,.66,faceDepth,'#70482f');
+   draw(.17,.22,face,.50,.58,faceDepth,'#bd854e');
+   if(door.style==='garden'){
+    draw(.38,1.42,face+side*.018,.13,.13,.018,'#e78baa');
+    draw(.48,1.42,face+side*.018,.13,.13,.018,'#e78baa');
+    draw(.43,1.50,face+side*.018,.13,.13,.018,'#f2c4d5');
+    draw(.43,1.36,face+side*.018,.13,.13,.018,'#f2c4d5');
+    draw(.43,1.43,face+side*.032,.10,.10,.018,'#f3d36c');
+   }
+  }
+  // A little golden handle on each side.
+  draw(.70,.88,side*.083,.07,.13,.055,'#e6bd62');
+ }
+ // Slim hinge marks along the hanging edge.
+ draw(.035,.28,-.078,.05,.12,.036,'#6a4933');
+ draw(.035,1.55,-.078,.05,.12,.036,'#6a4933');
+}
+
 function paintTexture(poly) {
     const pattern = texturePatterns.get(poly.material);
 
@@ -794,7 +902,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick);
  drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
@@ -836,7 +944,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
 }
 function rayHit(){const cam=cameraState(),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),dir={x:sy*cp,y:sp,z:-cy*cp};let prev=null;for(let t=.2;t<24;t+=.06){const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);if(iy<0&&Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT)return {ground:true,place:{x:ix,y:0,z:iz}};const b=iy>=0?blockLookup.get(keyBlock(ix,iy,iz)):null;if(b)return {block:b,place:prev||{x:ix,y:Math.max(0,iy+1),z:iz}};prev={x:ix,y:Math.max(0,iy),z:iz};}return null;}
 function rayHitAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight,focal=Math.min(w,h)*.94;if(!w||!h)return rayHit();const rx=(px-w/2)/focal,uy=(h*.51-py)/focal,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);let dir={x:sy*cp+cy*rx-sy*sp*uy,y:sp+cp*uy,z:-cy*cp+sy*rx+cy*sp*uy};const len=Math.hypot(dir.x,dir.y,dir.z)||1;dir={x:dir.x/len,y:dir.y/len,z:dir.z/len};let prev=null;for(let t=.16;t<28;t+=.045){const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);if(iy<0&&Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT)return {ground:true,place:{x:ix,y:0,z:iz}};const b=iy>=0?blockLookup.get(keyBlock(ix,iy,iz)):null;if(b)return {block:b,place:prev||{x:ix,y:Math.max(0,iy+1),z:iz}};prev={x:ix,y:Math.max(0,iy),z:iz};}const t=dir.y<-.02?(0.06-cam.pos.y)/dir.y:8;const x=cam.pos.x+dir.x*Math.max(2,Math.min(22,t)),y=cam.pos.y+dir.y*Math.max(2,Math.min(22,t)),z=cam.pos.z+dir.z*Math.max(2,Math.min(22,t));return {place:{x:Math.floor(x),y:Math.max(0,Math.floor(y)),z:Math.floor(z)}};}
-function buildAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){const hit=rayHitAtScreen(px,py);if(!hit){showStatus('Tap a place in the world to build.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus((blockMap.get(selected)?.name||'Block')+' placed where you tapped.');render();}else showStatus('That space is occupied or outside the safe building area.');}
+function buildAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){const hit=rayHitAtScreen(px,py);if(!hit){showStatus('Tap a place in the world to build.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus(selected==='door'?'Door built! Tap it to open or close it.':(blockMap.get(selected)?.name||'Block')+' placed where you tapped.');render();}else showStatus(selected==='door'?'A door needs two clear spaces, one above the other.':'That space is occupied or outside the safe building area.');}
 function build(){buildAtScreen();}
 function erase(){const hit=rayHit();if(!hit||!hit.block){showStatus('Aim at a block you placed to remove it.');return;}if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){showStatus('Block removed.');render();}}
 function move(dt){const p=world.player,speed=flying?7:4.2;let forward=moveZ,right=moveX;if(keys.w||keys.ArrowUp)forward+=1;if(keys.s||keys.ArrowDown)forward-=1;if(keys.a||keys.ArrowLeft)right-=1;if(keys.d||keys.ArrowRight)right+=1;const len=Math.hypot(forward,right)||1;forward/=len;right/=len;p.x+= (Math.sin(p.yaw)*forward+Math.cos(p.yaw)*right)*speed*dt;p.z+=(-Math.cos(p.yaw)*forward+Math.sin(p.yaw)*right)*speed*dt;p.x=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.x));p.z=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.z));if(flying){let v=vertical;if(keys[' '])v+=1;if(keys.Shift)v-=1;p.y=Math.max(0,Math.min(60,p.y+v*speed*dt));}else p.y=0;}
@@ -974,6 +1082,29 @@ $('applyCustomBlock').addEventListener('click',()=>{
  $('customColor').value=draftCustomColor;selected='custom';save();renderHotbar();closeShades();
  showStatus('Custom block ready! Choose a place to build it.');
 });
+
+let draftDoorColor='#a97545',draftDoorStyle='classic';
+const DOOR_STYLE_NAMES={classic:'Classic wooden door',window:'Door with a window',garden:'Garden flower door'};
+function renderDoorDesignPreview(){
+ $('doorPreview').style.setProperty('--door-preview',draftDoorColor);
+ $('doorPreviewDetails').textContent=DOOR_STYLE_NAMES[draftDoorStyle]+' · '+draftDoorColor.toUpperCase();
+ document.querySelectorAll('[data-door-style]').forEach(button=>button.classList.toggle('selected',button.dataset.doorStyle===draftDoorStyle));
+}
+function openDoorDesigner(){
+ draftDoorColor=world.doorDesign.color||'#a97545';draftDoorStyle=world.doorDesign.style||'classic';
+ $('doorColor').value=draftDoorColor;renderDoorDesignPreview();openShade('doorShade');
+}
+$('doorDesignBtn').addEventListener('click',openDoorDesigner);
+$('doorColor').addEventListener('input',e=>{draftDoorColor=e.target.value;renderDoorDesignPreview();});
+document.querySelectorAll('[data-door-style]').forEach(button=>button.addEventListener('click',()=>{
+ draftDoorStyle=button.dataset.doorStyle;renderDoorDesignPreview();
+}));
+$('applyDoorDesign').addEventListener('click',()=>{
+ world.doorDesign={color:validHex(draftDoorColor,'#a97545'),style:['classic','window','garden'].includes(draftDoorStyle)?draftDoorStyle:'classic'};
+ selected='door';save();renderHotbar();closeShades();
+ showStatus('Your door design is ready. Choose a clear spot to build it!');
+});
+
 function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
 function downloadBackup(){save();const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(world.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft')+'.json';a.click();URL.revokeObjectURL(url);showStatus('Backup file prepared. Keep it somewhere safe.');}
 async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
@@ -992,6 +1123,8 @@ function clearBlockHold(){
  holdBlockKey=null;
 }
 function handleWorldTap(px,py){
+ const hit=rayHitAtScreen(px,py);
+ if(hit&&hit.block&&hit.block.type==='door'){toggleDoor(hit.block);return;}
  const animal=animalAtScreen(px,py);
  if(animal){openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(px,py);
