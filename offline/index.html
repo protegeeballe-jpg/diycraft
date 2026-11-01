@@ -270,7 +270,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -540,6 +540,7 @@ function animalPositions(t=performance.now()/1000){
   {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',x:-2+Math.sin(t*.32)*.55,z:-7+Math.cos(t*.27)*.45},
   {id:'cat',name:'Mochi',species:'cat',emoji:'🐱',x:3+Math.sin(t*.28)*.5,z:-7+Math.cos(t*.25)*.4,facing:0},
   {id:'cat_miso',name:'Miso',species:'cat',emoji:'🐈',body:'#b5a69a',accent:'#e6d8c8',...stroll(22,-4.2,1.4,.24)},
+  {id:'cat_tofu',name:'Tofu',species:'cat',emoji:'🐈',body:'#d8b77e',accent:'#f1e2bd',...stroll(19.5,-8.8,4.7,.20)},
   {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐕',body:'#d6a15f',accent:'#f1d7a8',...stroll(17,-1.9,.2,.30)},
   {id:'dog_biscuit',name:'Biscuit',species:'dog',emoji:'🐶',body:'#b87b4b',accent:'#efd2a4',...stroll(22,-7.4,2.2,.27)},
   {id:'dog_pepper',name:'Pepper',species:'dog',emoji:'🐕‍🦺',body:'#eee8dc',accent:'#4c4847',...stroll(14.5,-5.9,3.6,.22)}
