@@ -82,7 +82,7 @@
       <button id="menuBtn">☰</button>
     </div>
   </div>
-  <div class="top-hint" id="topHint">Drag to look · Tap to build · Double-tap a block to remove · Tap a neighbor to color</div>
+  <div class="top-hint" id="topHint">Drag to look · Tap to build · Press and hold a block for 0.6s to remove · Tap a neighbor to color</div>
   <div class="hotbar" id="hotbar" aria-label="Block selection"></div>
   <div class="touch-controls" id="touchControls">
     <div class="dpad" aria-label="Movement controls">
@@ -419,44 +419,71 @@ async function expandToggle(){if(!document.fullscreenElement&&document.documentE
 document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;keys[e.key===' '?' ':e.key]=true;if(e.key.toLowerCase()==='v'){cameraMode=cameraMode==='first'?'third':'first';$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}if(e.key.toLowerCase()==='f'){flying=!flying;$('flyBtn').textContent='🕊 Fly: '+(flying?'On':'Off');showStatus(flying?'Creative flight enabled.':'Flight turned off.');}if(e.key==='e'||e.key==='E')openShade('inventoryShade');if(e.key==='Escape'){closeShades();if(focusMode)focusToggle();}});
 document.addEventListener('keyup',e=>{keys[e.key===' '?' ':e.key]=false;});
 // Mouse or finger drag looks around. A single tap builds; a quick double-tap on the same block removes it.
-let activePointer=null,movedPointer=false,startPt=null,lastPt=null,pendingBlockTap=null;
-function flushPendingBlockTap(){
- if(!pendingBlockTap)return;
- const pending=pendingBlockTap;clearTimeout(pending.timer);pendingBlockTap=null;
- buildAtScreen(pending.px,pending.py);
+let activePointer=null,movedPointer=false,startPt=null,lastPt=null;
+let holdTimer=null,holdTriggered=false,holdBlockKey=null;
+const HOLD_TO_REMOVE_MS=600;
+function clearBlockHold(){
+ if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null;}
+ holdBlockKey=null;
 }
-function handleWorldTap(e,px,py){
+function handleWorldTap(px,py){
  const animal=animalAtScreen(px,py);
- if(animal){flushPendingBlockTap();openAnimalCare(animal);return;}
+ if(animal){openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(px,py);
- if(neighbor){flushPendingBlockTap();openColoring(neighbor.name);return;}
- const now=Date.now();
- if(pendingBlockTap){
-  const pending=pendingBlockTap,hitAgain=rayHitAtScreen(px,py);
-  const sameBlock=hitAgain.block&&keyBlock(hitAgain.block.x,hitAgain.block.y,hitAgain.block.z)===pending.key;
-  const closeTap=Math.hypot(px-pending.px,py-pending.py)<=34;
-  const quickTap=now-pending.at<=420;
-  if(sameBlock&&closeTap&&quickTap){
-   clearTimeout(pending.timer);pendingBlockTap=null;
-   if(removeBlock(hitAgain.block.x,hitAgain.block.y,hitAgain.block.z)){render();showStatus('Block removed.');}
-   return;
-  }
-  flushPendingBlockTap();
- }
- const hit=rayHitAtScreen(px,py);
- if(hit.block){
-  const target={x:hit.block.x,y:hit.block.y,z:hit.block.z};
-  const pending={...target,key:keyBlock(target.x,target.y,target.z),px,py,at:now,timer:null};
-  pending.timer=setTimeout(()=>{if(pendingBlockTap===pending){pendingBlockTap=null;buildAtScreen(pending.px,pending.py);}},420);
-  pendingBlockTap=pending;
- }else{
-  buildAtScreen(px,py);
- }
+ if(neighbor){openColoring(neighbor.name);return;}
+ buildAtScreen(px,py);
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2){erase();return;}activePointer=e.pointerId;movedPointer=false;startPt={x:e.clientX,y:e.clientY};lastPt=startPt;canvas.setPointerCapture(e.pointerId);});
-canvas.addEventListener('pointermove',e=>{if(activePointer!==e.pointerId||!lastPt)return;const dx=e.clientX-lastPt.x,dy=e.clientY-lastPt.y;if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5)movedPointer=true;if(movedPointer){world.player.yaw-=dx*.006;world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));}lastPt={x:e.clientX,y:e.clientY};});
-canvas.addEventListener('pointerup',e=>{if(activePointer!==e.pointerId)return;if(!movedPointer&&(e.pointerType!=='mouse'||e.button===0)){const px=e.clientX-canvas.getBoundingClientRect().left,py=e.clientY-canvas.getBoundingClientRect().top;handleWorldTap(e,px,py);}activePointer=null;startPt=null;lastPt=null;});canvas.addEventListener('pointercancel',()=>{activePointer=null;startPt=null;lastPt=null;});
+canvas.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'&&e.button===2){e.preventDefault();erase();return;}
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ activePointer=e.pointerId;movedPointer=false;holdTriggered=false;
+ startPt={x:e.clientX,y:e.clientY};lastPt=startPt;
+ canvas.setPointerCapture(e.pointerId);
+ const rect=canvas.getBoundingClientRect();
+ const px=e.clientX-rect.left,py=e.clientY-rect.top;
+ if(!animalAtScreen(px,py)&&!neighborAtScreen(px,py)){
+  const hit=rayHitAtScreen(px,py);
+  if(hit&&hit.block){
+   const targetKey=keyBlock(hit.block.x,hit.block.y,hit.block.z);
+   holdBlockKey=targetKey;
+   holdTimer=setTimeout(()=>{
+    if(activePointer!==e.pointerId||movedPointer||holdBlockKey!==targetKey)return;
+    const current=rayHitAtScreen(px,py);
+    if(current&&current.block&&keyBlock(current.block.x,current.block.y,current.block.z)===targetKey){
+     holdTriggered=true;clearBlockHold();
+     if(removeBlock(current.block.x,current.block.y,current.block.z)){
+      render();showStatus('Block removed.');
+     }
+    }
+   },HOLD_TO_REMOVE_MS);
+  }
+ }
+});
+canvas.addEventListener('pointermove',e=>{
+ if(activePointer!==e.pointerId||!lastPt)return;
+ const dx=e.clientX-lastPt.x,dy=e.clientY-lastPt.y;
+ if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5){
+  if(!movedPointer){movedPointer=true;clearBlockHold();}
+ }
+ if(movedPointer){
+  world.player.yaw-=dx*.006;
+  world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));
+ }
+ lastPt={x:e.clientX,y:e.clientY};
+});
+canvas.addEventListener('pointerup',e=>{
+ if(activePointer!==e.pointerId)return;
+ clearBlockHold();
+ if(!movedPointer&&!holdTriggered&&(e.pointerType!=='mouse'||e.button===0)){
+  const rect=canvas.getBoundingClientRect();
+  handleWorldTap(e.clientX-rect.left,e.clientY-rect.top);
+ }
+ activePointer=null;startPt=null;lastPt=null;holdTriggered=false;
+});
+canvas.addEventListener('pointercancel',()=>{
+ clearBlockHold();activePointer=null;startPt=null;lastPt=null;holdTriggered=false;
+});
 // On-screen movement pads support press-and-hold on iPad.
 document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
 $('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();build();});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
