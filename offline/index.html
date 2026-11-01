@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>DIYCraft — Cozy Build & Create</title>
+<style>
+:root{--ink:#33443b;--muted:#718078;--green:#477b58;--green2:#dcebdc;--cream:#fbf8ef;--panel:#fffdf7;--line:#d8dfd3;--blue:#dcebf2;--gold:#f5e7b7;--shadow:0 8px 24px rgba(49,68,55,.10)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--cream);color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 12px;color:var(--ink);font-weight:650;transition:.14s}button:hover{transform:translateY(-1px);border-color:#91b49a;background:#f7fbf6}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #9fc7a6;outline-offset:2px}button:disabled{opacity:.45;cursor:not-allowed;transform:none}.primary{background:var(--green);color:white;border-color:var(--green)}.primary:hover{background:#376647;color:white}.soft{background:var(--green2)}.danger{color:#8b4e4e}.app{max-width:1600px;margin:auto;padding:14px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}.brand{display:flex;align-items:center;gap:10px}.brand-mark{width:42px;height:42px;border-radius:14px;background:#e3efdd;display:grid;place-items:center;font-size:24px}.brand h1{font-size:22px;margin:0;letter-spacing:.3px}.brand p{font-size:12px;color:var(--muted);margin:2px 0 0}.top-actions{display:flex;gap:7px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted);min-height:18px;padding:4px 2px}.layout{display:grid;grid-template-columns:220px minmax(320px,1fr) 220px;gap:12px;align-items:stretch}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px;min-width:0}.panel h2{font-size:15px;margin:0 0 10px}.panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 8px}.toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.toolgrid button{padding:9px 5px;font-size:12px}.toolgrid button.active,.block-btn.active{border-color:var(--green);background:var(--green2);box-shadow:inset 0 0 0 1px var(--green)}.palette{display:grid;grid-template-columns:1fr 1fr;gap:6px}.block-btn{display:flex;align-items:center;gap:6px;justify-content:flex-start;font-size:11px;padding:7px 6px;min-width:0}.swatch{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.14);flex:none}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);margin:8px 0}.field input,.field select{border:1px solid var(--line);border-radius:10px;padding:8px;background:white;color:var(--ink);width:100%}.color-row{display:flex;gap:8px;align-items:center}.color-row input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;padding:2px;background:white}.world-card{overflow:hidden;display:flex;flex-direction:column;min-width:0}.world-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}.world-head strong{font-size:14px}.world-head span{font-size:11px;color:var(--muted)}.canvas-wrap{position:relative;background:linear-gradient(#eaf3ef,#dbe9df);min-height:520px;overflow:hidden;touch-action:pan-y}.canvas-wrap canvas{display:block;width:100%;height:100%;min-height:520px;outline:none;touch-action: none}.canvas-hint{position:absolute;left:12px;bottom:10px;padding:7px 10px;background:rgba(255,253,247,.88);border:1px solid rgba(120,150,125,.35);border-radius:10px;font-size:11px;color:#627269;pointer-events:none}.controls{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 13px;border-top:1px solid var(--line)}.movement{display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(2,30px);gap:3px}.movement button{padding:2px;font-size:13px}.movement button:first-child{grid-column:2}.movement button:nth-child(2){grid-column:1;grid-row:2}.movement button:nth-child(3){grid-column:2;grid-row:2}.movement button:nth-child(4){grid-column:3;grid-row:2}.hint-text{font-size:11px;color:var(--muted);line-height:1.5}.right-actions{display:grid;grid-template-columns:1fr;gap:7px}.right-actions button{text-align:left}.neighbor-card,.animal-card{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--line);border-radius:12px;margin:6px 0;background:white;font-size:12px}.avatar-icon{width:32px;height:32px;border-radius:10px;background:#edf4e9;display:grid;place-items:center;font-size:19px}.small-note{font-size:11px;color:var(--muted);line-height:1.45}.badge{display:inline-block;font-size:10px;border-radius:999px;background:#edf3e8;padding:3px 7px;color:#52715a}.footer-note{margin:10px 2px 0;font-size:11px;color:var(--muted);line-height:1.5}.modal-backdrop{position:fixed;inset:0;background:rgba(34,49,40,.42);z-index:10;display:none;align-items:center;justify-content:center;padding:14px}.modal-backdrop.open{display:flex}.modal{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(20,40,25,.24);width:min(780px,100%);max-height:90vh;overflow:auto;padding:18px}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.modal-head h2{font-size:18px;margin:0}.close-btn{font-size:12px;padding:6px 10px}.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button.active{background:var(--green2);border-color:#85a98c}.slot-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}.slot{min-height:62px;border:1px dashed #cbd6ca;border-radius:9px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;text-align:center;min-width:0}.slot .emoji{font-size:18px}.slot .slot-name{font-size:9px;line-height:1.1;overflow-wrap:anywhere}.slot .count{font-size:9px;color:var(--muted)}.recipe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.recipe{border:1px solid var(--line);border-radius:12px;padding:11px;background:white}.recipe strong{display:block;font-size:13px;margin-bottom:4px}.recipe p{font-size:11px;color:var(--muted);margin:0 0 9px;line-height:1.4}.recipe button{width:100%;font-size:11px}.character-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.draw-wrap{background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}.draw-wrap canvas{display:block;width:100%;height:auto;touch-action:none}.draw-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}.art-item{border:1px solid var(--line);border-radius:12px;padding:7px;background:white}.art-item img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#fff;border-radius:7px}.art-item div{font-size:11px;margin-top:4px;overflow-wrap:anywhere}.empty{text-align:center;padding:30px 12px;color:var(--muted);font-size:13px}.hidden{display:none!important}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#334b3b;color:white;padding:10px 16px;border-radius:999px;font-size:12px;box-shadow:var(--shadow);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}.toast.show{opacity:1}.file-label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:white;font-weight:650;font-size:13px;cursor:pointer}.file-label input{display:none}
+@media(max-width:1050px){.layout{grid-template-columns:190px minmax(280px,1fr)}.right-panel{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.right-panel section{min-width:0}.canvas-wrap,.canvas-wrap canvas{min-height:480px}}
+@media(max-width:680px){.app{padding:8px}.brand h1{font-size:18px}.top-actions button,.file-label{font-size:11px;padding:7px 9px}.layout{grid-template-columns:1fr}.left-panel{order:2}.world-card{order:1}.right-panel{order:3;grid-template-columns:1fr 1fr}.canvas-wrap,.canvas-wrap canvas{min-height:430px}.slot-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.character-grid{grid-template-columns:1fr}.panel{padding:11px}.canvas-hint{font-size:10px;max-width:80%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">🌼</div><div><h1>DIYCraft</h1><p>A cozy place to build, make art, and be kind.</p></div></div>
+    <div class="top-actions">
+      <button id="inventoryButton" class="soft">🎒 Inventory</button>
+      <button id="craftButton">🧺 Craft</button>
+      <button id="artButton">🎨 Art Studio</button>
+      <button id="characterButton">👒 Character</button>
+      <button id="saveButton" class="primary">Save world</button>
+      <button id="exportButton">Backup</button>
+      <button id="clearBuildButton" class="danger">Clear builds</button>
+      <label class="file-label">↥ Restore<input id="importFile" type="file" accept="application/json,.json"></label>
+    </div>
+  </header>
+  <div class="status" id="statusLine" role="status">Your world is ready. Everything stays on this device.</div>
+  <main class="layout">
+    <aside class="panel left-panel">
+      <h2>Build tools</h2>
+      <div class="toolgrid" id="toolButtons">
+        <button data-tool="build" class="active">🧱 Build</button><button data-tool="erase">🧽 Remove</button>
+        <button data-tool="inspect">👀 Select</button><button data-tool="paint">🖌️ Recolor</button>
+      </div>
+      <h3>Block collection</h3>
+      <div class="palette" id="blockPalette"></div>
+      <h3>Choose any color</h3>
+      <div class="color-row"><input type="color" id="customColor" value="#83b96d" aria-label="Choose block color"><span class="small-note">Use any color for your blocks.</span></div>
+      <label class="field">World name<input id="worldName" maxlength="32" value="My Cozy World"></label>
+      <label class="field">World mode<select id="worldMode"><option value="creative">Creative — unlimited building</option><option value="peaceful">Peaceful — no hostile creatures</option></select></label>
+      <p class="small-note">There are no enemies, weapons, combat, or damage mechanics in either mode. Friendly neighbors and animals are always welcome.</p>
+    </aside>
+
+    <section class="panel world-card">
+      <div class="world-head"><div><strong id="worldTitle">My Cozy World</strong><br><span id="worldSub">150 × 150 build area · Creative mode</span></div><span class="badge">OFFLINE WORLD</span></div>
+      <div class="canvas-wrap"><canvas id="gameCanvas" width="1080" height="690" tabindex="0" aria-label="Isometric building world. Click a tile to build, remove, or select."></canvas><div class="canvas-hint">Click a tile to build · WASD / arrow keys to move · Right-click to remove</div></div>
+      <div class="controls"><div class="hint-text">Your world autosaves on this device. Use Backup to keep a separate copy. Creative blocks are unlimited.</div><div class="movement" aria-label="Move character"><button data-move="0,-1" title="Up">▲</button><button data-move="-1,0" title="Left">◀</button><button data-move="0,1" title="Down">▼</button><button data-move="1,0" title="Right">▶</button></div></div>
+    </section>
+
+    <aside class="panel right-panel">
+      <section><h2>Kind neighbors</h2><div id="neighborList"></div><p class="small-note">They do not speak. They wave, make things, and enjoy the garden.</p></section>
+      <section><h2>Animal friends</h2><div id="animalList"></div><p class="small-note">Animals can be gently petted. They cannot be hurt or used for combat.</p></section>
+      <section><h2>Little activities</h2><div class="right-actions"><button id="inviteButton">🧵 Create with a neighbor</button><button id="petButton">💚 Pet an animal friend</button><button id="viewArtButton">🖼️ My artwork</button></div><p class="small-note" id="selectionNote">Select a neighbor or animal on the map to interact.</p></section>
+    </aside>
+  </main>
+  <p class="footer-note">DIYCraft is an offline-first prototype. It does not connect to chat, multiplayer, ads, analytics, outside images, or remote game servers. Keep a Backup file for important worlds.</p>
+</div>
+
+<div class="modal-backdrop" id="inventoryModal" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle"><div class="modal"><div class="modal-head"><h2 id="inventoryTitle">🎒 Inventory pouches</h2><button class="close-btn" data-close="inventoryModal">Close ✕</button></div><div class="tabs"><button class="active" data-invtab="materials">Resources, food & tools · 60 slots</button><button data-invtab="crafted">Crafted items · 60 slots</button></div><p class="small-note" id="inventoryDescription">Raw materials, food, and helpful building tools.</p><div id="inventoryGrid" class="slot-grid"></div><div id="renameRow" class="draw-tools hidden"><label class="field" style="flex:1;min-width:180px">Name selected crafted item<input id="renameCraftedName" maxlength="24" placeholder="Give your creation a name"></label><button id="renameCraftedButton" class="primary">Save name</button></div></div></div>
+
+<div class="modal-backdrop" id="craftModal" role="dialog" aria-modal="true" aria-labelledby="craftTitle"><div class="modal"><div class="modal-head"><h2 id="craftTitle">🧺 Crafting table</h2><button class="close-btn" data-close="craftModal">Close ✕</button></div><p class="small-note">All recipes create peaceful, useful objects. There are no weapons or harmful tools in the recipe collection.</p><div id="recipeGrid" class="recipe-grid"></div></div></div>
+
+<div class="modal-backdrop" id="characterModal" role="dialog" aria-modal="true" aria-labelledby="characterTitle"><div class="modal"><div class="modal-head"><h2 id="characterTitle">👒 Decorate your character</h2><button class="close-btn" data-close="characterModal">Close ✕</button></div><div class="character-grid"><label class="field">Character name<input id="characterName" maxlength="20" value="Builder"></label><label class="field">Hair style<select id="hairStyle"><option value="long">Long hair</option><option value="short">Short hair</option><option value="curl">Curly hair</option></select></label><label class="field">Hair color<input id="hairColor" type="color" value="#65452f"></label><label class="field">Outfit color<input id="shirtColor" type="color" value="#8eb6d8"></label><label class="field">Skin tone<input id="skinColor" type="color" value="#f0c6a5"></label><label class="field">Favorite accessory<select id="accessory"><option value="flower">Flower</option><option value="bow">Bow</option><option value="hat">Sun hat</option><option value="none">No accessory</option></select></label></div><p class="small-note">Your character's appearance can be changed anytime.</p><button id="applyCharacter" class="primary">Save my look</button></div></div>
+
+<div class="modal-backdrop" id="artModal" role="dialog" aria-modal="true" aria-labelledby="artTitle"><div class="modal"><div class="modal-head"><h2 id="artTitle">🎨 Art studio</h2><button class="close-btn" data-close="artModal">Close ✕</button></div><p class="small-note">Draw locally with your mouse or finger. There are no uploads or outside images. Keep artwork kind and suitable for a child.</p><div class="draw-tools"><label class="small-note">Color <input id="drawColor" type="color" value="#4d8b5a"></label><label class="small-note">Brush <input id="brushSize" type="range" min="2" max="24" value="6"></label><button id="drawFlower">Add flower stamp</button><button id="drawHeart">Add heart stamp</button><button id="clearDrawing">Clear paper</button></div><div class="draw-wrap"><canvas id="drawingCanvas" width="720" height="420" aria-label="Drawing paper"></canvas></div><label class="field">Artwork name<input id="artName" maxlength="24" value="My artwork"></label><button id="saveDrawing" class="primary">Save artwork to crafted pouch</button><p class="small-note">Artwork is stored locally with your world backup. A drawing canvas cannot automatically recognize every possible image, so a parent should review saved artwork.</p></div></div>
+
+<div class="modal-backdrop" id="artGalleryModal" role="dialog" aria-modal="true" aria-labelledby="galleryTitle"><div class="modal"><div class="modal-head"><h2 id="galleryTitle">🖼️ My artwork</h2><button class="close-btn" data-close="artGalleryModal">Close ✕</button></div><div class="art-grid" id="artGallery"></div></div></div>
+
+<div class="toast" id="toast" role="status"></div>
+<script>
+(() => {
+'use strict';
+
+const WORLD_SIZE = 150;
+const TILE_W = 42;
+const TILE_H = 22;
+const BLOCK_H = 18;
+const STORAGE_KEY = 'diycraft_offline_world_v1';
+const MAX_BLOCK_COLUMNS = 30000;
+const MAX_ARTWORKS = 12;
+const MAX_ART_DATA_LENGTH = 240000;
+const $ = (id) => document.getElementById(id);
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+const drawCanvas = $('drawingCanvas');
+const drawCtx = drawCanvas.getContext('2d');
+
+const BLOCKS = [
+  {id:'grass',name:'Grass',color:'#83b96d',icon:'🌿'},
+  {id:'dirt',name:'Soil',color:'#9b704e',icon:'🟫'},
+  {id:'stone',name:'Stone',color:'#aab1b4',icon:'🪨'},
+  {id:'wood',name:'Wood',color:'#bd8a58',icon:'🪵'},
+  {id:'brick',name:'Brick',color:'#cc806c',icon:'🧱'},
+  {id:'sand',name:'Sand',color:'#e7d49a',icon:'🏖️'},
+  {id:'water',name:'Water',color:'#75bfd8',icon:'💧'},
+  {id:'leaf',name:'Leaf',color:'#4e9a63',icon:'🍃'},
+  {id:'flower',name:'Flower',color:'#e9a7c4',icon:'🌸'},
+  {id:'glass',name:'Glass',color:'#b5dce4',icon:'🔹'},
+  {id:'cobble',name:'Cobble',color:'#8f9696',icon:'🪨'},
+  {id:'painted',name:'Painted',color:'#83b96d',icon:'🎨'},
+  {id:'tree',name:'Tree',color:'#57945c',icon:'🌳'},
+  {id:'cottage',name:'Cottage',color:'#d4ac7e',icon:'🏡'},
+  {id:'garden',name:'Garden bed',color:'#92724f',icon:'🌱'}
+];
+const ITEMS = {
+  wood:{name:'Wood pieces',icon:'🪵'}, stone:{name:'Smooth stones',icon:'🪨'}, soil:{name:'Garden soil',icon:'🟫'},
+  flower:{name:'Flowers',icon:'🌸'}, berry:{name:'Berries',icon:'🫐'}, fiber:{name:'Soft fiber',icon:'🧶'},
+  glass:{name:'Glass pieces',icon:'🔹'}, wheat:{name:'Wheat',icon:'🌾'}, paintbrush:{name:'Paintbrush',icon:'🖌️'},
+  wateringcan:{name:'Watering can',icon:'🫗'}, shovel:{name:'Garden shovel',icon:'🥄'},
+  chair:{name:'Little chair',icon:'🪑'}, table:{name:'Craft table',icon:'🪵'}, flowerpot:{name:'Flower pot',icon:'🪴'},
+  lantern:{name:'Cozy lantern',icon:'🏮'}, pictureframe:{name:'Picture frame',icon:'🖼️'}, basket:{name:'Woven basket',icon:'🧺'},
+  flowercrown:{name:'Flower crown',icon:'🌼'}, bread:{name:'Fresh bread',icon:'🍞'}, kite:{name:'Colorful kite',icon:'🪁'}
+};
+const RECIPES = [
+  {id:'chair',name:'Little chair',icon:'🪑',desc:'A small seat for a cozy home.',cost:{wood:3}},
+  {id:'table',name:'Craft table',icon:'🪵',desc:'A table for art and making things.',cost:{wood:4}},
+  {id:'flowerpot',name:'Flower pot',icon:'🪴',desc:'A home for a favorite flower.',cost:{soil:1,flower:1}},
+  {id:'lantern',name:'Cozy lantern',icon:'🏮',desc:'A gentle light for your cottage.',cost:{wood:1,glass:1}},
+  {id:'pictureframe',name:'Picture frame',icon:'🖼️',desc:'Display a favorite drawing.',cost:{wood:2}},
+  {id:'basket',name:'Woven basket',icon:'🧺',desc:'Keep little treasures together.',cost:{fiber:3}},
+  {id:'flowercrown',name:'Flower crown',icon:'🌼',desc:'A cheerful character decoration.',cost:{flower:3}},
+  {id:'bread',name:'Fresh bread',icon:'🍞',desc:'A tasty snack from the kitchen.',cost:{wheat:2}},
+  {id:'kite',name:'Colorful kite',icon:'🪁',desc:'A bright kite for a breezy afternoon.',cost:{wood:1,fiber:2}},
+  {id:'paintbrush',name:'Paintbrush',icon:'🖌️',desc:'A helpful tool for coloring and decorating.',cost:{wood:1,fiber:1}},
+  {id:'wateringcan',name:'Watering can',icon:'🫗',desc:'A gentle tool for caring for a garden.',cost:{wood:2,glass:1}},
+  {id:'shovel',name:'Garden shovel',icon:'🥄',desc:'A garden tool for planting flowers.',cost:{wood:2,stone:2}}
+];
+
+function blankSlots(){ return Array.from({length:60}, () => null); }
+function putInitial(slots,id,count){ slots[0] = {id,count}; }
+function makeNewWorld(){
+  const materials=blankSlots();
+  const starts=[['wood',30],['stone',30],['soil',20],['flower',20],['berry',12],['fiber',15],['glass',10],['wheat',12],['paintbrush',1],['wateringcan',1],['shovel',1]];
+  starts.forEach((v,i)=>materials[i]={id:v[0],count:v[1]});
+  return {
+    version:1,name:'My Cozy World',size:WORLD_SIZE,mode:'creative',
+    player:{x:75,y:75,name:'Builder',skin:'#f0c6a5',hair:'#65452f',shirt:'#8eb6d8',hairStyle:'long',accessory:'flower'},
+    blocks:{},materials,crafted:blankSlots(),artworks:[],
+    decor:[{type:'tree',x:69,y:74},{type:'tree',x:82,y:80},{type:'flower',x:72,y:81},{type:'flower',x:80,y:70},{type:'cottage',x:77,y:68},{type:'garden',x:80,y:83}],
+    neighbors:[{id:'neighbor1',name:'Mila',x:78,y:77,shirt:'#d58eb4',hair:'#5c473c',activity:'garden'},{id:'neighbor2',name:'Noah',x:72,y:77,shirt:'#7da9cc',hair:'#4e4035',activity:'craft'}],
+    animals:[{id:'animal1',kind:'sheep',name:'Fluffy',x:70,y:79},{id:'animal2',kind:'bunny',name:'Clover',x:81,y:76},{id:'animal3',kind:'cat',name:'Mochi',x:84,y:73},{id:'animal4',kind:'bird',name:'Pip',x:75,y:71}],
+    selected:null
+  };
+}
+let world = loadWorld();
+let tool = 'build';
+let selectedBlock = 'grass';
+let selectedColor = '#83b96d';
+let selectedEntity = null;
+let inventoryTab = 'materials';
+let selectedInventorySlot = null;
+let lastToastTimer = null;
+let hearts = [];
+let drawActive = false;
+let drawLast = null;
+
+function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
+function cleanName(v,fallback,max=32){
+  const s=String(v ?? '').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,max);
+  return s || fallback;
+}
+function validColor(v,fallback){ return (typeof v==='string' && /^#[0-9a-f]{6}$/i.test(v)) ? v : fallback; }
+function safeCoord(v){ return Number.isInteger(v) ? clamp(v,0,WORLD_SIZE-1) : 75; }
+function validSlotArray(arr, allowed){
+  const out=blankSlots();
+  if(!Array.isArray(arr)) return out;
+  arr.slice(0,60).forEach((entry,i)=>{
+    if(entry && typeof entry==='object' && allowed[entry.id] && Number.isFinite(entry.count)){
+      const count=clamp(Math.floor(entry.count),1,999);
+      out[i]={id:entry.id,count};
+      if(typeof entry.label==='string') out[i].label=cleanName(entry.label,ITEMS[entry.id].name,24);
+    }
+  });
+  return out;
+}
+function normalizeWorld(data){
+  if(!data || typeof data!=='object' || data.version!==1) throw new Error('This is not a supported DIYCraft backup.');
+  const w=makeNewWorld();
+  w.name=cleanName(data.name,'My Cozy World',32);
+  w.mode=data.mode==='peaceful'?'peaceful':'creative';
+  if(data.player && typeof data.player==='object'){
+    w.player={...w.player,...data.player};
+    w.player.x=safeCoord(data.player.x); w.player.y=safeCoord(data.player.y);
+    w.player.name=cleanName(data.player.name,'Builder',20);
+    w.player.skin=validColor(data.player.skin,w.player.skin);w.player.hair=validColor(data.player.hair,w.player.hair);w.player.shirt=validColor(data.player.shirt,w.player.shirt);
+    w.player.hairStyle=['long','short','curl'].includes(data.player.hairStyle)?data.player.hairStyle:'long';
+    w.player.accessory=['flower','bow','hat','none'].includes(data.player.accessory)?data.player.accessory:'flower';
+  }
+  const allowedBlocks=Object.fromEntries(BLOCKS.map(b=>[b.id,true]));
+  if(data.blocks && typeof data.blocks==='object' && !Array.isArray(data.blocks)){
+    let n=0;
+    for(const [key,val] of Object.entries(data.blocks)){
+      if(n++>=MAX_BLOCK_COLUMNS) break;
+      if(!/^\d{1,3},\d{1,3}$/.test(key) || !Array.isArray(val)) continue;
+      const [x,y]=key.split(',').map(Number); if(x>=WORLD_SIZE || y>=WORLD_SIZE) continue;
+      const stack=val.slice(0,64).filter(b=>b && allowedBlocks[b.id]).map(b=>({id:b.id,color:validColor(b.color,BLOCKS.find(z=>z.id===b.id).color)}));
+      if(stack.length) w.blocks[key]=stack;
+    }
+  }
+  w.materials=validSlotArray(data.materials,ITEMS);
+  w.crafted=validSlotArray(data.crafted,ITEMS);
+  if(Array.isArray(data.artworks)) w.artworks=data.artworks.slice(0,MAX_ARTWORKS).filter(a=>a && typeof a==='object' && typeof a.data==='string' && a.data.startsWith('data:image/png;base64,') && a.data.length<=MAX_ART_DATA_LENGTH).map(a=>({name:cleanName(a.name,'My artwork',24),data:a.data}));
+  if(Array.isArray(data.decor)){
+    w.decor=[];
+    data.decor.slice(0,500).forEach(d=>{if(d && ['tree','cottage','flower','garden'].includes(d.type))w.decor.push({type:d.type,x:safeCoord(d.x),y:safeCoord(d.y)});});
+  }
+  // Keep the built-in friendly residents; saved coordinates are accepted only for known IDs.
+  if(Array.isArray(data.neighbors)) data.neighbors.slice(0,4).forEach((n,i)=>{ if(w.neighbors[i] && n){w.neighbors[i].x=safeCoord(n.x);w.neighbors[i].y=safeCoord(n.y);} });
+  if(Array.isArray(data.animals)) data.animals.slice(0,8).forEach((a,i)=>{ if(w.animals[i] && a){w.animals[i].x=safeCoord(a.x);w.animals[i].y=safeCoord(a.y);} });
+  return w;
+}
+function loadWorld(){
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)return normalizeWorld(JSON.parse(raw));}
+  catch(e){console.warn('Primary save could not be loaded; trying the previous copy:',e);}
+  try{const previous=localStorage.getItem(STORAGE_KEY+'_previous');if(previous)return normalizeWorld(JSON.parse(previous));}
+  catch(e){console.warn('Previous save could not be loaded:',e);}
+  return makeNewWorld();
+}
+function notify(message){
+  const el=$('toast');el.textContent=message;el.classList.add('show');
+  clearTimeout(lastToastTimer);lastToastTimer=setTimeout(()=>el.classList.remove('show'),2300);
+  $('statusLine').textContent=message;
+}
+function saveWorld(silent=false){
+  try{
+    world.name=cleanName($('worldName').value,world.name,32);
+    world.mode=$('worldMode').value;
+    const previous=localStorage.getItem(STORAGE_KEY);
+    if(previous) localStorage.setItem(STORAGE_KEY+'_previous',previous);
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(world));
+    $('worldTitle').textContent=world.name;
+    $('worldSub').textContent='150 × 150 build area · '+(world.mode==='creative'?'Creative mode':'Peaceful mode');
+    if(!silent) notify('World saved on this device.');
+    return true;
+  }catch(e){
+    console.error(e);if(!silent)notify('Device storage is full or unavailable. Please use Backup.');return false;
+  }
+}
+function exportBackup(){
+  saveWorld(true);
+  const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=(cleanName(world.name,'diycraft-world',24).replace(/\s+/g,'-').toLowerCase()||'diycraft-world')+'.diycraft.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);notify('Backup file created. Keep it somewhere safe.');
+}
+async function importBackup(file){
+  if(!file)return;
+  if(file.size>5_000_000){notify('That backup is too large to restore.');return;}
+  try{const text=await file.text();const parsed=JSON.parse(text);const restored=normalizeWorld(parsed);world=restored;$('worldName').value=world.name;$('worldMode').value=world.mode;saveWorld(true);renderAll();notify('World restored successfully.');}
+  catch(e){console.error(e);notify('Backup could not be read. Your current world was kept.');}
+}
+
+function addItem(id,count=1,target='crafted'){
+  if(!ITEMS[id])return false;
+  const slots=world[target];
+  let empty=-1;
+  for(let i=0;i<slots.length;i++){
+    if(slots[i] && slots[i].id===id && slots[i].count<99){slots[i].count=Math.min(99,slots[i].count+count);return true;}
+    if(!slots[i] && empty===-1)empty=i;
+  }
+  if(empty>=0){slots[empty]={id,count:Math.min(99,count)};return true;}
+  return false;
+}
+function hasIngredients(cost){return Object.entries(cost).every(([id,n])=>world.materials.some(s=>s&&s.id===id&&s.count>=n)||world.materials.reduce((t,s)=>t+(s&&s.id===id?s.count:0),0)>=n);}
+function removeIngredients(cost){
+  for(const [id,n] of Object.entries(cost)){
+    let left=n;
+    for(const s of world.materials){if(s&&s.id===id&&left>0){const take=Math.min(left,s.count);s.count-=take;left-=take;if(s.count<=0){const idx=world.materials.indexOf(s);world.materials[idx]=null;}}}
+  }
+}
+function craftDestination(id){return ['paintbrush','wateringcan','shovel','bread'].includes(id)?'materials':'crafted';}
+function hasItemSpace(target,id){return world[target].some(x=>!x)||(world[target].some(x=>x&&x.id===id&&x.count<99));}
+function craft(recipeId){
+  const r=RECIPES.find(x=>x.id===recipeId);if(!r)return;
+  if(!hasIngredients(r.cost)){notify('You need a few more materials for that craft.');return;}
+  const destination=craftDestination(r.id);
+  if(!hasItemSpace(destination,r.id)){notify(destination==='materials'?'The resources pouch is full.':'The crafted pouch is full.');return;}
+  removeIngredients(r.cost);addItem(r.id,1,destination);renderInventory();renderRecipes();saveWorld(true);notify(r.name+' added to your '+(destination==='materials'?'resources pouch.':'crafted pouch.'));
+}
+function renderInventory(){
+  const slots=world[inventoryTab];const grid=$('inventoryGrid');grid.replaceChildren();
+  $('inventoryDescription').textContent=inventoryTab==='materials'?'Raw materials, food, and helpful building tools.':'Finished crafts, decorations, and saved art pieces.';
+  $('renameRow').classList.toggle('hidden',inventoryTab!=='crafted'||selectedInventorySlot===null||!slots[selectedInventorySlot]);
+  slots.forEach((item,i)=>{
+    const cell=document.createElement('div');cell.className='slot';cell.title='Slot '+(i+1);
+    if(item){const meta=ITEMS[item.id];const emoji=document.createElement('div');emoji.className='emoji';emoji.textContent=meta.icon;const name=document.createElement('div');name.className='slot-name';name.textContent=item.label||meta.name;const count=document.createElement('div');count.className='count';count.textContent='×'+item.count;cell.append(emoji,name,count);if(inventoryTab==='crafted'){if(selectedInventorySlot===i)cell.style.border='2px solid #477b58';cell.addEventListener('click',()=>{selectedInventorySlot=i;$('renameCraftedName').value=item.label||meta.name;renderInventory();$('renameRow').classList.remove('hidden');});}}
+    else{const n=document.createElement('div');n.className='count';n.textContent='—';cell.append(n);}
+    grid.append(cell);
+  });
+}
+function renderRecipes(){
+  const root=$('recipeGrid');root.replaceChildren();
+  RECIPES.forEach(r=>{
+    const card=document.createElement('div');card.className='recipe';
+    const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;
+    const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([id,n])=>n+' '+ITEMS[id].name).join(', ')+'.';
+    const btn=document.createElement('button');btn.textContent='Make this';const destination=craftDestination(r.id);btn.disabled=!hasIngredients(r.cost)||!hasItemSpace(destination,r.id);btn.addEventListener('click',()=>craft(r.id));
+    card.append(title,desc,btn);root.append(card);
+  });
+}
+function openModal(id){$(id).classList.add('open');}
+function closeModal(id){$(id).classList.remove('open');}
+function renderNeighbors(){
+  const root=$('neighborList');root.replaceChildren();
+  world.neighbors.forEach(n=>{const row=document.createElement('div');row.className='neighbor-card';const icon=document.createElement('div');icon.className='avatar-icon';icon.textContent='🧑';const text=document.createElement('div');text.textContent=n.name+' · '+(n.activity==='craft'?'making crafts':'gardening');row.append(icon,text);root.append(row);});
+}
+function renderAnimals(){
+  const root=$('animalList');root.replaceChildren();
+  world.animals.forEach(a=>{const row=document.createElement('div');row.className='animal-card';const icon=document.createElement('div');icon.className='avatar-icon';icon.textContent=animalEmoji(a.kind);const text=document.createElement('div');text.textContent=a.name+' · '+a.kind;row.append(icon,text);root.append(row);});
+}
+function renderAll(){
+  $('worldName').value=world.name;$('worldMode').value=world.mode;$('worldTitle').textContent=world.name;
+  $('worldSub').textContent='150 × 150 build area · '+(world.mode==='creative'?'Creative mode':'Peaceful mode');
+  renderNeighbors();renderAnimals();drawWorld();
+}
+
+function colorShade(hex,amount){
+  const v=parseInt(hex.slice(1),16);let r=(v>>16)&255,g=(v>>8)&255,b=v&255;
+  r=clamp(Math.round(r*amount),0,255);g=clamp(Math.round(g*amount),0,255);b=clamp(Math.round(b*amount),0,255);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function groundToScreen(x,y,z=0){
+  const dx=x-world.player.x,dy=y-world.player.y;
+  return {x:canvas.width/2+(dx-dy)*TILE_W/2,y:canvas.height/2+30+(dx+dy)*TILE_H/2-z*BLOCK_H};
+}
+function worldAtScreen(sx,sy){
+  const u=(sx-canvas.width/2)/(TILE_W/2);const v=(sy-(canvas.height/2+30))/(TILE_H/2);
+  const dx=(u+v)/2,dy=(v-u)/2;
+  return {x:clamp(Math.round(world.player.x+dx),0,WORLD_SIZE-1),y:clamp(Math.round(world.player.y+dy),0,WORLD_SIZE-1)};
+}
+function drawDiamond(x,y,fill,stroke){
+  ctx.beginPath();ctx.moveTo(x,y-TILE_H/2);ctx.lineTo(x+TILE_W/2,y);ctx.lineTo(x,y+TILE_H/2);ctx.lineTo(x-TILE_W/2,y);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=.7;ctx.stroke();
+}
+function drawCube(cx,baseY,color){
+  const topY=baseY-BLOCK_H;
+  ctx.beginPath();ctx.moveTo(cx-TILE_W/2,topY);ctx.lineTo(cx,topY+TILE_H/2);ctx.lineTo(cx,baseY+TILE_H/2);ctx.lineTo(cx-TILE_W/2,baseY);ctx.closePath();ctx.fillStyle=colorShade(color,.70);ctx.fill();ctx.strokeStyle='rgba(45,62,49,.22)';ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+TILE_W/2,topY);ctx.lineTo(cx,topY+TILE_H/2);ctx.lineTo(cx,baseY+TILE_H/2);ctx.lineTo(cx+TILE_W/2,baseY);ctx.closePath();ctx.fillStyle=colorShade(color,.82);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,topY-TILE_H/2);ctx.lineTo(cx+TILE_W/2,topY);ctx.lineTo(cx,topY+TILE_H/2);ctx.lineTo(cx-TILE_W/2,topY);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.stroke();
+}
+function drawTree(x,y){
+  const p=groundToScreen(x,y);drawCube(p.x,p.y,'#916343');drawCube(p.x,p.y-BLOCK_H,'#916343');
+  ctx.fillStyle='#4f9860';ctx.fillRect(p.x-15,p.y-78,30,30);ctx.fillRect(p.x-25,p.y-66,50,22);ctx.fillStyle='#79b96c';ctx.fillRect(p.x-8,p.y-82,15,10);
+}
+function drawCottage(x,y){
+  const p=groundToScreen(x,y);const base=p.y;
+  drawCube(p.x,base,'#d3a77b');drawCube(p.x,base-BLOCK_H,'#f0d8ad');
+  ctx.fillStyle='#b96f65';ctx.beginPath();ctx.moveTo(p.x-25,base-54);ctx.lineTo(p.x,base-78);ctx.lineTo(p.x+25,base-54);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#7ba6ba';ctx.fillRect(p.x-12,base-48,9,12);ctx.fillRect(p.x+5,base-48,9,12);
+  ctx.fillStyle='#8c6548';ctx.fillRect(p.x-4,base-30,10,30);
+}
+function drawFlower(x,y){
+  const p=groundToScreen(x,y);ctx.strokeStyle='#4e8c52';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y-16);ctx.stroke();
+  ctx.fillStyle='#eaa4c3';for(let i=0;i<5;i++){const a=i*Math.PI*2/5;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*5,p.y-21+Math.sin(a)*5,4,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#eecb66';ctx.beginPath();ctx.arc(p.x,p.y-21,3,0,Math.PI*2);ctx.fill();
+}
+function drawGarden(x,y){
+  const p=groundToScreen(x,y);ctx.fillStyle='#8f6d49';ctx.beginPath();ctx.moveTo(p.x-18,p.y-3);ctx.lineTo(p.x,p.y+6);ctx.lineTo(p.x+18,p.y-3);ctx.lineTo(p.x,p.y-12);ctx.closePath();ctx.fill();
+  for(let i=-1;i<=1;i++){ctx.strokeStyle='#4f9259';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x+i*9,p.y-5);ctx.lineTo(p.x+i*9-2,p.y-17);ctx.stroke();ctx.fillStyle='#80b76c';ctx.fillRect(p.x+i*9-6,p.y-19,6,4);}
+}
+function drawPerson(x,y,shirt,hair,skin,accessory='none',scale=1){
+  const p=groundToScreen(x,y);ctx.save();ctx.translate(p.x,p.y);ctx.scale(scale,scale);
+  ctx.fillStyle='rgba(40,55,45,.18)';ctx.beginPath();ctx.ellipse(0,-2,12,5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#5c5961';ctx.fillRect(-8,-19,6,17);ctx.fillRect(2,-19,6,17);
+  ctx.fillStyle=shirt;ctx.fillRect(-10,-39,20,22);ctx.fillRect(-14,-36,5,16);ctx.fillRect(9,-36,5,16);
+  ctx.fillStyle=skin;ctx.fillRect(-8,-56,16,16);
+  ctx.fillStyle=hair;ctx.fillRect(-9,-60,18,7);ctx.fillRect(-10,-55,5,14);
+  if(scale===1 && world.player.hairStyle==='long'){ctx.fillStyle=hair;ctx.fillRect(7,-54,4,28);ctx.fillRect(-11,-52,4,24);}
+  if(scale===1 && world.player.hairStyle==='curl'){ctx.fillStyle=hair;for(const c of [[-8,-58],[-3,-63],[3,-63],[8,-58],[-10,-52],[10,-52]]){ctx.beginPath();ctx.arc(c[0],c[1],4,0,Math.PI*2);ctx.fill();}}
+  if(accessory==='flower'){ctx.fillStyle='#e99fc0';ctx.fillRect(6,-63,7,6);ctx.fillStyle='#f5d875';ctx.fillRect(8,-61,3,3);}
+  if(accessory==='bow'){ctx.fillStyle='#d66a8b';ctx.fillRect(-12,-62,6,6);ctx.fillRect(-6,-62,6,6);}
+  if(accessory==='hat'){ctx.fillStyle='#e4c27d';ctx.fillRect(-13,-64,26,5);ctx.fillRect(-8,-70,16,7);}
+  ctx.fillStyle='#3d4a43';ctx.fillRect(-4,-49,2,2);ctx.fillRect(3,-49,2,2);
+  ctx.restore();
+}
+function animalEmoji(kind){return ({sheep:'🐑',bunny:'🐇',cat:'🐈',bird:'🐦',dog:'🐕',cow:'🐄'})[kind]||'🐾';}
+function drawAnimal(a){
+  const p=groundToScreen(a.x,a.y);const x=p.x,y=p.y;ctx.save();ctx.translate(x,y);
+  ctx.fillStyle='rgba(40,55,45,.15)';ctx.beginPath();ctx.ellipse(0,-2,11,4,0,0,Math.PI*2);ctx.fill();
+  if(a.kind==='sheep'){
+    ctx.fillStyle='#fffaf0';ctx.fillRect(-12,-24,22,15);ctx.fillRect(-8,-29,9,10);ctx.fillStyle='#d6c9bf';ctx.fillRect(7,-22,9,9);ctx.fillRect(9,-15,4,6);ctx.fillRect(-9,-15,4,6);
+  }else if(a.kind==='bunny'){
+    ctx.fillStyle='#f5eee4';ctx.fillRect(-9,-20,18,13);ctx.fillRect(-6,-32,5,14);ctx.fillRect(3,-34,5,16);ctx.fillStyle='#d99eaa';ctx.fillRect(-5,-30,2,7);ctx.fillRect(4,-31,2,8);ctx.fillStyle='#493d3b';ctx.fillRect(3,-23,2,2);
+  }else if(a.kind==='cat'||a.kind==='dog'){
+    ctx.fillStyle=a.kind==='cat'?'#d8a77e':'#bd9c78';ctx.fillRect(-10,-23,20,15);ctx.fillRect(-8,-31,16,11);ctx.fillStyle='#58473e';ctx.fillRect(-7,-34,5,6);ctx.fillRect(3,-34,5,6);ctx.fillStyle='#333';ctx.fillRect(-4,-25,2,2);ctx.fillRect(3,-25,2,2);
+  }else{
+    ctx.fillStyle='#f3d16f';ctx.fillRect(-8,-21,16,12);ctx.fillRect(-5,-29,11,10);ctx.fillStyle='#d98c62';ctx.fillRect(5,-26,5,4);ctx.fillStyle='#444';ctx.fillRect(1,-27,2,2);
+  }
+  ctx.restore();
+}
+function drawWorld(){
+  const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
+  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#eaf4f0');sky.addColorStop(1,'#cfe1d2');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+  const px=world.player.x,py=world.player.y;
+  for(let x=Math.max(0,px-40);x<=Math.min(WORLD_SIZE-1,px+40);x++){
+    for(let y=Math.max(0,py-40);y<=Math.min(WORLD_SIZE-1,py+40);y++){
+      const p=groundToScreen(x,y);if(p.x<-TILE_W||p.x>w+TILE_W||p.y<-TILE_H||p.y>h+TILE_H)continue;
+      const key=((x+y)%2===0)?'#a9cd91':'#a3c889';drawDiamond(p.x,p.y,key,'rgba(70,105,67,.16)');
+      if(x===selectedCell.x&&y===selectedCell.y){drawDiamond(p.x,p.y,'rgba(255,244,160,.32)','#fff3a2');}
+    }
+  }
+  // Render all placed block columns in painter order.
+  const columns=Object.entries(world.blocks).map(([key,stack])=>{const [x,y]=key.split(',').map(Number);return {x,y,stack};}).filter(o=>Math.abs(o.x-px)<42&&Math.abs(o.y-py)<42).sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+  columns.forEach(o=>{const p=groundToScreen(o.x,o.y);o.stack.forEach((b,i)=>{drawCube(p.x,p.y-i*BLOCK_H,b.color||BLOCKS.find(z=>z.id===b.id).color);});});
+  // Static scenery and friendly residents.
+  world.decor.filter(d=>Math.abs(d.x-px)<42&&Math.abs(d.y-py)<42).sort((a,b)=>(a.x+a.y)-(b.x+b.y)).forEach(d=>{if(d.type==='tree')drawTree(d.x,d.y);else if(d.type==='cottage')drawCottage(d.x,d.y);else if(d.type==='flower')drawFlower(d.x,d.y);else if(d.type==='garden')drawGarden(d.x,d.y);});
+  const actors=[];
+  world.animals.forEach(a=>actors.push({sum:a.x+a.y,kind:'animal',item:a}));
+  world.neighbors.forEach(n=>actors.push({sum:n.x+n.y,kind:'neighbor',item:n}));
+  actors.push({sum:px+py,kind:'player',item:world.player});actors.sort((a,b)=>a.sum-b.sum);
+  actors.forEach(a=>{if(a.kind==='animal')drawAnimal(a.item);else if(a.kind==='neighbor')drawPerson(a.item.x,a.item.y,a.item.shirt,a.item.hair,'#edc5a6','none',.92);else drawPerson(a.item.x,a.item.y,a.item.shirt,a.item.hair,a.item.skin,a.item.accessory,1);});
+  hearts=hearts.filter(v=>Date.now()-v.t<1300);hearts.forEach(v=>{const p=groundToScreen(v.x,v.y);ctx.globalAlpha=1-(Date.now()-v.t)/1300;ctx.font='19px sans-serif';ctx.fillText('💚',p.x,p.y-38-(Date.now()-v.t)/28);ctx.globalAlpha=1;});
+}
+let selectedCell={x:75,y:75};
+function screenPoint(evt){const r=canvas.getBoundingClientRect();return {x:(evt.clientX-r.left)*canvas.width/r.width,y:(evt.clientY-r.top)*canvas.height/r.height};}
+function entityAt(x,y){
+  for(const n of world.neighbors){if(Math.abs(n.x-x)<=1&&Math.abs(n.y-y)<=1)return {type:'neighbor',item:n};}
+  for(const a of world.animals){if(Math.abs(a.x-x)<=1&&Math.abs(a.y-y)<=1)return {type:'animal',item:a};}
+  return null;
+}
+function placeBlock(x,y){
+  if(['tree','cottage','garden'].includes(selectedBlock)){
+    if(world.decor.length>=500){notify('This world has reached its decoration limit.');return;}
+    if(world.decor.some(d=>d.x===x&&d.y===y)){notify('There is already a decoration on that tile.');return;}
+    world.decor.push({type:selectedBlock,x,y});saveWorld(true);drawWorld();return;
+  }
+  const key=x+','+y;const stack=world.blocks[key]||(world.blocks[key]=[]);
+  if(stack.length>=64){notify('That block column has reached its safe height limit.');return;}
+  const def=BLOCKS.find(b=>b.id===selectedBlock);stack.push({id:selectedBlock,color:selectedBlock==='painted'?selectedColor:def.color});
+  saveWorld(true);drawWorld();
+}
+function eraseBlock(x,y){const key=x+','+y;const stack=world.blocks[key];if(stack&&stack.length){stack.pop();if(!stack.length)delete world.blocks[key];saveWorld(true);drawWorld();}}
+function recolorBlock(x,y){const stack=world.blocks[x+','+y];if(stack&&stack.length){stack[stack.length-1].color=selectedColor;saveWorld(true);drawWorld();}}
+function interactAt(x,y){
+  const found=entityAt(x,y);if(!found){selectedEntity=null;$('selectionNote').textContent='Select a neighbor or animal on the map to interact.';return;}
+  selectedEntity=found;
+  if(found.type==='neighbor')$('selectionNote').textContent=found.item.name+' is ready for a quiet creative activity.';
+  else $('selectionNote').textContent=found.item.name+' is here for a gentle pet.';
+  notify(found.item.name+' is nearby. Choose a kind activity.');
+}
+function handleMapClick(evt){
+  if(evt.button===2){const p=screenPoint(evt),c=worldAtScreen(p.x,p.y);eraseBlock(c.x,c.y);return;}
+  const p=screenPoint(evt),c=worldAtScreen(p.x,p.y);selectedCell=c;
+  const found=entityAt(c.x,c.y);
+  if(found){interactAt(c.x,c.y);drawWorld();return;}
+  if(tool==='build')placeBlock(c.x,c.y);else if(tool==='erase')eraseBlock(c.x,c.y);else if(tool==='paint')recolorBlock(c.x,c.y);else {selectedEntity=null;drawWorld();}
+}
+canvas.addEventListener('pointerdown',evt=>{canvas.setPointerCapture(evt.pointerId);handleMapClick(evt);});
+canvas.addEventListener('contextmenu',evt=>evt.preventDefault());
+function movePlayer(dx,dy){world.player.x=clamp(world.player.x+dx,0,WORLD_SIZE-1);world.player.y=clamp(world.player.y+dy,0,WORLD_SIZE-1);selectedCell={x:world.player.x,y:world.player.y};drawWorld();saveWorld(true);}
+document.addEventListener('keydown',evt=>{
+  const tag=evt.target&&evt.target.tagName;if(['INPUT','SELECT','TEXTAREA'].includes(tag))return;
+  if(['ArrowUp','w','W'].includes(evt.key)){evt.preventDefault();movePlayer(0,-1);}
+  else if(['ArrowDown','s','S'].includes(evt.key)){evt.preventDefault();movePlayer(0,1);}
+  else if(['ArrowLeft','a','A'].includes(evt.key)){evt.preventDefault();movePlayer(-1,0);}
+  else if(['ArrowRight','d','D'].includes(evt.key)){evt.preventDefault();movePlayer(1,0);}
+  else if(evt.key==='e'||evt.key==='E')openModal('inventoryModal');
+  else if(evt.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(m=>m.classList.remove('open'));
+});
+document.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',()=>{const [x,y]=b.dataset.move.split(',').map(Number);movePlayer(x,y);}));
+
+function renderPalette(){
+  const root=$('blockPalette');root.replaceChildren();
+  BLOCKS.forEach(b=>{const btn=document.createElement('button');btn.className='block-btn'+(selectedBlock===b.id?' active':'');btn.type='button';const sw=document.createElement('span');sw.className='swatch';sw.style.background=b.color;const label=document.createElement('span');label.textContent=b.name;btn.append(sw,label);btn.addEventListener('click',()=>{selectedBlock=b.id;renderPalette();});root.append(btn);});
+}
+$('toolButtons').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tool=b.dataset.tool;$('toolButtons').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));}));
+$('customColor').addEventListener('input',e=>{selectedColor=validColor(e.target.value,'#83b96d');selectedBlock='painted';renderPalette();});
+$('worldName').addEventListener('change',()=>{world.name=cleanName($('worldName').value,world.name,32);saveWorld(true);});
+$('worldMode').addEventListener('change',()=>{world.mode=$('worldMode').value;saveWorld(true);renderAll();notify(world.mode==='creative'?'Creative mode: build with unlimited blocks.':'Peaceful mode: the world has no hostile creatures.');});
+
+$('inventoryButton').addEventListener('click',()=>{inventoryTab='materials';selectedInventorySlot=null;document.querySelectorAll('[data-invtab]').forEach(x=>x.classList.toggle('active',x.dataset.invtab===inventoryTab));renderInventory();openModal('inventoryModal');});
+$('craftButton').addEventListener('click',()=>{renderRecipes();openModal('craftModal');});
+$('artButton').addEventListener('click',()=>openModal('artModal'));
+$('characterButton').addEventListener('click',()=>{
+  $('characterName').value=world.player.name;$('hairColor').value=world.player.hair;$('shirtColor').value=world.player.shirt;$('skinColor').value=world.player.skin;$('hairStyle').value=world.player.hairStyle;$('accessory').value=world.player.accessory;openModal('characterModal');
+});
+$('saveButton').addEventListener('click',()=>saveWorld(false));$('exportButton').addEventListener('click',exportBackup);
+$('clearBuildButton').addEventListener('click',()=>{
+  const ok=window.confirm('Clear all placed blocks, trees, cottages, flowers, and garden decorations in this world? Your character, neighbors, animals, inventory, and saved artwork will remain. Make a Backup first if you may want these builds later.');
+  if(!ok)return;world.blocks={};world.decor=[];saveWorld(true);drawWorld();notify('The building area has been cleared.');
+});
+$('importFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];importBackup(f);e.target.value='';});
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.querySelectorAll('[data-invtab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.invtab;selectedInventorySlot=null;document.querySelectorAll('[data-invtab]').forEach(x=>x.classList.toggle('active',x===b));renderInventory();}));
+$('applyCharacter').addEventListener('click',()=>{
+  world.player.name=cleanName($('characterName').value,'Builder',20);world.player.hair=validColor($('hairColor').value,'#65452f');world.player.shirt=validColor($('shirtColor').value,'#8eb6d8');world.player.skin=validColor($('skinColor').value,'#f0c6a5');world.player.hairStyle=$('hairStyle').value;world.player.accessory=$('accessory').value;saveWorld(true);drawWorld();closeModal('characterModal');notify('Your character has a new look.');
+});
+$('inviteButton').addEventListener('click',()=>{
+  const n=selectedEntity&&selectedEntity.type==='neighbor'?selectedEntity.item:world.neighbors[0];if(!n)return;
+  n.activity='craft';hearts.push({x:n.x,y:n.y,t:Date.now()});drawWorld();saveWorld(true);notify(n.name+' joined your quiet art-and-craft activity.');
+});
+$('petButton').addEventListener('click',()=>{
+  const a=selectedEntity&&selectedEntity.type==='animal'?selectedEntity.item:world.animals[0];if(!a)return;
+  hearts.push({x:a.x,y:a.y,t:Date.now()});drawWorld();notify(a.name+' enjoyed a gentle pet.');
+});
+$('renameCraftedButton').addEventListener('click',()=>{
+  if(selectedInventorySlot===null||!world.crafted[selectedInventorySlot])return;
+  world.crafted[selectedInventorySlot].label=cleanName($('renameCraftedName').value,ITEMS[world.crafted[selectedInventorySlot].id].name,24);
+  renderInventory();saveWorld(true);notify('Your crafted item has a new name.');
+});
+$('viewArtButton').addEventListener('click',()=>{renderGallery();openModal('artGalleryModal');});
+
+function resetDrawing(){drawCtx.fillStyle='#fffdf8';drawCtx.fillRect(0,0,drawCanvas.width,drawCanvas.height);drawCtx.strokeStyle='#e7e2d5';drawCtx.lineWidth=1;for(let x=24;x<drawCanvas.width;x+=24){drawCtx.beginPath();drawCtx.moveTo(x,0);drawCtx.lineTo(x,drawCanvas.height);drawCtx.stroke();}for(let y=24;y<drawCanvas.height;y+=24){drawCtx.beginPath();drawCtx.moveTo(0,y);drawCtx.lineTo(drawCanvas.width,y);drawCtx.stroke();}}
+function drawPosition(evt){const r=drawCanvas.getBoundingClientRect();return {x:(evt.clientX-r.left)*drawCanvas.width/r.width,y:(evt.clientY-r.top)*drawCanvas.height/r.height};}
+drawCanvas.addEventListener('pointerdown',evt=>{drawActive=true;drawLast=drawPosition(evt);drawCanvas.setPointerCapture(evt.pointerId);});
+drawCanvas.addEventListener('pointermove',evt=>{if(!drawActive)return;const p=drawPosition(evt);drawCtx.strokeStyle=$('drawColor').value;drawCtx.lineWidth=Number($('brushSize').value);drawCtx.lineCap='round';drawCtx.lineJoin='round';drawCtx.beginPath();drawCtx.moveTo(drawLast.x,drawLast.y);drawCtx.lineTo(p.x,p.y);drawCtx.stroke();drawLast=p;});
+drawCanvas.addEventListener('pointerup',()=>{drawActive=false;drawLast=null;});drawCanvas.addEventListener('pointercancel',()=>{drawActive=false;drawLast=null;});
+$('clearDrawing').addEventListener('click',resetDrawing);
+$('drawFlower').addEventListener('click',()=>{const x=360,y=205;drawCtx.fillStyle='#e5a2c0';for(let i=0;i<5;i++){const a=i*Math.PI*2/5;drawCtx.beginPath();drawCtx.arc(x+Math.cos(a)*16,y+Math.sin(a)*16,12,0,Math.PI*2);drawCtx.fill();}drawCtx.fillStyle='#efc968';drawCtx.beginPath();drawCtx.arc(x,y,10,0,Math.PI*2);drawCtx.fill();drawCtx.strokeStyle='#51915b';drawCtx.lineWidth=7;drawCtx.beginPath();drawCtx.moveTo(x,y+10);drawCtx.lineTo(x,y+70);drawCtx.stroke();});
+$('drawHeart').addEventListener('click',()=>{const x=360,y=210;drawCtx.fillStyle='#dc8297';drawCtx.beginPath();drawCtx.moveTo(x,y+34);drawCtx.bezierCurveTo(x-88,y-20,x-38,y-80,x,y-35);drawCtx.bezierCurveTo(x+38,y-80,x+88,y-20,x,y+34);drawCtx.fill();});
+$('saveDrawing').addEventListener('click',()=>{
+  const name=cleanName($('artName').value,'My artwork',24);let data;
+  try{data=drawCanvas.toDataURL('image/png');}catch(e){notify('Could not save this drawing.');return;}
+  if(data.length>MAX_ART_DATA_LENGTH){notify('This drawing is too large. Clear some details and try again.');return;}
+  if(world.artworks.length>=MAX_ARTWORKS){notify('The art gallery is full. Export a backup before removing old artwork.');return;}
+  if(!world.crafted.some(x=>!x)){notify('The crafted pouch is full. Make room before saving artwork.');return;}
+  world.artworks.push({name,data});addItem('pictureframe',1,'crafted');saveWorld(true);renderGallery();renderInventory();closeModal('artModal');notify('Your artwork was saved locally.');resetDrawing();
+});
+function renderGallery(){
+  const root=$('artGallery');root.replaceChildren();
+  if(!world.artworks.length){const d=document.createElement('div');d.className='empty';d.textContent='Your art gallery is waiting for its first creation.';root.append(d);return;}
+  world.artworks.forEach(a=>{const card=document.createElement('div');card.className='art-item';const img=document.createElement('img');img.alt='Saved artwork: '+a.name;img.src=a.data;const label=document.createElement('div');label.textContent=a.name;card.append(img,label);root.append(card);});
+}
+
+// Friendly characters remain silent; no dialogue, chat, or text-based interaction exists.
+// The only entities in the game are peaceful neighbors and friendly animals.
+function setupCanvas(){
+  const resize=()=>{const rect=canvas.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,1.5);const width=Math.max(320,Math.floor(rect.width*dpr));const height=Math.max(300,Math.floor(rect.height*dpr));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;drawWorld();}};
+  if('ResizeObserver' in window){const ro=new ResizeObserver(resize);ro.observe(canvas);}else window.addEventListener('resize',resize);resize();
+}
+renderPalette();renderAll();resetDrawing();setupCanvas();
+// Autosave is local-only. A separate downloadable backup is still recommended.
+setInterval(()=>saveWorld(true),10000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveWorld(true);});
+window.addEventListener('beforeunload',()=>saveWorld(true));
+})();
+</script>
+</body>
+</html>
