@@ -1,27 +1,34 @@
 # DIYCraft — Peaceful Voxel World
 
-Open the game from the GitHub Pages `/offline/` route. This is a self-contained offline-capable creative voxel prototype.
+A self-contained, offline-capable voxel-style creative building game. This is an original independent project and is not Minecraft or affiliated with Mojang or Microsoft.
 
-## Building
-- The hotbar selects a building material. Each material automatically has its own locally generated surface texture: grass, dirt, stone, wood, leaves, brick, glass, flower, sand and snow. There is no separate texture menu.
-- Choose any custom color for additional blocks.
-- Creative building does not consume resources. World size and block counts are bounded to protect device performance.
-
-## iPad and camera controls
-- Drag the world to look around; tap to place a block.
-- Use the left movement pad and right build/remove/flight controls.
+## Build and explore
+- Tap the exact point in the world where you want to place a block.
+- Drag the world to look around; use the movement pad to walk.
 - Switch between first-person and third-person views.
-- Turn creative flight on, then use UP and DOWN to move vertically.
-- Hide controllers for a larger world view; show them again at any time.
-- Use Enlarge for full-screen mode where the browser supports it.
+- Enable creative flight and use UP/DOWN controls to rise and descend.
+- Choose building materials from the hotbar; each has an original, locally generated surface texture. No separate texture selector is needed.
+- Choose a custom color for blocks.
+- Hide controllers for a larger world view, show them again when needed, or use Enlarge for browser full-screen where supported.
+- Use the REMOVE control to remove a targeted block.
+- To clear player-built blocks, press and hold the Clear button for 1.5 seconds, then confirm. The starter garden and neighbor cottages are preserved.
 
-## Color with a neighbor
-Tap Mira or Theo in the world, or use Menu → Color with a neighbor. Six original line-art pictures are built into the game: a cozy cottage, butterfly, kitty, flower, rainbow and sheep. Use bucket fill or brush, choose colors, undo, reset, and save the finished picture in the local crafted pouch. No dialogue, chat, outside participants or network connection is involved.
+## Neighbors and animals
+- Mira and Theo are kind, non-verbal neighbors with hands, feet, and small homes.
+- Tap a neighbor to open a quiet shared coloring activity.
+- Tap Pip the sheep or Mochi the cat to open snack, water, brushing, and play activities. Animals cannot be attacked or removed.
+
+## Shared coloring
+- Six original line-art pictures are built into the file: cottage, butterfly, kitty, flower, rainbow, and sheep.
+- The neighbor's brush visibly moves and fills regions on the same shared canvas. The child can watch the neighbor's colors appear, then continue coloring herself.
+- Use bucket fill or brush, choose colors, undo, reset, and save the finished art into the crafted pouch.
 
 ## Peaceful and offline design
-No enemies, weapons, combat, animal harm, multiplayer, chat, advertising, analytics, external images, remote scripts or external game servers. A restrictive Content Security Policy blocks network connections and remote content during gameplay. This reduces exposure but cannot guarantee immunity from every browser or device vulnerability.
+No enemies, weapons, combat, animal harm, multiplayer, chat, advertising, analytics, external images, remote scripts, external game servers, or gameplay network requests. Materials are generated inside the game using original procedural patterns. A restrictive Content Security Policy blocks connections and remote content during gameplay. This reduces exposure but cannot guarantee immunity from every browser or device vulnerability.
 
 ## Saving
-World progress is autosaved to the current browser/device where local storage is available. Use **Backup world** to export a JSON backup and **Restore backup** to restore it on the same or another device. Keep backups in a parent-controlled folder.
+- The game autosaves locally when browser storage is available.
+- Use **Backup world** to export a JSON backup and **Restore backup** to restore it on this or another device.
+- Keep backups in a parent-controlled folder. Browser storage on iPad may differ between local-file and website use; export periodic backups.
 
-This is an original peaceful voxel-style prototype, not Minecraft and not affiliated with Mojang or Microsoft.
+Creative mode is intentionally generous, with a technical block limit to protect device performance.
