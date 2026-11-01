@@ -15,7 +15,7 @@ jobs:
     name: Cancel the stale Pages deployment
     runs-on: ubuntu-latest
     steps:
-      - name: Check and cancel the deployment blocking newer builds
+      - name: Send an explicit cancellation for the stale deployment
         uses: actions/github-script@v7
         with:
           script: |
@@ -30,18 +30,11 @@ jobs:
               'GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}',
               params
             );
-
-            const status = String(current.data.status || 'unknown').toLowerCase();
-            core.info(`Pages deployment ${deploymentId} currently reports: ${status}`);
-
-            if (status === 'succeed' || status === 'success') {
-              core.notice('The blocking Pages deployment is already complete; nothing needs cancelling.');
-              return;
-            }
+            core.info(`Pages API status for ${deploymentId}: ${current.data.status || 'unknown'}`);
+            core.info('The Pages deploy action still reports this SHA as an in-progress blocker; sending the explicit cancellation request.');
 
             const cancelled = await github.request(
               'POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel',
               params
             );
-
             core.notice(`GitHub accepted the cancellation request (HTTP ${cancelled.status}).`);
