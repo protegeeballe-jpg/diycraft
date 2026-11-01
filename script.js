@@ -37,6 +37,10 @@ function initializeInventoryUI() {
     const rawContainer = document.getElementById('raw-slots');
     const craftedContainer = document.getElementById('crafted-slots');
 
+    // Clear existing slots to prevent duplication if re-initialized
+    rawContainer.innerHTML = '';
+    craftedContainer.innerHTML = '';
+
     for (let i = 0; i < 60; i++) {
         let rawDiv = document.createElement('div');
         rawDiv.className = 'slot';
@@ -75,10 +79,10 @@ function initGame() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
 
-    // Add a simple green grass floor baseplate
+    // Add a simple green grass floor baseplate (Fixed syntax)
     const floorGeometry = new THREE.PlaneGeometry(50, 50);
     const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x557A46 });
-    const floor = new === THREE.Mesh(floorGeometry, floorMaterial); // (Standard mesh setup)
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial); 
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
@@ -95,7 +99,7 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// --- UI TOGGLE CONTROLS (At the bottom of script.js) ---
+// --- UI TOGGLE CONTROLS ---
 
 // Toggle Inventory Modal using the CSS .hidden class
 function toggleInventory() {
