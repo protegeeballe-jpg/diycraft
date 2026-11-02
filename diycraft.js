@@ -334,7 +334,20 @@ function projectedPolygonVisible(pts,w,h,margin=2){
 function buildBlockChunkMesh(key,items){
  const faces=[],specials=[];
  for(const block of items){
-  if(!isOpaqueCubeBlock(block)){if(block.type==='door'||block.type==='tile')specials.push(block);continue;}
+  if(block.type==='door'){specials.push(block);continue;}
+  if(block.type==='tile'){
+   const pattern=TILE_DESIGNS.some(t=>t.id===block.tilePattern)?block.tilePattern:'grid';
+   const color=validHex(block.color,'#c5a98a');
+   const vertices=cubeVerts(block.x,block.y+TILE_BASE_OFFSET,block.z,1,TILE_THICKNESS,1);
+   for(const face of FACES){
+    const [nx,ny,nz]=face.normal;
+    faces.push({center:{x:block.x+.5+nx*.5,y:block.y+TILE_BASE_OFFSET+TILE_THICKNESS/2+ny*.5,z:block.z+.5+nz*.5},normal:face.normal,
+     vertices:face.ids.map(index=>vertices[index]),color:shadeColor(color,face.shade),material:null,customTint:false,outline:true,
+     ...(ny===1?{tileTexture:textureTiles.get('tile-'+pattern)}:{})});
+   }
+   continue;
+  }
+  if(!isOpaqueCubeBlock(block))continue;
   const meta=blockMap.get(block.type);
   const color=block.type==='custom'?validHex(block.color,'#aa83d8'):block.color?validHex(block.color,meta?.color||'#a0a0a0'):meta?.color;
   if(!color)continue;
@@ -1363,13 +1376,12 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  pushWaterSurfaces(polys,cam,w,h);
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
- // Camera-independent 16×16 chunk meshes cache static cube faces; animated doors and slabs stay dynamic.
+ // Camera-independent 16×16 chunk meshes cache static cubes and floor tiles; only animated doors stay dynamic.
  visitNearbyBlockChunkMeshes(cam,24,mesh=>{
   appendBlockChunkMesh(polys,mesh,cam,w,h);
   for(const b of mesh.specials){
    if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)continue;
    if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b);
-   else if(b.type==='tile')pushTileSlab(polys,cam,w,h,b);
   }
  });
  // The starter neighborhood is fixed in world space and only rendered nearby.
@@ -1662,7 +1674,8 @@ function loop(time){
  while(frameAccumulator+1e-9>=FIXED_UPDATE_STEP&&steps<MAX_FIXED_STEPS_PER_FRAME){
   move(FIXED_UPDATE_STEP);frameAccumulator-=FIXED_UPDATE_STEP;steps++;
  }
- render();
+ // The simulation is fixed at 60 Hz. Avoid duplicate canvas renders on 90/120/144 Hz displays.
+ if(steps>0)render();
 }
 function renderSlots(){
  const root=$('slots');root.replaceChildren();
