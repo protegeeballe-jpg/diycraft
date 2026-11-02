@@ -189,4 +189,53 @@ apiSet.api.visitNearbyRenderChunks(fishIndex, testCamera, 24, () => nearbyFish++
 check(nearbyExcavations === 1024 && nearbyWater === 1024 && nearbyFish === 3072,
   'Nearby queries must stay bounded while indexing 12,000 terrain cells and 36,000 fish.');
 
+
+check(source.includes('const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000'),
+  'Underground digging and saved-world validation must support a practically unbounded one-billion-block depth.');
+check(!source.includes('for(let y=64;y>=-MAX_DIG_DEPTH;y--)'),
+  'Surface-height lookup must not scan every vertical layer in a deep world.');
+check(source.includes('function surfaceHeightAt(x,z,atOrBelowY=Infinity)') &&
+  source.includes('blockColumnBlocks=new Map()'),
+  'Surface lookup must use per-column block indexes and support the player height.');
+check(source.includes('if(next<=floor){') &&
+  source.includes('else {p.y=floor;jumpVelocity=0;save(true);return;}'),
+  'The player must land on a valid surface and recover when already below terrain.');
+check(source.includes('function addBlock(x,y,z,type=selected,saveImmediately=true)') &&
+  source.includes('if(saveImmediately)save();'),
+  'Bulk hole filling must be able to defer repeated disk saves.');
+check(!source.includes('const layerCount=Math.ceil(topY-floorY)'),
+  'Deep water walls must render as a single face rather than looping once per underground layer.');
+
+const surfaceStart = source.indexOf('function surfaceHeightAt(x,z,atOrBelowY=Infinity)');
+const surfaceEnd = source.indexOf('\\nconst GROUND_BASE_Y', surfaceStart);
+assert(surfaceStart >= 0 && surfaceEnd > surfaceStart, 'The indexed surface-height helper must be extractable for deep-world tests.');
+const surfaceSource = source.slice(surfaceStart, surfaceEnd);
+const testKeyGround = (x, z) => Math.floor(x) + ',' + Math.floor(z);
+const testDepths = new Map([['10,20', 200000], ['3,4', 3]]);
+const testColumns = new Map([
+  ['10,20', [
+    { x: 10, y: 4, z: 20, type: 'wood' },
+    { x: 10, y: -199999, z: 20, type: 'stone' }
+  ]],
+  ['1,2', [{ x: 1, y: 4, z: 2, type: 'wood' }]]
+]);
+const getSurfaceHeight = new Function(
+  'blockColumnBlocks', 'keyGround', 'groundDepthAt', 'TILE_BASE_OFFSET', 'TILE_THICKNESS',
+  surfaceSource + '\\nreturn surfaceHeightAt;'
+)(
+  testColumns,
+  testKeyGround,
+  (x, z) => testDepths.get(testKeyGround(x, z)) || 0,
+  0.02,
+  0.13
+);
+check(getSurfaceHeight(10, 20, -199998) === -199998,
+  'Surface lookup must find buildable platforms deep below ground without scanning from the surface.');
+check(getSurfaceHeight(10, 20, -200010) === -200000,
+  'A player below a deep excavation floor must be directed back to that floor.');
+check(getSurfaceHeight(1, 2, 0) === 0 && getSurfaceHeight(1, 2) === 5,
+  'Height-aware lookup must preserve room interiors while still finding the roof for safe return placement.');
+check(getSurfaceHeight(3, 4, -100) === -3,
+  'A player who falls below unexcavated terrain must recover to that column’s ground surface.');
+
 console.log('DIYCraft performance smoke tests passed: ' + passed + ' checks.');
