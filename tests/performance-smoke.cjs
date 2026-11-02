@@ -223,9 +223,9 @@ check(!source.includes('const layerCount=Math.ceil(topY-floorY)'),
   'Deep water walls must render as a single face rather than looping once per underground layer.');
 
 const interpolationStart = source.indexOf('function interpolatePlayerState(previous,current,alpha)');
-const interpolationEnd = source.indexOf('\\nlet previousPlayerRenderState', interpolationStart);
+const interpolationEnd = source.indexOf('\nlet previousPlayerRenderState', interpolationStart);
 assert(interpolationStart >= 0 && interpolationEnd > interpolationStart, 'The player interpolation helper must be extractable.');
-const interpolate = new Function('Math', source.slice(interpolationStart, interpolationEnd) + '\\nreturn interpolatePlayerState;')(Math);
+const interpolate = new Function('Math', source.slice(interpolationStart, interpolationEnd) + '\nreturn interpolatePlayerState;')(Math);
 const interpolatedMidpoint = interpolate(
   { x: 0, y: 0, z: 0, yaw: Math.PI * 0.95, pitch: 0 },
   { x: 10, y: 4, z: -6, yaw: -Math.PI * 0.95, pitch: 0.4 },
