@@ -71,7 +71,10 @@ jobs:
             'function traceWorldRay(cam,dir,maxDistance,step)',
             'function isProtectedDigCell(x,z)',
             'function digAtScreen(',
+            'function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
             'function pushGroundSurface(queue,cam,w,h,color)',
+            "material:underground?'dirt':'grass'",
+            "function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt')",
             'function skyDirection(azimuth,altitude)',
             'function projectSkyPoint(cam,direction,w,h,distance=700)',
             'function drawSkyDecorations(cam,w,h,palette)',
@@ -95,6 +98,7 @@ jobs:
             'floor<=p.y+.18',
             'const TILE_DESIGNS=[',
             'function terrainCollisionAt(x,z,y)',
+            'const HOLD_TO_REMOVE_MS=600',
             'function playerCollisionAt(x,z,y)',
             'function buildNeighborObstacleSet()',
             'function findNeighborPath(start,end)',
@@ -111,8 +115,14 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
-          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="digBtn"') || !html.includes('id="digModeBtn"') || !html.includes('id="fillBtn"') || !html.includes('id="waterBtn"') || !html.includes('id="fishBtn"') || !html.includes('id="fillModeBtn"') || !html.includes('id="waterModeBtn"') || !html.includes('id="fishModeBtn"')) {
-            throw new Error('A block, door, jump, or tile designer control is missing.');
+          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="waterBtn"') || !html.includes('id="fishBtn"') || !html.includes('id="waterModeBtn"') || !html.includes('id="fishModeBtn"') || !html.includes('id="placeBtn"')) {
+            throw new Error('A block, door, jump, water, fish, or build control is missing.');
+          }
+          for (const obsolete of ['digBtn','digModeBtn','fillBtn','fillModeBtn','removeBtn']) {
+            if (html.includes('id="' + obsolete + '"')) throw new Error('Merged build/dig controls should not include ' + obsolete + '.');
+          }
+          if (!html.includes('Tap to place a block or refill a hole') || !html.includes('Hold 0.6s on soil to dig or on a block to remove it')) {
+            throw new Error('The merged tap and long-press instructions are missing.');
           }
           const tileList = source.match(/const TILE_DESIGNS=\[([\s\S]*?)\];/);
           const tileCount = tileList ? (tileList[1].match(/\bid:/g) || []).length : 0;
@@ -122,7 +132,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v7'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v8'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }

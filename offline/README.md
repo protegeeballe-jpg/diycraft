@@ -13,7 +13,9 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 - Design decorative tiles with **20 original patterns** and any color from the full color spectrum. Each placed tile keeps its own appearance.
 - Choose custom block colors and textures.
 - Hide controllers for a larger world view or use Enlarge for browser full-screen where supported.
-- Use REMOVE or press and hold a targeted block to remove it.
+- Tap an open space to place the selected block. Tap the floor of an excavation to refill one level using one collected Dirt.
+- Press and hold for 0.6 seconds on soil to dig one level, or on a block to remove it. The same hold gesture handles both actions.
+- The ground and exposed excavation walls use locally generated grass and soil textures; standard blocks use their own material patterns.
 
 ## Neighbors and animals
 - The player collides with solid blocks and slides along walls. Open doors are walkable; closed doors block the doorway, and thin tiles remain step-up friendly.
