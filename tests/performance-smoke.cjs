@@ -207,7 +207,7 @@ check(!source.includes('const layerCount=Math.ceil(topY-floorY)'),
   'Deep water walls must render as a single face rather than looping once per underground layer.');
 
 const surfaceStart = source.indexOf('function surfaceHeightAt(x,z,atOrBelowY=Infinity)');
-const surfaceEnd = source.indexOf('\\nconst GROUND_BASE_Y', surfaceStart);
+const surfaceEnd = source.indexOf('\nconst GROUND_BASE_Y', surfaceStart);
 assert(surfaceStart >= 0 && surfaceEnd > surfaceStart, 'The indexed surface-height helper must be extractable for deep-world tests.');
 const surfaceSource = source.slice(surfaceStart, surfaceEnd);
 const testKeyGround = (x, z) => Math.floor(x) + ',' + Math.floor(z);
@@ -221,7 +221,7 @@ const testColumns = new Map([
 ]);
 const getSurfaceHeight = new Function(
   'blockColumnBlocks', 'keyGround', 'groundDepthAt', 'TILE_BASE_OFFSET', 'TILE_THICKNESS',
-  surfaceSource + '\\nreturn surfaceHeightAt;'
+  surfaceSource + '\nreturn surfaceHeightAt;'
 )(
   testColumns,
   testKeyGround,
