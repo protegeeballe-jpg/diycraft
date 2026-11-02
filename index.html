@@ -297,6 +297,7 @@ const CUSTOM_TEXTURES=[
  {id:'custom',name:'Speckled',emoji:'✨'}
 ];
 const CUSTOM_COLORS=['#F44336','#FF9800','#FFC107','#FFEB3B','#8BC34A','#4CAF50','#009688','#00BCD4','#03A9F4','#3F51B5','#673AB7','#9C27B0','#E91E63','#795548','#607D8B','#FFFFFF','#222222'];
+const TILE_THICKNESS=.13,TILE_BASE_OFFSET=.02;
 const TILE_DESIGNS=[
  {id:'grid',name:'Classic Grid',icon:'▦'},
  {id:'brick',name:'Running Brick',icon:'▤'},
@@ -994,7 +995,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';pushCube(polys,cam,w,h,b.x,b.y,b.z,validHex(b.color,'#c5a98a'),1,1,1,true,'tile-'+pattern,true);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';pushCube(polys,cam,w,h,b.x,b.y+TILE_BASE_OFFSET,b.z,validHex(b.color,'#c5a98a'),1,TILE_THICKNESS,1,true,'tile-'+pattern,true);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick);
  drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
@@ -1043,7 +1044,7 @@ function surfaceHeightAt(x,z){
  const bx=Math.floor(x),bz=Math.floor(z);
  for(let y=64;y>=0;y--){
   const b=blockLookup.get(keyBlock(bx,y,bz));
-  if(b&&b.type!=='door')return y+1;
+  if(b&&b.type!=='door')return b.type==='tile'?y+TILE_BASE_OFFSET+TILE_THICKNESS:y+1;
  }
  return 0;
 }
@@ -1078,7 +1079,7 @@ function move(dt){
  if(playerGrounded){
   const floor=surfaceHeightAt(p.x,p.z);
   if(floor<p.y-.04){playerGrounded=false;jumpVelocity=0;}
-  else if(floor<=p.y+.04){p.y=floor;return;}
+  else if(floor<=p.y+.18){p.y=floor;return;}
   else return;
  }
  jumpVelocity-=PLAYER_GRAVITY*dt;
