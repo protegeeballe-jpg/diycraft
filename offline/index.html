@@ -833,30 +833,6 @@ function neighborOnRoute(route,tick,phase,speed=1.05){
  const first=segments[0]?.path[0]||route[0];
  return {...route[0],x:first.x,z:first.z,facing:0,moving:false,walk:0};
 }
-
- const segments=route.map((point,i)=>{
-  const next=route[(i+1)%route.length],distance=Math.hypot(next.x-point.x,next.z-point.z);
-  return {point,next,travel:Math.max(1.8,distance/speed),pause:point.pause||1};
- });
- const cycle=segments.reduce((sum,segment)=>sum+segment.pause+segment.travel,0);
- let time=((tick+phase)%cycle+cycle)%cycle;
- for(const segment of segments){
-  const dx=segment.next.x-segment.point.x,dz=segment.next.z-segment.point.z;
-  const facing=Math.atan2(dx,dz);
-  if(time<segment.pause)return {...segment.point,facing,moving:false,walk:0};
-  time-=segment.pause;
-  if(time<segment.travel){
-   const raw=Math.max(0,Math.min(1,time/segment.travel));
-   const progress=raw*raw*(3-2*raw);
-   return {
-    x:segment.point.x+dx*progress,z:segment.point.z+dz*progress,
-    facing,moving:true,walk:Math.sin(time*8+phase),activity:''
-   };
-  }
-  time-=segment.travel;
- }
- return {...route[0],facing:0,moving:false,walk:0};
-}
 const FAMILY_ROUTES={
  dad:[
   {x:14,z:-4.8,pause:1.4,activity:'👋'},
