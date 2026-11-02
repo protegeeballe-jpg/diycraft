@@ -1405,6 +1405,8 @@ function pushWaterSurfaces(queue,cam,w,h){
   const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z),topY=waterTopAt(x,z);
   if(depth<1||topY===null||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
   const floorY=-depth;
+  // The waterline is a single continuous surface, regardless of how many
+  // one-block layers are stacked beneath it.
   const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
   const topPts=topVertices.map(v=>project(v,cam,w,h));
   if(topPts.every(Boolean)){
@@ -1413,24 +1415,29 @@ function pushWaterSurfaces(queue,cam,w,h){
    const surfaceBehindRim=Math.max(0,-(topY-wallCentreY)*Math.sin(cam.pitch));
    queue.push({pts:topPts,depth:averageDepth+surfaceBehindRim+.012,color:'#61cfee',alpha:.60,outline:false,waterSurface:true,waterSeed:x*1.71+z*2.37});
   }
-  // One vertical translucent prism represents all stacked water layers in this cell.
-  // Where neighboring columns have a lower waterline, only the exposed upper wall is drawn.
+  // Exposed sides are split into true one-world-unit layer faces instead of
+  // one tall polygon. This prevents a deep pool wall from reading like a curtain.
   const sides=[
-   {dx:0,dz:-1,normal:[0,0,-1],verticesAt:low=>[{x,y:low,z},{x:x+1,y:low,z},{x:x+1,y:topY,z},{x,y:topY,z}]},
-   {dx:0,dz:1,normal:[0,0,1],verticesAt:low=>[{x:x+1,y:low,z:z+1},{x,y:low,z:z+1},{x,y:topY,z:z+1},{x:x+1,y:topY,z:z+1}]},
-   {dx:-1,dz:0,normal:[-1,0,0],verticesAt:low=>[{x,y:low,z:z+1},{x,y:low,z},{x,y:topY,z},{x,y:topY,z:z+1}]},
-   {dx:1,dz:0,normal:[1,0,0],verticesAt:low=>[{x:x+1,y:low,z},{x:x+1,y:low,z:z+1},{x:x+1,y:topY,z:z+1},{x:x+1,y:topY,z}]}
+   {dx:0,dz:-1,normal:[0,0,-1],verticesAt:(low,high)=>[{x,y:low,z},{x:x+1,y:low,z},{x:x+1,y:high,z},{x,y:high,z}]},
+   {dx:0,dz:1,normal:[0,0,1],verticesAt:(low,high)=>[{x:x+1,y:low,z:z+1},{x,y:low,z:z+1},{x,y:high,z:z+1},{x:x+1,y:high,z:z+1}]},
+   {dx:-1,dz:0,normal:[-1,0,0],verticesAt:(low,high)=>[{x,y:low,z:z+1},{x,y:low,z},{x,y:high,z},{x,y:high,z:z+1}]},
+   {dx:1,dz:0,normal:[1,0,0],verticesAt:(low,high)=>[{x:x+1,y:low,z},{x:x+1,y:low,z:z+1},{x:x+1,y:high,z:z+1},{x:x+1,y:high,z}]}
   ];
   for(const side of sides){
    const neighborTop=waterTopAt(x+side.dx,z+side.dz);
    if(neighborTop!==null&&neighborTop>=topY-.001)continue;
-   const lowerY=neighborTop===null?floorY:Math.max(floorY,neighborTop);
-   if(lowerY>=topY-.001)continue;
-   const viewX=cam.pos.x-(x+.5),viewY=cam.pos.y-(lowerY+topY)/2,viewZ=cam.pos.z-(z+.5);
-   if(side.normal[0]*viewX+side.normal[1]*viewY+side.normal[2]*viewZ<=0)continue;
-   const pts=side.verticesAt(lowerY).map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
-   const averageDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
-   queue.push({pts,depth:averageDepth-.018,color:'#55c9eb',alpha:.40,outline:false,waterSide:true,waterSeed:x*1.71+z*2.37+side.dx*.7+side.dz*.9});
+   const exposedFrom=neighborTop===null?floorY:Math.max(floorY,neighborTop);
+   const viewX=cam.pos.x-(x+.5),viewZ=cam.pos.z-(z+.5);
+   if(side.normal[0]*viewX+side.normal[2]*viewZ<=0)continue;
+   const layerCount=Math.ceil(topY-floorY);
+   for(let layer=0;layer<layerCount;layer++){
+    const layerBottom=floorY+layer,layerTop=Math.min(topY,layerBottom+1);
+    const low=Math.max(layerBottom,exposedFrom),high=layerTop;
+    if(high-low<.015)continue;
+    const pts=side.verticesAt(low,high).map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
+    const averageDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+    queue.push({pts,depth:averageDepth-.018,color:'#55c9eb',alpha:layer%2?.34:.38,outline:false,waterSide:true,waterLayer:layer,waterSeed:x*1.71+z*2.37+side.dx*.7+side.dz*.9+layer*.31});
+   }
   }
  }
 }
@@ -1473,12 +1480,10 @@ function paintWaterFace(poly,time){
   const sa=lerp(pts[0],pts[3],.24+sheen*.22),sb=lerp(pts[1],pts[2],.24+sheen*.22);
   ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.lineWidth=2;ctx.strokeStyle='#effdff';ctx.stroke();
  }else{
-  // Soft vertical glints on the exposed sides reinforce the depth of the water column.
-  for(const t of [.28,.72]){
-   const a=lerp(pts[3],pts[0],t),b=lerp(pts[2],pts[1],t);
-   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
-   ctx.strokeStyle='rgba(211,248,255,.25)';ctx.lineWidth=.8;ctx.stroke();
-  }
+  // A very faint horizontal layer edge defines each block-height water face.
+  // No vertical texture streaks are drawn across the side walls.
+  ctx.beginPath();ctx.moveTo(pts[3].x,pts[3].y);ctx.lineTo(pts[2].x,pts[2].y);
+  ctx.strokeStyle='rgba(220,249,255,.20)';ctx.lineWidth=.75;ctx.stroke();
  }
  ctx.restore();
 }
