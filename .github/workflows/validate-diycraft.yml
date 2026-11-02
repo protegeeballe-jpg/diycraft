@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - offline/index.html
+      - diycraft.js
       - sw.js
       - offline/README.md
       - .github/workflows/validate-diycraft.yml
@@ -12,6 +13,7 @@ on:
     paths:
       - index.html
       - offline/index.html
+      - diycraft.js
       - sw.js
       - offline/README.md
       - .github/workflows/validate-diycraft.yml
@@ -41,23 +43,26 @@ jobs:
           const main = fs.readFileSync('index.html', 'utf8');
           const offline = fs.readFileSync('offline/index.html', 'utf8');
 
-          if (main !== offline) {
-            throw new Error('Main and offline DIYCraft entry points must stay identical.');
+          const normalizedOffline = offline.replace(
+            '<script src="../diycraft.js"></script>',
+            '<script src="./diycraft.js"></script>'
+          );
+          if (main !== normalizedOffline) {
+            throw new Error('Main and offline pages must match apart from the relative game-script path.');
           }
 
           const html = main;
-          const openTag = '<script';
-          const closeTag = '</script>';
-          const scriptCount = html.split(openTag).length - 1;
-          const open = html.indexOf(openTag);
-          const tagEnd = html.indexOf('>', open);
-          const close = html.lastIndexOf(closeTag);
-
-          if (scriptCount !== 1 || open < 0 || tagEnd < 0 || close <= tagEnd) {
-            throw new Error('Expected exactly one complete inline game script.');
+          const mainScripts = [...main.matchAll(/<script\b[^>]*>/gi)];
+          const offlineScripts = [...offline.matchAll(/<script\b[^>]*>/gi)];
+          if (mainScripts.length !== 1 || offlineScripts.length !== 1 ||
+              !main.includes('<script src="./diycraft.js"></script>') ||
+              !offline.includes('<script src="../diycraft.js"></script>') ||
+              /<script>([\s\S]*?)<\/script>/i.test(main) ||
+              /<script>([\s\S]*?)<\/script>/i.test(offline)) {
+            throw new Error('Both entry pages must load the shared external JavaScript engine with no inline game code.');
           }
 
-          const source = html.slice(tagEnd + 1, close);
+          const source = fs.readFileSync('diycraft.js', 'utf8');
           const required = [
             'function getTimePalette',
             'const NEIGHBOR_ROUTES',
@@ -138,18 +143,17 @@ jobs:
           const tileCount = tileList ? (tileList[1].match(/\bid:/g) || []).length : 0;
           if (tileCount !== 20) throw new Error('Expected exactly 20 tile designs; found ' + tileCount);
           if (!html.includes('id="offlineReadyNote"')) throw new Error('Persistent offline-ready status is missing.');
-          if (!html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
+          if (!html.includes("script-src 'unsafe-inline' 'self'") || !html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
           if (!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)) throw new Error('Expected a versioned DIYCraft offline cache.');
-          for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
+          for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', "new URL('diycraft.js', root).href", "const gameScriptUrl = new URL('diycraft.js', self.registration.scope)", 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
 
-          fs.writeFileSync('/tmp/diycraft-inline.js', source);
           NODE
-          node --check /tmp/diycraft-inline.js
+          node --check diycraft.js
 
       - name: Syntax-check the offline service worker
         run: node --check sw.js
