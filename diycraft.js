@@ -1081,22 +1081,30 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  };
 
  if(activity==='sleep'){
-  // A simple bedroll and pillow make the sleeping pose readable from every view.
-  cube(0,.075,-.10,'#a9bfd0',.98,.13,1.78);
-  cube(0,.34,-.12,n.shirt,.68,.36,1.08);
-  cube(0,.57,.60,'#fffdf4',.76,.15,.66);
-  cube(0,.64,.64,n.skin,.56,.48,.55);
-  cube(0,.91,.64,n.hair,.62,.14,.58);
-  cube(-.32,.27,-.66,pants,.23,.22,.45);
-  cube(.32,.27,-.66,pants,.23,.22,.45);
-  cube(-.32,.16,-.96,shoe,.29,.13,.25);
-  cube(.32,.16,-.96,shoe,.29,.13,.25);
-  cube(-.40,.42,.14,n.shirt,.20,.28,.65);
-  cube(.40,.42,.14,n.shirt,.20,.28,.65);
-  // A soft quilt covers the torso and legs so the sleeping pose reads as cozy, not mechanical.
-  cube(0,.43,-.20,'#91b7c8',.78,.18,1.22);
-  cube(0,.535,.30,'#d8e8ed',.78,.055,.16);
-  cube(0,.48,-.78,'#91b7c8',.70,.12,.16);
+  // A small wooden bed is drawn under the sleeper as part of the activity pose.
+  cube(-.44,.055,-.83,'#795438',.14,.11,.14);
+  cube(.44,.055,-.83,'#795438',.14,.11,.14);
+  cube(-.44,.055,.63,'#795438',.14,.11,.14);
+  cube(.44,.055,.63,'#795438',.14,.11,.14);
+  cube(0,.15,-.10,'#795438',1.16,.18,2.02);
+  cube(0,.245,-.10,'#c89b68',1.12,.10,1.98);
+  cube(0,.32,-.10,'#f5f1e9',1.04,.14,1.90);
+  cube(0,.56,.88,'#795438',1.16,.82,.14);
+  const sleepCube=(dx,y,dz,color,sx,sy,sz)=>cube(dx,y+.18,dz,color,sx,sy,sz);
+  // The sleeper rests on the mattress, with a pillow and a soft quilt.
+  sleepCube(0,.34,-.12,n.shirt,.68,.36,1.08);
+  sleepCube(0,.57,.60,'#fffdf4',.76,.15,.66);
+  sleepCube(0,.64,.64,n.skin,.56,.48,.55);
+  sleepCube(0,.91,.64,n.hair,.62,.14,.58);
+  sleepCube(-.32,.27,-.66,pants,.23,.22,.45);
+  sleepCube(.32,.27,-.66,pants,.23,.22,.45);
+  sleepCube(-.32,.16,-.96,shoe,.29,.13,.25);
+  sleepCube(.32,.16,-.96,shoe,.29,.13,.25);
+  sleepCube(-.40,.42,.14,n.shirt,.20,.28,.65);
+  sleepCube(.40,.42,.14,n.shirt,.20,.28,.65);
+  sleepCube(0,.43,-.20,'#91b7c8',.78,.18,1.22);
+  sleepCube(0,.535,.30,'#d8e8ed',.78,.055,.16);
+  sleepCube(0,.48,-.78,'#91b7c8',.70,.12,.16);
   return;
  }
 
@@ -1224,10 +1232,10 @@ function addCharacterFaceDetails(queue,cam,w,h,n,bob){
   queue.push({faceMark:'patch',pts,depth,color:shadeColor(color,.90),alpha,outline:true});
  };
  if(sleeping){
-  addPatch(0,.82,.925,.40,.10,n.hair||'#493127');
-  addPatch(-.13,.56,.91,.07,.025,n.eyes||'#302820');
-  addPatch(.13,.56,.91,.07,.025,n.eyes||'#302820');
-  addPatch(0,.45,.91,.09,.025,'#9a6c5c');
+  addPatch(0,1.00,.925,.40,.10,n.hair||'#493127');
+  addPatch(-.13,.74,.91,.07,.025,n.eyes||'#302820');
+  addPatch(.13,.74,.91,.07,.025,n.eyes||'#302820');
+  addPatch(0,.63,.91,.09,.025,'#9a6c5c');
  }else{
   addPatch(0,1.94+bob,.3525,.42,.13,n.hair||'#493127');
   addPatch(-.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
@@ -1457,7 +1465,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
   const activityIcons={sleep:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
   if(playerActivity){
-   const marker=project({x:p.x,y:p.y+(playerActivity==='sleep'?1.35:2.55),z:p.z},cam,w,h);
+   const marker=project({x:p.x,y:p.y+(playerActivity==='sleep'?1.53:2.55),z:p.z},cam,w,h);
    if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
   }
  }
@@ -1663,6 +1671,8 @@ function jump(){
  showStatus('Jump!');
 }
 function move(dt){
+ // Sleep is a stationary activity: ignore keyboard and on-screen movement until the player stands up.
+ if(playerActivity==='sleep'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
  const p=world.player,speed=flying?7:4.2;
  if(playerActivity&&playerActivity!=='sleep'&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
  nudgePlayerOutOfBlocks();
@@ -2031,7 +2041,8 @@ function setPlayerActivity(activity){
   if(flying){flying=false;updateFlyControls();}
   cameraMode='third';updateViewButton();
   const p=world.player,floor=surfaceHeightAt(p.x,p.z,p.y);
-  if(p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+  if(activity==='sleep'){p.y=floor;playerGrounded=true;}
+  else if(p.y<=floor+.35){p.y=floor;playerGrounded=true;}
  }
  closeShades();render();
  showStatus(activity==='stop'?'Standing up. Ready to explore!':labels[activity]+' pose selected.');
