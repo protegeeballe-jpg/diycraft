@@ -16,6 +16,8 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 - Use REMOVE or press and hold a targeted block to remove it.
 
 ## Neighbors and animals
+- The player collides with solid blocks and slides along walls. Open doors are walkable; closed doors block the doorway, and thin tiles remain step-up friendly.
+- Neighbors use local obstacle-aware paths around cottage walls and player-built blocks. At night (including the automatic night cycle), they go indoors and sleep; little Zzz signs appear above their homes.
 - Mira, Theo, and the Santos family are kind, non-verbal neighbors with individual walking routes and homes.
 - Tap a neighbor to open a quiet shared coloring activity.
 - Tap an animal to open snack, water, brushing, and play activities. Animals cannot be attacked or removed.
