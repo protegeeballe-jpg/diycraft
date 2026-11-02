@@ -517,6 +517,12 @@ function addBucketItem(block){
  if(world.bucket.length>=MAX_BUCKET_ITEMS)return false;
  const item={type:block.type};
  for(const key of ['color','texture','tilePattern','style','orientation','swing'])if(block[key]!==undefined)item[key]=block[key];
+ // Older/default solids may not have explicit appearance fields. Freeze their original defaults now.
+ if(SOLID_STYLE_TYPES.includes(block.type)){
+  const meta=BLOCKS.find(b=>b.id===block.type);
+  if(!item.color)item.color=meta?.color||'#9a9a9a';
+  if(!item.texture)item.texture=block.type;
+ }
  world.bucket.push(item);return true;
 }
 function consumeItem(id,target='materials',amount=1){const arr=world[target]||[];let left=amount;for(let i=0;i<arr.length&&left>0;i++){const item=arr[i];if(!item||item.id!==id)continue;const take=Math.min(left,item.count);item.count-=take;left-=take;if(item.count<=0)arr[i]=null;}return left===0;}
