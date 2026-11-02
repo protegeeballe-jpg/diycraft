@@ -1407,9 +1407,10 @@ function pushFishOverlays(queue,cam,w,h){
 }
 function drawPlayerBed(queue,cam,w,h,bed){
  if(!bed||!Number.isFinite(bed.x)||!Number.isFinite(bed.z))return;
- const x=bed.x,y=Number.isFinite(bed.y)?bed.y:0,z=bed.z,yaw=Number.isFinite(bed.yaw)?bed.yaw:0;
+ const x=bed.x,y=Number.isFinite(bed.y)?bed.y:0,z=bed.z,yaw=Number.isFinite(bed.yaw)?bed.yaw:0,c=Math.cos(yaw),s=Math.sin(yaw);
  const piece=(dx,cy,dz,color,sx,sy,sz)=>{
-  pushCubeFacing(queue,cam,w,h,x+dx-sx/2,y+cy-sy/2,z+dz-sz/2,color,sx,sy,sz,yaw);
+  const cx=x+dx*c+dz*s,cz=z-dx*s+dz*c;
+  pushCubeFacing(queue,cam,w,h,cx-sx/2,y+cy-sy/2,cz-sz/2,color,sx,sy,sz,yaw);
  };
  // The saved home bed remains visible even when the player is elsewhere.
  piece(-.44,.11,-.83,'#795438',.14,.22,.14);piece(.44,.11,-.83,'#795438',.14,.22,.14);
