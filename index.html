@@ -547,8 +547,8 @@ function renderHotbar(){
   if(active)btn.classList.add('active');
   btn.addEventListener('click',()=>{
    if(item.id==='solid'){openSolidPicker();return;}
-   if(item.id==='tile'){selectedBucketItem=null;openTileDesigner();return;}
-   if(item.id==='door'){selectedBucketItem=null;openDoorDesigner();return;}
+   if(item.id==='tile'){selectedBucketItem=null;setToolMode('build',false);openTileDesigner();return;}
+   if(item.id==='door'){selectedBucketItem=null;setToolMode('build',false);openDoorDesigner();return;}
    if(item.id==='water'){chooseMaterial('water');return;}
    openBucket();
   });
@@ -1826,7 +1826,7 @@ $('customBlockHex').addEventListener('input',e=>{const v=e.target.value.trim();i
 $('customBlockHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);else e.target.value=draftCustomColor.toUpperCase();});
 $('applyCustomBlock').addEventListener('click',()=>{
  world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
- $('customColor').value=draftCustomColor;selected='custom';selectedBucketItem=null;save();renderHotbar();closeShades();
+ $('customColor').value=draftCustomColor;selected='custom';selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
  showStatus('Custom block ready! Choose a place to build it.');
 });
 
@@ -1848,7 +1848,7 @@ document.querySelectorAll('[data-door-style]').forEach(button=>button.addEventLi
 }));
 $('applyDoorDesign').addEventListener('click',()=>{
  world.doorDesign={color:validHex(draftDoorColor,'#a97545'),style:['classic','window','garden'].includes(draftDoorStyle)?draftDoorStyle:'classic'};
- selected='door';selectedBucketItem=null;save();renderHotbar();closeShades();
+ selected='door';selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
  showStatus('Your door design is ready. Choose a clear spot to build it!');
 });
 
@@ -1898,7 +1898,7 @@ $('tileHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0
 $('tileHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);else e.target.value=draftTileColor.toUpperCase();});
 $('applyTileDesign').addEventListener('click',()=>{
  world.tileDesign={color:validHex(draftTileColor,'#c5a98a'),pattern:TILE_DESIGNS.some(t=>t.id===draftTilePattern)?draftTilePattern:'grid'};
- selected='tile';selectedBucketItem=null;save();renderHotbar();closeShades();
+ selected='tile';selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
  showStatus('Tile design ready! Select a place to build your colorful tiles.');
 });
 
@@ -2002,7 +2002,7 @@ function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 
 $('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'third':'first';updateViewButton();showStatus(cameraMode==='first'?'First-person view':'Third-person view');});updateViewButton();
 function syncTimeControls(){
  const mode=['day','sunset','night','auto'].includes(world.timeMode)?world.timeMode:'day';
- $('timeBtn').textContent=TIME_MODE_LABELS[mode];$('timeBtn').title='Time of day: '+mode;$('timeOfDay').value=mode;
+ $('timeOfDay').value=mode;
 }
 function setTimeMode(mode,announce=true){
  if(!['day','sunset','night','auto'].includes(mode))return;
