@@ -1955,7 +1955,36 @@ $('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'thir
 syncTimeControls();
 $('timeOfDay').addEventListener('change',e=>setTimeMode(e.target.value));
 $('useCustomColor').addEventListener('click',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);chooseMaterial('custom');save();renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
-$('neighborsBtn').addEventListener('click',()=>{closeShades();showStatus('Your neighbors wave quietly and enjoy their peaceful activities.');});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',()=>{controlsToggle();$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';closeShades();});$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();openBucket();});
+function findNeighborhoodReturnSpot(){
+ const homeX=4.5,homeZ=-5.5,step=.5,maxRing=24;
+ for(let ring=0;ring<=maxRing;ring++){
+  for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
+   if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring)continue;
+   const x=homeX+dx*step,z=homeZ+dz*step;
+   if(Math.abs(x)>WORLD_LIMIT-1||Math.abs(z)>WORLD_LIMIT-1)continue;
+   const cellX=Math.floor(x),cellZ=Math.floor(z);
+   if(waterLevelAt(cellX,cellZ)>0)continue;
+   const y=surfaceHeightAt(x,z);
+   if(!Number.isFinite(y)||y< -MAX_DIG_DEPTH||y>58)continue;
+   if(playerCollisionAt(x,z,y))continue;
+   return {x,y,z};
+  }
+ }
+ return null;
+}
+function returnToNeighborhood(){
+ const spot=findNeighborhoodReturnSpot();
+ if(!spot){showStatus('The neighborhood return spot is blocked. Clear a little space near the village and try again.');return false;}
+ const p=world.player;
+ p.x=spot.x;p.y=spot.y;p.z=spot.z;
+ p.yaw=0;p.pitch=-.12;
+ moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;playerGrounded=true;
+ if(typeof clearBlockHold==='function')clearBlockHold();
+ save();render();
+ showStatus('Welcome back! You are home in the neighborhood. 🌼');
+ return true;
+}
+$('neighborsBtn').addEventListener('click',()=>{closeShades();returnToNeighborhood();});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',()=>{controlsToggle();$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';closeShades();});$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();openBucket();});
 $('clearBucketBtn').addEventListener('click',()=>{if(!world.bucket.length){showStatus('Your Material Bucket is already empty.');return;}if(!window.confirm('Empty the Material Bucket? Recovered blocks will be discarded.'))return;world.bucket=[];selectedBucketItem=null;save();renderSlots();renderHotbar();showStatus('Material Bucket emptied.');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();openCharacterStudio();});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
 $('applyCharacter').addEventListener('click',()=>{
  const p=characterValue();
