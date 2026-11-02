@@ -1057,6 +1057,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
  const phase=Number.isFinite(n.phase)?n.phase:0;
  const unitScale=Number.isFinite(n.scale)?n.scale:1;
+ const baseY=Number.isFinite(n.y)?n.y:0;
  const pace=Number.isFinite(n.pace)?n.pace:8;
  const activity=n.activity||'';
  const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit';
@@ -1077,7 +1078,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const cube=(dx,y,dz,color,sx,sy,sz)=>{
   const centerX=n.x+dx*unitScale*c+dz*unitScale*s;
   const centerZ=n.z-dx*unitScale*s+dz*unitScale*c;
-  pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
+  pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,baseY+y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
  };
 
  if(activity==='sleep'){
@@ -1215,7 +1216,7 @@ function addCharacterFaceDetails(queue,cam,w,h,n,bob){
  const alpha=Math.max(0,Math.min(1,(front+.05)/.15));
  if(alpha<=0)return;
  const point=(dx,y,dz)=>{
-  const v={x:n.x+dx*scale*c+dz*scale*s,y:y*scale,z:n.z-dx*scale*s+dz*scale*c};
+  const v={x:n.x+dx*scale*c+dz*scale*s,y:(Number.isFinite(n.y)?n.y:0)+y*scale,z:n.z-dx*scale*s+dz*scale*c};
   return project(v,cam,w,h);
  };
  // These flat front faces use the exact sizes and positions of the original
@@ -1460,7 +1461,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
 
  // Third-person avatar; activities automatically switch to this view so the player can see their pose.
  if(cameraMode==='third'){
-  const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
+  const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,y:p.y,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
   const playerBob=playerActivity==='dance'?Math.abs(Math.sin(tick*7))*.11:playerActivity==='work'?Math.sin(tick*8)*.025:0;
   drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
   const activityIcons={sleep:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
