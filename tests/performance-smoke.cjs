@@ -92,6 +92,7 @@ assert(source.includes('drawPlayerBed(polys,cam,w,h,{x:restPlayer.x,y:surfaceHei
 assert(source.includes('x:p.x,y:p.y,z:p.z,facing:p.yaw'), 'The player avatar must use the player’s actual floor height.');
 assert(source.includes('baseY+y*unitScale'), 'The sleeping bed and avatar must be rendered at the current floor elevation.');
 assert(source.includes('y:(Number.isFinite(n.y)?n.y:0)+y*scale'), 'Sleeping face details must follow the avatar’s floor elevation.');
+assert(source.includes("const sleeping=n.activity==='sleep'||n.activity==='transformer'||n.activity==='bed';"), 'Face decals must use the lowered sleeping-face coordinates for all three sleep modes.');
 assert(source.includes("sleepCube(0,.43,-.20,'#91b7c8',.78,.18,1.22)"), 'The sleeper must be raised onto the mattress and covered with a quilt.');
 assert(source.includes("p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw}"), 'Players must be able to save a bed location at their current position.');
 assert(source.includes("p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0"), 'Go Home & Sleep must teleport the player to the saved bed location.');
