@@ -2035,15 +2035,8 @@ syncToolButtons();updateFlyControls();const clearButton=$('clearBtn');let clearH
 $('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
 function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 1st':'👁 3rd';}
 $('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'third':'first';updateViewButton();showStatus(cameraMode==='first'?'First-person view':'Third-person view');});updateViewButton();
-function syncTimeControls(){
- const mode=['day','sunset','night','auto'].includes(world.timeMode)?world.timeMode:'day';
- $('timeOfDay').value=mode;
-}
-function setTimeMode(mode,announce=true){
- if(!['day','sunset','night','auto'].includes(mode))return;
- world.timeMode=mode;syncTimeControls();save();render();
- if(announce)showStatus(mode==='night'?'Night has arrived. Everyone is tucked in for bed.':mode==='auto'?'Automatic day and night cycle enabled.':TIME_MODE_LABELS[mode]+' selected.');
-}
+
+
 syncTimeControls();
 $('timeOfDay').addEventListener('change',e=>setTimeMode(e.target.value));
 $('useCustomColor').addEventListener('click',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);chooseMaterial('custom');save();renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
