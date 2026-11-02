@@ -40,11 +40,13 @@ function makeApi(blocks = [], cacheLimit = 32) {
     'RENDER_CHUNK_SIZE', 'MAX_BLOCK_CHUNK_CACHE', 'OPAQUE_CUBE_TYPES',
     'blockChunkMeshCache', 'blockRenderChunks', 'blockMap', 'blockLookup',
     'keyBlock', 'validHex', 'shadeColor', 'cubeVerts', 'FACES', 'project',
+    'TILE_DESIGNS', 'TILE_BASE_OFFSET', 'TILE_THICKNESS', 'textureTiles',
     helpers + '\nreturn {renderChunkKey,isOpaqueCubeBlock,projectedPolygonVisible,invalidateBlockChunkMeshesAt,buildBlockChunkMesh,getBlockChunkMesh,visitNearbyBlockChunkMeshes,appendBlockChunkMesh,addRenderChunkItem,removeRenderChunkItem,visitNearbyRenderChunks};'
   );
   const api = create(
     16, cacheLimit, opaqueTypes, cache, chunks, blockMap, lookup,
-    keyBlock, validHex, shadeColor, cubeVerts, faces, project
+    keyBlock, validHex, shadeColor, cubeVerts, faces, project,
+    [{ id: 'grid' }], 0.02, 0.13, new Map([['tile-grid', { id: 'grid-texture' }]])
   );
   return { api, lookup, cache, chunks };
 }
@@ -56,6 +58,9 @@ function check(condition, message) {
 }
 
 assert(source.includes('const FIXED_UPDATE_STEP=1/60'), 'A fixed 60 Hz simulation step is required.');
+assert(source.includes('if(steps>0)render();'), 'Canvas rendering must not repeat on high-refresh frames without a simulation update.');
+assert(!source.includes("else if(b.type==='tile')pushTileSlab(polys,cam,w,h,b)"), 'Decorative tiles must not be projected as dynamic per-frame geometry.');
+assert(source.includes("tileTexture:textureTiles.get('tile-'+pattern)"), 'Cached floor tiles must preserve their selected pattern texture.');
 assert(source.includes('MAX_FRAME_DELTA=.1'), 'Frame delta must be clamped after tab suspension or a long frame.');
 assert(!source.includes('time-lastTime<30'), 'The old 30 ms frame gate must not return.');
 assert(source.includes('render();\n}'), 'The animation loop must render after fixed updates.');
@@ -124,8 +129,12 @@ const mixed = [
 ];
 apiSet = makeApi(mixed);
 const mixedMesh = apiSet.api.buildBlockChunkMesh('0,0', mixed);
-check(mixedMesh.faces.length === 6 && mixedMesh.specials.length === 2,
-  'Doors and slabs must remain dynamic and must not occlude a solid cube.');
+check(mixedMesh.faces.length === 12 && mixedMesh.specials.length === 1,
+  'Doors must remain dynamic while floor slabs are included in the cached static mesh.');
+check(mixedMesh.faces.filter(face => face.tileTexture).length === 1,
+  'A cached floor tile must preserve its selected decorative texture on the top face.');
+check(mixedMesh.faces.some(face => face.normal[1] === 1 && face.center.y === 0.085),
+  'Cached floor tile tops must preserve the original slab elevation.');
 
 const custom = { x: 0, y: 0, z: 0, type: 'custom', color: '#ff0000', texture: 'brick' };
 apiSet = makeApi([custom]);
