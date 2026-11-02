@@ -316,6 +316,37 @@ for(const [x,z] of world.waterCells||[])waterLevels.set(keyGround(x,z),1);
 for(const [x,z,level] of world.waterLevels||[])waterLevels.set(keyGround(x,z),level);
 let waterCells=new Set(waterLevels.keys());
 let fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
+const RENDER_CHUNK_SIZE=16;
+let blockRenderChunks=new Map(),excavationRenderChunks=new Map(),waterRenderChunks=new Map(),fishRenderChunks=new Map();
+function renderChunkKey(x,z){return Math.floor(x/RENDER_CHUNK_SIZE)+','+Math.floor(z/RENDER_CHUNK_SIZE);}
+function addRenderChunkItem(map,x,z,item){
+ const key=renderChunkKey(x,z);let items=map.get(key);
+ if(!items){items=[];map.set(key,items);}
+ items.push(item);
+}
+function removeRenderChunkItem(map,x,z,item){
+ const key=renderChunkKey(x,z),items=map.get(key);if(!items)return;
+ const index=items.indexOf(item);if(index>=0)items.splice(index,1);
+ if(!items.length)map.delete(key);
+}
+function visitNearbyRenderChunks(map,cam,radius,visit){
+ const minX=Math.floor((cam.pos.x-radius)/RENDER_CHUNK_SIZE),maxX=Math.floor((cam.pos.x+radius)/RENDER_CHUNK_SIZE);
+ const minZ=Math.floor((cam.pos.z-radius)/RENDER_CHUNK_SIZE),maxZ=Math.floor((cam.pos.z+radius)/RENDER_CHUNK_SIZE);
+ for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){
+  const items=map.get(cx+','+cz);if(items)for(let i=0;i<items.length;i++)visit(items[i]);
+ }
+}
+function rebuildFishRenderChunks(){
+ fishRenderChunks=new Map();
+ fishSpots.forEach((fish,index)=>addRenderChunkItem(fishRenderChunks,fish.x,fish.z,{fish,index}));
+}
+function rebuildRenderChunks(){
+ blockRenderChunks=new Map();excavationRenderChunks=new Map();waterRenderChunks=new Map();
+ for(const block of world.blocks)addRenderChunkItem(blockRenderChunks,block.x,block.z,block);
+ for(const cell of groundDepths.keys()){const [x,z]=cell.split(',').map(Number);addRenderChunkItem(excavationRenderChunks,x,z,cell);}
+ for(const cell of waterCells){const [x,z]=cell.split(',').map(Number);addRenderChunkItem(waterRenderChunks,x,z,cell);}
+ rebuildFishRenderChunks();
+}
 function waterLevelAt(x,z){return waterLevels.get(keyGround(x,z))||0;}
 function waterTopAt(x,z){
  const depth=groundDepthAt(x,z),level=waterLevelAt(x,z);
@@ -329,7 +360,13 @@ function syncWaterLife(){
 }
 let blockLookup=new Map(),worldGeometryRevision=0,neighborObstacleCache=null,neighborPathCache=new Map();
 function invalidateNeighborNavigation(){worldGeometryRevision++;neighborObstacleCache=null;neighborPathCache.clear();}
-function rebuildLookup(){invalidateNeighborNavigation();groundDepths.clear();for(const [x,z,depth] of world.excavations||[])groundDepths.set(keyGround(x,z),depth);blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
+function rebuildLookup(){
+ invalidateNeighborNavigation();groundDepths.clear();
+ for(const [x,z,depth] of world.excavations||[])groundDepths.set(keyGround(x,z),depth);
+ blockLookup=new Map();
+ for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}
+ rebuildRenderChunks();
+}
 function solid(x,y,z){return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
 function addBlock(x,y,z,type=selected){
  if(y< -MAX_DIG_DEPTH||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT||y< -groundDepthAt(x,z))return false;
@@ -348,18 +385,28 @@ function addBlock(x,y,z,type=selected){
   if(type==='door')b.open=false;
  }
  world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);
+ addRenderChunkItem(blockRenderChunks,b.x,b.z,b);
  invalidateNeighborNavigation();save();return true;
 }
 function removeBlock(x,y,z){
  const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;
  if(isProtectedDigCell(b.x,b.z)){showStatus('This block is inside a protected neighbor area. Their homes stay safe!');return false;}
  if(!addBucketItem(b)){showStatus('Your Material Bucket is full. Use or clear some recovered blocks first.');return false;}
- world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));
+ world.blocks=world.blocks.filter(v=>v!==b);removeRenderChunkItem(blockRenderChunks,b.x,b.z,b);blockLookup.delete(keyBlock(b.x,b.y,b.z));
  if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));
  doorMotions.delete(keyBlock(b.x,b.y,b.z));invalidateNeighborNavigation();save();return true;
 }
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
-function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
+function project(v,cam,w,h){
+ let basis=cam._projection;
+ if(!basis){basis=cam._projection={sy:Math.sin(cam.yaw),cy:Math.cos(cam.yaw),sp:Math.sin(cam.pitch),cp:Math.cos(cam.pitch),width:0,height:0,focal:0};}
+ if(basis.width!==w||basis.height!==h){basis.width=w;basis.height=h;basis.focal=Math.min(w,h)*.94;}
+ const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z;
+ const rx=dx*basis.cy+dz*basis.sy,uy=-dx*basis.sy*basis.sp+dy*basis.cp+dz*basis.cy*basis.sp;
+ const depth=dx*basis.sy*basis.cp+dy*basis.sp-dz*basis.cy*basis.cp;
+ if(depth<.12)return null;
+ return {x:w/2+rx*basis.focal/depth,y:h*.51-uy*basis.focal/depth,d:depth};
+}
 function skyDirection(azimuth,altitude){
  const horizontal=Math.cos(altitude);
  return {x:Math.sin(azimuth)*horizontal,y:Math.sin(altitude),z:-Math.cos(azimuth)*horizontal};
@@ -1078,10 +1125,15 @@ function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.i
 function careForAnimal(action){const info={snack:['🍎','A tasty snack. '+selectedAnimalName+' is happily nibbling!'],water:['💧','Fresh water. '+selectedAnimalName+' has had a lovely drink!'],brush:['✨','A gentle brush. '+selectedAnimalName+' looks extra fluffy!'],play:['💚','A little playtime. '+selectedAnimalName+' is happily playing!']}[action];if(!info)return;world.animalCare=world.animalCare||{};world.animalCare[selectedAnimalId]=Math.min(999,(world.animalCare[selectedAnimalId]||0)+1);animalCareFlashUntil=performance.now()+1900;animalCareFlashEmoji=info[0];$('animalCareFeedback').textContent=info[1];$('animalCareNote').textContent=selectedAnimalName+' has enjoyed '+world.animalCare[selectedAnimalId]+' caring moments with you.';save();showStatus(info[1]);}
 function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt'){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true,material});}
 function pushGroundSurface(queue,cam,w,h,color){
- const radius=24,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z);
+ const radius=24,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),focal=Math.min(w,h)*.94,horizontalLimit=(w*.5+30)/focal;
  const minX=Math.max(-WORLD_LIMIT,cx-radius),maxX=Math.min(WORLD_LIMIT-1,cx+radius);
  const minZ=Math.max(-WORLD_LIMIT,cz-radius),maxZ=Math.min(WORLD_LIMIT-1,cz+radius);
  for(let x=minX;x<=maxX;x++)for(let z=minZ;z<=maxZ;z++){
+  const dx=x+.5-cam.pos.x,dz=z+.5-cam.pos.z,forward=dx*sy-dz*cy;
+  const depth=forward*cp-cam.pos.y*sp;if(depth<=.12)continue;
+  const lateral=dx*cy+dz*sy;if(Math.abs(lateral)>depth*horizontalLimit+1.2)continue;
+  const up=-forward*sp-cam.pos.y*cp,screenY=h*.51-up*focal/depth,cellRadius=focal/depth*1.15;
+  if(screenY< -cellRadius-24||screenY>h+cellRadius+24)continue;
   if(groundDepthAt(x,z)>0)continue;
   const vertices=[{x,y:0,z},{x:x+1,y:0,z},{x:x+1,y:0,z:z+1},{x,y:0,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));
   if(pts.some(p=>!p))continue;
@@ -1093,24 +1145,30 @@ function pushGroundSurface(queue,cam,w,h,color){
   queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:visibleColor,outline:false,material:underground?'dirt':'grass'});
  }
 }
-function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDepths){if(depth<1)continue;const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)continue;const floorY=-depth;
+function pushExcavationTerrain(queue,cam,w,h){
+ visitNearbyRenderChunks(excavationRenderChunks,cam,24,cell=>{
+  const depth=groundDepths.get(cell);if(depth<1)return;
+  const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)return;
+  const floorY=-depth;
  pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1}],'#775236','dirt');
  const west=groundDepthAt(x-1,z),east=groundDepthAt(x+1,z),north=groundDepthAt(x,z-1),south=groundDepthAt(x,z+1);
  if(west<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x,y:-west,z},{x,y:-west,z:z+1},{x,y:floorY,z:z+1}],'#98704b','dirt');
  if(east<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x:x+1,y:-east,z:z+1},{x:x+1,y:-east,z},{x:x+1,y:floorY,z}],'#765034','dirt');
  if(north<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:-north,z},{x,y:-north,z}],'#8c6543','dirt');
- if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f','dirt');}}
+ if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f','dirt');
+ });
+}
 function pushWaterSurfaces(queue,cam,w,h){
  const visible=[];let minY=Infinity,maxY=-Infinity;
  // One shared color field is built from the visible water area, not each cell.
- for(const cell of waterCells){
+ visitNearbyRenderChunks(waterRenderChunks,cam,24,cell=>{
   const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z),topY=waterTopAt(x,z);
-  if(depth<1||topY===null||Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)continue;
+  if(depth<1||topY===null||Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)return;
   const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
-  const topPts=topVertices.map(v=>project(v,cam,w,h));if(topPts.some(p=>!p))continue;
+  const topPts=topVertices.map(v=>project(v,cam,w,h));if(topPts.some(p=>!p))return;
   for(const p of topPts){minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
   visible.push({x,z,depth,topY,floorY:-depth,topPts});
- }
+ });
  if(!visible.length)return;
  const span=Math.max(100,maxY-minY),gradientTop=minY-span*.08,gradientBottom=maxY+span*.08;
  const surfaceGradient=ctx.createLinearGradient(0,gradientTop,0,gradientBottom);
@@ -1215,8 +1273,8 @@ function paintWaterFace(poly,time){
 }
 function pushFishOverlays(queue,cam,w,h){
  const time=performance.now()/1000,colors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
- fishSpots.forEach((fish,i)=>{
-  const depth=groundDepthAt(fish.x,fish.z),key=keyGround(fish.x,fish.z);
+ visitNearbyRenderChunks(fishRenderChunks,cam,24,entry=>{
+  const fish=entry.fish,i=entry.index,depth=groundDepthAt(fish.x,fish.z),key=keyGround(fish.x,fish.z);
   if(depth<1||!waterCells.has(key))return;
   const phase=time*1.05+i*1.9,cx=fish.x+.5+Math.sin(phase)*.055,cz=fish.z+.5+Math.cos(phase*.8)*.055;
   const angle=phase*.48,ca=Math.cos(angle),sa=Math.sin(angle),y=-depth+.59;
@@ -1247,7 +1305,14 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):b.color?validHex(b.color,meta?.color||'#a0a0a0'):meta?.color;const texture=b.texture||(b.type==='custom'?'custom':b.type);if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,texture,!!b.color);}
+ visitNearbyRenderChunks(blockRenderChunks,cam,24,b=>{
+  if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)return;
+  if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);return;}
+  if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);return;}
+  const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):b.color?validHex(b.color,meta?.color||'#a0a0a0'):meta?.color;
+  const texture=b.texture||(b.type==='custom'?'custom':b.type);
+  if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,texture,!!b.color);
+ });
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
  const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
@@ -1353,7 +1418,10 @@ function collectWaterLayer(x,z){
  if(level<1)return false;
  if(!addBucketItem({type:'water'})){showStatus('Your Material Bucket is full.');return false;}
  if(level>1){waterLevels.set(key,level-1);}
- else{waterLevels.delete(key);waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);}
+ else{
+  waterLevels.delete(key);waterCells.delete(key);removeRenderChunkItem(waterRenderChunks,x,z,key);
+  fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);rebuildFishRenderChunks();
+ }
  syncWaterLife();save();render();
  showStatus(level>1?'Top water layer collected into your Material Bucket.':'Last water layer collected into your Material Bucket.');
  return true;
@@ -1376,6 +1444,7 @@ function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
   if(!addBucketItem({type:'dirt'})){showStatus('Your Material Bucket is full.');return;}
   const newDepth=depth+1;
   if(newDepth<=depth){showStatus('The ground is already at its safe digging depth.');return;}
+  if(!groundDepths.has(key))addRenderChunkItem(excavationRenderChunks,x,z,key);
   groundDepths.set(key,newDepth);syncExcavations();addItem('dirt','materials');invalidateNeighborNavigation();save();render();showStatus('Ground excavated · Dirt recovered in your Material Bucket.');return;
  }
  showStatus('Aim the shovel at a block or a patch of ground, then tap to dig.');
@@ -1389,7 +1458,9 @@ function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  for(let y=-depth;y<0;y++){
   if(!addBlock(x,y,z,selected)){showStatus('Could not place the selected block in this hole.');return;}
  }
- groundDepths.delete(key);waterLevels.delete(key);waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);
+ groundDepths.delete(key);removeRenderChunkItem(excavationRenderChunks,x,z,key);
+ waterLevels.delete(key);waterCells.delete(key);removeRenderChunkItem(waterRenderChunks,x,z,key);
+ fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);rebuildFishRenderChunks();
  syncExcavations();syncWaterLife();invalidateNeighborNavigation();save();render();
  showStatus('Hole filled with '+(blockMap.get(selected)?.name||'Custom')+'.');
 }
@@ -1401,7 +1472,7 @@ function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
  const level=waterLevelAt(x,z);
  if(level>=depth){showStatus('This pool cell is full to the rim.');return;}
- waterLevels.set(key,level+1);waterCells.add(key);
+ waterLevels.set(key,level+1);if(!waterCells.has(key)){waterCells.add(key);addRenderChunkItem(waterRenderChunks,x,z,key);}
  syncWaterLife();save();render();
  showStatus(level===0?'Water added to the pool floor! Tap the water again to stack another layer.':'Water layer added on top · '+(level+1)+' of '+depth+' layers.');
 }
@@ -1410,7 +1481,7 @@ function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  const x=hit.x,z=hit.z,key=keyGround(x,z);
  if(!waterCells.has(key)){showStatus('Add water to this dug cell first.');return;}
  if(fishSpots.filter(f=>keyGround(f.x,f.z)===key).length>=3){showStatus('This water cell already has three fish.');return;}
- fishSpots.push({x,z});syncWaterLife();save();render();showStatus('A little fish is swimming in your water!');
+ const fish={x,z};fishSpots.push(fish);addRenderChunkItem(fishRenderChunks,x,z,{fish,index:fishSpots.length-1});syncWaterLife();save();render();showStatus('A little fish is swimming in your water!');
 }
 function surfaceHeightAt(x,z){
  const bx=Math.floor(x),bz=Math.floor(z);
@@ -1777,7 +1848,12 @@ $('applyTileDesign').addEventListener('click',()=>{
 
 function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
 function downloadBackup(){save();const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(world.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft')+'.json';a.click();URL.revokeObjectURL(url);showStatus('Backup file prepared. Keep it somewhere safe.');}
-async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
+async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;
+  waterLevels.clear();
+  for(const [x,z] of world.waterCells||[])waterLevels.set(keyGround(x,z),1);
+  for(const [x,z,level] of world.waterLevels||[])waterLevels.set(keyGround(x,z),level);
+  waterCells=new Set(waterLevels.keys());fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
+  rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
 function focusToggle(){focusMode=!focusMode;document.body.classList.toggle('focus-mode',focusMode);}
 function controlsToggle(){controllersHidden=!controllersHidden;document.body.classList.toggle('controllers-hidden',controllersHidden);$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';}
 function updateFlyControls(){
