@@ -57,6 +57,15 @@ function check(condition, message) {
   passed++;
 }
 
+assert(source.includes('function setPlayerActivity(activity)'), 'Player activity actions must be available.');
+assert(source.includes("if(activity==='sleep'){"), 'The player must have a lying-down sleep pose.');
+assert(source.includes("const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'"), 'Sit, work and dance must have distinct animation states.');
+assert(source.includes('activity:playerActivity'), 'The selected activity must be passed to the third-person avatar.');
+assert(source.includes('playerActivity&&(moveX!==0||moveZ!==0'), 'Walking or flying movement must cancel a stationary activity.');
+assert(html.includes('id="activityBtn"') && html.includes('id="activityShade"'), 'The activity menu must be reachable from the game HUD.');
+for (const activity of ['sleep','sit','work','dance','stop']) {
+  if (!html.includes('data-player-activity="' + activity + '"')) throw new Error('Missing player activity control: ' + activity);
+}
 assert(source.includes('const FIXED_UPDATE_STEP=1/60'), 'A fixed 60 Hz simulation step is required.');
 assert(source.includes('function interpolatePlayerState(previous,current,alpha)'), 'The player render state must interpolate between fixed simulation updates.');
 assert(source.includes('renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);'), 'The canvas must render smoothly at the display refresh rate.');
