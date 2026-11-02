@@ -155,7 +155,7 @@ jobs:
             'if(isOpaqueCubeBlock(neighbor))continue;',
             'function invalidateBlockChunkMeshesAt(x,z)',
             'function appendBlockChunkMesh(queue,mesh,cam,w,h)',
-            'if(block.type===\\'tile\\')',
+            "if(block.type==='tile')",
             'if(steps>0)render();',
             "textureTiles.get('tile-'+pattern)",
             'const FIXED_UPDATE_STEP=1/60',
