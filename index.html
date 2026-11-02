@@ -860,65 +860,17 @@ function drawVoxelDoor(queue,cam,w,h,door){
  draw(.035,1.55,-.078,.05,.12,.036,'#6a4933');
 }
 
-function paintTexture(poly) {
-    const pattern = texturePatterns.get(poly.material);
-
-    if (!pattern || poly.pts.length !== 4) return;
-
-    // Map the texture to the actual block face.
-    // This anchors the texture to the block rather
-    // than to the screen.
-    if (
-        typeof DOMMatrix === 'undefined' ||
-        typeof pattern.setTransform !== 'function'
-    ) return;
-
-    const [p0, p1, , p3] = poly.pts;
-    const size = 96;
-
-    const a = (p1.x - p0.x) / size;
-    const b = (p1.y - p0.y) / size;
-    const c = (p3.x - p0.x) / size;
-    const d = (p3.y - p0.y) / size;
-
-    pattern.setTransform(
-        new DOMMatrix([
-            a, b, c, d, p0.x, p0.y
-        ])
-    );
-
-    ctx.save();
-
-    ctx.beginPath();
-    poly.pts.forEach((p, i) => {
-        if (i) ctx.lineTo(p.x, p.y);
-        else ctx.moveTo(p.x, p.y);
-    });
-
-    ctx.closePath();
-    ctx.clip();
-
-    ctx.globalAlpha = poly.customTint ? 0.42 : 0.72;
-    ctx.fillStyle = pattern;
-
-    const xs = poly.pts.map(p => p.x);
-    const ys = poly.pts.map(p => p.y);
-
-    const x = Math.min(...xs);
-    const y = Math.min(...ys);
-    const right = Math.max(...xs);
-    const bottom = Math.max(...ys);
-
-    ctx.fillRect(
-        x - 1,
-        y - 1,
-        right - x + 2,
-        bottom - y + 2
-    );
-
-    ctx.restore();
+function paintTexture(poly){
+ if(poly.pts.length!==4)return;
+ const image=textureTiles.get(poly.material);
+ if(!image)return;
+ // Projected 3D faces are perspective quads, not parallelograms.
+ // Map both halves separately so the fourth corner cannot drift.
+ paintMappedQuad(image,poly.pts,poly.customTint?.42:.72);
 }
-function paintTileTriangle(image,src,dst){
+// All textured quads use the same diagonal and perspective-correct affine
+// mapping on each half. A sub-pixel overlap hides antialiased hairline seams.
+function paintTileTriangle(image,src,dst,alpha=.9,overlap=.45){
  const [s0,s1,s2]=src,[d0,d1,d2]=dst;
  const sx1=s1.x-s0.x,sy1=s1.y-s0.y,sx2=s2.x-s0.x,sy2=s2.y-s0.y;
  const det=sx1*sy2-sx2*sy1;
@@ -927,15 +879,30 @@ function paintTileTriangle(image,src,dst){
  const a=(dx1*sy2-dx2*sy1)/det,c=(dx2*sx1-dx1*sx2)/det;
  const b=(dy1*sy2-dy2*sy1)/det,d=(dy2*sx1-dy1*sx2)/det;
  const e=d0.x-a*s0.x-c*s0.y,f=d0.y-b*s0.x-d*s0.y;
+ const center={x:(d0.x+d1.x+d2.x)/3,y:(d0.y+d1.y+d2.y)/3};
+ const clipPoint=p=>{
+  const dx=p.x-center.x,dy=p.y-center.y,len=Math.hypot(dx,dy)||1;
+  return {x:p.x+dx/len*overlap,y:p.y+dy/len*overlap};
+ };
+ const c0=clipPoint(d0),c1=clipPoint(d1),c2=clipPoint(d2);
  ctx.save();
- ctx.beginPath();ctx.moveTo(d0.x,d0.y);ctx.lineTo(d1.x,d1.y);ctx.lineTo(d2.x,d2.y);ctx.closePath();ctx.clip();
- ctx.transform(a,b,c,d,e,f);ctx.globalAlpha=.9;ctx.drawImage(image,0,0,96,96);ctx.restore();
+ ctx.beginPath();ctx.moveTo(c0.x,c0.y);ctx.lineTo(c1.x,c1.y);ctx.lineTo(c2.x,c2.y);ctx.closePath();ctx.clip();
+ ctx.transform(a,b,c,d,e,f);ctx.globalAlpha=alpha;ctx.drawImage(image,0,0,96,96);ctx.restore();
+}
+function clipProjectedQuad(points){
+ ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.clip();
+}
+function paintMappedQuad(image,points,alpha=.9){
+ if(!image||points.length!==4)return;
+ const [p0,p1,p2,p3]=points;
+ ctx.save();clipProjectedQuad(points);
+ paintTileTriangle(image,[{x:0,y:0},{x:96,y:0},{x:96,y:96}],[p0,p1,p2],alpha);
+ paintTileTriangle(image,[{x:0,y:0},{x:96,y:96},{x:0,y:96}],[p0,p2,p3],alpha);
+ ctx.restore();
 }
 function paintTileTexture(poly){
  const image=poly.tileTexture;if(!image||poly.pts.length!==4)return;
- const [p0,p1,p2,p3]=poly.pts;
- paintTileTriangle(image,[{x:0,y:0},{x:0,y:96},{x:96,y:96}],[p0,p1,p2]);
- paintTileTriangle(image,[{x:0,y:0},{x:96,y:96},{x:96,y:0}],[p0,p2,p3]);
+ paintMappedQuad(image,poly.pts,.9);
 }
 function line3(queue,cam,w,h,a,b,color,width=1){const p=project(a,cam,w,h),q=project(b,cam,w,h);if(p&&q)queue.push({line:true,p,q,depth:(p.d+q.d)/2,color,width});}
 const NEIGHBOR_ROUTES={
@@ -1401,9 +1368,19 @@ function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDe
  if(north<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:-north,z},{x,y:-north,z}],'#8c6543','dirt');
  if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f','dirt');}}
 function pushWaterSurfaces(queue,cam,w,h){
- for(const cell of waterCells){const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z);if(depth<1||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
-  const y=-depth+.82,vertices=[{x,y,z},{x:x+1,y,z},{x:x+1,y,z:z+1},{x,y,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
-  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:'#54c5df',alpha:.82,outline:false});
+ for(const cell of waterCells){
+  const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z);
+  if(depth<1||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
+  const y=-depth+.82,vertices=[{x,y,z},{x:x+1,y,z},{x:x+1,y,z:z+1},{x,y,z:z+1}];
+  const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
+  const averageDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+  // Painter's algorithm sorts back-to-front. The pool surface sits below
+  // the rim, but its average can be nearer than the centre of a vertical
+  // excavation wall. Bias only its sort key (never its position) behind
+  // that rim at downward camera angles, preserving translucent water.
+  const wallCentreY=-depth/2;
+  const surfaceBehindRim=Math.max(0,-(y-wallCentreY)*Math.sin(cam.pitch));
+  queue.push({pts,depth:averageDepth+surfaceBehindRim+.012,color:'#54c5df',alpha:.82,outline:false,waterSurface:true});
  }
 }
 function pushFishOverlays(queue,cam,w,h){
