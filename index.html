@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'self'; worker-src 'self'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#9bc7d8">
 <title>DIYCraft — Peaceful Voxel World</title>
 <style>
@@ -91,6 +91,15 @@
 .door-style-choice strong{font-size:12px}.door-style-choice small{font-size:10px;font-weight:500;color:#718073}
 .door-style-choice.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
 .door-style-grid+.field input[type=color]{width:100%;height:40px;padding:3px}
+.tile-menu{width:min(620px,97vw)}
+.tile-preview-card{display:flex;align-items:center;gap:12px;background:#f1f6ec;border:1px solid #dce8d9;border-radius:14px;padding:10px;margin:10px 0}
+#tilePreview{width:180px;height:112px;max-width:48%;border-radius:9px;border:1px solid #d2dfd2;background:#fff;image-rendering:pixelated}
+.tile-choice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:8px 0 12px}
+.tile-choice{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:6px!important;background:#fff!important;text-align:center}
+.tile-choice canvas{width:100%;height:44px;border:1px solid #d2dfd2;border-radius:7px}
+.tile-choice small{font-size:10px;line-height:1.2;font-weight:700}
+.tile-choice.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
+@media(max-width:420px){.tile-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.tile-choice canvas{height:40px}.tile-preview-card{align-items:flex-start}.tile-preview-card .character-preview-copy{font-size:10px}}
 </style>
 </head>
 <body>
@@ -133,10 +142,10 @@
       </label>
       <label class="field">Choose any block color<input id="customColor" type="color" value="#aa83d8"></label><button id="useCustomColor" class="soft">Use this color for new blocks</button>
       <div class="menu-grid">
-        <button id="menuInventory">🎒 Inventories</button><button id="craftBtn">🧺 Crafting</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Color with a neighbor</button><button id="characterBtn">🧑 Character colors</button><button id="doorDesignBtn">🚪 Design a door</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
+        <button id="menuInventory">🎒 Inventories</button><button id="craftBtn">🧺 Crafting</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Color with a neighbor</button><button id="characterBtn">🧑 Character colors</button><button id="doorDesignBtn">🚪 Design a door</button><button id="tileDesignBtn">🧩 Design tiles</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
         <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
-      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Builds are saved on this device. Export a backup to move a world to another device.</p>
+      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note">Offline play: open the game while connected and wait for the “Offline play is ready” message. The browser then keeps a local copy so you can reopen it without internet. Your world saves on this device; export a backup to move it elsewhere.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers.</p>
     </div>
   </div>
   <div class="menu-shade" id="customBlockShade">
@@ -172,6 +181,26 @@
       </div>
       <label class="field">Door color<input id="doorColor" type="color" value="#a97545" aria-label="Choose the door color"></label>
       <button id="applyDoorDesign" class="primary custom-apply">Use this door design</button>
+    </div>
+  </div>
+  <div class="menu-shade" id="tileShade">
+    <div class="menu tile-menu">
+      <div class="menu-head"><h2>🧩 Tile Design Studio</h2><button data-close>Close ✕</button></div>
+      <p class="note">Choose one of 20 original patterns, then pick any color from the full spectrum. Every tile you place keeps its own design and color.</p>
+      <div class="tile-preview-card">
+        <canvas id="tilePreview" width="180" height="112" aria-label="Tile pattern preview"></canvas>
+        <div class="character-preview-copy"><strong id="tilePreviewName">Classic Grid</strong><br><span id="tilePreviewDetails">#C5A98A</span><br>Mix different patterns and colors in the same floor or wall.</div>
+      </div>
+      <div class="character-section-title">Choose a tile pattern · 20 designs</div>
+      <div class="tile-choice-grid" id="tileChoices"></div>
+      <div class="character-section-title">Choose any color</div>
+      <div class="custom-color-fields">
+        <label class="field">Full color spectrum<input id="tileColor" type="color" value="#c5a98a" aria-label="Choose any tile color"></label>
+        <label class="field">HEX color code<input id="tileHex" type="text" value="#C5A98A" maxlength="7" spellcheck="false" aria-label="Tile HEX color code"></label>
+      </div>
+      <div class="note">Quick color choices</div>
+      <div class="color-swatch-row" id="tileColorSwatches"></div>
+      <button id="applyTileDesign" class="primary custom-apply">Use this tile design</button>
     </div>
   </div>
   <div class="menu-shade" id="inventoryShade"><div class="menu"><div class="menu-head"><h2>🎒 Your pouches</h2><button data-close>Close ✕</button></div>
@@ -251,6 +280,7 @@ const BLOCKS=[
  {id:'leaves',name:'Leaves',emoji:'🌳',color:'#4e9a59'}, {id:'brick',name:'Brick',emoji:'🧱',color:'#c87862'},
  {id:'glass',name:'Glass',emoji:'🔹',color:'#a5dce3'}, {id:'flower',name:'Flower',emoji:'🌸',color:'#e9a4c1'},
  {id:'sand',name:'Sand',emoji:'🟨',color:'#e8d38b'}, {id:'snow',name:'Snow',emoji:'❄️',color:'#f2f8fa'},
+ {id:'tile',name:'Decorative Tile',emoji:'🧩',color:'#c5a98a'},
  {id:'door',name:'Door',emoji:'🚪',color:'#a97545'}
 ];
 const CUSTOM_TEXTURES=[
@@ -267,6 +297,28 @@ const CUSTOM_TEXTURES=[
  {id:'custom',name:'Speckled',emoji:'✨'}
 ];
 const CUSTOM_COLORS=['#F44336','#FF9800','#FFC107','#FFEB3B','#8BC34A','#4CAF50','#009688','#00BCD4','#03A9F4','#3F51B5','#673AB7','#9C27B0','#E91E63','#795548','#607D8B','#FFFFFF','#222222'];
+const TILE_DESIGNS=[
+ {id:'grid',name:'Classic Grid',icon:'▦'},
+ {id:'brick',name:'Running Brick',icon:'▤'},
+ {id:'checker',name:'Checkerboard',icon:'▩'},
+ {id:'diagonal',name:'Diagonal Lines',icon:'╱'},
+ {id:'diamond',name:'Diamond',icon:'◇'},
+ {id:'hexagon',name:'Honeycomb',icon:'⬡'},
+ {id:'herringbone',name:'Herringbone',icon:'⌁'},
+ {id:'basket',name:'Basket Weave',icon:'▧'},
+ {id:'mosaic',name:'Mosaic',icon:'◈'},
+ {id:'terrazzo',name:'Terrazzo',icon:'✣'},
+ {id:'waves',name:'Ocean Waves',icon:'≈'},
+ {id:'dots',name:'Polka Dots',icon:'⠿'},
+ {id:'floral',name:'Flower Garden',icon:'✿'},
+ {id:'stars',name:'Starry Night',icon:'✦'},
+ {id:'sunburst',name:'Sunburst',icon:'☼'},
+ {id:'scallop',name:'Scallops',icon:'∩'},
+ {id:'parquet',name:'Parquet Wood',icon:'▥'},
+ {id:'pebble',name:'Pebbles',icon:'◌'},
+ {id:'cross',name:'Little Crosses',icon:'✚'},
+ {id:'spiral',name:'Spiral Garden',icon:'◎'}
+];
 const ITEM_META={
  seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
 };
@@ -295,7 +347,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -310,9 +362,14 @@ function validWorld(d){
   w.doorDesign.color=validHex(d.doorDesign.color,w.doorDesign.color);
   w.doorDesign.style=['classic','window','garden'].includes(d.doorDesign.style)?d.doorDesign.style:'classic';
  }
+ if(d.tileDesign&&typeof d.tileDesign==='object'){
+  w.tileDesign.color=validHex(d.tileDesign.color,w.tileDesign.color);
+  w.tileDesign.pattern=TILE_DESIGNS.some(t=>t.id===d.tileDesign.pattern)?d.tileDesign.pattern:'grid';
+ }
  if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>{
   if(b.type==='custom')return {...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'};
   if(b.type==='door')return {...b,color:validHex(b.color,w.doorDesign.color),style:['classic','window','garden'].includes(b.style)?b.style:'classic',orientation:b.orientation==='ew'?'ew':'ns',swing:b.swing===-1?-1:1,open:!!b.open};
+  if(b.type==='tile')return {...b,color:validHex(b.color,w.tileDesign.color),tilePattern:TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid'};
   return b;
  });
  if(d.player&&typeof d.player==='object'){
@@ -373,7 +430,7 @@ const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z
 function clearPlacedBlocks(){const before=world.blocks.length;world.blocks=world.blocks.filter(b=>STARTER_BLOCK_KEYS.has(keyBlock(b.x,b.y,b.z)));rebuildLookup();save();render();showStatus(Math.max(0,before-world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.');}
 let blockLookup=new Map();function rebuildLookup(){blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
 function solid(x,y,z){if(y<0)return Math.abs(x)<=WORLD_LIMIT&&Math.abs(z)<=WORLD_LIMIT;return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
-function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);save();return true;}
+function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='tile'){b.color=validHex(world.tileDesign.color,'#c5a98a');b.tilePattern=TILE_DESIGNS.some(t=>t.id===world.tileDesign.pattern)?world.tileDesign.pattern:'grid';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);save();return true;}
 function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));save();return true;}
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
 function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
@@ -398,6 +455,39 @@ function makeTexturePatterns(){
  };
  for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
+
+// Original tile surfaces: all twenty are drawn locally, with no image downloads.
+function makeTileTexturePatterns(){
+ const makers={
+  grid:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let p=0;p<=96;p+=32){c.beginPath();c.moveTo(p,0);c.lineTo(p,96);c.moveTo(0,p);c.lineTo(96,p);c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1;c.strokeRect(2,2,92,92);},
+  brick:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let y=0;y<=96;y+=24){c.beginPath();c.moveTo(0,y);c.lineTo(96,y);c.stroke();}c.strokeStyle='#354b3d66';for(let row=0;row<4;row++){const y=row*24,off=row%2?0:24;for(let x=off;x<=96;x+=48){c.beginPath();c.moveTo(x,y);c.lineTo(x,y+24);c.stroke();}}},
+  checker:c=>{for(let y=0;y<96;y+=24)for(let x=0;x<96;x+=24)if((x/24+y/24)%2===0){c.fillStyle='#fff8';c.fillRect(x,y,24,24);c.strokeStyle='#354b3d55';c.strokeRect(x,y,24,24);}},
+  diagonal:c=>{c.strokeStyle='#fff9';c.lineWidth=4;for(let x=-96;x<192;x+=24){c.beginPath();c.moveTo(x,0);c.lineTo(x+96,96);c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1.5;for(let x=-96;x<192;x+=24){c.beginPath();c.moveTo(x+9,0);c.lineTo(x+105,96);c.stroke();}},
+  diamond:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let p=-96;p<=192;p+=32){c.beginPath();c.moveTo(p,0);c.lineTo(p+96,96);c.moveTo(p,96);c.lineTo(p+96,0);c.stroke();}},
+  hexagon:c=>{c.strokeStyle='#fff9';c.lineWidth=2.5;for(let y=-18;y<120;y+=32)for(let x=-24;x<120;x+=36){const cx=x+((Math.floor(y/32)%2)?18:0),cy=y;c.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i,px=cx+17*Math.cos(a),py=cy+17*Math.sin(a);if(i)c.lineTo(px,py);else c.moveTo(px,py);}c.closePath();c.stroke();}},
+  herringbone:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let y=-12;y<108;y+=24)for(let x=-24;x<120;x+=32){const off=(Math.floor(y/24)%2)*16;c.beginPath();c.moveTo(x+off,y);c.lineTo(x+off+16,y+12);c.lineTo(x+off,y+24);c.stroke();}c.strokeStyle='#354b3d55';for(let x=0;x<=96;x+=32){c.beginPath();c.moveTo(x,0);c.lineTo(x,96);c.stroke();}},
+  basket:c=>{c.strokeStyle='#fff9';c.lineWidth=9;for(let y=8;y<96;y+=24){c.beginPath();c.moveTo(0,y);c.lineTo(96,y);c.stroke();}for(let x=8;x<96;x+=24){c.beginPath();c.moveTo(x,0);c.lineTo(x,96);c.stroke();}c.strokeStyle='#354b3d66';c.lineWidth=2;for(let y=0;y<=96;y+=24){c.beginPath();c.moveTo(0,y);c.lineTo(96,y);c.stroke();}},
+  mosaic:c=>{c.lineWidth=2;c.strokeStyle='#fff9';for(let y=0;y<96;y+=32)for(let x=0;x<96;x+=32){c.beginPath();c.moveTo(x,y);c.lineTo(x+32,y+32);c.lineTo(x+32,y);c.closePath();c.stroke();c.beginPath();c.moveTo(x,y);c.lineTo(x,y+32);c.lineTo(x+32,y+32);c.closePath();c.stroke();}},
+  terrazzo:c=>{for(let i=0;i<78;i++){const x=(i*37+11)%96,y=(i*59+7)%96;c.fillStyle=i%3===0?'#fff9':i%3===1?'#354b3d66':'#e8c58a99';c.beginPath();c.ellipse(x,y,2+(i%4),1.4+(i%3),i*.73,0,Math.PI*2);c.fill();}},
+  waves:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let y=10;y<110;y+=24){c.beginPath();for(let x=0;x<=96;x+=4){const py=y+Math.sin(x/10)*7;if(x)c.lineTo(x,py);else c.moveTo(x,py);}c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1;for(let y=22;y<110;y+=24){c.beginPath();for(let x=0;x<=96;x+=4){const py=y+Math.sin(x/10)*7;if(x)c.lineTo(x,py);else c.moveTo(x,py);}c.stroke();}},
+  dots:c=>{for(let y=8;y<96;y+=24)for(let x=8;x<96;x+=24){c.fillStyle='#fff9';c.beginPath();c.arc(x,y,6,0,Math.PI*2);c.fill();c.strokeStyle='#354b3d66';c.lineWidth=1.5;c.stroke();}},
+  floral:c=>{for(let y=16;y<112;y+=48)for(let x=16;x<112;x+=48){c.fillStyle='#fff9';for(let k=0;k<6;k++){const a=k*Math.PI/3;c.beginPath();c.ellipse(x+Math.cos(a)*8,y+Math.sin(a)*8,7,4,a,0,Math.PI*2);c.fill();}c.fillStyle='#e8c58a';c.beginPath();c.arc(x,y,4,0,Math.PI*2);c.fill();}},
+  stars:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let y=16;y<112;y+=48)for(let x=16;x<112;x+=48){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?5:13,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(i)c.lineTo(px,py);else c.moveTo(px,py);}c.closePath();c.stroke();}},
+  sunburst:c=>{c.strokeStyle='#fff9';c.lineWidth=2.5;for(const [x,y] of [[24,24],[72,72]])for(let i=0;i<16;i++){const a=i*Math.PI/8;c.beginPath();c.moveTo(x+Math.cos(a)*7,y+Math.sin(a)*7);c.lineTo(x+Math.cos(a)*22,y+Math.sin(a)*22);c.stroke();}c.strokeStyle='#354b3d55';c.beginPath();c.arc(24,24,8,0,Math.PI*2);c.arc(72,72,8,0,Math.PI*2);c.stroke();},
+  scallop:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let y=0;y<128;y+=24){c.beginPath();for(let x=-12;x<120;x+=24){c.arc(x+12,y,12,Math.PI,0); }c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1;for(let y=12;y<128;y+=24){c.beginPath();for(let x=-12;x<120;x+=24){c.arc(x+12,y,12,Math.PI,0);}c.stroke();}},
+  parquet:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let y=0;y<96;y+=32){for(let x=0;x<96;x+=48){c.strokeRect(x+(y/32%2)*0,y,48,32);c.beginPath();c.moveTo(x+24,y);c.lineTo(x+24,y+32);c.stroke();}}c.strokeStyle='#354b3d55';c.lineWidth=1;for(let y=8;y<96;y+=32){c.beginPath();c.moveTo(4,y);c.lineTo(44,y);c.moveTo(52,y);c.lineTo(92,y);c.stroke();}},
+  pebble:c=>{for(let i=0;i<18;i++){const x=(i*29+7)%96,y=(i*43+13)%96;c.strokeStyle=i%2?'#fff9':'#354b3d66';c.lineWidth=2;c.beginPath();c.ellipse(x,y,7+(i%3)*2,5+(i%2)*2,i*.61,0,Math.PI*2);c.stroke();}},
+  cross:c=>{c.strokeStyle='#fff9';c.lineWidth=4;for(let y=12;y<112;y+=32)for(let x=12;x<112;x+=32){c.beginPath();c.moveTo(x-7,y);c.lineTo(x+7,y);c.moveTo(x,y-7);c.lineTo(x,y+7);c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1;for(let p=0;p<=96;p+=32){c.strokeRect(p,p,0,0);}},
+  spiral:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(const [x,y] of [[24,24],[72,24],[24,72],[72,72]]){c.beginPath();for(let a=0;a<Math.PI*3;a+=.12){const r=1+a*2,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(a)c.lineTo(px,py);else c.moveTo(px,py);}c.stroke();}}
+ };
+ for(const design of TILE_DESIGNS){
+  const tile=document.createElement('canvas');tile.width=tile.height=96;
+  const c=tile.getContext('2d');makers[design.id](c);
+  textureTiles.set('tile-'+design.id,tile);
+  texturePatterns.set('tile-'+design.id,ctx.createPattern(tile,'repeat'));
+ }
+}
+
 function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
 // Character blocks rotate as complete cuboids, not just as relocated centers.
 function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=true){
@@ -904,7 +994,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';pushCube(polys,cam,w,h,b.x,b.y,b.z,validHex(b.color,'#c5a98a'),1,1,1,true,'tile-'+pattern,true);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick);
  drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
@@ -1161,6 +1251,56 @@ $('applyDoorDesign').addEventListener('click',()=>{
  showStatus('Your door design is ready. Choose a clear spot to build it!');
 });
 
+
+let draftTileColor='#c5a98a',draftTilePattern='grid';
+function drawTileSwatch(canvas,pattern,color){
+ const c=canvas.getContext('2d'),tile=textureTiles.get('tile-'+pattern);
+ c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle=color;c.fillRect(0,0,canvas.width,canvas.height);
+ if(tile){c.save();c.globalAlpha=.78;c.drawImage(tile,0,0,canvas.width,canvas.height);c.restore();}
+ c.strokeStyle='#31453266';c.lineWidth=2;c.strokeRect(1,1,canvas.width-2,canvas.height-2);
+}
+function renderTilePreview(){
+ const design=TILE_DESIGNS.find(t=>t.id===draftTilePattern)||TILE_DESIGNS[0];
+ drawTileSwatch($('tilePreview'),design.id,draftTileColor);
+ $('tilePreviewName').textContent=design.name;$('tilePreviewDetails').textContent=draftTileColor.toUpperCase();
+ document.querySelectorAll('[data-tile-pattern]').forEach(btn=>btn.classList.toggle('selected',btn.dataset.tilePattern===draftTilePattern));
+}
+function renderTileChoices(){
+ const root=$('tileChoices');root.replaceChildren();
+ TILE_DESIGNS.forEach(design=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='tile-choice'+(draftTilePattern===design.id?' selected':'');btn.dataset.tilePattern=design.id;
+  const preview=document.createElement('canvas');preview.width=120;preview.height=58;preview.setAttribute('aria-hidden','true');drawTileSwatch(preview,design.id,draftTileColor);
+  const name=document.createElement('small');name.textContent=design.icon+' '+design.name;
+  btn.append(preview,name);btn.addEventListener('click',()=>{draftTilePattern=design.id;renderTileChoices();renderTilePreview();});root.append(btn);
+ });
+}
+function renderTileColorSwatches(){
+ const root=$('tileColorSwatches');root.replaceChildren();
+ CUSTOM_COLORS.forEach(color=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='color-swatch';btn.style.background=color;btn.title=color;btn.setAttribute('aria-label','Choose '+color);
+  btn.addEventListener('click',()=>setDraftTileColor(color));root.append(btn);
+ });
+}
+function setDraftTileColor(color){
+ if(!/^#[0-9a-f]{6}$/i.test(color))return;
+ draftTileColor=color.toLowerCase();$('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();
+ renderTileChoices();renderTilePreview();
+}
+function openTileDesigner(){
+ draftTileColor=world.tileDesign.color||'#c5a98a';draftTilePattern=world.tileDesign.pattern||'grid';
+ $('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();
+ renderTileChoices();renderTileColorSwatches();renderTilePreview();openShade('tileShade');
+}
+$('tileDesignBtn').addEventListener('click',openTileDesigner);
+$('tileColor').addEventListener('input',e=>setDraftTileColor(e.target.value));
+$('tileHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);});
+$('tileHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);else e.target.value=draftTileColor.toUpperCase();});
+$('applyTileDesign').addEventListener('click',()=>{
+ world.tileDesign={color:validHex(draftTileColor,'#c5a98a'),pattern:TILE_DESIGNS.some(t=>t.id===draftTilePattern)?draftTilePattern:'grid'};
+ selected='tile';save();renderHotbar();closeShades();
+ showStatus('Tile design ready! Select a place to build your colorful tiles.');
+});
+
 function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
 function downloadBackup(){save();const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(world.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft')+'.json';a.click();URL.revokeObjectURL(url);showStatus('Backup file prepared. Keep it somewhere safe.');}
 async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
@@ -1315,9 +1455,23 @@ $('animalCareBtn').addEventListener('click',()=>openAnimalCare({id:'sheep'}));$(
 $('inviteArtBtn').addEventListener('click',()=>openColoring('Mira'));
 // Art studio: local pixel-free line drawing with pointer/touch support.
 const art=$('artCanvas'),actx=art.getContext('2d');function clearArt(){actx.fillStyle='#fffdf8';actx.fillRect(0,0,art.width,art.height);actx.strokeStyle='#eee8da';actx.lineWidth=1;for(let x=24;x<art.width;x+=24){actx.beginPath();actx.moveTo(x,0);actx.lineTo(x,art.height);actx.stroke();}for(let y=24;y<art.height;y+=24){actx.beginPath();actx.moveTo(0,y);actx.lineTo(art.width,y);actx.stroke();}}function artPoint(e){const r=art.getBoundingClientRect();return {x:(e.clientX-r.left)*art.width/r.width,y:(e.clientY-r.top)*art.height/r.height};}art.addEventListener('pointerdown',e=>{artDrawing=true;artLast=artPoint(e);art.setPointerCapture(e.pointerId);});art.addEventListener('pointermove',e=>{if(!artDrawing)return;const p=artPoint(e);actx.strokeStyle=$('paintColor').value;actx.lineWidth=Number($('brushSize').value);actx.lineCap='round';actx.lineJoin='round';actx.beginPath();actx.moveTo(artLast.x,artLast.y);actx.lineTo(p.x,p.y);actx.stroke();artLast=p;});['pointerup','pointercancel'].forEach(ev=>art.addEventListener(ev,()=>{artDrawing=false;artLast=null;}));$('clearArt').addEventListener('click',clearArt);$('saveArt').addEventListener('click',()=>{if(world.artworks.length>=20){showStatus('Gallery is full. Export a backup first.');return;}let data=art.toDataURL('image/png');if(data.length>550000){showStatus('Drawing is too large to save.');return;}world.artworks.push({name:$('artName').value.slice(0,28)||'My picture',data});if(!addItem('picture','crafted')){world.artworks.pop();showStatus('Crafted pouch is full.');return;}save();closeShades();clearArt();showStatus('Artwork saved in the crafted pouch.');});
-// Keep one local autosave. No networking, analytics, third-party scripts or multiplayer.
-makeTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
-window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);
+
+function prepareOfflinePlay(){
+ if(!('serviceWorker' in navigator)||!window.isSecureContext){
+  showStatus('Offline cache is not supported in this browser. Keep the game open while disconnected.');
+  return;
+ }
+ const onOfflinePage=/\/offline(?:\/index\.html)?\/?$/.test(location.pathname);
+ const workerUrl=onOfflinePage?'../sw.js':'./sw.js';
+ navigator.serviceWorker.register(workerUrl,{updateViaCache:'none'})
+  .then(()=>navigator.serviceWorker.ready)
+  .then(()=>showStatus('Offline play is ready on this device. You can disconnect and reopen DIYCraft here.'))
+  .catch(()=>showStatus('Offline setup could not finish. Please open DIYCraft again while connected.'));
+}
+
+// Keep one local autosave. No gameplay networking, analytics, third-party scripts or multiplayer.
+makeTexturePatterns();makeTileTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
+window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);prepareOfflinePlay();
 })();
 </script>
 </body>
