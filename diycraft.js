@@ -164,6 +164,7 @@ function validWorld(d){
   w.player.hairStyle=['short','bob','long','ponytail','pigtails','curly','buns'].includes(p.hairStyle)?p.hairStyle:'short';
   w.player.outfitStyle=['hoodie','sweater','overalls','dress','tee'].includes(p.outfitStyle)?p.outfitStyle:'hoodie';
   w.player.accessory=['none','bow','flower','glasses','cap'].includes(p.accessory)?p.accessory:'none';
+  w.player.bed=null;
   if(p.bed&&typeof p.bed==='object'&&Number.isFinite(p.bed.x)&&Number.isFinite(p.bed.z)&&Math.abs(p.bed.x)<=WORLD_LIMIT&&Math.abs(p.bed.z)<=WORLD_LIMIT){
    w.player.bed={x:Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.bed.x)),y:Number.isFinite(p.bed.y)?Math.max(-MAX_DIG_DEPTH,Math.min(64,p.bed.y)):0,z:Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.bed.z)),yaw:Number.isFinite(p.bed.yaw)?p.bed.yaw:0};
   }
@@ -1084,7 +1085,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,baseY+y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
  };
 
- if(activity==='bed'){
+ if(activity==='sleep'||activity==='transformer'||activity==='bed'){
   const sleepCube=(dx,y,dz,color,sx,sy,sz)=>cube(dx,y+.18,dz,color,sx,sy,sz);
   // The sleeper rests on the mattress, with a pillow and a soft quilt.
   sleepCube(0,.34,-.12,n.shirt,.68,.36,1.08);
@@ -1468,15 +1469,20 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  if(cat){const cx=cat.x,cz=cat.z;pushCube(polys,cam,w,h,cx-.36,.12,cz-.3,'#e8c48c',.76,.5,.78);pushCube(polys,cam,w,h,cx-.14,.48,cz+.35,'#e8c48c',.46,.38,.42);pushCube(polys,cam,w,h,cx-.25,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx+.07,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx-.18,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx+.13,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx-.3,.02,cz-.08,'#b88754',.18,.2,.2);pushCube(polys,cam,w,h,cx+.14,.02,cz-.08,'#b88754',.18,.2,.2);}
  for(const pet of animals){if(pet.id!=='sheep'&&pet.id!=='cat')drawPetFigure(polys,cam,w,h,pet,tick);}
  drawPlayerBed(polys,cam,w,h,world.player.bed);
+ const restPlayer=world.player;
+ if(shouldDrawTemporaryRestBed(playerActivity,restPlayer.bed,restPlayer.x,restPlayer.z)){
+  drawPlayerBed(polys,cam,w,h,{x:restPlayer.x,y:surfaceHeightAt(restPlayer.x,restPlayer.z,restPlayer.y),z:restPlayer.z,yaw:restPlayer.yaw});
+ }
 
  // Third-person avatar; activities automatically switch to this view so the player can see their pose.
  if(cameraMode==='third'){
   const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,y:p.y,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
   const playerBob=playerActivity==='dance'?Math.abs(Math.sin(tick*7))*.11:playerActivity==='work'?Math.sin(tick*8)*.025:0;
   drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
-  const activityIcons={bed:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
+  const activityIcons={sleep:'💤',transformer:'😂',bed:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
   if(playerActivity){
-   const marker=project({x:p.x,y:p.y+(playerActivity==='bed'?1.53:2.55),z:p.z},cam,w,h);
+   const sleepingActivity=playerActivity==='sleep'||playerActivity==='transformer'||playerActivity==='bed';
+   const marker=project({x:p.x,y:p.y+(sleepingActivity?1.53:2.55),z:p.z},cam,w,h);
    if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
   }
  }
@@ -1675,17 +1681,22 @@ function nudgePlayerOutOfBlocks(){
  }
 }
 function jump(){
+ if(isStationaryRestActivity(playerActivity)||playerActivity==='transformer')return;
  playerActivity='';
  if(flying){showStatus('Flight is on. Turn it off to use Jump.');return;}
  if(!playerGrounded)return;
  jumpVelocity=PLAYER_JUMP_SPEED;playerGrounded=false;
  showStatus('Jump!');
 }
+function isStationaryRestActivity(activity){return activity==='sleep'||activity==='bed';}
+function shouldDrawTemporaryRestBed(activity,homeBed,x,z){
+ return (activity==='sleep'||activity==='transformer')&&(!homeBed||!Number.isFinite(homeBed.x)||!Number.isFinite(homeBed.z)||Math.hypot(x-homeBed.x,z-homeBed.z)>1.2);
+}
 function move(dt){
- // Go-to-bed sleep stays on the registered mattress until the player stands up.
- if(playerActivity==='bed'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
+ // Ordinary sleep and Go to Bed stay still; only Transformer sleep may slide around.
+ if(isStationaryRestActivity(playerActivity)){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
  const p=world.player,speed=flying?7:4.2;
- if(playerActivity&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
+ if(playerActivity&&playerActivity!=='transformer'&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
  nudgePlayerOutOfBlocks();
  const terrainFloor=-groundDepthAt(p.x,p.z);
  if(p.y<terrainFloor-.04){p.y=surfaceHeightAt(p.x,p.z,p.y);jumpVelocity=0;playerGrounded=true;save(true);}
@@ -2043,22 +2054,25 @@ function updateFlyControls(){
  $('flyUpBtn').classList.toggle('hidden',!flying);
  $('flyDownBtn').classList.toggle('hidden',!flying);
 }
+function resolveRestActivity(activity,bed){
+ return activity==='bed'&&!(bed&&Number.isFinite(bed.x)&&Number.isFinite(bed.z))?'sleep':activity;
+}
 function setPlayerActivity(activity){
  if(activity==='set-bed'){
   const p=world.player,floor=surfaceHeightAt(p.x,p.z,p.y);
   p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw};
-  save();closeShades();render();showStatus('Your bed is set here. You can return to it anytime!');return;
+  playerActivity='';save();closeShades();render();showStatus('Your home bed is saved here. You can return here anytime!');return;
  }
- const labels={bed:'Go to Bed',sit:'Sit',work:'Work',dance:'Dance'};
+ const labels={sleep:'Sleep Here',transformer:'Transformer Sleep',bed:'Go Home & Sleep',sit:'Sit',work:'Work',dance:'Dance'};
  if(activity!=='stop'&&!Object.prototype.hasOwnProperty.call(labels,activity))return;
- playerActivity=activity==='stop'?'':activity;
+ const p=world.player,restActivity=resolveRestActivity(activity,p.bed),missingHomeBed=activity==='bed'&&restActivity==='sleep';
+ playerActivity=activity==='stop'?'':restActivity;
  moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;
  if(activity!=='stop'){
   if(flying){flying=false;updateFlyControls();}
   cameraMode='third';updateViewButton();
-  const p=world.player;
-  if(activity==='bed'){
-   const bed=p.bed||{x:-1,y:0,z:-11,yaw:0};
+  if(activity==='bed'&&!missingHomeBed){
+   const bed=p.bed;
    p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0;
    playerGrounded=true;save();
   }else{
@@ -2067,7 +2081,11 @@ function setPlayerActivity(activity){
   }
  }
  closeShades();render();
- showStatus(activity==='stop'?'Standing up. Ready to explore!':activity==='bed'?'Back in bed. Sweet dreams!':labels[activity]+' pose selected.');
+ const status=activity==='stop'?'Standing up. Ready to explore!':
+  missingHomeBed?'No home bed saved yet. A temporary bed has been made right here.':
+  activity==='bed'?'Back home in bed. Sweet dreams!':
+  labels[activity]+' pose selected.';
+ showStatus(status);
 }
 async function expandToggle(){if(!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen();}catch(e){showStatus('Using the larger browser view instead.');}}document.body.classList.add('focus-mode');focusMode=true;}
 // Keyboard input is simple, local and has no external communication.
