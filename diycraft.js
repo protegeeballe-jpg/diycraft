@@ -2077,7 +2077,7 @@ function setPlayerActivity(activity){
    playerGrounded=true;save();
   }else{
    const floor=surfaceHeightAt(p.x,p.z,p.y);
-   if(p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+   if(activity==='sleep'||activity==='transformer'||p.y<=floor+.35){p.y=floor;playerGrounded=true;}
   }
  }
  closeShades();render();
