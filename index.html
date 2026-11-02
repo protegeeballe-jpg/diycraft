@@ -1291,13 +1291,13 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
- const nearWorldPoint=(x,z,radius=38)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
+ const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
  if(nearWorldPoint(-13,-7))drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
  if(nearWorldPoint(10,-17))drawNeighborHome(polys,cam,w,h,10,-17,'#b9d4c6','#668f8b','#71594d');
  if(nearWorldPoint(16,-9))drawNeighborHome(polys,cam,w,h,16,-9,'#e8d5b8','#b97870','#80604e');
  // Residents remain on their neighborhood routes instead of following the explorer.
  for(const n of neighbors){
-  if(n.sleeping||!nearWorldPoint(n.x,n.z,34))continue;
+  if(n.sleeping||!nearWorldPoint(n.x,n.z,26))continue;
   const walkPace=Number.isFinite(n.pace)?n.pace:8;
   const bob=n.moving?Math.abs(Math.sin(tick*walkPace+n.phase))*.055:Math.sin(tick*1.7+n.phase)*.018;
   drawNeighborFigure(polys,cam,w,h,n,bob,tick);
@@ -1311,7 +1311,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   }
  }
  // Gentle, protected animals with visible feet and friendly faces.
- const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,34)),sheep=animals.find(a=>a.id==='sheep'),cat=animals.find(a=>a.id==='cat');
+ const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,26)),sheep=animals.find(a=>a.id==='sheep'),cat=animals.find(a=>a.id==='cat');
  if(sheep){const sx=sheep.x,sz=sheep.z;pushCube(polys,cam,w,h,sx-.42,.12,sz-.34,'#f4f0e4',.86,.62,1.12);pushCube(polys,cam,w,h,sx+.22,.38,sz+.52,'#f4f0e4',.46,.42,.43);pushCube(polys,cam,w,h,sx+.57,.53,sz+.85,'#47443f',.055,.055,.03);pushCube(polys,cam,w,h,sx+.03,.51,sz+.85,'#47443f',.055,.055,.03);for(const [dx,dz] of [[-.28,-.2],[.32,-.2],[-.28,.38],[.32,.38]])pushCube(polys,cam,w,h,sx+dx,.01,sz+dz,'#d7d0c5',.15,.3,.15);}
  if(cat){const cx=cat.x,cz=cat.z;pushCube(polys,cam,w,h,cx-.36,.12,cz-.3,'#e8c48c',.76,.5,.78);pushCube(polys,cam,w,h,cx-.14,.48,cz+.35,'#e8c48c',.46,.38,.42);pushCube(polys,cam,w,h,cx-.25,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx+.07,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx-.18,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx+.13,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx-.3,.02,cz-.08,'#b88754',.18,.2,.2);pushCube(polys,cam,w,h,cx+.14,.02,cz-.08,'#b88754',.18,.2,.2);}
  for(const pet of animals){if(pet.id!=='sheep'&&pet.id!=='cat')drawPetFigure(polys,cam,w,h,pet,tick);}
@@ -1338,8 +1338,8 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
  if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.15,y:1.2,z:a.z+.5},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
  // Home labels disappear with their anchored homes at a distance.
- for(const n of neighbors.filter(v=>(v.id==='hyacinth'||v.id==='theo')&&nearWorldPoint(v.homeX,v.homeZ,38))){const hp=project({x:n.homeX+2.1,y:3.55,z:n.homeZ+4.55},cam,w,h);if(hp){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(n.name+"'s home",hp.x,hp.y);ctx.fillStyle='#35533e';ctx.fillText(n.name+"'s home",hp.x,hp.y);ctx.restore();}}
- if(nearWorldPoint(18.1,-4.65,38)){const familySign=project({x:18.1,y:3.55,z:-4.65},cam,w,h);if(familySign){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText("The Pagibig Family",familySign.x,familySign.y);ctx.fillStyle='#35533e';ctx.fillText("The Pagibig Family",familySign.x,familySign.y);ctx.restore();}}
+ for(const n of neighbors.filter(v=>(v.id==='hyacinth'||v.id==='theo')&&nearWorldPoint(v.homeX,v.homeZ,26))){const hp=project({x:n.homeX+2.1,y:3.55,z:n.homeZ+4.55},cam,w,h);if(hp){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(n.name+"'s home",hp.x,hp.y);ctx.fillStyle='#35533e';ctx.fillText(n.name+"'s home",hp.x,hp.y);ctx.restore();}}
+ if(nearWorldPoint(18.1,-4.65,26)){const familySign=project({x:18.1,y:3.55,z:-4.65},cam,w,h);if(familySign){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText("The Pagibig Family",familySign.x,familySign.y);ctx.fillStyle='#35533e';ctx.fillText("The Pagibig Family",familySign.x,familySign.y);ctx.restore();}}
 }
 function traceWorldRay(cam,dir,maxDistance,step){
  let prev=null,prevInGround=false;
