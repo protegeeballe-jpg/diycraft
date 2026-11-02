@@ -84,6 +84,13 @@ jobs:
             'function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
             'function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
             'function pushWaterSurfaces(queue,cam,w,h)',
+            'function waterLevelAt(x,z)',
+            'function waterTopAt(x,z)',
+            'function paintWaterFace(poly,time)',
+            'function collectWaterLayer(x,z)',
+            'const inWater=topY!==null&&y>floorY+.015&&y<topY-.015',
+            'const layerBottom=floorY+layer,layerTop=Math.min(topY,layerBottom+1)',
+            'function syncWaterLife()',
             'function pushFishOverlays(queue,cam,w,h)',
             'if(poly.fishEye)',
             'pushFishOverlays(polys,cam,w,h)',
@@ -93,7 +100,7 @@ jobs:
             'function pushTileSlab',
             'function paintTileTexture',
             'function openTileDesigner()',
-            'btn.addEventListener(\'click\',()=>{selected=\'tile\';renderHotbar();openTileDesigner();})',
+            "if(item.id==='tile'){selectedBucketItem=null;setToolMode('build',false);openTileDesigner();return;}",
             'const TILE_THICKNESS=.13,TILE_BASE_OFFSET=.02',
             'b.y+TILE_BASE_OFFSET',
             '1,TILE_THICKNESS,1',
@@ -117,13 +124,13 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
-          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="waterBtn"') || !html.includes('id="fishBtn"') || !html.includes('id="waterModeBtn"') || !html.includes('id="fishModeBtn"') || !html.includes('id="placeBtn"')) {
+          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="flyBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="doorDesignBtn"') || !html.includes('id="fishModeToggle"') || !html.includes('id="hotbar"') || !html.includes('id="topHint"') || !html.includes('id="solidPickerShade"') || !html.includes('id="inventoryShade"')) {
             throw new Error('A block, door, jump, water, fish, or build control is missing.');
           }
           for (const obsolete of ['digBtn','digModeBtn','fillBtn','fillModeBtn','removeBtn']) {
             if (html.includes('id="' + obsolete + '"')) throw new Error('Merged build/dig controls should not include ' + obsolete + '.');
           }
-          if (!html.includes('Tap to place a block or refill a hole') || !html.includes('Hold 0.6s on soil to dig or on a block to remove it')) {
+          if (!html.includes('Tap to build or fill · Hold 0.6s to dig or remove') || !source.includes('Tap water to stack another layer · Hold to collect a layer') || !source.includes('Hold 0.6s to dig soil or remove a block')) {
             throw new Error('The merged tap and long-press instructions are missing.');
           }
           if (source.includes('function drawFishOverlays(cam,w,h)')) throw new Error('Screen-space fish overlays must be removed so terrain can occlude fish.');
@@ -135,7 +142,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v9'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)) throw new Error('Expected a versioned DIYCraft offline cache.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
