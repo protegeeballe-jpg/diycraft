@@ -187,7 +187,7 @@ let toastTimer=0,storageUnavailable=false;
 function load(){try{const s=localStorage.getItem(STORE_KEY);if(s)return validWorld(JSON.parse(s));}catch(e){storageUnavailable=true;showStatus('Device storage is unavailable. Use Backup to keep your world.');}return freshWorld();}
 let world=load(),selected='grass',selectedBucketItem=null,placementPaused=false,toolMode='build',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,frameAccumulator=0,artDrawing=false,artLast=null,inventoryTab='bucket',drag=null;
 let selectedAnimalId='sheep',selectedAnimalName='Pip the sheep',animalCareFlashUntil=0,animalCareFlashEmoji='💚';
-let jumpVelocity=0,playerGrounded=true;
+let jumpVelocity=0,playerGrounded=true,playerActivity='';
 const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5;
 const blockMap=new Map(BLOCKS.map(b=>[b.id,b]));blockMap.set('custom',{id:'custom',name:'Custom color',emoji:'🎨',color:'#aa83d8'});
 const TIME_PALETTES={
@@ -1058,11 +1058,15 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const phase=Number.isFinite(n.phase)?n.phase:0;
  const unitScale=Number.isFinite(n.scale)?n.scale:1;
  const pace=Number.isFinite(n.pace)?n.pace:8;
- const walk=n.moving?Math.sin(tick*pace+phase):0;
- const legSwing=walk*.13;
- const leftLift=n.moving?Math.max(0,Math.cos(tick*pace+phase))*.045:0;
- const rightLift=n.moving?Math.max(0,-Math.cos(tick*pace+phase))*.045:0;
- const armSwing=-legSwing*.72;
+ const activity=n.activity||'';
+ const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit';
+ const beat=tick*7+phase;
+ const walk=dancing?Math.sin(beat)*.8:n.moving?Math.sin(tick*pace+phase):0;
+ const legSwing=dancing?walk*.20:walk*.13;
+ const leftLift=dancing?Math.max(0,Math.sin(beat))*.16:n.moving?Math.max(0,Math.cos(tick*pace+phase))*.045:0;
+ const rightLift=dancing?Math.max(0,-Math.sin(beat))*.16:n.moving?Math.max(0,-Math.cos(tick*pace+phase))*.045:0;
+ const armSwing=working?Math.sin(tick*8+phase)*.15:dancing?Math.sin(beat)*.16:-legSwing*.72;
+ const workTap=working?Math.sin(tick*8+phase)*.055:0;
  const shoe=n.shoes||'#665348',pants=n.pants||'#48617a';
  const hairStyle=n.hairStyle||'short',outfit=n.outfitStyle||'hoodie';
  const accessory=n.accessory||'none',accent=n.accessoryColor||'#f4a8bb';
@@ -1076,8 +1080,24 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
  };
 
+ if(activity==='sleep'){
+  // A simple bedroll and pillow make the sleeping pose readable from every view.
+  cube(0,.075,-.10,'#a9bfd0',.98,.13,1.78);
+  cube(0,.34,-.12,n.shirt,.68,.36,1.08);
+  cube(0,.57,.60,'#fffdf4',.76,.15,.66);
+  cube(0,.64,.64,n.skin,.56,.48,.55);
+  cube(0,.91,.64,n.hair,.62,.14,.58);
+  cube(-.32,.27,-.66,pants,.23,.22,.45);
+  cube(.32,.27,-.66,pants,.23,.22,.45);
+  cube(-.32,.16,-.96,shoe,.29,.13,.25);
+  cube(.32,.16,-.96,shoe,.29,.13,.25);
+  cube(-.40,.42,.14,n.shirt,.20,.28,.65);
+  cube(.40,.42,.14,n.shirt,.20,.28,.65);
+  return;
+ }
+
  // Torso and outfit.
- cube(0,.78+bob,0,n.shirt,.70,.82,.46);
+ cube(0,(sitting?.66:.78)+bob,0,n.shirt,.70,.82,.46);
  if(outfit==='hoodie'){
   cube(0,1.13+bob,-.25,n.hair,.44,.20,.08);
   cube(0,.57+bob,.245,shadeColor(n.shirt,.78),.34,.17,.035);
@@ -1100,11 +1120,18 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   cube(.22,.78+bob,.245,shadeColor(n.shirt,1.12),.12,.45,.035);
  }
 
- // Legs and shoes connect to the lower edge of the torso.
- cube(-.18,.18+bob+leftLift,-.025+legSwing,pants,.25,.62,.30);
- cube(.18,.18+bob+rightLift,-.025-legSwing,pants,.25,.62,.30);
- cube(-.19,.025+bob+leftLift,.045+legSwing,shoe,.32,.16,.39);
- cube(.19,.025+bob+rightLift,.045-legSwing,shoe,.32,.16,.39);
+ // Legs and shoes change shape for a relaxed seated pose or a little dance.
+ if(sitting){
+  cube(-.19,.22+bob,.22,pants,.42,.24,.48);
+  cube(.19,.22+bob,.22,pants,.42,.24,.48);
+  cube(-.19,.10+bob,.48,shoe,.42,.14,.24);
+  cube(.19,.10+bob,.48,shoe,.42,.14,.24);
+ }else{
+  cube(-.18,.18+bob+leftLift,-.025+legSwing,pants,.25,.62,.30);
+  cube(.18,.18+bob+rightLift,-.025-legSwing,pants,.25,.62,.30);
+  cube(-.19,.025+bob+leftLift,.045+legSwing,shoe,.32,.16,.39);
+  cube(.19,.025+bob+rightLift,.045-legSwing,shoe,.32,.16,.39);
+ }
 
  // Neck and centered head.
  cube(0,1.35+bob,0,n.skin,.22,.20,.24);
@@ -1142,11 +1169,13 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  // Face and fringe are drawn as depth-sorted decals below. They stay attached
  // to the head without tiny cubes being culled at oblique camera angles.
 
- // Arms swing opposite to the legs; hands meet the sleeves.
- cube(-.44,.82+bob,-.005+armSwing,n.shirt,.22,.56,.28);
- cube(.44,.82+bob,-.005-armSwing,n.shirt,.22,.56,.28);
- cube(-.44,.60+bob,.025+armSwing,n.skin,.20,.22,.22);
- cube(.44,.60+bob,.025-armSwing,n.skin,.20,.22,.22);
+ // Dancing raises both arms; working hands move in a small alternating rhythm.
+ const armHeight=dancing?1.38:working?.76:sitting?.68:.82;
+ const handHeight=dancing?1.68:working?.53:sitting?.43:.60;
+ cube(-.44,armHeight+bob+workTap,-.005+armSwing,n.shirt,.22,.56,.28);
+ cube(.44,armHeight+bob-workTap,-.005-armSwing,n.shirt,.22,.56,.28);
+ cube(-.44,handHeight+bob+workTap,.025+armSwing,n.skin,.20,.22,.22);
+ cube(.44,handHeight+bob-workTap,.025-armSwing,n.skin,.20,.22,.22);
 
  // Accessories are centered and attached to the hairline or face.
  if(accessory==='bow'){
@@ -1167,6 +1196,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
 }
 function addCharacterFaceDetails(queue,cam,w,h,n,bob){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing),scale=Number.isFinite(n.scale)?n.scale:1;
+ const sleeping=n.activity==='sleep';
  const vx=cam.pos.x-n.x,vz=cam.pos.z-n.z,dist=Math.hypot(vx,vz)||1;
  const front=(s*vx+c*vz)/dist;
  // Keep the original face visible through normal turns; fade only as it turns away.
@@ -1189,13 +1219,17 @@ function addCharacterFaceDetails(queue,cam,w,h,n,bob){
   const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length-.012;
   queue.push({faceMark:'patch',pts,depth,color:shadeColor(color,.90),alpha,outline:true});
  };
- // Original fringe: 0.42 x 0.13, at the original height.
- addPatch(0,1.94+bob,.3525,.42,.13,n.hair||'#493127');
- // Original tiny square eyes: no oversized white sclera or highlights.
- addPatch(-.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
- addPatch(.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
- // Original small, narrow nose.
- addPatch(0,1.66+bob,.319,.10,.025,'#9a6c5c');
+ if(sleeping){
+  addPatch(0,.82,.925,.40,.10,n.hair||'#493127');
+  addPatch(-.13,.56,.91,.07,.025,n.eyes||'#302820');
+  addPatch(.13,.56,.91,.07,.025,n.eyes||'#302820');
+  addPatch(0,.45,.91,.09,.025,'#9a6c5c');
+ }else{
+  addPatch(0,1.94+bob,.3525,.42,.13,n.hair||'#493127');
+  addPatch(-.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
+  addPatch(.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
+  addPatch(0,1.66+bob,.319,.10,.025,'#9a6c5c');
+ }
 }
 function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
 function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.id==='sheep'?'Pip the sheep':'Mochi');$('animalCareTitle').textContent=(a.emoji||'🐾')+' Care for '+selectedAnimalName;const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=selectedAnimalName+' enjoys gentle care. Care activities together: '+count;$('animalCareFeedback').textContent=selectedAnimalName+' is happy to see you.';openShade('animalCareShade');}
@@ -1412,8 +1446,17 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  if(cat){const cx=cat.x,cz=cat.z;pushCube(polys,cam,w,h,cx-.36,.12,cz-.3,'#e8c48c',.76,.5,.78);pushCube(polys,cam,w,h,cx-.14,.48,cz+.35,'#e8c48c',.46,.38,.42);pushCube(polys,cam,w,h,cx-.25,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx+.07,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx-.18,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx+.13,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx-.3,.02,cz-.08,'#b88754',.18,.2,.2);pushCube(polys,cam,w,h,cx+.14,.02,cz-.08,'#b88754',.18,.2,.2);}
  for(const pet of animals){if(pet.id!=='sheep'&&pet.id!=='cat')drawPetFigure(polys,cam,w,h,pet,tick);}
 
- // Third-person avatar; in first-person the child sees through the character's eyes.
- if(cameraMode==='third'){const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,z:p.z,facing:p.yaw,phase:0,moving:false};drawNeighborFigure(polys,cam,w,h,pc,0,tick);addCharacterFaceDetails(polys,cam,w,h,pc,0);}
+ // Third-person avatar; activities automatically switch to this view so the player can see their pose.
+ if(cameraMode==='third'){
+  const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
+  const playerBob=playerActivity==='dance'?Math.abs(Math.sin(tick*7))*.11:playerActivity==='work'?Math.sin(tick*8)*.025:0;
+  drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
+  const activityIcons={sleep:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
+  if(playerActivity){
+   const marker=project({x:p.x,y:p.y+(playerActivity==='sleep'?1.35:2.55),z:p.z},cam,w,h);
+   if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
+  }
+ }
  // Fish are world geometry now, so ground, walls, and blocks can occlude them.
  pushFishOverlays(polys,cam,w,h);
  polys.sort((a,b)=>b.depth-a.depth);
@@ -1609,6 +1652,7 @@ function nudgePlayerOutOfBlocks(){
  }
 }
 function jump(){
+ playerActivity='';
  if(flying){showStatus('Flight is on. Turn it off to use Jump.');return;}
  if(!playerGrounded)return;
  jumpVelocity=PLAYER_JUMP_SPEED;playerGrounded=false;
@@ -1616,6 +1660,7 @@ function jump(){
 }
 function move(dt){
  const p=world.player,speed=flying?7:4.2;
+ if(playerActivity&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
  nudgePlayerOutOfBlocks();
  const terrainFloor=-groundDepthAt(p.x,p.z);
  if(p.y<terrainFloor-.04){p.y=surfaceHeightAt(p.x,p.z,p.y);jumpVelocity=0;playerGrounded=true;save(true);}
@@ -1973,6 +2018,20 @@ function updateFlyControls(){
  $('flyUpBtn').classList.toggle('hidden',!flying);
  $('flyDownBtn').classList.toggle('hidden',!flying);
 }
+function setPlayerActivity(activity){
+ const labels={sleep:'Sleep',sit:'Sit',work:'Work',dance:'Dance'};
+ if(activity!=='stop'&&!Object.prototype.hasOwnProperty.call(labels,activity))return;
+ playerActivity=activity==='stop'?'':activity;
+ moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;
+ if(activity!=='stop'){
+  if(flying){flying=false;updateFlyControls();}
+  cameraMode='third';updateViewButton();
+  const p=world.player,floor=surfaceHeightAt(p.x,p.z,p.y);
+  if(p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+ }
+ closeShades();render();
+ showStatus(activity==='stop'?'Standing up. Ready to explore!':labels[activity]+' pose selected.');
+}
 async function expandToggle(){if(!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen();}catch(e){showStatus('Using the larger browser view instead.');}}document.body.classList.add('focus-mode');focusMode=true;}
 // Keyboard input is simple, local and has no external communication.
 document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();if(!e.repeat)jump();}keys[e.key===' '?' ':e.key]=true;if(e.key.toLowerCase()==='v'){cameraMode=cameraMode==='first'?'third':'first';updateViewButton();}if(e.key.toLowerCase()==='f'){flying=!flying;updateFlyControls();showStatus(flying?'Creative flight enabled.':'Flight turned off.');}if(e.key==='e'||e.key==='E')openBucket();if(e.key==='Escape'){closeShades();if(focusMode)focusToggle();}});
@@ -2062,6 +2121,8 @@ syncToolButtons();updateFlyControls();const clearButton=$('clearBtn');let clearH
 $('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
 function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 1st':'👁 3rd';}
 $('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'third':'first';updateViewButton();showStatus(cameraMode==='first'?'First-person view':'Third-person view');});updateViewButton();
+$('activityBtn').addEventListener('click',()=>openShade('activityShade'));
+document.querySelectorAll('[data-player-activity]').forEach(button=>button.addEventListener('click',()=>setPlayerActivity(button.dataset.playerActivity)));
 
 
 syncTimeControls();
