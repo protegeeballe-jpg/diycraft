@@ -481,6 +481,41 @@ function addBlock(x,y,z,type=selected){if(y< -MAX_DIG_DEPTH||y>64||Math.abs(x)>W
 function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;if(isProtectedDigCell(b.x,b.z)){showStatus('This block is inside a protected neighbor area. Their homes stay safe!');return false;}world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));invalidateNeighborNavigation();save();return true;}
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
 function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
+function skyDirection(azimuth,altitude){
+ const horizontal=Math.cos(altitude);
+ return {x:Math.sin(azimuth)*horizontal,y:Math.sin(altitude),z:-Math.cos(azimuth)*horizontal};
+}
+function projectSkyPoint(cam,direction,w,h,distance=700){
+ return project({x:cam.pos.x+direction.x*distance,y:cam.pos.y+direction.y*distance,z:cam.pos.z+direction.z*distance},cam,w,h);
+}
+function drawSkyDecorations(cam,w,h,palette){
+ if(palette.mode==='night'){
+  for(let i=0;i<44;i++){
+   const azimuth=-Math.PI+(i*2.399963229728653)%(Math.PI*2);
+   const altitude=.18+((i*37)%76)/100;
+   const star=projectSkyPoint(cam,skyDirection(azimuth,altitude),w,h);
+   if(!star||star.x<0||star.x>w||star.y<0||star.y>h*.82)continue;
+   ctx.globalAlpha=.42+(i%4)*.13;ctx.fillStyle='#fffbe0';ctx.beginPath();ctx.arc(star.x,star.y,.8+(i%3)*.45,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  const moon=projectSkyPoint(cam,skyDirection(-.48,.29),w,h);
+  if(moon&&moon.x>-60&&moon.x<w+60&&moon.y>-60&&moon.y<h+60){
+   const radius=Math.min(w,h)*.041;
+   ctx.save();ctx.shadowColor='#f6f0ce88';ctx.shadowBlur=radius*.9;ctx.fillStyle='#f6f0ce';
+   ctx.beginPath();ctx.arc(moon.x,moon.y,radius,0,Math.PI*2);ctx.fill();
+   ctx.shadowBlur=0;ctx.fillStyle=palette.sky[0];ctx.beginPath();ctx.arc(moon.x+radius*.43,moon.y-radius*.25,radius*.86,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  return;
+ }
+ const direction=palette.mode==='sunset'?skyDirection(.98,.12):skyDirection(.42,.29);
+ const sun=projectSkyPoint(cam,direction,w,h);
+ if(!sun||sun.x<-70||sun.x>w+70||sun.y<-70||sun.y>h+70)return;
+ const radius=Math.min(w,h)*(palette.mode==='sunset'?.047:.043);
+ ctx.save();const glow=ctx.createRadialGradient(sun.x,sun.y,radius*.25,sun.x,sun.y,radius*2.2);
+ glow.addColorStop(0,'#fff4ceaa');glow.addColorStop(1,'#fff4ce00');
+ ctx.fillStyle=glow;ctx.beginPath();ctx.arc(sun.x,sun.y,radius*2.2,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=palette.sun;ctx.beginPath();ctx.arc(sun.x,sun.y,radius,0,Math.PI*2);ctx.fill();ctx.restore();
+}
 const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
 function cubeVerts(x,y,z,sx=1,sy=1,sz=1){return [{x,y,z},{x:x+sx,y,z},{x:x+sx,y,z:z+sz},{x,y,z:z+sz},{x,y:y+sy,z},{x:x+sx,y:y+sy,z},{x:x+sx,y:y+sy,z:z+sz},{x,y:y+sy,z:z+sz}];}
 function shadeColor(hex,mul){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.max(0,Math.round(((n>>16)&255)*mul))),g=Math.min(255,Math.max(0,Math.round(((n>>8)&255)*mul))),b=Math.min(255,Math.max(0,Math.round((n&255)*mul)));return `rgb(${r},${g},${b})`;}
@@ -1178,7 +1213,8 @@ function pushGroundSurface(queue,cam,w,h,color){
   const left=Math.min(...pts.map(p=>p.x)),right=Math.max(...pts.map(p=>p.x));
   const top=Math.min(...pts.map(p=>p.y)),bottom=Math.max(...pts.map(p=>p.y));
   if(right< -24||left>w+24||bottom< -24||top>h+24)continue;
-  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color,outline:false});
+  const visibleColor=cam.pos.y<-.15?'#76553d':color;
+  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:visibleColor,outline:false});
  }
 }
 function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDepths){if(depth<1)continue;const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;const floorY=-depth;
@@ -1205,23 +1241,10 @@ function drawFishOverlays(cam,w,h){
  });
 }
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.6),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
- const palette=getTimePalette(performance.now()/1000);
+ const palette=getTimePalette(performance.now()/1000),cam=cameraState(),polys=[];
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
- if(palette.mode==='night'){
-  for(let i=0;i<32;i++){
-   const x=(i*127+43)%Math.max(1,w),y=(i*71+17)%Math.max(1,Math.floor(h*.58));
-   ctx.globalAlpha=.38+(i%4)*.13;ctx.fillStyle='#fffbe0';ctx.beginPath();ctx.arc(x,y,1+(i%3)*.45,0,Math.PI*2);ctx.fill();
-  }
-  ctx.globalAlpha=1;
-  const mx=w*.79,my=h*.17,mr=Math.min(w,h)*.047;
-  ctx.fillStyle='#f6f0ce';ctx.beginPath();ctx.arc(mx,my,mr,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=palette.sky[0];ctx.beginPath();ctx.arc(mx+mr*.43,my-mr*.28,mr*.86,0,Math.PI*2);ctx.fill();
- }else{
-  const sunX=palette.mode==='sunset'?w*.75:w*.80;
-  const sunY=palette.mode==='sunset'?h*.31:h*.16;
-  ctx.fillStyle=palette.sun;ctx.beginPath();ctx.arc(sunX,sunY,Math.min(w,h)*.055,0,Math.PI*2);ctx.fill();
- }
- const cam=cameraState(),polys=[];
+ // Celestial objects live on the world sky dome, not at fixed screen coordinates.
+ drawSkyDecorations(cam,w,h,palette);
  // Draw the ground as camera-visible cells. A single world-sized polygon
  // can have corners behind the camera, causing the entire floor to disappear.
  pushGroundSurface(polys,cam,w,h,palette.ground);
