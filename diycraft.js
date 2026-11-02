@@ -78,7 +78,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],waterLevels:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],waterLevels:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,bed:{x:-1,y:0,z:-11,yaw:0},shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -164,6 +164,9 @@ function validWorld(d){
   w.player.hairStyle=['short','bob','long','ponytail','pigtails','curly','buns'].includes(p.hairStyle)?p.hairStyle:'short';
   w.player.outfitStyle=['hoodie','sweater','overalls','dress','tee'].includes(p.outfitStyle)?p.outfitStyle:'hoodie';
   w.player.accessory=['none','bow','flower','glasses','cap'].includes(p.accessory)?p.accessory:'none';
+  if(p.bed&&typeof p.bed==='object'&&Number.isFinite(p.bed.x)&&Number.isFinite(p.bed.z)&&Math.abs(p.bed.x)<=WORLD_LIMIT&&Math.abs(p.bed.z)<=WORLD_LIMIT){
+   w.player.bed={x:Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.bed.x)),y:Number.isFinite(p.bed.y)?Math.max(-MAX_DIG_DEPTH,Math.min(64,p.bed.y)):0,z:Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.bed.z)),yaw:Number.isFinite(p.bed.yaw)?p.bed.yaw:0};
+  }
  }
  for(const key of ['materials','crafted'])if(Array.isArray(d[key]))w[key]=d[key].slice(0,60).map(s=>s&&ITEM_META[s.id]?{id:s.id,count:Math.max(1,Math.min(99,Number(s.count)||1)),label:typeof s.label==='string'?s.label.slice(0,28):''}:null).concat(emptySlots()).slice(0,60);
  if(Array.isArray(d.bucket)){
@@ -1081,16 +1084,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,baseY+y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
  };
 
- if(activity==='sleep'){
-  // A small wooden bed is drawn under the sleeper as part of the activity pose.
-  cube(-.44,.055,-.83,'#795438',.14,.11,.14);
-  cube(.44,.055,-.83,'#795438',.14,.11,.14);
-  cube(-.44,.055,.63,'#795438',.14,.11,.14);
-  cube(.44,.055,.63,'#795438',.14,.11,.14);
-  cube(0,.15,-.10,'#795438',1.16,.18,2.02);
-  cube(0,.245,-.10,'#c89b68',1.12,.10,1.98);
-  cube(0,.32,-.10,'#f5f1e9',1.04,.14,1.90);
-  cube(0,.56,.88,'#795438',1.16,.82,.14);
+ if(activity==='sleep'||activity==='bed'){
   const sleepCube=(dx,y,dz,color,sx,sy,sz)=>cube(dx,y+.18,dz,color,sx,sy,sz);
   // The sleeper rests on the mattress, with a pillow and a soft quilt.
   sleepCube(0,.34,-.12,n.shirt,.68,.36,1.08);
@@ -1209,7 +1203,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
 }
 function addCharacterFaceDetails(queue,cam,w,h,n,bob){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing),scale=Number.isFinite(n.scale)?n.scale:1;
- const sleeping=n.activity==='sleep';
+ const sleeping=n.activity==='sleep'||n.activity==='bed';
  const vx=cam.pos.x-n.x,vz=cam.pos.z-n.z,dist=Math.hypot(vx,vz)||1;
  const front=(s*vx+c*vz)/dist;
  // Keep the original face visible through normal turns; fade only as it turns away.
@@ -1411,6 +1405,20 @@ function pushFishOverlays(queue,cam,w,h){
   if(eye)queue.push({fishEye:true,x:eye.x,y:eye.y,depth:eye.d,radius:Math.max(.7,Math.min(2.1,10/eye.d))});
  });
 }
+function drawPlayerBed(queue,cam,w,h,bed){
+ if(!bed||!Number.isFinite(bed.x)||!Number.isFinite(bed.z))return;
+ const x=bed.x,y=Number.isFinite(bed.y)?bed.y:0,z=bed.z,yaw=Number.isFinite(bed.yaw)?bed.yaw:0;
+ const piece=(dx,cy,dz,color,sx,sy,sz)=>{
+  pushCubeFacing(queue,cam,w,h,x+dx-sx/2,y+cy-sy/2,z+dz-sz/2,color,sx,sy,sz,yaw);
+ };
+ // The saved home bed remains visible even when the player is elsewhere.
+ piece(-.44,.11,-.83,'#795438',.14,.22,.14);piece(.44,.11,-.83,'#795438',.14,.22,.14);
+ piece(-.44,.11,.63,'#795438',.14,.22,.14);piece(.44,.11,.63,'#795438',.14,.22,.14);
+ piece(0,.15,-.10,'#795438',1.16,.18,2.02);
+ piece(0,.245,-.10,'#c89b68',1.12,.10,1.98);
+ piece(0,.32,-.10,'#f5f1e9',1.04,.14,1.90);
+ piece(0,.56,.88,'#795438',1.16,.82,.14);
+}
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.3),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
  const palette=getTimePalette(performance.now()/1000),cam=cameraState(),polys=[];
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
@@ -1458,15 +1466,16 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  if(sheep){const sx=sheep.x,sz=sheep.z;pushCube(polys,cam,w,h,sx-.42,.12,sz-.34,'#f4f0e4',.86,.62,1.12);pushCube(polys,cam,w,h,sx+.22,.38,sz+.52,'#f4f0e4',.46,.42,.43);pushCube(polys,cam,w,h,sx+.57,.53,sz+.85,'#47443f',.055,.055,.03);pushCube(polys,cam,w,h,sx+.03,.51,sz+.85,'#47443f',.055,.055,.03);for(const [dx,dz] of [[-.28,-.2],[.32,-.2],[-.28,.38],[.32,.38]])pushCube(polys,cam,w,h,sx+dx,.01,sz+dz,'#d7d0c5',.15,.3,.15);}
  if(cat){const cx=cat.x,cz=cat.z;pushCube(polys,cam,w,h,cx-.36,.12,cz-.3,'#e8c48c',.76,.5,.78);pushCube(polys,cam,w,h,cx-.14,.48,cz+.35,'#e8c48c',.46,.38,.42);pushCube(polys,cam,w,h,cx-.25,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx+.07,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx-.18,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx+.13,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx-.3,.02,cz-.08,'#b88754',.18,.2,.2);pushCube(polys,cam,w,h,cx+.14,.02,cz-.08,'#b88754',.18,.2,.2);}
  for(const pet of animals){if(pet.id!=='sheep'&&pet.id!=='cat')drawPetFigure(polys,cam,w,h,pet,tick);}
+ drawPlayerBed(polys,cam,w,h,world.player.bed);
 
  // Third-person avatar; activities automatically switch to this view so the player can see their pose.
  if(cameraMode==='third'){
   const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,y:p.y,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
   const playerBob=playerActivity==='dance'?Math.abs(Math.sin(tick*7))*.11:playerActivity==='work'?Math.sin(tick*8)*.025:0;
   drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
-  const activityIcons={sleep:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
+  const activityIcons={sleep:'💤',bed:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
   if(playerActivity){
-   const marker=project({x:p.x,y:p.y+(playerActivity==='sleep'?1.53:2.55),z:p.z},cam,w,h);
+   const marker=project({x:p.x,y:p.y+(['sleep','bed'].includes(playerActivity)?1.53:2.55),z:p.z},cam,w,h);
    if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
   }
  }
@@ -1672,8 +1681,8 @@ function jump(){
  showStatus('Jump!');
 }
 function move(dt){
- // Sleep is a stationary activity: ignore keyboard and on-screen movement until the player stands up.
- if(playerActivity==='sleep'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
+ // Go-to-bed sleep stays on the registered mattress; the original Sleep Anywhere pose remains mobile for laughs.
+ if(playerActivity==='bed'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
  const p=world.player,speed=flying?7:4.2;
  if(playerActivity&&playerActivity!=='sleep'&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
  nudgePlayerOutOfBlocks();
@@ -2034,19 +2043,30 @@ function updateFlyControls(){
  $('flyDownBtn').classList.toggle('hidden',!flying);
 }
 function setPlayerActivity(activity){
- const labels={sleep:'Sleep',sit:'Sit',work:'Work',dance:'Dance'};
+ if(activity==='set-bed'){
+  const p=world.player,floor=surfaceHeightAt(p.x,p.z,p.y);
+  p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw};
+  save();closeShades();render();showStatus('Your bed is set here. You can return to it anytime!');return;
+ }
+ const labels={sleep:'Sleep Anywhere',bed:'Go to Bed',sit:'Sit',work:'Work',dance:'Dance'};
  if(activity!=='stop'&&!Object.prototype.hasOwnProperty.call(labels,activity))return;
  playerActivity=activity==='stop'?'':activity;
  moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;
  if(activity!=='stop'){
   if(flying){flying=false;updateFlyControls();}
   cameraMode='third';updateViewButton();
-  const p=world.player,floor=surfaceHeightAt(p.x,p.z,p.y);
-  if(activity==='sleep'){p.y=floor;playerGrounded=true;}
-  else if(p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+  const p=world.player;
+  if(activity==='bed'){
+   const bed=p.bed||{x:-1,y:0,z:-11,yaw:0};
+   p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0;
+   playerGrounded=true;save();
+  }else{
+   const floor=surfaceHeightAt(p.x,p.z,p.y);
+   if(activity==='sleep'||p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+  }
  }
  closeShades();render();
- showStatus(activity==='stop'?'Standing up. Ready to explore!':labels[activity]+' pose selected.');
+ showStatus(activity==='stop'?'Standing up. Ready to explore!':activity==='bed'?'Back in bed. Sweet dreams!':labels[activity]+' pose selected.');
 }
 async function expandToggle(){if(!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen();}catch(e){showStatus('Using the larger browser view instead.');}}document.body.classList.add('focus-mode');focusMode=true;}
 // Keyboard input is simple, local and has no external communication.
