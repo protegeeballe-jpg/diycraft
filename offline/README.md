@@ -22,7 +22,7 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 
 ## Offline play
 - The first time, open DIYCraft while the device is online and wait for the **“Offline play is ready”** message.
-- A same-origin service worker then caches both the main game and the /offline/ page.
+- A same-origin service worker then caches both the main game and the /offline/ page. Its versioned cache is refreshed when a new offline worker is installed.
 - After the ready message, DIYCraft can be reopened from the same browser on that device without an internet connection.
 - The game has no remote scripts, images, external game servers, analytics, ads, chat, or gameplay network requests. Only the service worker fetches the two game pages from the same site when refreshing its offline copies.
 - Offline caching requires a modern browser with service-worker support and a secure HTTPS page. If browser/site data is cleared, connect again once to rebuild the cache.
