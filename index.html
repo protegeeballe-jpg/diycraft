@@ -273,7 +273,8 @@
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d',{alpha:false});
-const WORLD_LIMIT=72,MAX_BLOCKS=18000,STORE_KEY='diycraft_peaceful_voxel_v1';
+// Practically unbounded horizontal world; nearby ground is drawn around the player each frame.
+const WORLD_LIMIT=1000000000,MAX_BLOCKS=18000,STORE_KEY='diycraft_peaceful_voxel_v1';
 const MAX_DIG_DEPTH=8,GROUND_DIG_LIMIT=12000;
 const BLOCKS=[
  {id:'grass',name:'Grass',emoji:'🟩',color:'#70b85a'}, {id:'dirt',name:'Dirt',emoji:'🟫',color:'#9a7049'},
