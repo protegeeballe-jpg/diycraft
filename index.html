@@ -1262,7 +1262,7 @@ function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
   if(depth>=MAX_DIG_DEPTH){showStatus('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');return;}
   if(!groundDepths.has(key)&&groundDepths.size>=GROUND_DIG_LIMIT){showStatus('This world has reached its safe excavation limit.');return;}
   if(!canStoreItem('dirt','materials')){showStatus('Your materials pouch is full. Make room before digging.');return;}
-  const newDepth=Math.min(MAX_DIG_DEPTH,Math.max(depth+1,Math.ceil(Math.max(0,-hit.hitY)),Math.ceil(Math.max(0,-world.player.y))));
+  const newDepth=depth+1;
   if(newDepth<=depth){showStatus('The ground is already at its safe digging depth.');return;}
   groundDepths.set(key,newDepth);syncExcavations();addItem('dirt','materials');invalidateNeighborNavigation();save();render();showStatus('Ground excavated to '+newDepth+' block'+(newDepth===1?'':'s')+' deep · +1 Dirt.');return;
  }
