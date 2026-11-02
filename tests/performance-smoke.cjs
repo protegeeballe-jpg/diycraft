@@ -62,7 +62,8 @@ assert(source.includes('function setPlayerActivity(activity)'), 'Player activity
 assert(source.includes("if(activity==='sleep'){"), 'The player must have a lying-down sleep pose.');
 assert(source.includes("const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'"), 'Sit, work and dance must have distinct animation states.');
 assert(source.includes('activity:playerActivity'), 'The selected activity must be passed to the third-person avatar.');
-assert(source.includes('playerActivity&&(moveX!==0||moveZ!==0'), 'Walking or flying movement must cancel a stationary activity.');
+assert(source.includes("playerActivity&&playerActivity!=='sleep'&&(moveX!==0"), 'Walking and flying must preserve the selected sleep pose while movement cancels other activities.');
+assert(source.includes("cube(0,.43,-.20,'#91b7c8',.78,.18,1.22)"), 'The sleep pose must include a soft quilt to make the lying avatar look cozy.');
 assert(html.includes('id="activityBtn"') && html.includes('id="activityShade"'), 'The activity menu must be reachable from the game HUD.');
 for (const activity of ['sleep','sit','work','dance','stop']) {
   if (!html.includes('data-player-activity="' + activity + '"')) throw new Error('Missing player activity control: ' + activity);
