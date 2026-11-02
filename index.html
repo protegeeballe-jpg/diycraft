@@ -389,7 +389,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],waterLevels:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -441,6 +441,21 @@ function validWorld(d){
    const key=v[0]+','+v[1];if(!dug.has(key)||seen.has(key))return false;seen.add(key);return true;
   }).map(v=>[v[0],v[1]]);
  }
+ const dugDepths=new Map(w.excavations.map(([x,z,depth])=>[x+','+z,depth]));
+ const waterColumns=new Map();
+ if(Array.isArray(d.waterLevels)){
+  for(const v of d.waterLevels.slice(0,GROUND_DIG_LIMIT)){
+   if(!Array.isArray(v)||v.length<3)continue;
+   const [x,z,level]=v,depth=dugDepths.get(x+','+z),key=x+','+z;
+   if(!Number.isInteger(x)||!Number.isInteger(z)||!Number.isInteger(level)||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT||!depth||level<1||level>depth||waterColumns.has(key))continue;
+   waterColumns.set(key,[x,z,level]);
+  }
+ }else{
+  // Pre-stacking worlds stored only a wet/dry flag, so preserve each old pool as one layer.
+  for(const [x,z] of w.waterCells){const key=x+','+z,depth=dugDepths.get(key);if(depth)waterColumns.set(key,[x,z,1]);}
+ }
+ w.waterLevels=Array.from(waterColumns.values());
+ w.waterCells=w.waterLevels.map(([x,z])=>[x,z]);
  if(Array.isArray(d.fish)){
   const wet=new Set(w.waterCells.map(([x,z])=>x+','+z)),counts=new Map();
   w.fish=d.fish.slice(0,GROUND_DIG_LIMIT*3).filter(v=>{
@@ -596,9 +611,22 @@ function keyGround(x,z){return Math.floor(x)+','+Math.floor(z);}
 let groundDepths=new Map((world.excavations||[]).map(([x,z,depth])=>[keyGround(x,z),depth]));
 function groundDepthAt(x,z){return groundDepths.get(keyGround(x,z))||0;}
 function syncExcavations(){world.excavations=Array.from(groundDepths,([key,depth])=>{const [x,z]=key.split(',').map(Number);return [x,z,depth];});}
-let waterCells=new Set((world.waterCells||[]).map(([x,z])=>keyGround(x,z)));
+let waterLevels=new Map();
+for(const [x,z] of world.waterCells||[])waterLevels.set(keyGround(x,z),1);
+for(const [x,z,level] of world.waterLevels||[])waterLevels.set(keyGround(x,z),level);
+let waterCells=new Set(waterLevels.keys());
 let fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
-function syncWaterLife(){world.waterCells=Array.from(waterCells,key=>key.split(',').map(Number));world.fish=fishSpots.map(f=>[f.x,f.z]);}
+function waterLevelAt(x,z){return waterLevels.get(keyGround(x,z))||0;}
+function waterTopAt(x,z){
+ const depth=groundDepthAt(x,z),level=waterLevelAt(x,z);
+ if(depth<1||level<1)return null;
+ return -depth+Math.min(depth,level)-(level>=depth?.08:0);
+}
+function syncWaterLife(){
+ world.waterCells=Array.from(waterCells,key=>key.split(',').map(Number));
+ world.waterLevels=Array.from(waterLevels,([key,level])=>[...key.split(',').map(Number),level]);
+ world.fish=fishSpots.map(f=>[f.x,f.z]);
+}
 let blockLookup=new Map(),worldGeometryRevision=0,neighborObstacleCache=null,neighborPathCache=new Map();
 function invalidateNeighborNavigation(){worldGeometryRevision++;neighborObstacleCache=null;neighborPathCache.clear();}
 function rebuildLookup(){invalidateNeighborNavigation();groundDepths.clear();for(const [x,z,depth] of world.excavations||[])groundDepths.set(keyGround(x,z),depth);blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
@@ -1374,35 +1402,34 @@ function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDe
  if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f','dirt');}}
 function pushWaterSurfaces(queue,cam,w,h){
  for(const cell of waterCells){
-  const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z);
-  if(depth<1||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
-  const floorY=-depth,topY=floorY+.82;
+  const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z),topY=waterTopAt(x,z);
+  if(depth<1||topY===null||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
+  const floorY=-depth;
   const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
   const topPts=topVertices.map(v=>project(v,cam,w,h));
   if(topPts.every(Boolean)){
    const averageDepth=topPts.reduce((sum,p)=>sum+p.d,0)/topPts.length;
-   // Keep the water just below the ground rim while allowing the blue surface
-   // to remain translucent instead of looking like an opaque painted patch.
    const wallCentreY=-depth/2;
    const surfaceBehindRim=Math.max(0,-(topY-wallCentreY)*Math.sin(cam.pitch));
    queue.push({pts:topPts,depth:averageDepth+surfaceBehindRim+.012,color:'#61cfee',alpha:.60,outline:false,waterSurface:true});
   }
-  // Water is a shallow transparent volume, not just a top-face decal.
-  // Draw only outer walls so adjoining cells of the same pool join seamlessly.
+  // One vertical translucent prism represents all stacked water layers in this cell.
+  // Where neighboring columns have a lower waterline, only the exposed upper wall is drawn.
   const sides=[
-   {dx:0,dz:-1,normal:[0,0,-1],vertices:[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:topY,z},{x,y:topY,z}]},
-   {dx:0,dz:1,normal:[0,0,1],vertices:[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:topY,z:z+1},{x:x+1,y:topY,z:z+1}]},
-   {dx:-1,dz:0,normal:[-1,0,0],vertices:[{x,y:floorY,z:z+1},{x,y:floorY,z},{x,y:topY,z},{x,y:topY,z:z+1}]},
-   {dx:1,dz:0,normal:[1,0,0],vertices:[{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x:x+1,y:topY,z:z+1},{x:x+1,y:topY,z}]}
+   {dx:0,dz:-1,normal:[0,0,-1],verticesAt:low=>[{x,y:low,z},{x:x+1,y:low,z},{x:x+1,y:topY,z},{x,y:topY,z}]},
+   {dx:0,dz:1,normal:[0,0,1],verticesAt:low=>[{x:x+1,y:low,z:z+1},{x,y:low,z:z+1},{x,y:topY,z:z+1},{x:x+1,y:topY,z:z+1}]},
+   {dx:-1,dz:0,normal:[-1,0,0],verticesAt:low=>[{x,y:low,z:z+1},{x,y:low,z},{x,y:topY,z},{x,y:topY,z:z+1}]},
+   {dx:1,dz:0,normal:[1,0,0],verticesAt:low=>[{x:x+1,y:low,z},{x:x+1,y:low,z:z+1},{x:x+1,y:topY,z:z+1},{x:x+1,y:topY,z}]}
   ];
   for(const side of sides){
-   if(waterCells.has(keyGround(x+side.dx,z+side.dz)))continue;
-   const viewX=cam.pos.x-(x+.5),viewY=cam.pos.y-(floorY+.41),viewZ=cam.pos.z-(z+.5);
+   const neighborTop=waterTopAt(x+side.dx,z+side.dz);
+   if(neighborTop!==null&&neighborTop>=topY-.001)continue;
+   const lowerY=neighborTop===null?floorY:Math.max(floorY,neighborTop);
+   if(lowerY>=topY-.001)continue;
+   const viewX=cam.pos.x-(x+.5),viewY=cam.pos.y-(lowerY+topY)/2,viewZ=cam.pos.z-(z+.5);
    if(side.normal[0]*viewX+side.normal[1]*viewY+side.normal[2]*viewZ<=0)continue;
-   const pts=side.vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
+   const pts=side.verticesAt(lowerY).map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
    const averageDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
-   // A tiny painter-order nudge lets the translucent water tint the cut wall
-   // without moving the water volume away from its actual world coordinates.
    queue.push({pts,depth:averageDepth-.018,color:'#55c9eb',alpha:.40,outline:false,waterSide:true});
   }
  }
@@ -1496,16 +1523,20 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  if(nearWorldPoint(18.1,-4.65,26)){const familySign=project({x:18.1,y:3.55,z:-4.65},cam,w,h);if(familySign){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText("The Pagibig Family",familySign.x,familySign.y);ctx.fillStyle='#35533e';ctx.fillText("The Pagibig Family",familySign.x,familySign.y);ctx.restore();}}
 }
 function traceWorldRay(cam,dir,maxDistance,step){
- let prev=null,prevInGround=false;
+ let prev=null,prevInGround=false,prevInWater=false;
  for(let t=.16;t<maxDistance;t+=step){
   const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);
   if(Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT){
    const b=blockLookup.get(keyBlock(ix,iy,iz));
    if(b)return {block:b,place:prev||{x:ix,y:Math.max(-MAX_DIG_DEPTH,iy+1),z:iz}};
-   const inGround=y < -groundDepthAt(ix,iz)-.025;
-   if(inGround&&!prevInGround)return {ground:true,x:ix,z:iz,hitY:y,place:{x:ix,y:-groundDepthAt(ix,iz),z:iz}};
+   const floorY=-groundDepthAt(ix,iz),topY=waterTopAt(ix,iz);
+   const inWater=topY!==null&&y>floorY+.015&&y<topY-.015;
+   if(inWater&&!prevInWater)return {water:true,x:ix,z:iz,hitY:y};
+   prevInWater=inWater;
+   const inGround=y<floorY-.025;
+   if(inGround&&!prevInGround)return {ground:true,x:ix,z:iz,hitY:y,place:{x:ix,y:floorY,z:iz}};
    prevInGround=inGround;prev={x:ix,y:iy,z:iz};
-  }else{prevInGround=false;prev=null;}
+  }else{prevInGround=false;prevInWater=false;prev=null;}
  }
  return null;
 }
@@ -1531,8 +1562,19 @@ function isProtectedDigCell(x,z){
 }
 function canStoreItem(id,target='materials'){const slots=world[target]||[];return slots.some(item=>item&&item.id===id&&item.count<99)||slots.some(item=>!item);}
 function blockDropItem(block){if(block.type==='door')return 'wood';return ITEM_META[block.type]?block.type:'stone';}
+function collectWaterLayer(x,z){
+ const key=keyGround(x,z),level=waterLevelAt(x,z);
+ if(level<1)return false;
+ if(!addBucketItem({type:'water'})){showStatus('Your Material Bucket is full.');return false;}
+ if(level>1){waterLevels.set(key,level-1);}
+ else{waterLevels.delete(key);waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);}
+ syncWaterLife();save();render();
+ showStatus(level>1?'Top water layer collected into your Material Bucket.':'Last water layer collected into your Material Bucket.');
+ return true;
+}
 function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  const hit=rayHitAtScreen(px,py);
+ if(hit&&hit.water){if(isProtectedDigCell(hit.x,hit.z)){showStatus('This patch is protected for the neighbors and their homes.');return;}collectWaterLayer(hit.x,hit.z);return;}
  if(hit&&hit.block){const block=hit.block,itemId=blockDropItem(block);
   if(isProtectedDigCell(block.x,block.z)){showStatus('That block is too close to a neighbor or animal. Their homes and little friends are protected!');return;}
   if(!canStoreItem(itemId,'materials')){showStatus('Your materials pouch is full. Make room before digging.');return;}
@@ -1541,10 +1583,7 @@ function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  }
  if(hit&&hit.ground){const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
   if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
-  if(waterCells.has(key)){
-   if(!addBucketItem({type:'water'})){showStatus('Your Material Bucket is full.');return;}
-   waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);syncWaterLife();save();render();showStatus('Water collected into your Material Bucket.');return;
-  }
+  if(waterCells.has(key)){collectWaterLayer(x,z);return;}
   if(depth>=MAX_DIG_DEPTH){showStatus('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');return;}
   if(!groundDepths.has(key)&&groundDepths.size>=GROUND_DIG_LIMIT){showStatus('This world has reached its safe excavation limit.');return;}
   if(!canStoreItem('dirt','materials')){showStatus('Your resources pouch is full. Make room before digging.');return;}
@@ -1564,20 +1603,24 @@ function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  for(let y=-depth;y<0;y++){
   if(!addBlock(x,y,z,selected)){showStatus('Could not place the selected block in this hole.');return;}
  }
- groundDepths.delete(key);waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);
+ groundDepths.delete(key);waterLevels.delete(key);waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);
  syncExcavations();syncWaterLife();invalidateNeighborNavigation();save();render();
  showStatus('Hole filled with '+(blockMap.get(selected)?.name||'Custom')+'.');
 }
 function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- const hit=rayHitAtScreen(px,py);if(!hit||!hit.ground){showStatus('Aim at the floor of a dug cell to add water.');return;}
- const x=hit.x,z=hit.z,key=keyGround(x,z);
- if(groundDepthAt(x,z)<=0){showStatus('Dig a shallow channel first, then add water to its floor.');return;}
+ const hit=rayHitAtScreen(px,py);
+ if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a dug pool floor or the surface of existing water.');return;}
+ const x=hit.x,z=hit.z,key=keyGround(x,z),depth=groundDepthAt(x,z);
+ if(depth<=0){showStatus('Dig a pool cell first, then add water.');return;}
  if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
- if(waterCells.has(key)){showStatus('This river cell already has water.');return;}
- waterCells.add(key);syncWaterLife();save();render();showStatus('Water added! Join neighboring wet cells to make a river.');
+ const level=waterLevelAt(x,z);
+ if(level>=depth){showStatus('This pool cell is full to the rim.');return;}
+ waterLevels.set(key,level+1);waterCells.add(key);
+ syncWaterLife();save();render();
+ showStatus(level===0?'Water added to the pool floor! Tap the water again to stack another layer.':'Water layer added on top · '+(level+1)+' of '+depth+' layers.');
 }
 function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- const hit=rayHitAtScreen(px,py);if(!hit||!hit.ground){showStatus('Aim at a water cell to add a fish.');return;}
+ const hit=rayHitAtScreen(px,py);if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a water cell to add a fish.');return;}
  const x=hit.x,z=hit.z,key=keyGround(x,z);
  if(!waterCells.has(key)){showStatus('Add water to this dug cell first.');return;}
  if(fishSpots.filter(f=>keyGround(f.x,f.z)===key).length>=3){showStatus('This water cell already has three fish.');return;}
