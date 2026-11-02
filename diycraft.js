@@ -185,7 +185,7 @@ function validWorld(d){
 }
 let toastTimer=0,storageUnavailable=false;
 function load(){try{const s=localStorage.getItem(STORE_KEY);if(s)return validWorld(JSON.parse(s));}catch(e){storageUnavailable=true;showStatus('Device storage is unavailable. Use Backup to keep your world.');}return freshWorld();}
-let world=load(),selected='grass',selectedBucketItem=null,toolMode='build',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,artDrawing=false,artLast=null,inventoryTab='bucket',drag=null;
+let world=load(),selected='grass',selectedBucketItem=null,placementPaused=false,toolMode='build',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,artDrawing=false,artLast=null,inventoryTab='bucket',drag=null;
 let selectedAnimalId='sheep',selectedAnimalName='Pip the sheep',animalCareFlashUntil=0,animalCareFlashEmoji='💚';
 let jumpVelocity=0,playerGrounded=true;
 const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5;
@@ -235,17 +235,26 @@ function syncToolButtons(){
  if(button)button.textContent='🐟 Fish placement: '+(toolMode==='fish'?'On':'Off');
  $('topHint').textContent=toolMode==='fish'
   ?'Fish placement · Tap a water cell to add a fish'
-  :selected==='water'
-   ?'Water block selected · Tap water to stack another layer · Hold to collect a layer'
-   :'Tap to build or fill · Hold 0.6s to dig soil or remove a block';
+  :placementPaused
+   ?'Block placement paused · Choose a block to resume · Hold 0.6s to dig or remove'
+   :selected==='water'
+    ?'Water block selected · Tap water to stack another layer · Hold to collect a layer'
+    :'Tap to build or fill · Hold 0.6s to dig soil or remove a block';
 }
 function setToolMode(mode,announce=true){
  toolMode=mode==='fish'?'fish':'build';
  syncToolButtons();
  if(announce)showStatus(toolMode==='fish'?'Fish placement enabled. Tap a water cell to add a fish.':'Build mode ready.');
 }
+function pauseBuildPlacement(){
+ placementPaused=true;
+ selectedBucketItem=null;
+ syncToolButtons();
+ renderHotbar();
+ showStatus('Block placement paused. Choose any block to start building again.');
+}
 function chooseMaterial(type){
- selected=type;selectedBucketItem=null;setToolMode('build',false);renderHotbar();
+ selected=type;selectedBucketItem=null;placementPaused=false;setToolMode('build',false);renderHotbar();
 }
 function openBucket(){
  inventoryTab='bucket';
@@ -259,16 +268,18 @@ function renderHotbar(){
   {id:'tile',label:'Slabs / Tiles',icon:'▦',title:'Design and select slabs or tiles'},
   {id:'door',label:'Door',icon:'🚪',title:'Design and select a door'},
   {id:'water',label:'Water',icon:'💧',title:'Select the water block'},
-  {id:'bucket',label:'Bucket',icon:'🪣',title:'Open the Material Bucket'}
+  {id:'bucket',label:'Bucket',icon:'🪣',title:'Open the Material Bucket'},
+  {id:'pause',label:placementPaused?'No Block':'Pause',icon:'✋',title:'Pause block placement until you choose another block'}
  ];
  categories.forEach(item=>{
   const btn=document.createElement('button');btn.type='button';btn.className='material-category';
   const icon=document.createElement('span');icon.className='emoji';icon.textContent=item.icon;
   const label=document.createElement('small');label.textContent=item.label;btn.append(icon,label);btn.title=item.title;
-  const active=(item.id==='solid'&&['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom'].includes(selected))
-   ||(item.id==='tile'&&selected==='tile')||(item.id==='door'&&selected==='door')||(item.id==='water'&&selected==='water');
+  const active=(item.id==='pause'&&placementPaused)||(!placementPaused&&((item.id==='solid'&&['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom'].includes(selected))
+   ||(item.id==='tile'&&selected==='tile')||(item.id==='door'&&selected==='door')||(item.id==='water'&&selected==='water')));
   if(active)btn.classList.add('active');
   btn.addEventListener('click',()=>{
+   if(item.id==='pause'){pauseBuildPlacement();return;}
    if(item.id==='solid'){openSolidPicker();return;}
    if(item.id==='tile'){selectedBucketItem=null;setToolMode('build',false);openTileDesigner();return;}
    if(item.id==='door'){selectedBucketItem=null;setToolMode('build',false);openDoorDesigner();return;}
@@ -1522,7 +1533,7 @@ function renderSlots(){
    const details=document.createElement('small');details.textContent=item.color?item.color.toUpperCase():'Recovered';
    slot.append(ico,label,details);
    slot.addEventListener('click',()=>{
-    selectedBucketItem={...item};selected=item.type;setToolMode('build',false);renderHotbar();closeShades();
+    selectedBucketItem={...item};selected=item.type;placementPaused=false;setToolMode('build',false);renderHotbar();closeShades();
     showStatus(name+' selected from your Material Bucket. It stays available for reuse.');
    });
    root.append(slot);
@@ -1681,12 +1692,12 @@ $('customBlockHex').addEventListener('change',e=>{const v=e.target.value.trim();
 $('applyCustomBlock').addEventListener('click',()=>{
  if(draftSolidType==='custom'){
   world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
-  $('customColor').value=draftCustomColor;selected='custom';
+  $('customColor').value=draftCustomColor;selected='custom';placementPaused=false;
   showStatus('Custom solid ready. Choose a place to build it.');
  }else{
   world.solidStyles=world.solidStyles||{};
   world.solidStyles[draftSolidType]={color:draftCustomColor,texture:draftCustomTexture};
-  selected=draftSolidType;
+  selected=draftSolidType;placementPaused=false;
   showStatus((BLOCKS.find(b=>b.id===draftSolidType)?.name||'Solid')+' finish saved. New blocks of this material will use it.');
  }
  selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
@@ -1710,7 +1721,7 @@ document.querySelectorAll('[data-door-style]').forEach(button=>button.addEventLi
 }));
 $('applyDoorDesign').addEventListener('click',()=>{
  world.doorDesign={color:validHex(draftDoorColor,'#a97545'),style:['classic','window','garden'].includes(draftDoorStyle)?draftDoorStyle:'classic'};
- selected='door';selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
+ selected='door';selectedBucketItem=null;placementPaused=false;setToolMode('build',false);save();renderHotbar();closeShades();
  showStatus('Your door design is ready. Choose a clear spot to build it!');
 });
 
@@ -1760,7 +1771,7 @@ $('tileHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0
 $('tileHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);else e.target.value=draftTileColor.toUpperCase();});
 $('applyTileDesign').addEventListener('click',()=>{
  world.tileDesign={color:validHex(draftTileColor,'#c5a98a'),pattern:TILE_DESIGNS.some(t=>t.id===draftTilePattern)?draftTilePattern:'grid'};
- selected='tile';selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
+ selected='tile';selectedBucketItem=null;placementPaused=false;setToolMode('build',false);save();renderHotbar();closeShades();
  showStatus('Tile design ready! Select a place to build your colorful tiles.');
 });
 
@@ -1793,8 +1804,9 @@ function handleWorldTap(px,py){
  if(animal){openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(px,py);
  if(neighbor){openColoring(neighbor.name);return;}
- if(toolMode==='fish')fishAtScreen(px,py);
- else buildOrFillAtScreen(px,py);
+ if(toolMode==='fish'){fishAtScreen(px,py);return;}
+ if(placementPaused){showStatus('Building is paused. Choose a block to resume placing.');return;}
+ buildOrFillAtScreen(px,py);
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
