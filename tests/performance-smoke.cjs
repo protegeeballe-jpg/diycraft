@@ -59,18 +59,24 @@ function check(condition, message) {
 }
 
 assert(source.includes('function setPlayerActivity(activity)'), 'Player activity actions must be available.');
-assert(source.includes("if(activity==='sleep'){"), 'The player must have a lying-down sleep pose.');
+assert(source.includes("if(activity==='sleep'||activity==='bed'){"), 'Both funny Sleep Anywhere and proper Go to Bed must use the lying-down pose.');
 assert(source.includes("const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'"), 'Sit, work and dance must have distinct animation states.');
 assert(source.includes('activity:playerActivity'), 'The selected activity must be passed to the third-person avatar.');
-assert(source.includes("if(playerActivity==='sleep'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}"), 'Keyboard and touch movement must be locked while the player is sleeping.');
-assert(source.includes("cube(0,.15,-.10,'#795438',1.16,.18,2.02)"), 'The sleep pose must render a wooden bed frame beneath the character.');
-assert(source.includes("cube(0,.32,-.10,'#f5f1e9',1.04,.14,1.90)"), 'The sleep pose must include a mattress.');
+assert(source.includes("if(playerActivity==='bed'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}"), 'The proper Go to Bed activity must stay stationary.');
+assert(source.includes("if(playerActivity&&playerActivity!=='sleep'&&(moveX!==0"), 'Sleep Anywhere must preserve the funny sliding pose while moving.');
+assert(source.includes('function drawPlayerBed(queue,cam,w,h,bed)'), 'A persistent home bed must be rendered in the world.');
+assert(source.includes("piece(0,.15,-.10,'#795438',1.16,.18,2.02)"), 'The persistent home bed must include a wooden frame.');
+assert(source.includes("piece(0,.32,-.10,'#f5f1e9',1.04,.14,1.90)"), 'The persistent home bed must include a mattress.');
+assert(source.includes('drawPlayerBed(polys,cam,w,h,world.player.bed)'), 'The saved bed must remain visible while the player is away.');
 assert(source.includes('x:p.x,y:p.y,z:p.z,facing:p.yaw'), 'The player avatar must use the player’s actual floor height.');
 assert(source.includes('baseY+y*unitScale'), 'The sleeping bed and avatar must be rendered at the current floor elevation.');
 assert(source.includes('y:(Number.isFinite(n.y)?n.y:0)+y*scale'), 'Sleeping face details must follow the avatar’s floor elevation.');
 assert(source.includes("sleepCube(0,.43,-.20,'#91b7c8',.78,.18,1.22)"), 'The sleeper must be raised onto the mattress and covered with a quilt.');
+assert(source.includes("p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw}"), 'Players must be able to save a bed location at their current position.');
+assert(source.includes("p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0"), 'Go to Bed must teleport the player to the saved bed location.');
+assert(source.includes("bed:{x:-1,y:0,z:-11,yaw:0}"), 'New worlds must include a starter bed inside the welcome cottage.');
 assert(html.includes('id="activityBtn"') && html.includes('id="activityShade"'), 'The activity menu must be reachable from the game HUD.');
-for (const activity of ['sleep','sit','work','dance','stop']) {
+for (const activity of ['sleep','bed','set-bed','sit','work','dance','stop']) {
   if (!html.includes('data-player-activity="' + activity + '"')) throw new Error('Missing player activity control: ' + activity);
 }
 assert(source.includes('const FIXED_UPDATE_STEP=1/60'), 'A fixed 60 Hz simulation step is required.');
