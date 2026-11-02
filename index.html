@@ -1457,25 +1457,59 @@ function paintWaterFace(poly,time){
  const pts=poly.pts;if(!pts||pts.length!==4)return;
  const minX=Math.min(...pts.map(p=>p.x))-3,maxX=Math.max(...pts.map(p=>p.x))+3;
  const minY=Math.min(...pts.map(p=>p.y))-3,maxY=Math.max(...pts.map(p=>p.y))+3;
+ const waterX=poly.waterX??0,waterZ=poly.waterZ??0;
  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
- ctx.save();ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.clip();
- // Shared CanvasGradient removes the per-block color restart.
+ // Bilinear screen mapping keeps every ripple attached to its world-space
+ // position, including where the curve crosses into the neighboring cell.
+ const pointAt=(u,v)=>lerp(lerp(pts[0],pts[1],u),lerp(pts[3],pts[2],u),v);
+ ctx.save();
+ ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.clip();
  const gradient=poly.waterGradient;
- ctx.fillStyle=gradient|| (poly.waterSurface?'#55c5ed':'#168ec5');
+ ctx.fillStyle=gradient||(poly.waterSurface?'#55c5ed':'#168ec5');
  ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
  if(poly.waterSurface){
-  // Ripple phase follows world Z, so neighboring cells in a row join cleanly.
-  const worldZ=poly.waterZ||0;
-  for(let i=0;i<3;i++){
-   const t=((time*.00011+i*.34+worldZ*.12)%1+1)%1;
-   const a=lerp(pts[0],pts[3],t),b=lerp(pts[1],pts[2],t),m=lerp(a,b,.5);
-   const crest=Math.sin(time*.0016+worldZ*.25+i*1.8)*1.5;
-   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(m.x,m.y+crest,b.x,b.y);
-   ctx.strokeStyle=i===0?'rgba(246,255,255,.43)':'rgba(208,247,255,.23)';
-   ctx.lineWidth=i===0?1.15:.75;ctx.stroke();
+  // Cross-current A: broad, slow diagonal swells.
+  // Its phase is derived from absolute world X/Z, never from a tile-local seed.
+  const spacingA=2.9;
+  const firstA=Math.floor((waterZ+.35*waterX-.2)/spacingA)-1;
+  const lastA=Math.ceil((waterZ+1+.35*(waterX+1)+.2)/spacingA)+1;
+  ctx.save();ctx.lineWidth=1.05;ctx.lineCap='round';ctx.lineJoin='round';
+  for(let k=firstA;k<=lastA;k++){
+   ctx.beginPath();let started=false;
+   for(let s=0;s<=24;s++){
+    const u=s/24,worldX=waterX+u;
+    const worldZ=k*spacingA-.35*worldX-.15*Math.sin(worldX*.82-time*.00048+k*.7);
+    const p=pointAt(u,worldZ-waterZ);
+    if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
+   }
+   ctx.strokeStyle='rgba(239,253,255,.22)';ctx.stroke();
   }
-  const sheen=(Math.sin(time*.00125+worldZ*.16)+1)/2;
-  ctx.globalAlpha=.035+.025*sheen;ctx.fillStyle='#f4fdff';ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
+  ctx.restore();
+  // Cross-current B: finer ripples travel in a different direction and speed.
+  // The curves intersect A to create a subtle interference-like water pattern.
+  const spacingB=3.35;
+  const firstB=Math.floor((waterX+.48*waterZ-.2)/spacingB)-1;
+  const lastB=Math.ceil((waterX+1+.48*(waterZ+1)+.2)/spacingB)+1;
+  ctx.save();ctx.lineWidth=.8;ctx.lineCap='round';ctx.lineJoin='round';
+  for(let k=firstB;k<=lastB;k++){
+   ctx.beginPath();let started=false;
+   for(let s=0;s<=24;s++){
+    const v=s/24,worldZ=waterZ+v;
+    const worldX=k*spacingB-.48*worldZ-.12*Math.sin(worldZ*.94+time*.00072+k*.55);
+    const p=pointAt(worldX-waterX,v);
+    if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
+   }
+   ctx.strokeStyle='rgba(176,237,255,.17)';ctx.stroke();
+  }
+  ctx.restore();
+  // Soft moving highlights add depth without drawing tile-shaped borders.
+  const glowPhase=time*.00038+waterX*.31+waterZ*.23;
+  const glowU=.5+Math.sin(glowPhase)*.25,glowV=.5+Math.cos(glowPhase*.83)*.22;
+  const glowPoint=pointAt(glowU,glowV);
+  const radius=Math.max(7,Math.min(20,(maxX-minX)*.18));
+  const glow=ctx.createRadialGradient(glowPoint.x,glowPoint.y,1,glowPoint.x,glowPoint.y,radius);
+  glow.addColorStop(0,'rgba(245,255,255,.16)');glow.addColorStop(1,'rgba(245,255,255,0)');
+  ctx.fillStyle=glow;ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
  }
  ctx.restore();
 }
