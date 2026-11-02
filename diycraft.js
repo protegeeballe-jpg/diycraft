@@ -1084,7 +1084,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,baseY+y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
  };
 
- if(activity==='sleep'||activity==='bed'){
+ if(activity==='bed'){
   const sleepCube=(dx,y,dz,color,sx,sy,sz)=>cube(dx,y+.18,dz,color,sx,sy,sz);
   // The sleeper rests on the mattress, with a pillow and a soft quilt.
   sleepCube(0,.34,-.12,n.shirt,.68,.36,1.08);
@@ -1203,7 +1203,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
 }
 function addCharacterFaceDetails(queue,cam,w,h,n,bob){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing),scale=Number.isFinite(n.scale)?n.scale:1;
- const sleeping=n.activity==='sleep'||n.activity==='bed';
+ const sleeping=n.activity==='bed';
  const vx=cam.pos.x-n.x,vz=cam.pos.z-n.z,dist=Math.hypot(vx,vz)||1;
  const front=(s*vx+c*vz)/dist;
  // Keep the original face visible through normal turns; fade only as it turns away.
@@ -1474,9 +1474,9 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,y:p.y,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
   const playerBob=playerActivity==='dance'?Math.abs(Math.sin(tick*7))*.11:playerActivity==='work'?Math.sin(tick*8)*.025:0;
   drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
-  const activityIcons={sleep:'💤',bed:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
+  const activityIcons={bed:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
   if(playerActivity){
-   const marker=project({x:p.x,y:p.y+(['sleep','bed'].includes(playerActivity)?1.53:2.55),z:p.z},cam,w,h);
+   const marker=project({x:p.x,y:p.y+(playerActivity==='bed'?1.53:2.55),z:p.z},cam,w,h);
    if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
   }
  }
@@ -1682,10 +1682,10 @@ function jump(){
  showStatus('Jump!');
 }
 function move(dt){
- // Go-to-bed sleep stays on the registered mattress; the original Sleep Anywhere pose remains mobile for laughs.
+ // Go-to-bed sleep stays on the registered mattress until the player stands up.
  if(playerActivity==='bed'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
  const p=world.player,speed=flying?7:4.2;
- if(playerActivity&&playerActivity!=='sleep'&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
+ if(playerActivity&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
  nudgePlayerOutOfBlocks();
  const terrainFloor=-groundDepthAt(p.x,p.z);
  if(p.y<terrainFloor-.04){p.y=surfaceHeightAt(p.x,p.z,p.y);jumpVelocity=0;playerGrounded=true;save(true);}
@@ -2049,7 +2049,7 @@ function setPlayerActivity(activity){
   p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw};
   save();closeShades();render();showStatus('Your bed is set here. You can return to it anytime!');return;
  }
- const labels={sleep:'Sleep Anywhere',bed:'Go to Bed',sit:'Sit',work:'Work',dance:'Dance'};
+ const labels={bed:'Go to Bed',sit:'Sit',work:'Work',dance:'Dance'};
  if(activity!=='stop'&&!Object.prototype.hasOwnProperty.call(labels,activity))return;
  playerActivity=activity==='stop'?'':activity;
  moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;
@@ -2063,7 +2063,7 @@ function setPlayerActivity(activity){
    playerGrounded=true;save();
   }else{
    const floor=surfaceHeightAt(p.x,p.z,p.y);
-   if(activity==='sleep'||p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+   if(p.y<=floor+.35){p.y=floor;playerGrounded=true;}
   }
  }
  closeShades();render();
