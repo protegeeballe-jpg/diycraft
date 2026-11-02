@@ -58,7 +58,9 @@ function check(condition, message) {
 }
 
 assert(source.includes('const FIXED_UPDATE_STEP=1/60'), 'A fixed 60 Hz simulation step is required.');
-assert(source.includes('if(steps>0)render();'), 'Canvas rendering must not repeat on high-refresh frames without a simulation update.');
+assert(source.includes('function interpolatePlayerState(previous,current,alpha)'), 'The player render state must interpolate between fixed simulation updates.');
+assert(source.includes('renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);'), 'The canvas must render smoothly at the display refresh rate.');
+assert(!source.includes('if(steps>0)render();'), 'The 60 Hz simulation must not throttle visual rendering to 60 Hz.');
 assert(!source.includes("else if(b.type==='tile')pushTileSlab(polys,cam,w,h,b)"), 'Decorative tiles must not be projected as dynamic per-frame geometry.');
 assert(source.includes("tileTexture:textureTiles.get('tile-'+pattern)"), 'Cached floor tiles must preserve their selected pattern texture.');
 assert(source.includes('MAX_FRAME_DELTA=.1'), 'Frame delta must be clamped after tab suspension or a long frame.');
@@ -219,6 +221,23 @@ check(source.includes('function addBlock(x,y,z,type=selected,saveImmediately=tru
   'Bulk hole filling must be able to defer repeated disk saves.');
 check(!source.includes('const layerCount=Math.ceil(topY-floorY)'),
   'Deep water walls must render as a single face rather than looping once per underground layer.');
+
+const interpolationStart = source.indexOf('function interpolatePlayerState(previous,current,alpha)');
+const interpolationEnd = source.indexOf('\\nlet previousPlayerRenderState', interpolationStart);
+assert(interpolationStart >= 0 && interpolationEnd > interpolationStart, 'The player interpolation helper must be extractable.');
+const interpolate = new Function('Math', source.slice(interpolationStart, interpolationEnd) + '\\nreturn interpolatePlayerState;')(Math);
+const interpolatedMidpoint = interpolate(
+  { x: 0, y: 0, z: 0, yaw: Math.PI * 0.95, pitch: 0 },
+  { x: 10, y: 4, z: -6, yaw: -Math.PI * 0.95, pitch: 0.4 },
+  0.5
+);
+check(interpolatedMidpoint.x === 5 && interpolatedMidpoint.y === 2 && interpolatedMidpoint.z === -3,
+  'Player position must interpolate smoothly halfway between fixed updates.');
+check(Math.abs(Math.abs(interpolatedMidpoint.yaw) - Math.PI) < 1e-9,
+  'Yaw interpolation must take the shortest path across the ±π boundary.');
+check(interpolate({ x: 2, y: 1, z: 3, yaw: 0, pitch: 0 }, { x: 8, y: 3, z: 9, yaw: 1, pitch: 1 }, 0).x === 2 &&
+  interpolate({ x: 2, y: 1, z: 3, yaw: 0, pitch: 0 }, { x: 8, y: 3, z: 9, yaw: 1, pitch: 1 }, 1).x === 8,
+  'Interpolation must clamp cleanly to the previous and current simulation states.');
 
 const surfaceStart = source.indexOf('function surfaceHeightAt(x,z,atOrBelowY=Infinity)');
 const surfaceEnd = source.indexOf('\nconst GROUND_BASE_Y', surfaceStart);
