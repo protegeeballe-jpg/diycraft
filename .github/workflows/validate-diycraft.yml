@@ -71,6 +71,7 @@ jobs:
             'function traceWorldRay(cam,dir,maxDistance,step)',
             'function isProtectedDigCell(x,z)',
             'function digAtScreen(',
+            'function pushGroundSurface(queue,cam,w,h,color)',
             'function pushExcavationTerrain(queue,cam,w,h)',
             'function setToolMode(mode,announce=true)',
             'function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
@@ -117,7 +118,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v4'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v5'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }

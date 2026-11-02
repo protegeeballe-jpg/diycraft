@@ -1167,6 +1167,20 @@ function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w
 function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.id==='sheep'?'Pip the sheep':'Mochi');$('animalCareTitle').textContent=(a.emoji||'🐾')+' Care for '+selectedAnimalName;const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=selectedAnimalName+' enjoys gentle care. Care activities together: '+count;$('animalCareFeedback').textContent=selectedAnimalName+' is happy to see you.';openShade('animalCareShade');}
 function careForAnimal(action){const info={snack:['🍎','A tasty snack. '+selectedAnimalName+' is happily nibbling!'],water:['💧','Fresh water. '+selectedAnimalName+' has had a lovely drink!'],brush:['✨','A gentle brush. '+selectedAnimalName+' looks extra fluffy!'],play:['💚','A little playtime. '+selectedAnimalName+' is happily playing!']}[action];if(!info)return;world.animalCare=world.animalCare||{};world.animalCare[selectedAnimalId]=Math.min(999,(world.animalCare[selectedAnimalId]||0)+1);animalCareFlashUntil=performance.now()+1900;animalCareFlashEmoji=info[0];$('animalCareFeedback').textContent=info[1];$('animalCareNote').textContent=selectedAnimalName+' has enjoyed '+world.animalCare[selectedAnimalId]+' caring moments with you.';save();showStatus(info[1]);}
 function pushTerrainFace(queue,cam,w,h,vertices,color){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true});}
+function pushGroundSurface(queue,cam,w,h,color){
+ const radius=30,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z);
+ const minX=Math.max(-WORLD_LIMIT,cx-radius),maxX=Math.min(WORLD_LIMIT-1,cx+radius);
+ const minZ=Math.max(-WORLD_LIMIT,cz-radius),maxZ=Math.min(WORLD_LIMIT-1,cz+radius);
+ for(let x=minX;x<=maxX;x++)for(let z=minZ;z<=maxZ;z++){
+  if(groundDepthAt(x,z)>0)continue;
+  const vertices=[{x,y:0,z},{x:x+1,y:0,z},{x:x+1,y:0,z:z+1},{x,y:0,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));
+  if(pts.some(p=>!p))continue;
+  const left=Math.min(...pts.map(p=>p.x)),right=Math.max(...pts.map(p=>p.x));
+  const top=Math.min(...pts.map(p=>p.y)),bottom=Math.max(...pts.map(p=>p.y));
+  if(right< -24||left>w+24||bottom< -24||top>h+24)continue;
+  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color,outline:false});
+ }
+}
 function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDepths){if(depth<1)continue;const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;const floorY=-depth;
  pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1}],'#775236');
  const west=groundDepthAt(x-1,z),east=groundDepthAt(x+1,z),north=groundDepthAt(x,z-1),south=groundDepthAt(x,z+1);
@@ -1208,9 +1222,9 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   ctx.fillStyle=palette.sun;ctx.beginPath();ctx.arc(sunX,sunY,Math.min(w,h)*.055,0,Math.PI*2);ctx.fill();
  }
  const cam=cameraState(),polys=[];
- // Ground plane polygon
- const ground=[{x:-WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:WORLD_LIMIT},{x:-WORLD_LIMIT,y:0,z:WORLD_LIMIT}].map(p=>project(p,cam,w,h));
- if(ground.every(Boolean)){ctx.beginPath();ground.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=palette.ground;ctx.fill();}
+ // Draw the ground as camera-visible cells. A single world-sized polygon
+ // can have corners behind the camera, causing the entire floor to disappear.
+ pushGroundSurface(polys,cam,w,h,palette.ground);
  pushExcavationTerrain(polys,cam,w,h);
  pushWaterSurfaces(polys,cam,w,h);
  // Keep the ground visually continuous. Perspective grid strokes were removed
