@@ -1093,6 +1093,10 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
   cube(.32,.16,-.96,shoe,.29,.13,.25);
   cube(-.40,.42,.14,n.shirt,.20,.28,.65);
   cube(.40,.42,.14,n.shirt,.20,.28,.65);
+  // A soft quilt covers the torso and legs so the sleeping pose reads as cozy, not mechanical.
+  cube(0,.43,-.20,'#91b7c8',.78,.18,1.22);
+  cube(0,.535,.30,'#d8e8ed',.78,.055,.16);
+  cube(0,.48,-.78,'#91b7c8',.70,.12,.16);
   return;
  }
 
@@ -1660,7 +1664,7 @@ function jump(){
 }
 function move(dt){
  const p=world.player,speed=flying?7:4.2;
- if(playerActivity&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
+ if(playerActivity&&playerActivity!=='sleep'&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
  nudgePlayerOutOfBlocks();
  const terrainFloor=-groundDepthAt(p.x,p.z);
  if(p.y<terrainFloor-.04){p.y=surfaceHeightAt(p.x,p.z,p.y);jumpVelocity=0;playerGrounded=true;save(true);}
