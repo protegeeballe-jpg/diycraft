@@ -1,7 +1,6 @@
-/* DIYCraft same-origin offline shell cache.
-   The game has no remote gameplay dependencies; only its own two HTML entry points are cached. */
+/* DIYCraft same-origin offline shell and game-engine cache. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v19';
+const CACHE_NAME = 'diycraft-shell-v20';
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;
@@ -9,7 +8,8 @@ self.addEventListener('install', event => {
     root,
     new URL('index.html', root).href,
     new URL('offline/', root).href,
-    new URL('offline/index.html', root).href
+    new URL('offline/index.html', root).href,
+    new URL('diycraft.js', root).href
   ];
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -31,10 +31,25 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const request = event.request;
-  if (request.method !== 'GET' || request.mode !== 'navigate') return;
+  if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // The game engine is a shared same-origin asset used by both entry pages.
+  // Serve the precached copy first so offline play works after installation.
+  const gameScriptUrl = new URL('diycraft.js', self.registration.scope);
+  if (url.pathname === gameScriptUrl.pathname) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(gameScriptUrl.href);
+      if (cached) return cached;
+      return fetch(request);
+    })());
+    return;
+  }
+
+  if (request.mode !== 'navigate') return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
