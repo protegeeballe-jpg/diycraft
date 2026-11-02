@@ -5,11 +5,15 @@ on:
     paths:
       - index.html
       - offline/index.html
+      - sw.js
+      - offline/README.md
       - .github/workflows/validate-diycraft.yml
   pull_request:
     paths:
       - index.html
       - offline/index.html
+      - sw.js
+      - offline/README.md
       - .github/workflows/validate-diycraft.yml
   workflow_dispatch:
 
@@ -64,6 +68,11 @@ jobs:
             'function jump()',
             'function surfaceHeightAt(x,z)',
             'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
+            'function makeTileTexturePatterns()',
+            'function openTileDesigner()',
+            'const TILE_DESIGNS=[',
+            'navigator.serviceWorker.register',
+            "id:'tile'",
             "id:'door'"
           ];
           for (const marker of required) {
@@ -71,10 +80,20 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
-          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"')) {
-            throw new Error('A block, door, or jump control is missing.');
+          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"')) {
+            throw new Error('A block, door, jump, or tile designer control is missing.');
+          }
+          if (!html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
+            throw new Error('The same-origin offline worker is not allowed by the content security policy.');
+          }
+          const worker = fs.readFileSync('sw.js', 'utf8');
+          for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
+            if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
 
           fs.writeFileSync('/tmp/diycraft-inline.js', source);
           NODE
           node --check /tmp/diycraft-inline.js
+
+      - name: Syntax-check the offline service worker
+        run: node --check sw.js
