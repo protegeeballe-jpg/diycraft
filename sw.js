@@ -1,7 +1,7 @@
 /* DIYCraft same-origin offline shell cache.
    The game has no remote gameplay dependencies; only its own two HTML entry points are cached. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v8';
+const CACHE_NAME = 'diycraft-shell-v9';
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;

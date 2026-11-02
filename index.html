@@ -1253,14 +1253,25 @@ function pushWaterSurfaces(queue,cam,w,h){
   queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:'#54c5df',alpha:.82,outline:false});
  }
 }
-function drawFishOverlays(cam,w,h){
+function pushFishOverlays(queue,cam,w,h){
  const time=performance.now()/1000,colors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
- fishSpots.forEach((fish,i)=>{const depth=groundDepthAt(fish.x,fish.z);if(depth<1||!waterCells.has(keyGround(fish.x,fish.z)))return;
-  const phase=time*1.2+i*2.1,sway=Math.sin(phase),pos=project({x:fish.x+.5+sway*.17,y:-depth+.61,z:fish.z+.5+Math.cos(phase*.72)*.10},cam,w,h);if(!pos)return;
-  const size=Math.max(3.5,Math.min(12,54/pos.d));ctx.save();ctx.translate(pos.x,pos.y);if(Math.cos(phase)<0)ctx.scale(-1,1);
-  ctx.fillStyle=colors[i%colors.length];ctx.beginPath();ctx.moveTo(-size*.42,0);ctx.lineTo(-size*1.05,-size*.55);ctx.lineTo(-size*1.05,size*.55);ctx.closePath();ctx.fill();
-  ctx.beginPath();ctx.ellipse(0,0,size*.78,size*.43,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fffdf4';ctx.beginPath();ctx.arc(size*.38,-size*.12,Math.max(1,size*.12),0,Math.PI*2);ctx.fill();ctx.fillStyle='#243c37';ctx.beginPath();ctx.arc(size*.42,-size*.12,Math.max(.6,size*.065),0,Math.PI*2);ctx.fill();ctx.restore();
+ fishSpots.forEach((fish,i)=>{
+  const depth=groundDepthAt(fish.x,fish.z),key=keyGround(fish.x,fish.z);
+  if(depth<1||!waterCells.has(key))return;
+  const phase=time*1.05+i*1.9,cx=fish.x+.5+Math.sin(phase)*.055,cz=fish.z+.5+Math.cos(phase*.8)*.055;
+  const angle=phase*.48,ca=Math.cos(angle),sa=Math.sin(angle),y=-depth+.59;
+  const point=(lx,lz)=>({x:cx+lx*ca-lz*sa,y,z:cz+lx*sa+lz*ca});
+  const silhouette=[
+   point(-.19,0),point(-.105,-.065),point(-.07,-.052),point(.01,-.078),
+   point(.135,-.05),point(.19,0),point(.135,.05),point(.01,.078),
+   point(-.07,.052),point(-.105,.065)
+  ];
+  const pts=silhouette.map(v=>project(v,cam,w,h));
+  if(pts.some(p=>!p))return;
+  const d=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+  queue.push({pts,depth:d,color:colors[i%colors.length],outline:false});
+  const eye=project(point(.125,-.018),cam,w,h);
+  if(eye)queue.push({fishEye:true,x:eye.x,y:eye.y,depth:eye.d,radius:Math.max(.7,Math.min(2.1,10/eye.d))});
  });
 }
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.6),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -1305,6 +1316,8 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
 
  // Third-person avatar; in first-person the child sees through the character's eyes.
  if(cameraMode==='third'){const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,z:p.z,facing:p.yaw,phase:0,moving:false};drawNeighborFigure(polys,cam,w,h,pc,0,tick);addCharacterFaceDetails(polys,cam,w,h,pc,0);}
+ // Fish are world geometry now, so ground, walls, and blocks can occlude them.
+ pushFishOverlays(polys,cam,w,h);
  polys.sort((a,b)=>b.depth-a.depth);
  for(const poly of polys){
   if(poly.faceMark){
@@ -1315,11 +1328,11 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    ctx.restore();continue;
   }
   if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}
+  if(poly.fishEye){ctx.save();ctx.fillStyle='#fffdf4';ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#243c37';ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius*.52,0,Math.PI*2);ctx.fill();ctx.restore();continue;}
   const translucent=poly.alpha!==undefined;if(translucent){ctx.save();ctx.globalAlpha=poly.alpha;}
   ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}if(translucent)ctx.restore();
  }
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
- drawFishOverlays(cam,w,h);
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
  if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.15,y:1.2,z:a.z+.5},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
  // Friendly home signs make it easy to find each neighbor's little cottage.

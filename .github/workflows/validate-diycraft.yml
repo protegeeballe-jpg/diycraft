@@ -84,7 +84,9 @@ jobs:
             'function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
             'function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
             'function pushWaterSurfaces(queue,cam,w,h)',
-            'function drawFishOverlays(cam,w,h)',
+            'function pushFishOverlays(queue,cam,w,h)',
+            'if(poly.fishEye)',
+            'pushFishOverlays(polys,cam,w,h)',
             'function consumeItem(id,target=\'materials\',amount=1)',
             'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
             'function makeTileTexturePatterns()',
@@ -124,6 +126,7 @@ jobs:
           if (!html.includes('Tap to place a block or refill a hole') || !html.includes('Hold 0.6s on soil to dig or on a block to remove it')) {
             throw new Error('The merged tap and long-press instructions are missing.');
           }
+          if (source.includes('function drawFishOverlays(cam,w,h)')) throw new Error('Screen-space fish overlays must be removed so terrain can occlude fish.');
           const tileList = source.match(/const TILE_DESIGNS=\[([\s\S]*?)\];/);
           const tileCount = tileList ? (tileList[1].match(/\bid:/g) || []).length : 0;
           if (tileCount !== 20) throw new Error('Expected exactly 20 tile designs; found ' + tileCount);
@@ -132,7 +135,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v8'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v9'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
