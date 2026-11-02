@@ -64,6 +64,7 @@ assert(source.includes("if(activity==='sleep'||activity==='transformer'||activit
 assert(source.includes("const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'"), 'Sit, work and dance must have distinct animation states.');
 assert(source.includes('activity:playerActivity'), 'The selected activity must be passed to the third-person avatar.');
 assert(source.includes('function isStationaryRestActivity(activity)'), 'Sleep Here and Go Home & Sleep must use a shared stationary-rest rule.');
+assert(source.includes("if(activity==='sleep'||activity==='transformer'||p.y<=floor+.35){"), 'Anywhere sleep must settle the avatar onto the local ground surface.');
 assert(source.includes('function shouldDrawTemporaryRestBed(activity,homeBed,x,z)'), 'Anywhere sleep must draw a temporary bed.');
 assert(source.includes("playerActivity&&playerActivity!=='transformer'&&(moveX!==0"), 'Only Transformer sleep may keep moving without dropping the lying-down pose.');
 assert(source.includes('function resolveRestActivity(activity,bed)'), 'Go Home & Sleep must fall back to local stationary sleep when no home bed is saved.');
