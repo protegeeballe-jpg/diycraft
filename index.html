@@ -1306,6 +1306,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  if(palette.mode==='night'){
   const sleepHomes=[{x:-10.85,z:-4.85},{x:12.15,z:-14.85},{x:18.15,z:-6.85}];
   for(const home of sleepHomes){
+   if(!nearWorldPoint(home.x,home.z,26))continue;
    const hp=project({x:home.x,y:4.45,z:home.z},cam,w,h);
    if(hp){ctx.save();ctx.font='bold 23px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText('Zzz',hp.x,hp.y);ctx.fillStyle='#425d78';ctx.fillText('Zzz',hp.x,hp.y);ctx.font='21px system-ui';ctx.fillText('💤',hp.x+22,hp.y-19);ctx.restore();}
   }
