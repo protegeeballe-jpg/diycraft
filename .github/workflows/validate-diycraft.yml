@@ -8,6 +8,7 @@ on:
       - diycraft.js
       - play.html
       - sw.js
+      - tests/performance-smoke.cjs
       - offline/README.md
       - .github/workflows/validate-diycraft.yml
   pull_request:
@@ -17,6 +18,7 @@ on:
       - diycraft.js
       - play.html
       - sw.js
+      - tests/performance-smoke.cjs
       - offline/README.md
       - .github/workflows/validate-diycraft.yml
   workflow_dispatch:
