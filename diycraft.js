@@ -1664,18 +1664,42 @@ function move(dt){
  p.y=Math.max(-MAX_DIG_DEPTH,next);
 }
 const FIXED_UPDATE_STEP=1/60,MAX_FRAME_DELTA=.1,MAX_FIXED_STEPS_PER_FRAME=6;
+function capturePlayerRenderState(p=world.player){
+ return {x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch};
+}
+function interpolatePlayerState(previous,current,alpha){
+ const t=Math.max(0,Math.min(1,alpha));
+ const yawDelta=Math.atan2(Math.sin(current.yaw-previous.yaw),Math.cos(current.yaw-previous.yaw));
+ return {
+  x:previous.x+(current.x-previous.x)*t,
+  y:previous.y+(current.y-previous.y)*t,
+  z:previous.z+(current.z-previous.z)*t,
+  yaw:previous.yaw+yawDelta*t,
+  pitch:previous.pitch+(current.pitch-previous.pitch)*t
+ };
+}
+let previousPlayerRenderState=null;
+function renderPlayerFrame(alpha){
+ const p=world.player,current=capturePlayerRenderState(p);
+ if(!previousPlayerRenderState){previousPlayerRenderState=current;render();return;}
+ const interpolated=interpolatePlayerState(previousPlayerRenderState,current,alpha);
+ Object.assign(p,interpolated);
+ try{render();}
+ finally{Object.assign(p,current);}
+}
 function loop(time){
  requestAnimationFrame(loop);
- if(document.hidden){lastTime=0;frameAccumulator=0;return;}
- if(!lastTime){lastTime=time;render();return;}
+ if(document.hidden){lastTime=0;frameAccumulator=0;previousPlayerRenderState=null;return;}
+ if(!lastTime){lastTime=time;previousPlayerRenderState=capturePlayerRenderState();render();return;}
  const elapsed=Math.min(MAX_FRAME_DELTA,Math.max(0,(time-lastTime)/1000));lastTime=time;
  frameAccumulator=Math.min(frameAccumulator+elapsed,FIXED_UPDATE_STEP*MAX_FIXED_STEPS_PER_FRAME);
  let steps=0;
  while(frameAccumulator+1e-9>=FIXED_UPDATE_STEP&&steps<MAX_FIXED_STEPS_PER_FRAME){
+  previousPlayerRenderState=capturePlayerRenderState();
   move(FIXED_UPDATE_STEP);frameAccumulator-=FIXED_UPDATE_STEP;steps++;
  }
- // The simulation is fixed at 60 Hz. Avoid duplicate canvas renders on 90/120/144 Hz displays.
- if(steps>0)render();
+ // Keep the 60 Hz fixed simulation, but interpolate and draw at the display refresh rate.
+ renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);
 }
 function renderSlots(){
  const root=$('slots');root.replaceChildren();
