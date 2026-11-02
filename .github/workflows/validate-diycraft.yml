@@ -78,11 +78,14 @@ jobs:
             'function getTimePalette',
             'function setPlayerActivity(activity)',
             "const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'",
-            "if(activity==='sleep'||activity==='bed'){",
+            "if(activity==='sleep'||activity==='transformer'||activity==='bed'){",
+            'function resolveRestActivity(activity,bed)',
+            'function isStationaryRestActivity(activity)',
+            'function shouldDrawTemporaryRestBed(activity,homeBed,x,z)',
             'function drawPlayerBed(queue,cam,w,h,bed)',
             "p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw}",
             'p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0',
-            "if(playerActivity==='bed'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}",
+            "playerActivity&&playerActivity!=='transformer'&&(moveX!==0",
             'activity:playerActivity',
             'const NEIGHBOR_ROUTES',
             'function neighborOnRoute',
@@ -195,10 +198,10 @@ jobs:
           const tileCount = tileList ? (tileList[1].match(/\bid:/g) || []).length : 0;
           if (tileCount !== 20) throw new Error('Expected exactly 20 tile designs; found ' + tileCount);
           if (!html.includes('id="activityBtn"') || !html.includes('id="activityShade"') ||
-              !html.includes('data-player-activity="sleep"') || !html.includes('data-player-activity="bed"') ||
+              !html.includes('data-player-activity="sleep"') || !html.includes('data-player-activity="transformer"') || !html.includes('data-player-activity="bed"') ||
               !html.includes('data-player-activity="set-bed"') || !html.includes('data-player-activity="sit"') ||
               !html.includes('data-player-activity="work"') || !html.includes('data-player-activity="dance"')) {
-            throw new Error('The Transformer sleep, go-to-bed, set-bed, sit, work and dance activity controls are missing.');
+            throw new Error('The stationary sleep, Transformer sleep, go-home, set-bed, sit, work, dance and stop activity controls are missing.');
           }
           if (!html.includes('id="offlineReadyNote"')) throw new Error('Persistent offline-ready status is missing.');
           if (!html.includes("script-src 'unsafe-inline' 'self'") || !html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
