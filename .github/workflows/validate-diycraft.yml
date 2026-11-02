@@ -142,6 +142,28 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
+          const performanceRequired = [
+            'const RENDER_CHUNK_SIZE=16',
+            'const MAX_BLOCK_CHUNK_CACHE=32',
+            'function projectedPolygonVisible(pts,w,h,margin=2)',
+            'function buildBlockChunkMesh(key,items)',
+            'if(isOpaqueCubeBlock(neighbor))continue;',
+            'function invalidateBlockChunkMeshesAt(x,z)',
+            'function appendBlockChunkMesh(queue,mesh,cam,w,h)',
+            'const FIXED_UPDATE_STEP=1/60',
+            'MAX_FRAME_DELTA=.1',
+            'visitNearbyBlockChunkMeshes(cam,24,mesh=>',
+            'invalidateBlockChunkMeshesAt(b.x,b.z)',
+            "if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b)"
+          ];
+          for (const marker of performanceRequired) {
+            if (!source.includes(marker)) {
+              throw new Error('Missing performance safeguard: ' + marker);
+            }
+          }
+          if (source.includes('time-lastTime<30')) {
+            throw new Error('The old 30 ms frame gate must not limit rendering to 30 FPS.');
+          }
           if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="flyBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="doorDesignBtn"') || !html.includes('id="fishModeToggle"') || !html.includes('id="hotbar"') || !html.includes('id="topHint"') || !html.includes('id="solidPickerShade"') || !html.includes('id="inventoryShade"')) {
             throw new Error('A block, door, jump, water, fish, or build control is missing.');
           }
@@ -168,6 +190,11 @@ jobs:
 
           NODE
           node --check diycraft.js
+
+      - name: Stress-test frame cadence, chunk meshing, occlusion, and large-world indexes
+        run: |
+          node --check tests/performance-smoke.cjs
+          node tests/performance-smoke.cjs
 
       - name: Syntax-check the offline service worker
         run: node --check sw.js
