@@ -145,7 +145,7 @@
         <button id="menuInventory">🎒 Inventories</button><button id="craftBtn">🧺 Crafting</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Color with a neighbor</button><button id="characterBtn">🧑 Character colors</button><button id="doorDesignBtn">🚪 Design a door</button><button id="tileDesignBtn">🧩 Design tiles</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
         <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
-      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note">Offline play: open the game while connected and wait for the “Offline play is ready” message. The browser then keeps a local copy so you can reopen it without internet. Your world saves on this device; export a backup to move it elsewhere.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers.</p>
+      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note" id="offlineReadyNote">Offline setup is starting. Connect this device once and keep the game open until the local copy is ready.</p><p class="note">Your world saves on this device. Use Backup world to move it to another device, and keep periodic backups in case browser storage is cleared.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers.</p>
     </div>
   </div>
   <div class="menu-shade" id="customBlockShade">
@@ -1457,16 +1457,25 @@ $('inviteArtBtn').addEventListener('click',()=>openColoring('Mira'));
 const art=$('artCanvas'),actx=art.getContext('2d');function clearArt(){actx.fillStyle='#fffdf8';actx.fillRect(0,0,art.width,art.height);actx.strokeStyle='#eee8da';actx.lineWidth=1;for(let x=24;x<art.width;x+=24){actx.beginPath();actx.moveTo(x,0);actx.lineTo(x,art.height);actx.stroke();}for(let y=24;y<art.height;y+=24){actx.beginPath();actx.moveTo(0,y);actx.lineTo(art.width,y);actx.stroke();}}function artPoint(e){const r=art.getBoundingClientRect();return {x:(e.clientX-r.left)*art.width/r.width,y:(e.clientY-r.top)*art.height/r.height};}art.addEventListener('pointerdown',e=>{artDrawing=true;artLast=artPoint(e);art.setPointerCapture(e.pointerId);});art.addEventListener('pointermove',e=>{if(!artDrawing)return;const p=artPoint(e);actx.strokeStyle=$('paintColor').value;actx.lineWidth=Number($('brushSize').value);actx.lineCap='round';actx.lineJoin='round';actx.beginPath();actx.moveTo(artLast.x,artLast.y);actx.lineTo(p.x,p.y);actx.stroke();artLast=p;});['pointerup','pointercancel'].forEach(ev=>art.addEventListener(ev,()=>{artDrawing=false;artLast=null;}));$('clearArt').addEventListener('click',clearArt);$('saveArt').addEventListener('click',()=>{if(world.artworks.length>=20){showStatus('Gallery is full. Export a backup first.');return;}let data=art.toDataURL('image/png');if(data.length>550000){showStatus('Drawing is too large to save.');return;}world.artworks.push({name:$('artName').value.slice(0,28)||'My picture',data});if(!addItem('picture','crafted')){world.artworks.pop();showStatus('Crafted pouch is full.');return;}save();closeShades();clearArt();showStatus('Artwork saved in the crafted pouch.');});
 
 function prepareOfflinePlay(){
+ const note=$('offlineReadyNote');
  if(!('serviceWorker' in navigator)||!window.isSecureContext){
-  showStatus('Offline cache is not supported in this browser. Keep the game open while disconnected.');
+  note.textContent='Offline caching is not supported in this browser. Keep the game open while disconnected.';
+  showStatus('This browser does not support offline caching.');
   return;
  }
  const onOfflinePage=/\/offline(?:\/index\.html)?\/?$/.test(location.pathname);
  const workerUrl=onOfflinePage?'../sw.js':'./sw.js';
+ note.textContent='Preparing the offline copy of both game pages…';
  navigator.serviceWorker.register(workerUrl,{updateViaCache:'none'})
   .then(()=>navigator.serviceWorker.ready)
-  .then(()=>showStatus('Offline play is ready on this device. You can disconnect and reopen DIYCraft here.'))
-  .catch(()=>showStatus('Offline setup could not finish. Please open DIYCraft again while connected.'));
+  .then(()=>{
+   note.textContent='Offline ready on this device! You can disconnect and reopen DIYCraft in this same browser.';
+   showStatus('Offline play is ready on this device. You can disconnect and reopen DIYCraft here.');
+  })
+  .catch(()=>{
+   note.textContent='Offline setup could not finish. Please open DIYCraft again while connected.';
+   showStatus('Offline setup could not finish. Please open DIYCraft again while connected.');
+  });
 }
 
 // Keep one local autosave. No gameplay networking, analytics, third-party scripts or multiplayer.
