@@ -341,7 +341,7 @@ function buildBlockChunkMesh(key,items){
    const vertices=cubeVerts(block.x,block.y+TILE_BASE_OFFSET,block.z,1,TILE_THICKNESS,1);
    for(const face of FACES){
     const [nx,ny,nz]=face.normal;
-    faces.push({center:{x:block.x+.5+nx*.5,y:block.y+TILE_BASE_OFFSET+TILE_THICKNESS/2+ny*.5,z:block.z+.5+nz*.5},normal:face.normal,
+    faces.push({center:{x:block.x+.5+nx*.5,y:block.y+TILE_BASE_OFFSET+TILE_THICKNESS/2+ny*TILE_THICKNESS/2,z:block.z+.5+nz*.5},normal:face.normal,
      vertices:face.ids.map(index=>vertices[index]),color:shadeColor(color,face.shade),material:null,customTint:false,outline:true,
      ...(ny===1?{tileTexture:textureTiles.get('tile-'+pattern)}:{})});
    }
