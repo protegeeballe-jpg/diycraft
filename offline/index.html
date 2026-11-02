@@ -1376,16 +1376,35 @@ function pushWaterSurfaces(queue,cam,w,h){
  for(const cell of waterCells){
   const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z);
   if(depth<1||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
-  const y=-depth+.82,vertices=[{x,y,z},{x:x+1,y,z},{x:x+1,y,z:z+1},{x,y,z:z+1}];
-  const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
-  const averageDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
-  // Painter's algorithm sorts back-to-front. The pool surface sits below
-  // the rim, but its average can be nearer than the centre of a vertical
-  // excavation wall. Bias only its sort key (never its position) behind
-  // that rim at downward camera angles, preserving translucent water.
-  const wallCentreY=-depth/2;
-  const surfaceBehindRim=Math.max(0,-(y-wallCentreY)*Math.sin(cam.pitch));
-  queue.push({pts,depth:averageDepth+surfaceBehindRim+.012,color:'#54c5df',alpha:.82,outline:false,waterSurface:true});
+  const floorY=-depth,topY=floorY+.82;
+  const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
+  const topPts=topVertices.map(v=>project(v,cam,w,h));
+  if(topPts.every(Boolean)){
+   const averageDepth=topPts.reduce((sum,p)=>sum+p.d,0)/topPts.length;
+   // Keep the water just below the ground rim while allowing the blue surface
+   // to remain translucent instead of looking like an opaque painted patch.
+   const wallCentreY=-depth/2;
+   const surfaceBehindRim=Math.max(0,-(topY-wallCentreY)*Math.sin(cam.pitch));
+   queue.push({pts:topPts,depth:averageDepth+surfaceBehindRim+.012,color:'#61cfee',alpha:.60,outline:false,waterSurface:true});
+  }
+  // Water is a shallow transparent volume, not just a top-face decal.
+  // Draw only outer walls so adjoining cells of the same pool join seamlessly.
+  const sides=[
+   {dx:0,dz:-1,normal:[0,0,-1],vertices:[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:topY,z},{x,y:topY,z}]},
+   {dx:0,dz:1,normal:[0,0,1],vertices:[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:topY,z:z+1},{x:x+1,y:topY,z:z+1}]},
+   {dx:-1,dz:0,normal:[-1,0,0],vertices:[{x,y:floorY,z:z+1},{x,y:floorY,z},{x,y:topY,z},{x,y:topY,z:z+1}]},
+   {dx:1,dz:0,normal:[1,0,0],vertices:[{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x:x+1,y:topY,z:z+1},{x:x+1,y:topY,z}]}
+  ];
+  for(const side of sides){
+   if(waterCells.has(keyGround(x+side.dx,z+side.dz)))continue;
+   const viewX=cam.pos.x-(x+.5),viewY=cam.pos.y-(floorY+.41),viewZ=cam.pos.z-(z+.5);
+   if(side.normal[0]*viewX+side.normal[1]*viewY+side.normal[2]*viewZ<=0)continue;
+   const pts=side.vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
+   const averageDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+   // A tiny painter-order nudge lets the translucent water tint the cut wall
+   // without moving the water volume away from its actual world coordinates.
+   queue.push({pts,depth:averageDepth-.018,color:'#55c9eb',alpha:.40,outline:false,waterSide:true});
+  }
  }
 }
 function pushFishOverlays(queue,cam,w,h){
@@ -1467,7 +1486,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}
   if(poly.fishEye){ctx.save();ctx.fillStyle='#fffdf4';ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#243c37';ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius*.52,0,Math.PI*2);ctx.fill();ctx.restore();continue;}
   const translucent=poly.alpha!==undefined;if(translucent){ctx.save();ctx.globalAlpha=poly.alpha;}
-  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}if(translucent)ctx.restore();
+  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}if(poly.waterSurface||poly.waterSide){ctx.save();ctx.strokeStyle=poly.waterSurface?'rgba(232,251,255,.66)':'rgba(210,246,255,.48)';ctx.lineWidth=poly.waterSurface?1.05:.9;ctx.stroke();if(poly.waterSurface&&poly.pts.length===4){const [a,b,c,d]=poly.pts;ctx.beginPath();ctx.moveTo(a.x*.30+d.x*.70,a.y*.30+d.y*.70);ctx.lineTo(b.x*.30+c.x*.70,b.y*.30+c.y*.70);ctx.strokeStyle='rgba(244,255,255,.48)';ctx.lineWidth=.85;ctx.stroke();}ctx.restore();}if(translucent)ctx.restore();
  }
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
