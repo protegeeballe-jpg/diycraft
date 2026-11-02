@@ -73,6 +73,12 @@ jobs:
             'function digAtScreen(',
             'function pushExcavationTerrain(queue,cam,w,h)',
             'function setToolMode(mode,announce=true)',
+            'function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
+            'function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
+            'function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
+            'function pushWaterSurfaces(queue,cam,w,h)',
+            'function drawFishOverlays(cam,w,h)',
+            'function consumeItem(id,target=\'materials\',amount=1)'
             'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
             'function makeTileTexturePatterns()',
             'function pushTileSlab',
@@ -100,7 +106,7 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
-          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="digBtn"') || !html.includes('id="digModeBtn"')) {
+          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="digBtn"') || !html.includes('id="digModeBtn"') || !html.includes('id="fillBtn"') || !html.includes('id="waterBtn"') || !html.includes('id="fishBtn"') || !html.includes('id="fillModeBtn"') || !html.includes('id="waterModeBtn"') || !html.includes('id="fishModeBtn"')) {
             throw new Error('A block, door, jump, or tile designer control is missing.');
           }
           const tileList = source.match(/const TILE_DESIGNS=\[([\s\S]*?)\];/);
@@ -111,7 +117,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v3'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v4'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }

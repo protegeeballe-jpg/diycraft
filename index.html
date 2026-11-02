@@ -8,7 +8,7 @@
 <title>DIYCraft — Peaceful Voxel World</title>
 <style>
 :root{--ink:#263c32;--green:#39784e;--green2:#dff0df;--cream:#fffdf4;--line:#d8e2d6;--shadow:0 8px 26px #203b3026}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc7d8;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;overscroll-behavior:none}button,input,select{font:inherit}button{border:1px solid #cbd9cb;border-radius:13px;background:#fffdf4;color:#294235;font-weight:750;padding:9px 12px;box-shadow:0 2px 0 #29423512;touch-action:manipulation;cursor:pointer}button:active{transform:translateY(1px);background:#e5f0df}button:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}.primary{background:#39784e;color:white;border-color:#39784e}.soft{background:#e2f0df}.app{position:fixed;inset:0;background:#9bc7d8}.world{position:absolute;inset:0;overflow:hidden;touch-action:none}.world canvas{display:block;width:100%;height:100%;touch-action:none;outline:0}.top-hud{position:absolute;z-index:5;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.hud-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}.brand{background:#fffdf0e8;border:1px solid #fff;border-radius:15px;padding:6px 11px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}.brand .flower{font-size:22px}.brand strong{font-size:15px;letter-spacing:.3px}.hud-actions{flex-wrap:wrap;justify-content:flex-end}.hud-actions button{font-size:12px;padding:9px 11px;background:#fffdf0ed}.hud-actions .primary{background:#39784e;color:#fff}.crosshair{position:absolute;left:50%;top:50%;z-index:3;width:13px;height:13px;transform:translate(-50%,-50%);pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#fff;border:1px solid #243d30;opacity:.9;border-radius:2px}.crosshair:before{width:13px;height:2px;left:0;top:5px}.crosshair:after{height:13px;width:2px;left:5px;top:0}.top-hint{position:absolute;z-index:2;left:50%;top:calc(max(9px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);max-width:92%;border-radius:999px;padding:6px 10px;background:#fffdf0bd;color:#3b5947;font-size:11px;white-space:nowrap;pointer-events:none}.hotbar{position:absolute;z-index:5;left:50%;bottom:max(9px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#fffffff0;border:1px solid #ffffff;border-radius:16px;box-shadow:var(--shadow);max-width:95vw;overflow-x:auto}.hotbar button{width:42px;height:46px;flex:0 0 42px;padding:2px;display:grid;place-items:center;gap:0;border-radius:10px;background:#f9fbf5}.hotbar button.active{outline:3px solid #4b9660;background:#e1f0df}.hotbar .emoji{font-size:19px;line-height:1}.hotbar small{font-size:8px;color:#5c6c5e;line-height:1}.touch-controls{position:absolute;z-index:5;inset:0;pointer-events:none}.dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:112px;height:104px;display:grid;grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,31px);gap:3px;pointer-events:auto}.dpad button,.action-pad button{padding:0;background:#fffdf0d9;border:1px solid #fff;box-shadow:0 3px 12px #29423526;backdrop-filter:blur(6px);font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad [data-move="0,-1"]{grid-column:2;grid-row:1}.dpad [data-move="-1,0"]{grid-column:1;grid-row:2}.dpad [data-move="0,1"]{grid-column:2;grid-row:2}.dpad [data-move="1,0"]{grid-column:3;grid-row:2}.dpad [data-move="up"]{grid-column:2;grid-row:3;font-size:12px}.action-pad{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,56px);grid-template-rows:repeat(4,40px);gap:6px;pointer-events:auto}.action-pad button{font-size:12px;font-weight:800}.action-pad #placeBtn{background:#39784ee8;color:white}.action-pad #digBtn{background:#a5683fe8;color:white}.action-pad #digBtn.primary{background:#39784e;color:white}.action-pad #removeBtn{background:#fff7e8ed}.action-pad #flyDownBtn{background:#edf5ffed}.action-pad #flyUpBtn{background:#edf5ffed}.action-pad #jumpBtn{grid-column:1 / -1;background:#39784ee8;color:white;font-size:13px}.show-controls{position:absolute;z-index:7;left:10px;bottom:10px;display:none;background:#fffdf4ed}.status{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 15px;border-radius:999px;background:#263f31;color:white;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}.status.show{opacity:1}.focus-exit{position:absolute;z-index:8;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:none}.focus-mode .top-hud{display:none}.focus-mode .top-hint{display:none}.focus-mode .focus-exit{display:block}.controllers-hidden .touch-controls{display:none}.controllers-hidden .show-controls{display:block}.menu-shade{position:absolute;z-index:9;inset:0;background:#1d34294b;display:none;align-items:center;justify-content:center;padding:14px}.menu-shade.open{display:flex}.menu{width:min(440px,96vw);max-height:88dvh;overflow:auto;background:#fffdf4;border:1px solid white;border-radius:22px;padding:18px;box-shadow:0 20px 70px #1735244c}.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.menu-head h2{margin:0;font-size:20px}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{min-height:49px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#617165;margin:9px 0}.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink)}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button.active{background:#dff0df;border-color:#73a581}.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.slot{min-height:57px;border:1px dashed #cad9c8;border-radius:10px;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;gap:2px}.slot .ico{font-size:18px}.slot small{font-size:9px;text-align:center;line-height:1.1;overflow-wrap:anywhere}.recipe{padding:11px;margin:7px 0;border:1px solid var(--line);border-radius:12px;background:#fff}.recipe strong{font-size:13px}.recipe p{font-size:11px;color:#647466;margin:4px 0 8px}.draw-canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note{font-size:11px;color:#647466;line-height:1.45}.hidden{display:none!important}.focus-mode .hotbar{bottom:max(5px,env(safe-area-inset-bottom))}.focus-mode .dpad,.focus-mode .action-pad{bottom:max(8px,env(safe-area-inset-bottom))}.portrait-note{display:none}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc7d8;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;overscroll-behavior:none}button,input,select{font:inherit}button{border:1px solid #cbd9cb;border-radius:13px;background:#fffdf4;color:#294235;font-weight:750;padding:9px 12px;box-shadow:0 2px 0 #29423512;touch-action:manipulation;cursor:pointer}button:active{transform:translateY(1px);background:#e5f0df}button:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}.primary{background:#39784e;color:white;border-color:#39784e}.soft{background:#e2f0df}.app{position:fixed;inset:0;background:#9bc7d8}.world{position:absolute;inset:0;overflow:hidden;touch-action:none}.world canvas{display:block;width:100%;height:100%;touch-action:none;outline:0}.top-hud{position:absolute;z-index:5;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.hud-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}.brand{background:#fffdf0e8;border:1px solid #fff;border-radius:15px;padding:6px 11px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}.brand .flower{font-size:22px}.brand strong{font-size:15px;letter-spacing:.3px}.hud-actions{flex-wrap:wrap;justify-content:flex-end}.hud-actions button{font-size:12px;padding:9px 11px;background:#fffdf0ed}.hud-actions .primary{background:#39784e;color:#fff}.crosshair{position:absolute;left:50%;top:50%;z-index:3;width:13px;height:13px;transform:translate(-50%,-50%);pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#fff;border:1px solid #243d30;opacity:.9;border-radius:2px}.crosshair:before{width:13px;height:2px;left:0;top:5px}.crosshair:after{height:13px;width:2px;left:5px;top:0}.top-hint{position:absolute;z-index:2;left:50%;top:calc(max(9px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);max-width:92%;border-radius:999px;padding:6px 10px;background:#fffdf0bd;color:#3b5947;font-size:11px;white-space:nowrap;pointer-events:none}.hotbar{position:absolute;z-index:5;left:50%;bottom:max(9px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#fffffff0;border:1px solid #ffffff;border-radius:16px;box-shadow:var(--shadow);max-width:95vw;overflow-x:auto}.hotbar button{width:42px;height:46px;flex:0 0 42px;padding:2px;display:grid;place-items:center;gap:0;border-radius:10px;background:#f9fbf5}.hotbar button.active{outline:3px solid #4b9660;background:#e1f0df}.hotbar .emoji{font-size:19px;line-height:1}.hotbar small{font-size:8px;color:#5c6c5e;line-height:1}.touch-controls{position:absolute;z-index:5;inset:0;pointer-events:none}.dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:112px;height:104px;display:grid;grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,31px);gap:3px;pointer-events:auto}.dpad button,.action-pad button{padding:0;background:#fffdf0d9;border:1px solid #fff;box-shadow:0 3px 12px #29423526;backdrop-filter:blur(6px);font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad [data-move="0,-1"]{grid-column:2;grid-row:1}.dpad [data-move="-1,0"]{grid-column:1;grid-row:2}.dpad [data-move="0,1"]{grid-column:2;grid-row:2}.dpad [data-move="1,0"]{grid-column:3;grid-row:2}.dpad [data-move="up"]{grid-column:2;grid-row:3;font-size:12px}.action-pad{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,56px);grid-template-rows:repeat(5,38px);gap:5px;pointer-events:auto}.action-pad button{font-size:12px;font-weight:800}.action-pad #placeBtn{background:#39784ee8;color:white}.action-pad #digBtn{background:#a5683fe8;color:white}.action-pad #digBtn.primary,.action-pad .primary{background:#39784e;color:white}.action-pad #fillBtn{background:#c9a47ee8}.action-pad #waterBtn{background:#8fd7e9ed}.action-pad #fishBtn{background:#fff1c8ed}.action-pad #removeBtn{background:#fff7e8ed}.action-pad #flyDownBtn{background:#edf5ffed}.action-pad #flyUpBtn{background:#edf5ffed}.action-pad #jumpBtn{grid-column:1 / -1;background:#39784ee8;color:white;font-size:13px}.show-controls{position:absolute;z-index:7;left:10px;bottom:10px;display:none;background:#fffdf4ed}.status{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 15px;border-radius:999px;background:#263f31;color:white;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}.status.show{opacity:1}.focus-exit{position:absolute;z-index:8;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:none}.focus-mode .top-hud{display:none}.focus-mode .top-hint{display:none}.focus-mode .focus-exit{display:block}.controllers-hidden .touch-controls{display:none}.controllers-hidden .show-controls{display:block}.menu-shade{position:absolute;z-index:9;inset:0;background:#1d34294b;display:none;align-items:center;justify-content:center;padding:14px}.menu-shade.open{display:flex}.menu{width:min(440px,96vw);max-height:88dvh;overflow:auto;background:#fffdf4;border:1px solid white;border-radius:22px;padding:18px;box-shadow:0 20px 70px #1735244c}.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.menu-head h2{margin:0;font-size:20px}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{min-height:49px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#617165;margin:9px 0}.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink)}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button.active{background:#dff0df;border-color:#73a581}.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.slot{min-height:57px;border:1px dashed #cad9c8;border-radius:10px;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;gap:2px}.slot .ico{font-size:18px}.slot small{font-size:9px;text-align:center;line-height:1.1;overflow-wrap:anywhere}.recipe{padding:11px;margin:7px 0;border:1px solid var(--line);border-radius:12px;background:#fff}.recipe strong{font-size:13px}.recipe p{font-size:11px;color:#647466;margin:4px 0 8px}.draw-canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note{font-size:11px;color:#647466;line-height:1.45}.hidden{display:none!important}.focus-mode .hotbar{bottom:max(5px,env(safe-area-inset-bottom))}.focus-mode .dpad,.focus-mode .action-pad{bottom:max(8px,env(safe-area-inset-bottom))}.portrait-note{display:none}
 
 .texture-note{font-size:11px;color:#637466;line-height:1.45;margin:8px 0 0}
 .color-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
@@ -111,7 +111,7 @@
     <div class="hud-actions">
       <button id="viewBtn">👁 View: 1st</button>
       <button id="timeBtn" title="Change time of day">☀️ Day</button>
-      <button id="flyBtn">🕊 Fly: Off</button><button id="digModeBtn" aria-pressed="false" title="Choose the shovel to dig blocks and ground">🪏 Dig: Off</button>
+      <button id="flyBtn">🕊 Fly: Off</button><button id="digModeBtn" aria-pressed="false" title="Choose the shovel to dig blocks and ground">🪏 Dig: Off</button><button id="fillModeBtn" aria-pressed="false" title="Use collected dirt to refill excavated ground">🟫 Fill: Off</button><button id="waterModeBtn" aria-pressed="false" title="Add water to dug channels">💧 Water: Off</button><button id="fishModeBtn" aria-pressed="false" title="Place fish in water">🐟 Fish: Off</button>
       <button id="controlsBtn">Hide controls</button>
       <button id="expandBtn" class="primary">⛶ Enlarge</button>
       <button id="inventoryBtn">🎒</button>
@@ -124,7 +124,7 @@
     <div class="dpad" aria-label="Movement controls">
       <button data-move="0,-1" aria-label="Move forward">▲</button><button data-move="-1,0" aria-label="Move left">◀</button><button data-move="0,1" aria-label="Move back">▼</button><button data-move="1,0" aria-label="Move right">▶</button><span aria-hidden="true" style="grid-column:2;grid-row:3"></span>
     </div>
-    <div class="action-pad"><button id="placeBtn">＋ BUILD</button><button id="digBtn" aria-pressed="false">🪏 DIG</button><button id="removeBtn">− REMOVE</button><button id="flyDownBtn">↓ DOWN</button><button id="flyUpBtn">↑ UP</button><button id="jumpBtn" aria-label="Jump">⬆ JUMP</button></div>
+    <div class="action-pad"><button id="placeBtn">＋ BUILD</button><button id="digBtn" aria-pressed="false">🪏 DIG</button><button id="fillBtn" aria-pressed="false">🟫 FILL</button><button id="waterBtn" aria-pressed="false">💧 WATER</button><button id="fishBtn" aria-pressed="false">🐟 FISH</button><button id="removeBtn">− REMOVE</button><button id="flyDownBtn">↓ DOWN</button><button id="flyUpBtn">↑ UP</button><button id="jumpBtn" aria-label="Jump">⬆ JUMP</button></div>
   </div>
   <button class="show-controls" id="showControls">Show controllers</button>
   <button class="focus-exit" id="focusExit">✕ Exit full view</button>
@@ -349,7 +349,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,excavations:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],fish:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -383,10 +383,24 @@ function validWorld(d){
    const key=x+','+z;if(seenExcavations.has(key))return false;seenExcavations.add(key);return true;
   }).map(v=>[v[0],v[1],v[2]]);
  }
+ if(Array.isArray(d.waterCells)){
+  const dug=new Set(w.excavations.map(([x,z])=>x+','+z)),seen=new Set();
+  w.waterCells=d.waterCells.slice(0,GROUND_DIG_LIMIT).filter(v=>{
+   if(!Array.isArray(v)||v.length<2||!Number.isInteger(v[0])||!Number.isInteger(v[1])||Math.abs(v[0])>WORLD_LIMIT||Math.abs(v[1])>WORLD_LIMIT)return false;
+   const key=v[0]+','+v[1];if(!dug.has(key)||seen.has(key))return false;seen.add(key);return true;
+  }).map(v=>[v[0],v[1]]);
+ }
+ if(Array.isArray(d.fish)){
+  const wet=new Set(w.waterCells.map(([x,z])=>x+','+z)),counts=new Map();
+  w.fish=d.fish.slice(0,GROUND_DIG_LIMIT*3).filter(v=>{
+   if(!Array.isArray(v)||v.length<2||!Number.isInteger(v[0])||!Number.isInteger(v[1]))return false;
+   const key=v[0]+','+v[1],n=counts.get(key)||0;if(!wet.has(key)||n>=3)return false;counts.set(key,n+1);return true;
+  }).map(v=>[v[0],v[1]]);
+ }
  if(d.player&&typeof d.player==='object'){
   const p=d.player;
   w.player.x=Number.isFinite(p.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.x)):0;
-  w.player.y=Number.isFinite(p.y)?Math.max(0,Math.min(60,p.y)):0;
+  w.player.y=Number.isFinite(p.y)?Math.max(-MAX_DIG_DEPTH,Math.min(60,p.y)):0;
   w.player.z=Number.isFinite(p.z)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.z)):4;
   w.player.yaw=Number.isFinite(p.yaw)?p.yaw:0;w.player.pitch=Number.isFinite(p.pitch)?Math.max(-1.25,Math.min(1.25,p.pitch)):0;
   w.player.shirt=validHex(p.shirt,w.player.shirt);w.player.hair=validHex(p.hair,w.player.hair);w.player.skin=validHex(p.skin,w.player.skin);
@@ -435,8 +449,19 @@ function setTimeMode(mode,announce=true){
 }
 function save(silent=true){try{world.name=$('worldName').value.trim().slice(0,30)||world.name;localStorage.setItem(STORE_KEY,JSON.stringify(world));if(!silent)showStatus('World saved on this device.');}catch(e){if(!storageUnavailable){storageUnavailable=true;if(!silent)showStatus('Device storage is unavailable. Use Backup to keep your world.');}}}
 function addItem(id,target='crafted',label=''){const arr=world[target];const same=arr.find(v=>v&&v.id===id&&v.count<99);if(same){same.count++;return true;}const i=arr.findIndex(v=>!v);if(i<0)return false;arr[i]={id,count:1,label};return true;}
-function syncToolButtons(){const digging=toolMode==='dig';const desktop=$('digModeBtn'),mobile=$('digBtn');desktop.textContent=digging?'🪏 Dig: On':'🪏 Dig: Off';desktop.setAttribute('aria-pressed',String(digging));desktop.classList.toggle('primary',digging);mobile.textContent=digging?'🪏 DIG ON':'🪏 DIG';mobile.setAttribute('aria-pressed',String(digging));mobile.classList.toggle('primary',digging);$('topHint').textContent=digging?'Shovel mode · Tap soil or blocks to dig · Neighbor homes and people are protected':'Build mode · Tap to place blocks · Select the shovel to dig ground and blocks';}
-function setToolMode(mode,announce=true){toolMode=mode==='dig'?'dig':'build';syncToolButtons();if(announce)showStatus(toolMode==='dig'?'Shovel ready. Tap the ground or a block to dig.':'Build mode ready. Tap to place blocks.');}
+function consumeItem(id,target='materials',amount=1){const arr=world[target]||[];let left=amount;for(let i=0;i<arr.length&&left>0;i++){const item=arr[i];if(!item||item.id!==id)continue;const take=Math.min(left,item.count);item.count-=take;left-=take;if(item.count<=0)arr[i]=null;}return left===0;}
+function syncToolButtons(){
+ const tools=[
+  {mode:'dig',desktop:'digModeBtn',mobile:'digBtn',desktopText:'🪏 Dig',mobileText:'🪏 DIG'},
+  {mode:'fill',desktop:'fillModeBtn',mobile:'fillBtn',desktopText:'🟫 Fill',mobileText:'🟫 FILL'},
+  {mode:'water',desktop:'waterModeBtn',mobile:'waterBtn',desktopText:'💧 Water',mobileText:'💧 WATER'},
+  {mode:'fish',desktop:'fishModeBtn',mobile:'fishBtn',desktopText:'🐟 Fish',mobileText:'🐟 FISH'}
+ ];
+ for(const t of tools){const active=toolMode===t.mode,d=$(t.desktop),m=$(t.mobile);d.textContent=t.desktopText+(active?': On':': Off');m.textContent=t.mobileText+(active?' ON':'');d.setAttribute('aria-pressed',String(active));m.setAttribute('aria-pressed',String(active));d.classList.toggle('primary',active);m.classList.toggle('primary',active);}
+ const hints={build:'Build mode · Choose a block, then tap to place it',dig:'Shovel mode · Tap soil or blocks to dig',fill:'Fill mode · Spend 1 collected Dirt to restore one ground level',water:'Water mode · Tap dug cells to make a river or pond',fish:'Fish mode · Tap water to add up to 3 fish per cell'};
+ $('topHint').textContent=hints[toolMode]||hints.build;
+}
+function setToolMode(mode,announce=true){toolMode=['dig','fill','water','fish'].includes(mode)?mode:'build';syncToolButtons();if(announce){const messages={build:'Build mode ready. Choose a block and place it.',dig:'Shovel ready. Tap the ground or a block to dig.',fill:'Fill tool ready. Each tap uses one collected Dirt.',water:'Water tool ready. Tap the bottom of a dug cell to add water.',fish:'Fish tool ready. Tap a water cell to add a fish.'};showStatus(messages[toolMode]);}}
 function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'Custom',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=world.customBlock.color;btn.style.background='linear-gradient(135deg,'+world.customBlock.color+'55,#fffdf4)';btn.title='Open custom texture and color designer';btn.addEventListener('click',openCustomBlockDesigner);}else{btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';if(b.id==='tile'){btn.title='Open the tile color and pattern designer';btn.addEventListener('click',()=>{selected='tile';renderHotbar();openTileDesigner();});}else btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});}root.append(btn);});}
 function keyBlock(x,y,z){return x+','+y+','+z;}
 const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z)));
@@ -445,6 +470,9 @@ function keyGround(x,z){return Math.floor(x)+','+Math.floor(z);}
 let groundDepths=new Map((world.excavations||[]).map(([x,z,depth])=>[keyGround(x,z),depth]));
 function groundDepthAt(x,z){return groundDepths.get(keyGround(x,z))||0;}
 function syncExcavations(){world.excavations=Array.from(groundDepths,([key,depth])=>{const [x,z]=key.split(',').map(Number);return [x,z,depth];});}
+let waterCells=new Set((world.waterCells||[]).map(([x,z])=>keyGround(x,z)));
+let fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
+function syncWaterLife(){world.waterCells=Array.from(waterCells,key=>key.split(',').map(Number));world.fish=fishSpots.map(f=>[f.x,f.z]);}
 let blockLookup=new Map(),worldGeometryRevision=0,neighborObstacleCache=null,neighborPathCache=new Map();
 function invalidateNeighborNavigation(){worldGeometryRevision++;neighborObstacleCache=null;neighborPathCache.clear();}
 function rebuildLookup(){invalidateNeighborNavigation();groundDepths.clear();for(const [x,z,depth] of world.excavations||[])groundDepths.set(keyGround(x,z),depth);blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
@@ -1146,6 +1174,22 @@ function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDe
  if(east<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x:x+1,y:-east,z:z+1},{x:x+1,y:-east,z},{x:x+1,y:floorY,z}],'#765034');
  if(north<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:-north,z},{x,y:-north,z}],'#8c6543');
  if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f');}}
+function pushWaterSurfaces(queue,cam,w,h){
+ for(const cell of waterCells){const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z);if(depth<1||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
+  const y=-depth+.82,vertices=[{x,y,z},{x:x+1,y,z},{x:x+1,y,z:z+1},{x,y,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
+  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:'#54c5df',alpha:.82,outline:false});
+ }
+}
+function drawFishOverlays(cam,w,h){
+ const time=performance.now()/1000,colors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
+ fishSpots.forEach((fish,i)=>{const depth=groundDepthAt(fish.x,fish.z);if(depth<1||!waterCells.has(keyGround(fish.x,fish.z)))return;
+  const phase=time*1.2+i*2.1,sway=Math.sin(phase),pos=project({x:fish.x+.5+sway*.17,y:-depth+.61,z:fish.z+.5+Math.cos(phase*.72)*.10},cam,w,h);if(!pos)return;
+  const size=Math.max(3.5,Math.min(12,54/pos.d));ctx.save();ctx.translate(pos.x,pos.y);if(Math.cos(phase)<0)ctx.scale(-1,1);
+  ctx.fillStyle=colors[i%colors.length];ctx.beginPath();ctx.moveTo(-size*.42,0);ctx.lineTo(-size*1.05,-size*.55);ctx.lineTo(-size*1.05,size*.55);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,0,size*.78,size*.43,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fffdf4';ctx.beginPath();ctx.arc(size*.38,-size*.12,Math.max(1,size*.12),0,Math.PI*2);ctx.fill();ctx.fillStyle='#243c37';ctx.beginPath();ctx.arc(size*.42,-size*.12,Math.max(.6,size*.065),0,Math.PI*2);ctx.fill();ctx.restore();
+ });
+}
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.6),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
  const palette=getTimePalette(performance.now()/1000);
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
@@ -1168,6 +1212,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  const ground=[{x:-WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:WORLD_LIMIT},{x:-WORLD_LIMIT,y:0,z:WORLD_LIMIT}].map(p=>project(p,cam,w,h));
  if(ground.every(Boolean)){ctx.beginPath();ground.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=palette.ground;ctx.fill();}
  pushExcavationTerrain(polys,cam,w,h);
+ pushWaterSurfaces(polys,cam,w,h);
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
@@ -1210,9 +1255,11 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    ctx.restore();continue;
   }
   if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}
-  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
+  const translucent=poly.alpha!==undefined;if(translucent){ctx.save();ctx.globalAlpha=poly.alpha;}
+  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}if(translucent)ctx.restore();
  }
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
+ drawFishOverlays(cam,w,h);
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
  if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.15,y:1.2,z:a.z+.5},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
  // Friendly home signs make it easy to find each neighbor's little cottage.
@@ -1267,6 +1314,31 @@ function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
   groundDepths.set(key,newDepth);syncExcavations();addItem('dirt','materials');invalidateNeighborNavigation();save();render();showStatus('Ground excavated to '+newDepth+' block'+(newDepth===1?'':'s')+' deep · +1 Dirt.');return;
  }
  showStatus('Aim the shovel at a block or a patch of ground, then tap to dig.');
+}
+function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
+ const hit=rayHitAtScreen(px,py);if(!hit||!hit.ground){showStatus('Aim at the floor of a hole to fill it.');return;}
+ const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
+ if(depth<=0){showStatus('That ground is already at its original level.');return;}
+ if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
+ if(!consumeItem('dirt','materials',1)){showStatus('You need one collected Dirt in your materials pouch to fill this hole.');return;}
+ waterCells.delete(key);fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);
+ if(depth===1)groundDepths.delete(key);else groundDepths.set(key,depth-1);
+ syncExcavations();syncWaterLife();invalidateNeighborNavigation();save();render();showStatus('Filled 1 ground level with Dirt.');
+}
+function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
+ const hit=rayHitAtScreen(px,py);if(!hit||!hit.ground){showStatus('Aim at the floor of a dug cell to add water.');return;}
+ const x=hit.x,z=hit.z,key=keyGround(x,z);
+ if(groundDepthAt(x,z)<=0){showStatus('Dig a shallow channel first, then add water to its floor.');return;}
+ if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
+ if(waterCells.has(key)){showStatus('This river cell already has water.');return;}
+ waterCells.add(key);syncWaterLife();save();render();showStatus('Water added! Join neighboring wet cells to make a river.');
+}
+function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
+ const hit=rayHitAtScreen(px,py);if(!hit||!hit.ground){showStatus('Aim at a water cell to add a fish.');return;}
+ const x=hit.x,z=hit.z,key=keyGround(x,z);
+ if(!waterCells.has(key)){showStatus('Add water to this dug cell first.');return;}
+ if(fishSpots.filter(f=>keyGround(f.x,f.z)===key).length>=3){showStatus('This water cell already has three fish.');return;}
+ fishSpots.push({x,z});syncWaterLife();save();render();showStatus('A little fish is swimming in your water!');
 }
 function surfaceHeightAt(x,z){
  const bx=Math.floor(x),bz=Math.floor(z);
@@ -1583,12 +1655,12 @@ function clearBlockHold(){
 }
 function handleWorldTap(px,py){
  const hit=rayHitAtScreen(px,py);
- if(hit&&hit.block&&hit.block.type==='door'&&toolMode!=='dig'){toggleDoor(hit.block);return;}
+ if(hit&&hit.block&&hit.block.type==='door'&&toolMode==='build'){toggleDoor(hit.block);return;}
  const animal=animalAtScreen(px,py);
  if(animal){openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(px,py);
  if(neighbor){openColoring(neighbor.name);return;}
- if(toolMode==='dig')digAtScreen(px,py);else buildAtScreen(px,py);
+ if(toolMode==='dig')digAtScreen(px,py);else if(toolMode==='fill')fillAtScreen(px,py);else if(toolMode==='water')waterAtScreen(px,py);else if(toolMode==='fish')fishAtScreen(px,py);else buildAtScreen(px,py);
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
@@ -1599,7 +1671,7 @@ canvas.addEventListener('pointerdown',e=>{
  canvas.setPointerCapture(e.pointerId);
  const rect=canvas.getBoundingClientRect();
  const px=e.clientX-rect.left,py=e.clientY-rect.top;
- if(toolMode!=='dig'&&!animalAtScreen(px,py)&&!neighborAtScreen(px,py)){
+ if(toolMode==='build'&&!animalAtScreen(px,py)&&!neighborAtScreen(px,py)){
   const hit=rayHitAtScreen(px,py);
   if(hit&&hit.block){
    const targetKey=keyBlock(hit.block.x,hit.block.y,hit.block.z);
@@ -1643,7 +1715,7 @@ canvas.addEventListener('pointercancel',()=>{
 });
 // On-screen movement pads support press-and-hold on iPad.
 document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
-$('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode('build',false);build();});$('digBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode(toolMode==='dig'?'build':'dig');});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});$('digModeBtn').addEventListener('click',()=>setToolMode(toolMode==='dig'?'build':'dig'));syncToolButtons();$('jumpBtn').addEventListener('click',jump);const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
+$('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode('build',false);build();});$('digBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode(toolMode==='dig'?'build':'dig');});$('fillBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode(toolMode==='fill'?'build':'fill');});$('waterBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode(toolMode==='water'?'build':'water');});$('fishBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode(toolMode==='fish'?'build':'fish');});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});$('digModeBtn').addEventListener('click',()=>setToolMode(toolMode==='dig'?'build':'dig'));$('fillModeBtn').addEventListener('click',()=>setToolMode(toolMode==='fill'?'build':'fill'));$('waterModeBtn').addEventListener('click',()=>setToolMode(toolMode==='water'?'build':'water'));$('fishModeBtn').addEventListener('click',()=>setToolMode(toolMode==='fish'?'build':'fish'));syncToolButtons();$('jumpBtn').addEventListener('click',jump);const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
 
 $('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;else showStatus('Turn flight on first.');});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;else showStatus('Turn flight on first.');});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
 function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}
