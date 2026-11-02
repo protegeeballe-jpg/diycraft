@@ -82,7 +82,6 @@ jobs:
             'function toggleDoor(door)',
             'function drawVoxelDoor(queue,cam,w,h,door)',
             'function jump()',
-            'function surfaceHeightAt(x,z)',
             'const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000',
             'function surfaceHeightAt(x,z,atOrBelowY=Infinity)',
             'blockColumnBlocks=new Map()',
