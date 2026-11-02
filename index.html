@@ -902,7 +902,12 @@ function paintMappedQuad(image,points,alpha=.9){
 }
 function paintTileTexture(poly){
  const image=poly.tileTexture;if(!image||poly.pts.length!==4)return;
- paintMappedQuad(image,poly.pts,.9);
+ const [p0,p1,p2,p3]=poly.pts;
+ ctx.save();clipProjectedQuad(poly.pts);
+ // Keep the tile studio's established top-face orientation.
+ paintTileTriangle(image,[{x:0,y:0},{x:0,y:96},{x:96,y:96}],[p0,p1,p2],.9);
+ paintTileTriangle(image,[{x:0,y:0},{x:96,y:96},{x:96,y:0}],[p0,p2,p3],.9);
+ ctx.restore();
 }
 function line3(queue,cam,w,h,a,b,color,width=1){const p=project(a,cam,w,h),q=project(b,cam,w,h);if(p&&q)queue.push({line:true,p,q,depth:(p.d+q.d)/2,color,width});}
 const NEIGHBOR_ROUTES={
