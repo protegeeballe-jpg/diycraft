@@ -76,6 +76,10 @@ jobs:
           const source = fs.readFileSync('diycraft.js', 'utf8');
           const required = [
             'function getTimePalette',
+            'function setPlayerActivity(activity)',
+            "const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'",
+            "if(activity==='sleep'){",
+            'activity:playerActivity',
             'const NEIGHBOR_ROUTES',
             'function neighborOnRoute',
             'const HOLD_TO_REMOVE_MS=600',
@@ -186,6 +190,11 @@ jobs:
           const tileList = source.match(/const TILE_DESIGNS=\[([\s\S]*?)\];/);
           const tileCount = tileList ? (tileList[1].match(/\bid:/g) || []).length : 0;
           if (tileCount !== 20) throw new Error('Expected exactly 20 tile designs; found ' + tileCount);
+          if (!html.includes('id="activityBtn"') || !html.includes('id="activityShade"') ||
+              !html.includes('data-player-activity="sleep"') || !html.includes('data-player-activity="sit"') ||
+              !html.includes('data-player-activity="work"') || !html.includes('data-player-activity="dance"')) {
+            throw new Error('The sleep, sit, work and dance activity controls are missing.');
+          }
           if (!html.includes('id="offlineReadyNote"')) throw new Error('Persistent offline-ready status is missing.');
           if (!html.includes("script-src 'unsafe-inline' 'self'") || !html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
