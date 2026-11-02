@@ -1455,11 +1455,11 @@ function paintWaterFace(poly,time){
   gradient.addColorStop(1,'#075184');
  }
  ctx.fillStyle=gradient;ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
- const seed=poly.waterSeed||0,pulse=.93+Math.sin(time*.0018+seed)*.055;
+ const seed=poly.waterSeed||0;
  if(poly.waterSurface){
   // Three moving curved glints create a slow current across the water top.
   for(let i=0;i<3;i++){
-   const t=(time*.00011+i*.34+seed*.013)%1;
+   const t=((time*.00011+i*.34+seed*.013)%1+1)%1;
    const a=lerp(pts[0],pts[3],t),b=lerp(pts[1],pts[2],t),m=lerp(a,b,.5);
    const crest=Math.sin(time*.0016+seed+i*1.8)*2.15;
    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(m.x,m.y+crest,b.x,b.y);
@@ -1566,7 +1566,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   if(isWaterFace){ctx.save();ctx.globalAlpha=(poly.alpha??1)*(.93+Math.sin(performance.now()*.0018+(poly.waterSeed||0))*.055);paintWaterFace(poly,performance.now());ctx.restore();}
   else{ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);}
   if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
-  if(isWaterFace){ctx.save();ctx.strokeStyle=poly.waterSurface?'rgba(232,251,255,.72)':'rgba(210,246,255,.52)';ctx.lineWidth=poly.waterSurface?1.1:.9;ctx.stroke();ctx.restore();}
+  if(isWaterFace){ctx.save();ctx.strokeStyle=poly.waterSurface?'rgba(232,251,255,.72)':'rgba(210,246,255,.52)';ctx.lineWidth=poly.waterSurface?1.1:.9;ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.stroke();ctx.restore();}
   if(translucent&&!isWaterFace)ctx.restore();
  }
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
