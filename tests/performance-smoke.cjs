@@ -197,6 +197,11 @@ check(!source.includes('for(let y=64;y>=-MAX_DIG_DEPTH;y--)'),
 check(source.includes('function surfaceHeightAt(x,z,atOrBelowY=Infinity)') &&
   source.includes('blockColumnBlocks=new Map()'),
   'Surface lookup must use per-column block indexes and support the player height.');
+const movementStart = source.indexOf('function move(dt){');
+const undergroundRescue = source.indexOf('const terrainFloor=-groundDepthAt(p.x,p.z)', movementStart);
+const flightBranch = source.indexOf('if(flying){', movementStart);
+check(movementStart >= 0 && undergroundRescue > movementStart && flightBranch > undergroundRescue,
+  'Underground recovery must run before the flight branch so flying players cannot remain trapped below terrain.');
 check(source.includes('if(next<=floor){') &&
   source.includes('else {p.y=floor;jumpVelocity=0;save(true);return;}'),
   'The player must land on a valid surface and recover when already below terrain.');
