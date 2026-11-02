@@ -1385,6 +1385,22 @@ function surfaceHeightAt(x,z){
  }
  return -groundDepthAt(bx,bz);
 }
+const GROUND_BASE_Y=-MAX_DIG_DEPTH;
+function terrainCollisionAt(x,z,y){
+ if(y>=-.001)return false;
+ const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
+ const minZ=Math.floor(z-PLAYER_RADIUS),maxZ=Math.floor(z+PLAYER_RADIUS);
+ const head=y+PLAYER_BODY_HEIGHT;
+ for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++){
+  const solidTop=-groundDepthAt(bx,bz);
+  if(y>=solidTop-.001||head<=GROUND_BASE_Y+.001)continue;
+  if(head<=GROUND_BASE_Y+.001||y>=solidTop-.001)continue;
+  const nearX=Math.max(bx,Math.min(bx+1,x)),nearZ=Math.max(bz,Math.min(bz+1,z));
+  const dx=x-nearX,dz=z-nearZ;
+  if(dx*dx+dz*dz<PLAYER_RADIUS*PLAYER_RADIUS)return true;
+ }
+ return false;
+}
 const PLAYER_RADIUS=.23,PLAYER_BODY_HEIGHT=1.72,PLAYER_STEP_HEIGHT=.18;
 function playerCollisionAt(x,z,y){
  const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
@@ -1402,7 +1418,7 @@ function playerCollisionAt(x,z,y){
   const dx=x-nearX,dz=z-nearZ;
   if(dx*dx+dz*dz<PLAYER_RADIUS*PLAYER_RADIUS)return true;
  }
- return false;
+ return terrainCollisionAt(x,z,y);
 }
 function nudgePlayerOutOfBlocks(){
  const p=world.player;if(!playerCollisionAt(p.x,p.z,p.y))return;

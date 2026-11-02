@@ -94,6 +94,7 @@ jobs:
             '1,TILE_THICKNESS,1',
             'floor<=p.y+.18',
             'const TILE_DESIGNS=[',
+            'function terrainCollisionAt(x,z,y)',
             'function playerCollisionAt(x,z,y)',
             'function buildNeighborObstacleSet()',
             'function findNeighborPath(start,end)',
@@ -121,7 +122,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v6'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v7'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
