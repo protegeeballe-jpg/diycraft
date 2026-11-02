@@ -1605,6 +1605,8 @@ function jump(){
 function move(dt){
  const p=world.player,speed=flying?7:4.2;
  nudgePlayerOutOfBlocks();
+ const terrainFloor=-groundDepthAt(p.x,p.z);
+ if(p.y<terrainFloor-.04){p.y=surfaceHeightAt(p.x,p.z,p.y);jumpVelocity=0;playerGrounded=true;save(true);}
  let forward=moveZ,right=moveX;
  if(keys.w||keys.ArrowUp)forward+=1;
  if(keys.s||keys.ArrowDown)forward-=1;
