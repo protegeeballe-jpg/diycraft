@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const source = fs.readFileSync('diycraft.js', 'utf8');
+const html = fs.readFileSync('index.html', 'utf8');
 const helperStart = source.indexOf('function renderChunkKey');
 const helperEnd = source.indexOf('function rebuildFishRenderChunks', helperStart);
 assert(helperStart >= 0 && helperEnd > helperStart, 'Chunk-cache helpers must remain available in the engine source.');
