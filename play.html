@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#d9edf0">
+  <meta name="description" content="Explore DIYCraft, a peaceful creative voxel sandbox featuring world building, terrain digging, layered water, organic waves, animals, and offline-ready play.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="DIYCraft — A Peaceful Creative Voxel World">
+  <meta property="og:description" content="Build, dig, design, and explore your own peaceful world. Play DIYCraft in your browser.">
+  <meta name="twitter:card" content="summary">
+  <title>DIYCraft — Play the Peaceful Voxel World</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #203d3c;
+      --muted: #54706d;
+      --teal: #176e72;
+      --teal-dark: #10575c;
+      --mint: #e1f2e9;
+      --sky: #e5f3f5;
+      --cream: #fffdf6;
+      --line: #d5e7df;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 28px 18px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 12% 10%, #d8efe4 0, transparent 36%),
+        radial-gradient(ellipse at 88% 88%, #cce9ed 0, transparent 38%),
+        linear-gradient(145deg, #eef7ef, #e8f3f6 58%, #f7f4e9);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .shell { width: min(100%, 900px); }
+    .card {
+      overflow: hidden;
+      border: 1px solid #ffffffb8;
+      border-radius: 30px;
+      background: #fffdf6ed;
+      box-shadow: 0 28px 80px #214b4430;
+    }
+    .hero {
+      position: relative;
+      padding: clamp(30px, 7vw, 66px);
+      background:
+        linear-gradient(135deg, #e4f2e8ee, #e1f1f3e8),
+        repeating-linear-gradient(45deg, transparent 0 22px, #ffffff30 22px 23px);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 13px;
+      border: 1px solid #bad9c9;
+      border-radius: 999px;
+      color: #37685c;
+      background: #ffffffa8;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 22px 0 12px;
+      max-width: 680px;
+      font-size: clamp(42px, 8vw, 76px);
+      line-height: .98;
+      letter-spacing: -.065em;
+    }
+    h1 span { color: var(--teal); }
+    .intro {
+      max-width: 610px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 2.5vw, 19px);
+      line-height: 1.7;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    .play-button, .source-button {
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      padding: 0 24px;
+      border-radius: 15px;
+      font-size: 15px;
+      font-weight: 850;
+      text-decoration: none;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    .play-button {
+      color: #fff;
+      background: linear-gradient(135deg, #21858a, #12636a);
+      box-shadow: 0 8px 0 #0c5156, 0 16px 28px #176e7230;
+    }
+    .play-button:hover { transform: translateY(-2px); box-shadow: 0 10px 0 #0c5156, 0 19px 32px #176e7238; }
+    .play-button:active { transform: translateY(4px); box-shadow: 0 3px 0 #0c5156; }
+    .source-button {
+      color: var(--teal-dark);
+      border: 1px solid #c5ded3;
+      background: #ffffffb8;
+    }
+    .source-button:hover { background: #fff; transform: translateY(-1px); }
+    a:focus-visible { outline: 3px solid #e0a93f; outline-offset: 4px; }
+    .visual {
+      min-height: 165px;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 28px 0;
+      overflow: hidden;
+    }
+    .block {
+      width: clamp(32px, 6vw, 58px);
+      aspect-ratio: 1;
+      border: 1px solid #ffffff70;
+      border-radius: 8px 8px 3px 3px;
+      box-shadow: inset 0 8px 12px #ffffff25, 0 10px 20px #28564a20;
+      transform: skewY(-5deg);
+    }
+    .grass { background: linear-gradient(#9bc97b 0 27%, #8baf67 27% 35%, #986d4d 35%); }
+    .stone { background: linear-gradient(145deg, #b9c2bc, #81918c); height: 72%; }
+    .water { background: linear-gradient(165deg, #b7f0ee, #50bbd1 55%, #187ca7); height: 60%; }
+    .wood { background: repeating-linear-gradient(90deg, #b8875d 0 10px, #9f704e 10px 12px); height: 83%; }
+    .flower { background: radial-gradient(circle at 50% 28%, #ffd5e1 0 18%, transparent 19%), linear-gradient(#7dbd83 0 35%, #669b61 35%); height: 68%; }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 26px clamp(22px, 5vw, 52px) 34px;
+    }
+    .feature {
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: #ffffffa8;
+    }
+    .feature .icon { font-size: 23px; }
+    .feature h2 { margin: 9px 0 5px; font-size: 14px; }
+    .feature p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px clamp(22px, 5vw, 52px) 22px;
+      border-top: 1px solid #e1ebe5;
+      color: #648079;
+      font-size: 12px;
+    }
+    @media (max-width: 620px) {
+      body { padding: 12px; }
+      .card { border-radius: 22px; }
+      .features { grid-template-columns: 1fr; padding-top: 18px; }
+      .feature { display: grid; grid-template-columns: 34px 1fr; column-gap: 10px; align-items: start; }
+      .feature .icon { grid-row: span 2; }
+      .feature h2 { margin: 1px 0 4px; }
+      .visual { min-height: 110px; }
+      .actions { align-items: stretch; }
+      .play-button, .source-button { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="card" aria-labelledby="title">
+      <div class="hero">
+        <div class="eyebrow">🌼 Peaceful creative sandbox</div>
+        <h1 id="title">Make room for <span>imagination.</span></h1>
+        <p class="intro">
+          Welcome to DIYCraft — a peaceful voxel world where you can build,
+          dig, design, and explore at your own pace. Shape the landscape,
+          fill a pool, create a garden, and make the world yours.
+        </p>
+        <div class="actions">
+          <a class="play-button" href="./index.html" aria-label="Play DIYCraft now">
+            <span aria-hidden="true">▶</span> PLAY DIYCRAFT
+          </a>
+          <a class="source-button" href="https://github.com/protegeeballe-jpg/diycraft">
+            View project source <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+      <div class="visual" aria-hidden="true">
+        <div class="block grass"></div>
+        <div class="block flower"></div>
+        <div class="block stone"></div>
+        <div class="block water"></div>
+        <div class="block water"></div>
+        <div class="block wood"></div>
+        <div class="block grass"></div>
+      </div>
+      <div class="features">
+        <article class="feature">
+          <div class="icon" aria-hidden="true">🧱</div>
+          <h2>Build your world</h2>
+          <p>Place blocks, design doors and tiles, and create spaces of your own.</p>
+        </article>
+        <article class="feature">
+          <div class="icon" aria-hidden="true">💧</div>
+          <h2>Shape the landscape</h2>
+          <p>Dig terrain, fill holes, and layer water with animated, organic waves.</p>
+        </article>
+        <article class="feature">
+          <div class="icon" aria-hidden="true">🌿</div>
+          <h2>Explore peacefully</h2>
+          <p>Enjoy animals, neighbors, creative freedom, and an offline-ready world.</p>
+        </article>
+      </div>
+      <footer>
+        <span>DIYCraft · A browser-based creative project</span>
+        <span>Built with JavaScript and Canvas 2D</span>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>
