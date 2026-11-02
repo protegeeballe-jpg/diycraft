@@ -83,6 +83,10 @@ jobs:
           if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"')) {
             throw new Error('A block, door, jump, or tile designer control is missing.');
           }
+          const tileList = source.match(/const TILE_DESIGNS=\\[([\\s\\S]*?)\\];/);
+          const tileCount = tileList ? (tileList[1].match(/\\bid:/g) || []).length : 0;
+          if (tileCount !== 20) throw new Error('Expected exactly 20 tile designs; found ' + tileCount);
+          if (!html.includes('id="offlineReadyNote"')) throw new Error('Persistent offline-ready status is missing.');
           if (!html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
