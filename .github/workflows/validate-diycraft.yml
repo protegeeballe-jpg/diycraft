@@ -78,6 +78,13 @@ jobs:
             '1,TILE_THICKNESS,1',
             'floor<=p.y+.18',
             'const TILE_DESIGNS=[',
+            'function playerCollisionAt(x,z,y)',
+            'function buildNeighborObstacleSet()',
+            'function findNeighborPath(start,end)',
+            'const NEIGHBOR_SLEEP_SPOTS=',
+            "currentNeighbors(tick,palette.mode==='night')",
+            "if(b.type==='door'&&b.open)continue",
+            'const PLAYER_RADIUS=.23,PLAYER_BODY_HEIGHT=1.72,PLAYER_STEP_HEIGHT=.18',
             'navigator.serviceWorker.register',
             "id:'tile'",
             "id:'door'"
