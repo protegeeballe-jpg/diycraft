@@ -1078,7 +1078,7 @@ function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.i
 function careForAnimal(action){const info={snack:['🍎','A tasty snack. '+selectedAnimalName+' is happily nibbling!'],water:['💧','Fresh water. '+selectedAnimalName+' has had a lovely drink!'],brush:['✨','A gentle brush. '+selectedAnimalName+' looks extra fluffy!'],play:['💚','A little playtime. '+selectedAnimalName+' is happily playing!']}[action];if(!info)return;world.animalCare=world.animalCare||{};world.animalCare[selectedAnimalId]=Math.min(999,(world.animalCare[selectedAnimalId]||0)+1);animalCareFlashUntil=performance.now()+1900;animalCareFlashEmoji=info[0];$('animalCareFeedback').textContent=info[1];$('animalCareNote').textContent=selectedAnimalName+' has enjoyed '+world.animalCare[selectedAnimalId]+' caring moments with you.';save();showStatus(info[1]);}
 function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt'){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true,material});}
 function pushGroundSurface(queue,cam,w,h,color){
- const radius=30,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z);
+ const radius=24,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z);
  const minX=Math.max(-WORLD_LIMIT,cx-radius),maxX=Math.min(WORLD_LIMIT-1,cx+radius);
  const minZ=Math.max(-WORLD_LIMIT,cz-radius),maxZ=Math.min(WORLD_LIMIT-1,cz+radius);
  for(let x=minX;x<=maxX;x++)for(let z=minZ;z<=maxZ;z++){
@@ -1093,7 +1093,7 @@ function pushGroundSurface(queue,cam,w,h,color){
   queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:visibleColor,outline:false,material:underground?'dirt':'grass'});
  }
 }
-function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDepths){if(depth<1)continue;const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;const floorY=-depth;
+function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDepths){if(depth<1)continue;const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)continue;const floorY=-depth;
  pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1}],'#775236','dirt');
  const west=groundDepthAt(x-1,z),east=groundDepthAt(x+1,z),north=groundDepthAt(x,z-1),south=groundDepthAt(x,z+1);
  if(west<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x,y:-west,z},{x,y:-west,z:z+1},{x,y:floorY,z:z+1}],'#98704b','dirt');
@@ -1105,7 +1105,7 @@ function pushWaterSurfaces(queue,cam,w,h){
  // One shared color field is built from the visible water area, not each cell.
  for(const cell of waterCells){
   const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z),topY=waterTopAt(x,z);
-  if(depth<1||topY===null||Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;
+  if(depth<1||topY===null||Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)continue;
   const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
   const topPts=topVertices.map(v=>project(v,cam,w,h));if(topPts.some(p=>!p))continue;
   for(const p of topPts){minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
@@ -1176,8 +1176,8 @@ function paintWaterFace(poly,time){
   ctx.save();ctx.lineWidth=1.05;ctx.lineCap='round';ctx.lineJoin='round';
   for(let k=firstA;k<=lastA;k++){
    ctx.beginPath();let started=false;
-   for(let s=0;s<=24;s++){
-    const u=s/24,worldX=waterX+u;
+   for(let s=0;s<=16;s++){
+    const u=s/16,worldX=waterX+u;
     const worldZ=k*spacingA-.35*worldX-.15*Math.sin(worldX*.82-time*.00048+k*.7);
     const p=pointAt(u,worldZ-waterZ);
     if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
@@ -1193,8 +1193,8 @@ function paintWaterFace(poly,time){
   ctx.save();ctx.lineWidth=.8;ctx.lineCap='round';ctx.lineJoin='round';
   for(let k=firstB;k<=lastB;k++){
    ctx.beginPath();let started=false;
-   for(let s=0;s<=24;s++){
-    const v=s/24,worldZ=waterZ+v;
+   for(let s=0;s<=16;s++){
+    const v=s/16,worldZ=waterZ+v;
     const worldX=k*spacingB-.48*worldZ-.12*Math.sin(worldZ*.94+time*.00072+k*.55);
     const p=pointAt(worldX-waterX,v);
     if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
@@ -1234,7 +1234,7 @@ function pushFishOverlays(queue,cam,w,h){
   if(eye)queue.push({fishEye:true,x:eye.x,y:eye.y,depth:eye.d,radius:Math.max(.7,Math.min(2.1,10/eye.d))});
  });
 }
-function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.6),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
+function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.3),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
  const palette=getTimePalette(performance.now()/1000),cam=cameraState(),polys=[];
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
  // Celestial objects live on the world sky dome, not at fixed screen coordinates.
@@ -1247,7 +1247,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):b.color?validHex(b.color,meta?.color||'#a0a0a0'):meta?.color;const texture=b.texture||(b.type==='custom'?'custom':b.type);if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,texture,!!b.color);}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):b.color?validHex(b.color,meta?.color||'#a0a0a0'):meta?.color;const texture=b.texture||(b.type==='custom'?'custom':b.type);if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,texture,!!b.color);}
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
  const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
