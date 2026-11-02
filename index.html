@@ -425,7 +425,7 @@ function setTimeMode(mode,announce=true){
 }
 function save(silent=true){try{world.name=$('worldName').value.trim().slice(0,30)||world.name;localStorage.setItem(STORE_KEY,JSON.stringify(world));if(!silent)showStatus('World saved on this device.');}catch(e){if(!storageUnavailable){storageUnavailable=true;if(!silent)showStatus('Device storage is unavailable. Use Backup to keep your world.');}}}
 function addItem(id,target='crafted',label=''){const arr=world[target];const same=arr.find(v=>v&&v.id===id&&v.count<99);if(same){same.count++;return true;}const i=arr.findIndex(v=>!v);if(i<0)return false;arr[i]={id,count:1,label};return true;}
-function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'Custom',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=world.customBlock.color;btn.style.background='linear-gradient(135deg,'+world.customBlock.color+'55,#fffdf4)';btn.title='Open custom texture and color designer';btn.addEventListener('click',openCustomBlockDesigner);}else{btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});}root.append(btn);});}
+function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'Custom',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=world.customBlock.color;btn.style.background='linear-gradient(135deg,'+world.customBlock.color+'55,#fffdf4)';btn.title='Open custom texture and color designer';btn.addEventListener('click',openCustomBlockDesigner);}else{btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';if(b.id==='tile'){btn.title='Open the tile color and pattern designer';btn.addEventListener('click',()=>{selected='tile';renderHotbar();openTileDesigner();});}else btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});}root.append(btn);});}
 function keyBlock(x,y,z){return x+','+y+','+z;}
 const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z)));
 function clearPlacedBlocks(){const before=world.blocks.length;world.blocks=world.blocks.filter(b=>STARTER_BLOCK_KEYS.has(keyBlock(b.x,b.y,b.z)));rebuildLookup();save();render();showStatus(Math.max(0,before-world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.');}
@@ -490,6 +490,23 @@ function makeTileTexturePatterns(){
 }
 
 function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
+// Character blocks rotate as complete cuboids, not just as relocated centers.
+function pushTileSlab(queue,cam,w,h,b){
+ const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';
+ const x=b.x,y=b.y+TILE_BASE_OFFSET,z=b.z;
+ const color=validHex(b.color,'#c5a98a');
+ const vs=cubeVerts(x,y,z,1,TILE_THICKNESS,1),cx=x+.5,cy=y+TILE_THICKNESS/2,cz=z+.5;
+ for(const f of FACES){
+  const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;
+  if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;
+  const pts=f.ids.map(i=>project(vs[i],cam,w,h));
+  if(pts.some(p=>!p))continue;
+  const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+  const poly={pts,depth,color:shadeColor(color,f.shade),outline:true,material:null,customTint:false};
+  if(ny===1)poly.tileTexture=textureTiles.get('tile-'+pattern);
+  queue.push(poly);
+ }
+}
 // Character blocks rotate as complete cuboids, not just as relocated centers.
 function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=true){
  const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;
@@ -644,6 +661,25 @@ function paintTexture(poly) {
     );
 
     ctx.restore();
+}
+function paintTileTriangle(image,src,dst){
+ const [s0,s1,s2]=src,[d0,d1,d2]=dst;
+ const sx1=s1.x-s0.x,sy1=s1.y-s0.y,sx2=s2.x-s0.x,sy2=s2.y-s0.y;
+ const det=sx1*sy2-sx2*sy1;
+ if(Math.abs(det)<1e-8)return;
+ const dx1=d1.x-d0.x,dy1=d1.y-d0.y,dx2=d2.x-d0.x,dy2=d2.y-d0.y;
+ const a=(dx1*sy2-dx2*sy1)/det,c=(dx2*sx1-dx1*sx2)/det;
+ const b=(dy1*sy2-dy2*sy1)/det,d=(dy2*sx1-dy1*sx2)/det;
+ const e=d0.x-a*s0.x-c*s0.y,f=d0.y-b*s0.x-d*s0.y;
+ ctx.save();
+ ctx.beginPath();ctx.moveTo(d0.x,d0.y);ctx.lineTo(d1.x,d1.y);ctx.lineTo(d2.x,d2.y);ctx.closePath();ctx.clip();
+ ctx.transform(a,b,c,d,e,f);ctx.globalAlpha=.9;ctx.drawImage(image,0,0,96,96);ctx.restore();
+}
+function paintTileTexture(poly){
+ const image=poly.tileTexture;if(!image||poly.pts.length!==4)return;
+ const [p0,p1,p2,p3]=poly.pts;
+ paintTileTriangle(image,[{x:0,y:0},{x:0,y:96},{x:96,y:96}],[p0,p1,p2]);
+ paintTileTriangle(image,[{x:0,y:0},{x:96,y:96},{x:96,y:0}],[p0,p2,p3]);
 }
 function line3(queue,cam,w,h,a,b,color,width=1){const p=project(a,cam,w,h),q=project(b,cam,w,h);if(p&&q)queue.push({line:true,p,q,depth:(p.d+q.d)/2,color,width});}
 const NEIGHBOR_ROUTES={
@@ -995,7 +1031,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';pushCube(polys,cam,w,h,b.x,b.y+TILE_BASE_OFFSET,b.z,validHex(b.color,'#c5a98a'),1,TILE_THICKNESS,1,true,'tile-'+pattern,true);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick);
  drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
@@ -1026,7 +1062,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    ctx.restore();continue;
   }
   if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}
-  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
+  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
  }
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
@@ -1288,12 +1324,12 @@ function setDraftTileColor(color){
  renderTileChoices();renderTilePreview();
 }
 function openTileDesigner(){
- draftTileColor=world.tileDesign.color||'#c5a98a';draftTilePattern=world.tileDesign.pattern||'grid';
+ draftTileColor=world.tileDesign?.color||'#c5a98a';draftTilePattern=world.tileDesign?.pattern||'grid';
  $('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();
  renderTileChoices();renderTileColorSwatches();renderTilePreview();openShade('tileShade');
 }
 $('tileDesignBtn').addEventListener('click',openTileDesigner);
-$('tileColor').addEventListener('input',e=>setDraftTileColor(e.target.value));
+$('tileColor').addEventListener('input',e=>setDraftTileColor(e.target.value));$('tileColor').addEventListener('change',e=>setDraftTileColor(e.target.value));
 $('tileHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);});
 $('tileHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);else e.target.value=draftTileColor.toUpperCase();});
 $('applyTileDesign').addEventListener('click',()=>{
