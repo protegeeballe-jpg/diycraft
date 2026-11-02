@@ -186,7 +186,7 @@
   </div>
   <div class="menu-shade" id="customBlockShade">
     <div class="menu custom-block-menu">
-      <div class="menu-head"><h2>🎨 Design a custom block</h2><button data-close>Close ✕</button></div>
+      <div class="menu-head"><h2 id="solidDesignerTitle">🎨 Design a solid block</h2><button data-close>Close ✕</button></div>
       <p class="note">Choose a solid material, then customize its color and surface texture. Each placed block keeps the finish it was given.</p>
       <label class="field">Solid material type<select id="solidDesignType"><option value="stone">Stone</option><option value="wood">Wood</option><option value="brick">Brick</option><option value="dirt">Dirt</option><option value="grass">Grass</option><option value="leaves">Leaves</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Custom solid</option></select></label>
       <div class="custom-preview-wrap">
@@ -1684,6 +1684,7 @@ function move(dt){
 function loop(time){requestAnimationFrame(loop);if(time-lastTime<30)return;const dt=Math.min(.05,(time-lastTime)/1000||0);lastTime=time;move(dt);render();}
 function renderSlots(){
  const root=$('slots');root.replaceChildren();
+ $('clearBucketBtn').classList.toggle('hidden',inventoryTab!=='bucket');
  if(inventoryTab==='bucket'){
   const arr=world.bucket||[];
   if(!arr.length){const note=document.createElement('p');note.className='note';note.textContent='Your Material Bucket is empty. Long-press a block or dig soil to collect it here.';root.append(note);return;}
@@ -1833,6 +1834,7 @@ function setDraftCustomColor(color){
 function openCustomBlockDesigner(){
  draftSolidType=SOLID_STYLE_TYPES.includes(selected)?selected:'custom';
  $('solidDesignType').value=draftSolidType;
+ $('solidDesignerTitle').textContent=draftSolidType==='custom'?'🎨 Design a custom solid':('🎨 Design '+(BLOCKS.find(b=>b.id===draftSolidType)?.name||'solid')+' blocks');
  const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
  const fallback=BLOCKS.find(b=>b.id===draftSolidType);
  draftCustomColor=saved?.color||fallback?.color||'#aa83d8';
