@@ -70,7 +70,7 @@ jobs:
             'const MAX_DIG_DEPTH=8,GROUND_DIG_LIMIT=12000',
             'function traceWorldRay(cam,dir,maxDistance,step)',
             'function isProtectedDigCell(x,z)',
-            'function digAtScreen(px,py)',
+            'function digAtScreen(',
             'function pushExcavationTerrain(queue,cam,w,h)',
             'function setToolMode(mode,announce=true)',
             'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
