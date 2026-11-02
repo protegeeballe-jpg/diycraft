@@ -1204,7 +1204,7 @@ function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
 }
 function addCharacterFaceDetails(queue,cam,w,h,n,bob){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing),scale=Number.isFinite(n.scale)?n.scale:1;
- const sleeping=n.activity==='bed';
+ const sleeping=n.activity==='sleep'||n.activity==='transformer'||n.activity==='bed';
  const vx=cam.pos.x-n.x,vz=cam.pos.z-n.z,dist=Math.hypot(vx,vz)||1;
  const front=(s*vx+c*vz)/dist;
  // Keep the original face visible through normal turns; fade only as it turns away.
