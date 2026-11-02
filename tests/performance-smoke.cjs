@@ -62,8 +62,10 @@ assert(source.includes('function setPlayerActivity(activity)'), 'Player activity
 assert(source.includes("if(activity==='sleep'){"), 'The player must have a lying-down sleep pose.');
 assert(source.includes("const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'"), 'Sit, work and dance must have distinct animation states.');
 assert(source.includes('activity:playerActivity'), 'The selected activity must be passed to the third-person avatar.');
-assert(source.includes("playerActivity&&playerActivity!=='sleep'&&(moveX!==0"), 'Walking and flying must preserve the selected sleep pose while movement cancels other activities.');
-assert(source.includes("cube(0,.43,-.20,'#91b7c8',.78,.18,1.22)"), 'The sleep pose must include a soft quilt to make the lying avatar look cozy.');
+assert(source.includes("if(playerActivity==='sleep'){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}"), 'Keyboard and touch movement must be locked while the player is sleeping.');
+assert(source.includes("cube(0,.15,-.10,'#795438',1.16,.18,2.02)"), 'The sleep pose must render a wooden bed frame beneath the character.');
+assert(source.includes("cube(0,.32,-.10,'#f5f1e9',1.04,.14,1.90)"), 'The sleep pose must include a mattress.');
+assert(source.includes("sleepCube(0,.43,-.20,'#91b7c8',.78,.18,1.22)"), 'The sleeper must be raised onto the mattress and covered with a quilt.');
 assert(html.includes('id="activityBtn"') && html.includes('id="activityShade"'), 'The activity menu must be reachable from the game HUD.');
 for (const activity of ['sleep','sit','work','dance','stop']) {
   if (!html.includes('data-player-activity="' + activity + '"')) throw new Error('Missing player activity control: ' + activity);
