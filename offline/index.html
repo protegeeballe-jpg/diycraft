@@ -147,6 +147,7 @@
       <button id="expandBtn" class="primary" title="Full screen">⛶</button>
       <button id="menuBtn" title="Settings" aria-label="Settings">⚙</button>
       <button id="viewBtn" title="Switch camera view" aria-label="View">👁 1st</button>
+      <button id="activityBtn" title="Sleep, sit, work or dance" aria-label="Character activities">🎭</button>
     </div>
   </div>
   <div class="top-hint" id="topHint">Tap to build or fill · Hold 0.6s to dig or remove</div>
@@ -182,6 +183,19 @@
         <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn" title="Return to the neighborhood if you get lost">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
       <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note" id="offlineReadyNote">Offline setup is starting. Connect this device once and keep the game open until the local copy is ready.</p><p class="note">Your world saves on this device. Use Backup world to move it to another device, and keep periodic backups in case browser storage is cleared.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers.</p>
+    </div>
+  </div>
+  <div class="menu-shade" id="activityShade">
+    <div class="menu">
+      <div class="menu-head"><h2>🎭 Character activities</h2><button data-close>Close ✕</button></div>
+      <p class="note">Choose what your character wants to do. Activities are animated and can be stopped anytime by moving or choosing Stand.</p>
+      <div class="menu-grid">
+        <button type="button" data-player-activity="sleep">💤 Sleep</button>
+        <button type="button" data-player-activity="sit">🪑 Sit</button>
+        <button type="button" data-player-activity="work">🛠️ Work</button>
+        <button type="button" data-player-activity="dance">💃 Dance</button>
+        <button type="button" data-player-activity="stop">🧍 Stand / Stop</button>
+      </div>
     </div>
   </div>
   <div class="menu-shade" id="customBlockShade">
