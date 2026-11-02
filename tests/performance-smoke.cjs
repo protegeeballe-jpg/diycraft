@@ -133,7 +133,7 @@ check(mixedMesh.faces.length === 12 && mixedMesh.specials.length === 1,
   'Doors must remain dynamic while floor slabs are included in the cached static mesh.');
 check(mixedMesh.faces.filter(face => face.tileTexture).length === 1,
   'A cached floor tile must preserve its selected decorative texture on the top face.');
-check(mixedMesh.faces.some(face => face.normal[1] === 1 && face.center.y === 0.085),
+check(mixedMesh.faces.some(face => face.normal[1] === 1 && face.center.y === 0.15),
   'Cached floor tile tops must preserve the original slab elevation.');
 
 const custom = { x: 0, y: 0, z: 0, type: 'custom', color: '#ff0000', texture: 'brick' };
