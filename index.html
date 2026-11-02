@@ -187,7 +187,8 @@
   <div class="menu-shade" id="customBlockShade">
     <div class="menu custom-block-menu">
       <div class="menu-head"><h2>🎨 Design a custom block</h2><button data-close>Close ✕</button></div>
-      <p class="note">Choose a surface texture, then pick any color in the spectrum. Your design will be used for every new Custom block.</p>
+      <p class="note">Choose a solid material, then customize its color and surface texture. Each placed block keeps the finish it was given.</p>
+      <label class="field">Solid material type<select id="solidDesignType"><option value="stone">Stone</option><option value="wood">Wood</option><option value="brick">Brick</option><option value="dirt">Dirt</option><option value="grass">Grass</option><option value="leaves">Leaves</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Custom solid</option></select></label>
       <div class="custom-preview-wrap">
         <canvas id="customPreview" width="224" height="152" aria-label="Custom block preview"></canvas>
         <div class="custom-preview-copy"><strong id="customPreviewName">Custom block</strong><br><span id="customPreviewDetails">Purple · Speckled</span><br>Each block keeps its own saved design.</div>
@@ -322,6 +323,7 @@ const BLOCKS=[
  {id:'tile',name:'Decorative Tile',emoji:'🧩',color:'#c5a98a'},
  {id:'door',name:'Door',emoji:'🚪',color:'#a97545'}
 ];
+const SOLID_STYLE_TYPES=['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow'];
 const CUSTOM_TEXTURES=[
  {id:'grass',name:'Grass',emoji:'🌿'},
  {id:'dirt',name:'Dirt',emoji:'🟫'},
@@ -387,7 +389,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -406,11 +408,22 @@ function validWorld(d){
   w.tileDesign.color=validHex(d.tileDesign.color,w.tileDesign.color);
   w.tileDesign.pattern=TILE_DESIGNS.some(t=>t.id===d.tileDesign.pattern)?d.tileDesign.pattern:'grid';
  }
+ if(d.solidStyles&&typeof d.solidStyles==='object'){
+  for(const type of SOLID_STYLE_TYPES){
+   const style=d.solidStyles[type];
+   if(style&&typeof style==='object')w.solidStyles[type]={
+    color:validHex(style.color,BLOCKS.find(b=>b.id===type)?.color||'#a0a0a0'),
+    texture:CUSTOM_TEXTURES.some(t=>t.id===style.texture)?style.texture:type
+   };
+  }
+ }
  if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=-MAX_DIG_DEPTH&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>{
   if(b.type==='custom')return {...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'};
   if(b.type==='door')return {...b,color:validHex(b.color,w.doorDesign.color),style:['classic','window','garden'].includes(b.style)?b.style:'classic',orientation:b.orientation==='ew'?'ew':'ns',swing:b.swing===-1?-1:1,open:!!b.open};
   if(b.type==='tile')return {...b,color:validHex(b.color,w.tileDesign.color),tilePattern:TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid'};
-  return b;
+  const meta=BLOCKS.find(t=>t.id===b.type);
+  return {...b,...(b.color?{color:validHex(b.color,meta?.color||'#a0a0a0')}:{})
+   ,...(b.texture&&CUSTOM_TEXTURES.some(t=>t.id===b.texture)?{texture:b.texture}:{})};
  });
  if(Array.isArray(d.excavations)){
   const seenExcavations=new Set();
@@ -592,6 +605,7 @@ function addBlock(x,y,z,type=selected){
  if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}
  const b={x,y,z,type};
  if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}
+ if(SOLID_STYLE_TYPES.includes(type)&&world.solidStyles?.[type]){b.color=world.solidStyles[type].color;b.texture=world.solidStyles[type].texture;}
  if(type==='tile'){b.color=validHex(world.tileDesign.color,'#c5a98a');b.tilePattern=TILE_DESIGNS.some(t=>t.id===world.tileDesign.pattern)?world.tileDesign.pattern:'grid';}
  if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}
  if(selectedBucketItem&&selectedBucketItem.type===type){
@@ -1420,7 +1434,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
- for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
+ for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):b.color?validHex(b.color,meta?.color||'#a0a0a0'):meta?.color;const texture=b.texture||(b.type==='custom'?'custom':b.type);if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,texture,!!b.color);}
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
  const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
@@ -1783,7 +1797,7 @@ for(const id of CHARACTER_FIELDS){
 }
 document.querySelectorAll('[data-look]').forEach(b=>b.addEventListener('click',()=>applyPresetToStudio(b.dataset.look)));
 function openShade(id){$(id).classList.add('open');}function closeShades(){stopNeighborColoring();document.querySelectorAll('.menu-shade.open').forEach(e=>e.classList.remove('open'));}
-let draftCustomColor='#aa83d8',draftCustomTexture='custom';
+let draftCustomColor='#aa83d8',draftCustomTexture='custom',draftSolidType='custom';
 function renderCustomPreview(){
  const canvas=$('customPreview'),c=canvas.getContext('2d');
  c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle='#f8faf4';c.fillRect(0,0,canvas.width,canvas.height);
@@ -1792,7 +1806,7 @@ function renderCustomPreview(){
  if(pattern){c.save();c.globalAlpha=.48;c.fillStyle=pattern;c.fillRect(14,14,196,124);c.restore();}
  c.strokeStyle='#31453255';c.lineWidth=3;c.strokeRect(14,14,196,124);
  const texture=CUSTOM_TEXTURES.find(t=>t.id===draftCustomTexture);
- $('customPreviewName').textContent='Your custom block';
+ $('customPreviewName').textContent=draftSolidType==='custom'?'Your custom solid':('Your '+(BLOCKS.find(b=>b.id===draftSolidType)?.name||'solid')+' block');
  $('customPreviewDetails').textContent=draftCustomColor.toUpperCase()+' · '+(texture?.name||'Speckled');
 }
 function renderCustomTextureChoices(){
@@ -1817,17 +1831,38 @@ function setDraftCustomColor(color){
  draftCustomColor=color.toLowerCase();$('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();renderCustomPreview();
 }
 function openCustomBlockDesigner(){
- draftCustomColor=world.customBlock.color||'#aa83d8';draftCustomTexture=world.customBlock.texture||'custom';
+ draftSolidType=SOLID_STYLE_TYPES.includes(selected)?selected:'custom';
+ $('solidDesignType').value=draftSolidType;
+ const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
+ const fallback=BLOCKS.find(b=>b.id===draftSolidType);
+ draftCustomColor=saved?.color||fallback?.color||'#aa83d8';
+ draftCustomTexture=saved?.texture||(draftSolidType==='custom'?'custom':draftSolidType);
  $('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();
  renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();openShade('customBlockShade');
 }
+$('solidDesignType').addEventListener('change',e=>{
+ draftSolidType=SOLID_STYLE_TYPES.includes(e.target.value)?e.target.value:'custom';
+ const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
+ const fallback=BLOCKS.find(b=>b.id===draftSolidType);
+ setDraftCustomColor(saved?.color||fallback?.color||'#aa83d8');
+ draftCustomTexture=saved?.texture||(draftSolidType==='custom'?'custom':draftSolidType);
+ renderCustomTextureChoices();renderCustomPreview();
+});
 $('customBlockColor').addEventListener('input',e=>setDraftCustomColor(e.target.value));
 $('customBlockHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);});
 $('customBlockHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);else e.target.value=draftCustomColor.toUpperCase();});
 $('applyCustomBlock').addEventListener('click',()=>{
- world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
- $('customColor').value=draftCustomColor;selected='custom';selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
- showStatus('Custom block ready! Choose a place to build it.');
+ if(draftSolidType==='custom'){
+  world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
+  $('customColor').value=draftCustomColor;selected='custom';
+  showStatus('Custom solid ready. Choose a place to build it.');
+ }else{
+  world.solidStyles=world.solidStyles||{};
+  world.solidStyles[draftSolidType]={color:draftCustomColor,texture:draftCustomTexture};
+  selected=draftSolidType;
+  showStatus((BLOCKS.find(b=>b.id===draftSolidType)?.name||'Solid')+' finish saved. New blocks of this material will use it.');
+ }
+ selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
 });
 
 let draftDoorColor='#a97545',draftDoorStyle='classic';
