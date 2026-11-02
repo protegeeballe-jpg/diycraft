@@ -8,7 +8,7 @@
 <title>DIYCraft — Peaceful Voxel World</title>
 <style>
 :root{--ink:#263c32;--green:#39784e;--green2:#dff0df;--cream:#fffdf4;--line:#d8e2d6;--shadow:0 8px 26px #203b3026}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc7d8;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;overscroll-behavior:none}button,input,select{font:inherit}button{border:1px solid #cbd9cb;border-radius:13px;background:#fffdf4;color:#294235;font-weight:750;padding:9px 12px;box-shadow:0 2px 0 #29423512;touch-action:manipulation;cursor:pointer}button:active{transform:translateY(1px);background:#e5f0df}button:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}.primary{background:#39784e;color:white;border-color:#39784e}.soft{background:#e2f0df}.app{position:fixed;inset:0;background:#9bc7d8}.world{position:absolute;inset:0;overflow:hidden;touch-action:none}.world canvas{display:block;width:100%;height:100%;touch-action:none;outline:0}.top-hud{position:absolute;z-index:5;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.hud-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}.brand{background:#fffdf0e8;border:1px solid #fff;border-radius:15px;padding:6px 11px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}.brand .flower{font-size:22px}.brand strong{font-size:15px;letter-spacing:.3px}.hud-actions{flex-wrap:wrap;justify-content:flex-end}.hud-actions button{font-size:12px;padding:9px 11px;background:#fffdf0ed}.hud-actions .primary{background:#39784e;color:#fff}.crosshair{position:absolute;left:50%;top:50%;z-index:3;width:13px;height:13px;transform:translate(-50%,-50%);pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#fff;border:1px solid #243d30;opacity:.9;border-radius:2px}.crosshair:before{width:13px;height:2px;left:0;top:5px}.crosshair:after{height:13px;width:2px;left:5px;top:0}.top-hint{position:absolute;z-index:2;left:50%;top:calc(max(9px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);max-width:92%;border-radius:999px;padding:6px 10px;background:#fffdf0bd;color:#3b5947;font-size:11px;white-space:nowrap;pointer-events:none}.hotbar{position:absolute;z-index:5;left:50%;bottom:max(9px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#fffffff0;border:1px solid #ffffff;border-radius:16px;box-shadow:var(--shadow);max-width:95vw;overflow-x:auto}.hotbar button{width:42px;height:46px;flex:0 0 42px;padding:2px;display:grid;place-items:center;gap:0;border-radius:10px;background:#f9fbf5}.hotbar button.active{outline:3px solid #4b9660;background:#e1f0df}.hotbar .emoji{font-size:19px;line-height:1}.hotbar small{font-size:8px;color:#5c6c5e;line-height:1}.touch-controls{position:absolute;z-index:5;inset:0;pointer-events:none}.dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:112px;height:104px;display:grid;grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,31px);gap:3px;pointer-events:auto}.dpad button,.action-pad button{padding:0;background:#fffdf0d9;border:1px solid #fff;box-shadow:0 3px 12px #29423526;backdrop-filter:blur(6px);font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad [data-move="0,-1"]{grid-column:2;grid-row:1}.dpad [data-move="-1,0"]{grid-column:1;grid-row:2}.dpad [data-move="0,1"]{grid-column:2;grid-row:2}.dpad [data-move="1,0"]{grid-column:3;grid-row:2}.dpad [data-move="up"]{grid-column:2;grid-row:3;font-size:12px}.action-pad{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,56px);grid-template-rows:repeat(3,40px);gap:6px;pointer-events:auto}.action-pad button{font-size:12px;font-weight:800}.action-pad #placeBtn{background:#39784ee8;color:white}.action-pad #removeBtn{background:#fff7e8ed}.action-pad #flyDownBtn{background:#edf5ffed}.action-pad #flyUpBtn{background:#edf5ffed}.action-pad #jumpBtn{grid-column:1 / -1;background:#39784ee8;color:white;font-size:13px}.show-controls{position:absolute;z-index:7;left:10px;bottom:10px;display:none;background:#fffdf4ed}.status{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 15px;border-radius:999px;background:#263f31;color:white;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}.status.show{opacity:1}.focus-exit{position:absolute;z-index:8;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:none}.focus-mode .top-hud{display:none}.focus-mode .top-hint{display:none}.focus-mode .focus-exit{display:block}.controllers-hidden .touch-controls{display:none}.controllers-hidden .show-controls{display:block}.menu-shade{position:absolute;z-index:9;inset:0;background:#1d34294b;display:none;align-items:center;justify-content:center;padding:14px}.menu-shade.open{display:flex}.menu{width:min(440px,96vw);max-height:88dvh;overflow:auto;background:#fffdf4;border:1px solid white;border-radius:22px;padding:18px;box-shadow:0 20px 70px #1735244c}.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.menu-head h2{margin:0;font-size:20px}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{min-height:49px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#617165;margin:9px 0}.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink)}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button.active{background:#dff0df;border-color:#73a581}.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.slot{min-height:57px;border:1px dashed #cad9c8;border-radius:10px;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;gap:2px}.slot .ico{font-size:18px}.slot small{font-size:9px;text-align:center;line-height:1.1;overflow-wrap:anywhere}.recipe{padding:11px;margin:7px 0;border:1px solid var(--line);border-radius:12px;background:#fff}.recipe strong{font-size:13px}.recipe p{font-size:11px;color:#647466;margin:4px 0 8px}.draw-canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note{font-size:11px;color:#647466;line-height:1.45}.hidden{display:none!important}.focus-mode .hotbar{bottom:max(5px,env(safe-area-inset-bottom))}.focus-mode .dpad,.focus-mode .action-pad{bottom:max(8px,env(safe-area-inset-bottom))}.portrait-note{display:none}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc7d8;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;overscroll-behavior:none}button,input,select{font:inherit}button{border:1px solid #cbd9cb;border-radius:13px;background:#fffdf4;color:#294235;font-weight:750;padding:9px 12px;box-shadow:0 2px 0 #29423512;touch-action:manipulation;cursor:pointer}button:active{transform:translateY(1px);background:#e5f0df}button:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}.primary{background:#39784e;color:white;border-color:#39784e}.soft{background:#e2f0df}.app{position:fixed;inset:0;background:#9bc7d8}.world{position:absolute;inset:0;overflow:hidden;touch-action:none}.world canvas{display:block;width:100%;height:100%;touch-action:none;outline:0}.top-hud{position:absolute;z-index:5;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.hud-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}.brand{background:#fffdf0e8;border:1px solid #fff;border-radius:15px;padding:6px 11px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}.brand .flower{font-size:22px}.brand strong{font-size:15px;letter-spacing:.3px}.hud-actions{flex-wrap:wrap;justify-content:flex-end}.hud-actions button{font-size:12px;padding:9px 11px;background:#fffdf0ed}.hud-actions .primary{background:#39784e;color:#fff}.crosshair{position:absolute;left:50%;top:50%;z-index:3;width:13px;height:13px;transform:translate(-50%,-50%);pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#fff;border:1px solid #243d30;opacity:.9;border-radius:2px}.crosshair:before{width:13px;height:2px;left:0;top:5px}.crosshair:after{height:13px;width:2px;left:5px;top:0}.top-hint{position:absolute;z-index:2;left:50%;top:calc(max(9px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);max-width:92%;border-radius:999px;padding:6px 10px;background:#fffdf0bd;color:#3b5947;font-size:11px;white-space:nowrap;pointer-events:none}.hotbar{position:absolute;z-index:5;left:50%;bottom:max(9px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#fffffff0;border:1px solid #ffffff;border-radius:16px;box-shadow:var(--shadow);max-width:95vw;overflow-x:auto}.hotbar button{width:42px;height:46px;flex:0 0 42px;padding:2px;display:grid;place-items:center;gap:0;border-radius:10px;background:#f9fbf5}.hotbar button.active{outline:3px solid #4b9660;background:#e1f0df}.hotbar .emoji{font-size:19px;line-height:1}.hotbar small{font-size:8px;color:#5c6c5e;line-height:1}.touch-controls{position:absolute;z-index:5;inset:0;pointer-events:none}.dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:112px;height:104px;display:grid;grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,31px);gap:3px;pointer-events:auto}.dpad button,.action-pad button{padding:0;background:#fffdf0d9;border:1px solid #fff;box-shadow:0 3px 12px #29423526;backdrop-filter:blur(6px);font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad [data-move="0,-1"]{grid-column:2;grid-row:1}.dpad [data-move="-1,0"]{grid-column:1;grid-row:2}.dpad [data-move="0,1"]{grid-column:2;grid-row:2}.dpad [data-move="1,0"]{grid-column:3;grid-row:2}.dpad [data-move="up"]{grid-column:2;grid-row:3;font-size:12px}.action-pad{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,56px);grid-template-rows:repeat(4,40px);gap:6px;pointer-events:auto}.action-pad button{font-size:12px;font-weight:800}.action-pad #placeBtn{background:#39784ee8;color:white}.action-pad #digBtn{background:#a5683fe8;color:white}.action-pad #digBtn.primary{background:#39784e;color:white}.action-pad #removeBtn{background:#fff7e8ed}.action-pad #flyDownBtn{background:#edf5ffed}.action-pad #flyUpBtn{background:#edf5ffed}.action-pad #jumpBtn{grid-column:1 / -1;background:#39784ee8;color:white;font-size:13px}.show-controls{position:absolute;z-index:7;left:10px;bottom:10px;display:none;background:#fffdf4ed}.status{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 15px;border-radius:999px;background:#263f31;color:white;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}.status.show{opacity:1}.focus-exit{position:absolute;z-index:8;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:none}.focus-mode .top-hud{display:none}.focus-mode .top-hint{display:none}.focus-mode .focus-exit{display:block}.controllers-hidden .touch-controls{display:none}.controllers-hidden .show-controls{display:block}.menu-shade{position:absolute;z-index:9;inset:0;background:#1d34294b;display:none;align-items:center;justify-content:center;padding:14px}.menu-shade.open{display:flex}.menu{width:min(440px,96vw);max-height:88dvh;overflow:auto;background:#fffdf4;border:1px solid white;border-radius:22px;padding:18px;box-shadow:0 20px 70px #1735244c}.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.menu-head h2{margin:0;font-size:20px}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{min-height:49px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#617165;margin:9px 0}.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink)}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button.active{background:#dff0df;border-color:#73a581}.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.slot{min-height:57px;border:1px dashed #cad9c8;border-radius:10px;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;gap:2px}.slot .ico{font-size:18px}.slot small{font-size:9px;text-align:center;line-height:1.1;overflow-wrap:anywhere}.recipe{padding:11px;margin:7px 0;border:1px solid var(--line);border-radius:12px;background:#fff}.recipe strong{font-size:13px}.recipe p{font-size:11px;color:#647466;margin:4px 0 8px}.draw-canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note{font-size:11px;color:#647466;line-height:1.45}.hidden{display:none!important}.focus-mode .hotbar{bottom:max(5px,env(safe-area-inset-bottom))}.focus-mode .dpad,.focus-mode .action-pad{bottom:max(8px,env(safe-area-inset-bottom))}.portrait-note{display:none}
 
 .texture-note{font-size:11px;color:#637466;line-height:1.45;margin:8px 0 0}
 .color-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
@@ -111,20 +111,20 @@
     <div class="hud-actions">
       <button id="viewBtn">👁 View: 1st</button>
       <button id="timeBtn" title="Change time of day">☀️ Day</button>
-      <button id="flyBtn">🕊 Fly: Off</button>
+      <button id="flyBtn">🕊 Fly: Off</button><button id="digModeBtn" aria-pressed="false" title="Choose the shovel to dig blocks and ground">🪏 Dig: Off</button>
       <button id="controlsBtn">Hide controls</button>
       <button id="expandBtn" class="primary">⛶ Enlarge</button>
       <button id="inventoryBtn">🎒</button>
       <button id="menuBtn">☰</button>
     </div>
   </div>
-  <div class="top-hint" id="topHint">Move with arrows/WASD · Press Space or tap JUMP to leap · Tap to build or open a door · Hold a block to remove</div>
+  <div class="top-hint" id="topHint">Build mode · Tap to place blocks · Select the shovel to dig ground and blocks</div>
   <div class="hotbar" id="hotbar" aria-label="Block selection"></div>
   <div class="touch-controls" id="touchControls">
     <div class="dpad" aria-label="Movement controls">
       <button data-move="0,-1" aria-label="Move forward">▲</button><button data-move="-1,0" aria-label="Move left">◀</button><button data-move="0,1" aria-label="Move back">▼</button><button data-move="1,0" aria-label="Move right">▶</button><span aria-hidden="true" style="grid-column:2;grid-row:3"></span>
     </div>
-    <div class="action-pad"><button id="placeBtn">＋ BUILD</button><button id="removeBtn">− REMOVE</button><button id="flyDownBtn">↓ DOWN</button><button id="flyUpBtn">↑ UP</button><button id="jumpBtn" aria-label="Jump">⬆ JUMP</button></div>
+    <div class="action-pad"><button id="placeBtn">＋ BUILD</button><button id="digBtn" aria-pressed="false">🪏 DIG</button><button id="removeBtn">− REMOVE</button><button id="flyDownBtn">↓ DOWN</button><button id="flyUpBtn">↑ UP</button><button id="jumpBtn" aria-label="Jump">⬆ JUMP</button></div>
   </div>
   <button class="show-controls" id="showControls">Show controllers</button>
   <button class="focus-exit" id="focusExit">✕ Exit full view</button>
@@ -274,6 +274,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d',{alpha:false});
 const WORLD_LIMIT=72,MAX_BLOCKS=18000,STORE_KEY='diycraft_peaceful_voxel_v1';
+const MAX_DIG_DEPTH=8,GROUND_DIG_LIMIT=12000;
 const BLOCKS=[
  {id:'grass',name:'Grass',emoji:'🟩',color:'#70b85a'}, {id:'dirt',name:'Dirt',emoji:'🟫',color:'#9a7049'},
  {id:'stone',name:'Stone',emoji:'⬜',color:'#9ca6a1'}, {id:'wood',name:'Wood',emoji:'🪵',color:'#a97545'},
@@ -321,7 +322,7 @@ const TILE_DESIGNS=[
  {id:'spiral',name:'Spiral Garden',icon:'◎'}
 ];
 const ITEM_META={
- seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
+ seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},grass:{name:'Grass',icon:'🟩'},dirt:{name:'Dirt',icon:'🟫'},leaves:{name:'Leaves',icon:'🌳'},brick:{name:'Brick',icon:'🧱'},glass:{name:'Glass',icon:'🔹'},flower:{name:'Flower',icon:'🌸'},sand:{name:'Sand',icon:'🟨'},snow:{name:'Snow',icon:'❄️'},tile:{name:'Decorative tile',icon:'🧩'},custom:{name:'Custom block pieces',icon:'🎨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
 };
 const RECIPES=[
  {id:'flowerpot',name:'Flower pot',desc:'A little pot for a bright flower.',icon:'🪴',cost:{wood:1,seed:1}},
@@ -348,7 +349,7 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
 
- return {version:1,name:'My Peaceful World',blocks,player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,excavations:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
@@ -367,12 +368,21 @@ function validWorld(d){
   w.tileDesign.color=validHex(d.tileDesign.color,w.tileDesign.color);
   w.tileDesign.pattern=TILE_DESIGNS.some(t=>t.id===d.tileDesign.pattern)?d.tileDesign.pattern:'grid';
  }
- if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=0&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>{
+ if(Array.isArray(d.blocks))w.blocks=d.blocks.slice(0,MAX_BLOCKS).filter(b=>b&&Number.isInteger(b.x)&&Number.isInteger(b.y)&&Number.isInteger(b.z)&&Math.abs(b.x)<=WORLD_LIMIT&&Math.abs(b.z)<=WORLD_LIMIT&&b.y>=-MAX_DIG_DEPTH&&b.y<=64&&(BLOCKS.some(t=>t.id===b.type)||(b.type==='custom'&&/^#[0-9a-f]{6}$/i.test(b.color||'')))).map(b=>{
   if(b.type==='custom')return {...b,texture:CUSTOM_TEXTURES.some(t=>t.id===b.texture)?b.texture:'custom'};
   if(b.type==='door')return {...b,color:validHex(b.color,w.doorDesign.color),style:['classic','window','garden'].includes(b.style)?b.style:'classic',orientation:b.orientation==='ew'?'ew':'ns',swing:b.swing===-1?-1:1,open:!!b.open};
   if(b.type==='tile')return {...b,color:validHex(b.color,w.tileDesign.color),tilePattern:TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid'};
   return b;
  });
+ if(Array.isArray(d.excavations)){
+  const seenExcavations=new Set();
+  w.excavations=d.excavations.slice(0,GROUND_DIG_LIMIT).filter(v=>{
+   if(!Array.isArray(v)||v.length<3)return false;
+   const [x,z,depth]=v;
+   if(!Number.isInteger(x)||!Number.isInteger(z)||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT||!Number.isInteger(depth)||depth<1||depth>MAX_DIG_DEPTH)return false;
+   const key=x+','+z;if(seenExcavations.has(key))return false;seenExcavations.add(key);return true;
+  }).map(v=>[v[0],v[1],v[2]]);
+ }
  if(d.player&&typeof d.player==='object'){
   const p=d.player;
   w.player.x=Number.isFinite(p.x)?Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,p.x)):0;
@@ -393,7 +403,7 @@ function validWorld(d){
 }
 let toastTimer=0,storageUnavailable=false;
 function load(){try{const s=localStorage.getItem(STORE_KEY);if(s)return validWorld(JSON.parse(s));}catch(e){storageUnavailable=true;showStatus('Device storage is unavailable. Use Backup to keep your world.');}return freshWorld();}
-let world=load(),selected='grass',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,artDrawing=false,artLast=null,inventoryTab='materials',drag=null;
+let world=load(),selected='grass',toolMode='build',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,artDrawing=false,artLast=null,inventoryTab='materials',drag=null;
 let selectedAnimalId='sheep',selectedAnimalName='Pip the sheep',animalCareFlashUntil=0,animalCareFlashEmoji='💚';
 let jumpVelocity=0,playerGrounded=true;
 const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5;
@@ -425,16 +435,22 @@ function setTimeMode(mode,announce=true){
 }
 function save(silent=true){try{world.name=$('worldName').value.trim().slice(0,30)||world.name;localStorage.setItem(STORE_KEY,JSON.stringify(world));if(!silent)showStatus('World saved on this device.');}catch(e){if(!storageUnavailable){storageUnavailable=true;if(!silent)showStatus('Device storage is unavailable. Use Backup to keep your world.');}}}
 function addItem(id,target='crafted',label=''){const arr=world[target];const same=arr.find(v=>v&&v.id===id&&v.count<99);if(same){same.count++;return true;}const i=arr.findIndex(v=>!v);if(i<0)return false;arr[i]={id,count:1,label};return true;}
+function syncToolButtons(){const digging=toolMode==='dig';const desktop=$('digModeBtn'),mobile=$('digBtn');desktop.textContent=digging?'🪏 Dig: On':'🪏 Dig: Off';desktop.setAttribute('aria-pressed',String(digging));desktop.classList.toggle('primary',digging);mobile.textContent=digging?'🪏 DIG ON':'🪏 DIG';mobile.setAttribute('aria-pressed',String(digging));mobile.classList.toggle('primary',digging);$('topHint').textContent=digging?'Shovel mode · Tap soil or blocks to dig · Neighbor homes and people are protected':'Build mode · Tap to place blocks · Select the shovel to dig ground and blocks';}
+function setToolMode(mode,announce=true){toolMode=mode==='dig'?'dig':'build';syncToolButtons();if(announce)showStatus(toolMode==='dig'?'Shovel ready. Tap the ground or a block to dig.':'Build mode ready. Tap to place blocks.');}
 function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choices=[...BLOCKS,{id:'custom',name:'Custom',emoji:'🎨'}];choices.forEach(b=>{const btn=document.createElement('button');btn.className=selected===b.id?'active':'';if(b.id==='custom'){btn.innerHTML='<span class="emoji">🎨</span><small>Custom</small>';btn.style.borderColor=world.customBlock.color;btn.style.background='linear-gradient(135deg,'+world.customBlock.color+'55,#fffdf4)';btn.title='Open custom texture and color designer';btn.addEventListener('click',openCustomBlockDesigner);}else{btn.innerHTML='<span class="emoji">'+b.emoji+'</span><small>'+b.name+'</small>';if(b.id==='tile'){btn.title='Open the tile color and pattern designer';btn.addEventListener('click',()=>{selected='tile';renderHotbar();openTileDesigner();});}else btn.addEventListener('click',()=>{selected=b.id;renderHotbar();});}root.append(btn);});}
 function keyBlock(x,y,z){return x+','+y+','+z;}
 const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z)));
 function clearPlacedBlocks(){const before=world.blocks.length;world.blocks=world.blocks.filter(b=>STARTER_BLOCK_KEYS.has(keyBlock(b.x,b.y,b.z)));rebuildLookup();save();render();showStatus(Math.max(0,before-world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.');}
+function keyGround(x,z){return Math.floor(x)+','+Math.floor(z);}
+let groundDepths=new Map((world.excavations||[]).map(([x,z,depth])=>[keyGround(x,z),depth]));
+function groundDepthAt(x,z){return groundDepths.get(keyGround(x,z))||0;}
+function syncExcavations(){world.excavations=Array.from(groundDepths,([key,depth])=>{const [x,z]=key.split(',').map(Number);return [x,z,depth];});}
 let blockLookup=new Map(),worldGeometryRevision=0,neighborObstacleCache=null,neighborPathCache=new Map();
 function invalidateNeighborNavigation(){worldGeometryRevision++;neighborObstacleCache=null;neighborPathCache.clear();}
-function rebuildLookup(){invalidateNeighborNavigation();blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
-function solid(x,y,z){if(y<0)return Math.abs(x)<=WORLD_LIMIT&&Math.abs(z)<=WORLD_LIMIT;return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
-function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='tile'){b.color=validHex(world.tileDesign.color,'#c5a98a');b.tilePattern=TILE_DESIGNS.some(t=>t.id===world.tileDesign.pattern)?world.tileDesign.pattern:'grid';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);invalidateNeighborNavigation();save();return true;}
-function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));invalidateNeighborNavigation();save();return true;}
+function rebuildLookup(){invalidateNeighborNavigation();groundDepths.clear();for(const [x,z,depth] of world.excavations||[])groundDepths.set(keyGround(x,z),depth);blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
+function solid(x,y,z){return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
+function addBlock(x,y,z,type=selected){if(y< -MAX_DIG_DEPTH||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT||y< -groundDepthAt(x,z))return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='tile'){b.color=validHex(world.tileDesign.color,'#c5a98a');b.tilePattern=TILE_DESIGNS.some(t=>t.id===world.tileDesign.pattern)?world.tileDesign.pattern:'grid';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);invalidateNeighborNavigation();save();return true;}
+function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;if(isProtectedDigCell(b.x,b.z)){showStatus('This block is inside a protected neighbor area. Their homes stay safe!');return false;}world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));invalidateNeighborNavigation();save();return true;}
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
 function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
 const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
@@ -732,6 +748,7 @@ function buildNeighborObstacleSet(){
   if(b.type==='tile'||(b.type==='door'&&b.open)||b.y>=NAV_NEIGHBOR_HEIGHT||b.y+1<=0)continue;
   markNeighborObstacleRect(cells,b.x,b.z,1,1);
  }
+ for(const [cell,depth] of groundDepths){if(depth>0){const [x,z]=cell.split(',').map(Number);markNeighborObstacleRect(cells,x,z,1,1);}}
  // The three village cottages are drawn scenery, so include their actual wall segments here.
  const houses=[[-13,-7],[10,-17],[16,-9]];
  for(const [x,z] of houses){
@@ -1121,6 +1138,14 @@ function addCharacterFaceDetails(queue,cam,w,h,n,bob){
 function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
 function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.id==='sheep'?'Pip the sheep':'Mochi');$('animalCareTitle').textContent=(a.emoji||'🐾')+' Care for '+selectedAnimalName;const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=selectedAnimalName+' enjoys gentle care. Care activities together: '+count;$('animalCareFeedback').textContent=selectedAnimalName+' is happy to see you.';openShade('animalCareShade');}
 function careForAnimal(action){const info={snack:['🍎','A tasty snack. '+selectedAnimalName+' is happily nibbling!'],water:['💧','Fresh water. '+selectedAnimalName+' has had a lovely drink!'],brush:['✨','A gentle brush. '+selectedAnimalName+' looks extra fluffy!'],play:['💚','A little playtime. '+selectedAnimalName+' is happily playing!']}[action];if(!info)return;world.animalCare=world.animalCare||{};world.animalCare[selectedAnimalId]=Math.min(999,(world.animalCare[selectedAnimalId]||0)+1);animalCareFlashUntil=performance.now()+1900;animalCareFlashEmoji=info[0];$('animalCareFeedback').textContent=info[1];$('animalCareNote').textContent=selectedAnimalName+' has enjoyed '+world.animalCare[selectedAnimalId]+' caring moments with you.';save();showStatus(info[1]);}
+function pushTerrainFace(queue,cam,w,h,vertices,color){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true});}
+function pushExcavationTerrain(queue,cam,w,h){for(const [cell,depth] of groundDepths){if(depth<1)continue;const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>30||Math.abs(z-cam.pos.z)>30)continue;const floorY=-depth;
+ pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1}],'#775236');
+ const west=groundDepthAt(x-1,z),east=groundDepthAt(x+1,z),north=groundDepthAt(x,z-1),south=groundDepthAt(x,z+1);
+ if(west<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x,y:-west,z},{x,y:-west,z:z+1},{x,y:floorY,z:z+1}],'#98704b');
+ if(east<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x:x+1,y:-east,z:z+1},{x:x+1,y:-east,z},{x:x+1,y:floorY,z}],'#765034');
+ if(north<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:-north,z},{x,y:-north,z}],'#8c6543');
+ if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f');}}
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.6),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
  const palette=getTimePalette(performance.now()/1000);
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
@@ -1142,6 +1167,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Ground plane polygon
  const ground=[{x:-WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:-WORLD_LIMIT},{x:WORLD_LIMIT,y:0,z:WORLD_LIMIT},{x:-WORLD_LIMIT,y:0,z:WORLD_LIMIT}].map(p=>project(p,cam,w,h));
  if(ground.every(Boolean)){ctx.beginPath();ground.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=palette.ground;ctx.fill();}
+ pushExcavationTerrain(polys,cam,w,h);
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Blocks
@@ -1193,24 +1219,68 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  for(const n of neighbors.filter(v=>v.id==='hyacinth'||v.id==='theo')){const hp=project({x:n.homeX+2.1,y:3.55,z:n.homeZ+4.55},cam,w,h);if(hp){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(n.name+"'s home",hp.x,hp.y);ctx.fillStyle='#35533e';ctx.fillText(n.name+"'s home",hp.x,hp.y);ctx.restore();}}
  const familySign=project({x:18.1,y:3.55,z:-4.65},cam,w,h);if(familySign){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText("The Pagibig Family",familySign.x,familySign.y);ctx.fillStyle='#35533e';ctx.fillText("The Pagibig Family",familySign.x,familySign.y);ctx.restore();}
 }
-function rayHit(){const cam=cameraState(),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),dir={x:sy*cp,y:sp,z:-cy*cp};let prev=null;for(let t=.2;t<24;t+=.06){const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);if(iy<0&&Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT)return {ground:true,place:{x:ix,y:0,z:iz}};const b=iy>=0?blockLookup.get(keyBlock(ix,iy,iz)):null;if(b)return {block:b,place:prev||{x:ix,y:Math.max(0,iy+1),z:iz}};prev={x:ix,y:Math.max(0,iy),z:iz};}return null;}
-function rayHitAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight,focal=Math.min(w,h)*.94;if(!w||!h)return rayHit();const rx=(px-w/2)/focal,uy=(h*.51-py)/focal,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);let dir={x:sy*cp+cy*rx-sy*sp*uy,y:sp+cp*uy,z:-cy*cp+sy*rx+cy*sp*uy};const len=Math.hypot(dir.x,dir.y,dir.z)||1;dir={x:dir.x/len,y:dir.y/len,z:dir.z/len};let prev=null;for(let t=.16;t<28;t+=.045){const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);if(iy<0&&Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT)return {ground:true,place:{x:ix,y:0,z:iz}};const b=iy>=0?blockLookup.get(keyBlock(ix,iy,iz)):null;if(b)return {block:b,place:prev||{x:ix,y:Math.max(0,iy+1),z:iz}};prev={x:ix,y:Math.max(0,iy),z:iz};}const t=dir.y<-.02?(0.06-cam.pos.y)/dir.y:8;const x=cam.pos.x+dir.x*Math.max(2,Math.min(22,t)),y=cam.pos.y+dir.y*Math.max(2,Math.min(22,t)),z=cam.pos.z+dir.z*Math.max(2,Math.min(22,t));return {place:{x:Math.floor(x),y:Math.max(0,Math.floor(y)),z:Math.floor(z)}};}
+function traceWorldRay(cam,dir,maxDistance,step){
+ let prev=null,prevInGround=false;
+ for(let t=.16;t<maxDistance;t+=step){
+  const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);
+  if(Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT){
+   const b=blockLookup.get(keyBlock(ix,iy,iz));
+   if(b)return {block:b,place:prev||{x:ix,y:Math.max(-MAX_DIG_DEPTH,iy+1),z:iz}};
+   const inGround=y < -groundDepthAt(ix,iz)-.025;
+   if(inGround&&!prevInGround)return {ground:true,x:ix,z:iz,hitY:y,place:{x:ix,y:-groundDepthAt(ix,iz),z:iz}};
+   prevInGround=inGround;prev={x:ix,y:iy,z:iz};
+  }else{prevInGround=false;prev=null;}
+ }
+ return null;
+}
+function rayHit(){const cam=cameraState(),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),dir={x:sy*cp,y:sp,z:-cy*cp};return traceWorldRay(cam,dir,24,.06);}
+function rayHitAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight,focal=Math.min(w,h)*.94;if(!w||!h)return rayHit();const rx=(px-w/2)/focal,uy=(h*.51-py)/focal,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);let dir={x:sy*cp+cy*rx-sy*sp*uy,y:sp+cp*uy,z:-cy*cp+sy*rx+cy*sp*uy};const len=Math.hypot(dir.x,dir.y,dir.z)||1;dir={x:dir.x/len,y:dir.y/len,z:dir.z/len};const hit=traceWorldRay(cam,dir,28,.045);if(hit)return hit;const t=dir.y<-.02?(0.06-cam.pos.y)/dir.y:8;const x=cam.pos.x+dir.x*Math.max(2,Math.min(22,t)),y=cam.pos.y+dir.y*Math.max(2,Math.min(22,t)),z=cam.pos.z+dir.z*Math.max(2,Math.min(22,t));return {place:{x:Math.floor(x),y:Math.max(-MAX_DIG_DEPTH,Math.floor(y)),z:Math.floor(z)}};}
 function buildAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){const hit=rayHitAtScreen(px,py);if(!hit){showStatus('Tap a place in the world to build.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus(selected==='door'?'Door built! Tap it to open or close it.':(blockMap.get(selected)?.name||'Block')+' placed where you tapped.');render();}else showStatus(selected==='door'?'A door needs two clear spaces, one above the other.':'That space is occupied or outside the safe building area.');}
 function build(){buildAtScreen();}
 function erase(){const hit=rayHit();if(!hit||!hit.block){showStatus('Aim at a block you placed to remove it.');return;}if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){showStatus('Block removed.');render();}}
+const PROTECTED_NEIGHBOR_HOMES=[{x:-13,z:-7},{x:10,z:-17},{x:16,z:-9}];
+function isProtectedDigCell(x,z){
+ const cx=Math.floor(x)+.5,cz=Math.floor(z)+.5;
+ for(const home of PROTECTED_NEIGHBOR_HOMES){if(cx>=home.x-.75&&cx<=home.x+5.05&&cz>=home.z-.75&&cz<=home.z+5.05)return true;}
+ const tick=performance.now()/1000,night=getTimePalette(tick).mode==='night';
+ for(const n of currentNeighbors(tick,night)){if(Math.hypot(cx-n.x,cz-n.z)<1.05)return true;}
+ for(const animal of animalPositions(tick)){if(Math.hypot(cx-animal.x,cz-animal.z)<.7)return true;}
+ return false;
+}
+function canStoreItem(id,target='materials'){const slots=world[target]||[];return slots.some(item=>item&&item.id===id&&item.count<99)||slots.some(item=>!item);}
+function blockDropItem(block){if(block.type==='door')return 'wood';return ITEM_META[block.type]?block.type:'stone';}
+function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
+ const hit=rayHitAtScreen(px,py);
+ if(hit&&hit.block){const block=hit.block,itemId=blockDropItem(block);
+  if(isProtectedDigCell(block.x,block.z)){showStatus('That block is too close to a neighbor or animal. Their homes and little friends are protected!');return;}
+  if(!canStoreItem(itemId,'materials')){showStatus('Your materials pouch is full. Make room before digging.');return;}
+  if(removeBlock(block.x,block.y,block.z)){addItem(itemId,'materials');save();render();showStatus('Dug '+(ITEM_META[block.type]?.name||'block')+' · +1 '+ITEM_META[itemId].name+'.');}
+  return;
+ }
+ if(hit&&hit.ground){const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
+  if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
+  if(depth>=MAX_DIG_DEPTH){showStatus('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');return;}
+  if(!groundDepths.has(key)&&groundDepths.size>=GROUND_DIG_LIMIT){showStatus('This world has reached its safe excavation limit.');return;}
+  if(!canStoreItem('dirt','materials')){showStatus('Your materials pouch is full. Make room before digging.');return;}
+  const newDepth=Math.min(MAX_DIG_DEPTH,Math.max(depth+1,Math.ceil(Math.max(0,-hit.hitY)),Math.ceil(Math.max(0,-world.player.y))));
+  if(newDepth<=depth){showStatus('The ground is already at its safe digging depth.');return;}
+  groundDepths.set(key,newDepth);syncExcavations();addItem('dirt','materials');invalidateNeighborNavigation();save();render();showStatus('Ground excavated to '+newDepth+' block'+(newDepth===1?'':'s')+' deep · +1 Dirt.');return;
+ }
+ showStatus('Aim the shovel at a block or a patch of ground, then tap to dig.');
+}
 function surfaceHeightAt(x,z){
  const bx=Math.floor(x),bz=Math.floor(z);
- for(let y=64;y>=0;y--){
+ for(let y=64;y>=-MAX_DIG_DEPTH;y--){
   const b=blockLookup.get(keyBlock(bx,y,bz));
   if(b&&b.type!=='door')return b.type==='tile'?y+TILE_BASE_OFFSET+TILE_THICKNESS:y+1;
  }
- return 0;
+ return -groundDepthAt(bx,bz);
 }
 const PLAYER_RADIUS=.23,PLAYER_BODY_HEIGHT=1.72,PLAYER_STEP_HEIGHT=.18;
 function playerCollisionAt(x,z,y){
  const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
  const minZ=Math.floor(z-PLAYER_RADIUS),maxZ=Math.floor(z+PLAYER_RADIUS);
- const minY=Math.max(0,Math.floor(y)),maxY=Math.min(64,Math.floor(y+PLAYER_BODY_HEIGHT));
+ const minY=Math.max(-MAX_DIG_DEPTH,Math.floor(y)),maxY=Math.min(64,Math.floor(y+PLAYER_BODY_HEIGHT));
  const checked=new Set();
  for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++)for(let by=minY;by<=maxY;by++){
   const b=blockLookup.get(keyBlock(bx,by,bz));if(!b||checked.has(b))continue;checked.add(b);
@@ -1261,7 +1331,7 @@ function move(dt){
   let v=vertical;
   if(keys[' '])v+=1;
   if(keys.Shift)v-=1;
-  const nextY=Math.max(0,Math.min(60,p.y+v*speed*dt));
+  const nextY=Math.max(-MAX_DIG_DEPTH,Math.min(60,p.y+v*speed*dt));
   if(!playerCollisionAt(p.x,p.z,nextY))p.y=nextY;
   jumpVelocity=0;playerGrounded=true;
   return;
@@ -1281,11 +1351,11 @@ function move(dt){
   if(next<=floor&&before>=floor-.04){
    p.y=floor;jumpVelocity=0;playerGrounded=true;save(true);return;
   }
-  if(next<=0&&before>=0){
-   p.y=0;jumpVelocity=0;playerGrounded=true;save(true);return;
+  if(next<=-MAX_DIG_DEPTH&&before>=-MAX_DIG_DEPTH){
+   p.y=-MAX_DIG_DEPTH;jumpVelocity=0;playerGrounded=true;save(true);return;
   }
  }
- p.y=Math.max(0,next);
+ p.y=Math.max(-MAX_DIG_DEPTH,next);
 }
 function loop(time){requestAnimationFrame(loop);if(time-lastTime<30)return;const dt=Math.min(.05,(time-lastTime)/1000||0);lastTime=time;move(dt);render();}
 function renderSlots(){const root=$('slots');root.replaceChildren();const arr=world[inventoryTab];for(let i=0;i<60;i++){const slot=document.createElement('div');slot.className='slot';const item=arr[i];if(item){const meta=ITEM_META[item.id];const ico=document.createElement('div');ico.className='ico';ico.textContent=meta.icon;const name=document.createElement('small');name.textContent=item.label||meta.name;const count=document.createElement('small');count.textContent='×'+item.count;slot.append(ico,name,count);}else{const n=document.createElement('small');n.textContent=String(i+1);n.style.color='#a7b4a7';slot.append(n);}root.append(slot);}}
@@ -1513,12 +1583,12 @@ function clearBlockHold(){
 }
 function handleWorldTap(px,py){
  const hit=rayHitAtScreen(px,py);
- if(hit&&hit.block&&hit.block.type==='door'){toggleDoor(hit.block);return;}
+ if(hit&&hit.block&&hit.block.type==='door'&&toolMode!=='dig'){toggleDoor(hit.block);return;}
  const animal=animalAtScreen(px,py);
  if(animal){openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(px,py);
  if(neighbor){openColoring(neighbor.name);return;}
- buildAtScreen(px,py);
+ if(toolMode==='dig')digAtScreen(px,py);else buildAtScreen(px,py);
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
@@ -1529,7 +1599,7 @@ canvas.addEventListener('pointerdown',e=>{
  canvas.setPointerCapture(e.pointerId);
  const rect=canvas.getBoundingClientRect();
  const px=e.clientX-rect.left,py=e.clientY-rect.top;
- if(!animalAtScreen(px,py)&&!neighborAtScreen(px,py)){
+ if(toolMode!=='dig'&&!animalAtScreen(px,py)&&!neighborAtScreen(px,py)){
   const hit=rayHitAtScreen(px,py);
   if(hit&&hit.block){
    const targetKey=keyBlock(hit.block.x,hit.block.y,hit.block.z);
@@ -1573,7 +1643,7 @@ canvas.addEventListener('pointercancel',()=>{
 });
 // On-screen movement pads support press-and-hold on iPad.
 document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
-$('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();build();});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});$('jumpBtn').addEventListener('click',jump);const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
+$('placeBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode('build',false);build();});$('digBtn').addEventListener('pointerdown',e=>{e.preventDefault();setToolMode(toolMode==='dig'?'build':'dig');});$('removeBtn').addEventListener('pointerdown',e=>{e.preventDefault();erase();});$('digModeBtn').addEventListener('click',()=>setToolMode(toolMode==='dig'?'build':'dig'));syncToolButtons();$('jumpBtn').addEventListener('click',jump);const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
 
 $('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;else showStatus('Turn flight on first.');});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;else showStatus('Turn flight on first.');});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
 function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 View: 1st':'👁 View: 3rd';}

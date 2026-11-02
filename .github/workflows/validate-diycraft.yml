@@ -67,6 +67,12 @@ jobs:
             'function drawVoxelDoor(queue,cam,w,h,door)',
             'function jump()',
             'function surfaceHeightAt(x,z)',
+            'const MAX_DIG_DEPTH=8,GROUND_DIG_LIMIT=12000',
+            'function traceWorldRay(cam,dir,maxDistance,step)',
+            'function isProtectedDigCell(x,z)',
+            'function digAtScreen(px,py)',
+            'function pushExcavationTerrain(queue,cam,w,h)',
+            'function setToolMode(mode,announce=true)',
             'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
             'function makeTileTexturePatterns()',
             'function pushTileSlab',
@@ -94,7 +100,7 @@ jobs:
               throw new Error('Missing expected DIYCraft feature: ' + marker);
             }
           }
-          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"')) {
+          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="digBtn"') || !html.includes('id="digModeBtn"')) {
             throw new Error('A block, door, jump, or tile designer control is missing.');
           }
           const tileList = source.match(/const TILE_DESIGNS=\[([\s\S]*?)\];/);
@@ -105,7 +111,7 @@ jobs:
             throw new Error('The same-origin offline worker is not allowed by the content security policy.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v2'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
+          if (!worker.includes("const CACHE_NAME = 'diycraft-shell-v3'")) throw new Error('Expected the refreshed DIYCraft offline cache version.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
