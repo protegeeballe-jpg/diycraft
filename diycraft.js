@@ -185,7 +185,7 @@ function validWorld(d){
 }
 let toastTimer=0,storageUnavailable=false;
 function load(){try{const s=localStorage.getItem(STORE_KEY);if(s)return validWorld(JSON.parse(s));}catch(e){storageUnavailable=true;showStatus('Device storage is unavailable. Use Backup to keep your world.');}return freshWorld();}
-let world=load(),selected='grass',selectedBucketItem=null,placementPaused=false,toolMode='build',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,artDrawing=false,artLast=null,inventoryTab='bucket',drag=null;
+let world=load(),selected='grass',selectedBucketItem=null,placementPaused=false,toolMode='build',cameraMode='first',flying=false,controllersHidden=false,focusMode=false,moveX=0,moveZ=0,vertical=0,keys={},lastTime=0,frameAccumulator=0,artDrawing=false,artLast=null,inventoryTab='bucket',drag=null;
 let selectedAnimalId='sheep',selectedAnimalName='Pip the sheep',animalCareFlashUntil=0,animalCareFlashEmoji='💚';
 let jumpVelocity=0,playerGrounded=true;
 const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5;
@@ -318,7 +318,60 @@ let waterCells=new Set(waterLevels.keys());
 let fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
 const RENDER_CHUNK_SIZE=16;
 let blockRenderChunks=new Map(),excavationRenderChunks=new Map(),waterRenderChunks=new Map(),fishRenderChunks=new Map();
+const MAX_BLOCK_CHUNK_CACHE=32,OPAQUE_CUBE_TYPES=new Set([...SOLID_STYLE_TYPES,'custom']);
+let blockChunkMeshCache=new Map();
 function renderChunkKey(x,z){return Math.floor(x/RENDER_CHUNK_SIZE)+','+Math.floor(z/RENDER_CHUNK_SIZE);}
+function isOpaqueCubeBlock(block){return !!block&&OPAQUE_CUBE_TYPES.has(block.type);}
+function invalidateBlockChunkMeshesAt(x,z){
+ for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)blockChunkMeshCache.delete(renderChunkKey(x+dx,z+dz));
+}
+function projectedPolygonVisible(pts,w,h,margin=2){
+ if(!pts||!pts.length)return false;
+ let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+ for(const p of pts){if(!p)return false;minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
+ return maxX>=-margin&&minX<=w+margin&&maxY>=-margin&&minY<=h+margin;
+}
+function buildBlockChunkMesh(key,items){
+ const faces=[],specials=[];
+ for(const block of items){
+  if(!isOpaqueCubeBlock(block)){if(block.type==='door'||block.type==='tile')specials.push(block);continue;}
+  const meta=blockMap.get(block.type);
+  const color=block.type==='custom'?validHex(block.color,'#aa83d8'):block.color?validHex(block.color,meta?.color||'#a0a0a0'):meta?.color;
+  if(!color)continue;
+  const texture=block.texture||(block.type==='custom'?'custom':block.type),vertices=cubeVerts(block.x,block.y,block.z);
+  for(const face of FACES){
+   const [nx,ny,nz]=face.normal,neighbor=blockLookup.get(keyBlock(block.x+nx,block.y+ny,block.z+nz));
+   if(isOpaqueCubeBlock(neighbor))continue;
+   faces.push({center:{x:block.x+.5+nx*.5,y:block.y+.5+ny*.5,z:block.z+.5+nz*.5},normal:face.normal,
+    vertices:face.ids.map(index=>vertices[index]),color:shadeColor(color,face.shade),material:texture,customTint:!!block.color,outline:true});
+  }
+ }
+ return {key,faces,specials};
+}
+function getBlockChunkMesh(key,items){
+ let mesh=blockChunkMeshCache.get(key);
+ if(mesh){blockChunkMeshCache.delete(key);blockChunkMeshCache.set(key,mesh);return mesh;}
+ mesh=buildBlockChunkMesh(key,items);blockChunkMeshCache.set(key,mesh);
+ if(blockChunkMeshCache.size>MAX_BLOCK_CHUNK_CACHE)blockChunkMeshCache.delete(blockChunkMeshCache.keys().next().value);
+ return mesh;
+}
+function visitNearbyBlockChunkMeshes(cam,radius,visit){
+ const minX=Math.floor((cam.pos.x-radius)/RENDER_CHUNK_SIZE),maxX=Math.floor((cam.pos.x+radius)/RENDER_CHUNK_SIZE);
+ const minZ=Math.floor((cam.pos.z-radius)/RENDER_CHUNK_SIZE),maxZ=Math.floor((cam.pos.z+radius)/RENDER_CHUNK_SIZE);
+ for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){
+  const key=cx+','+cz,items=blockRenderChunks.get(key);if(!items||!items.length)continue;
+  visit(getBlockChunkMesh(key,items));
+ }
+}
+function appendBlockChunkMesh(queue,mesh,cam,w,h){
+ for(const face of mesh.faces){
+  const [nx,ny,nz]=face.normal,viewX=cam.pos.x-face.center.x,viewY=cam.pos.y-face.center.y,viewZ=cam.pos.z-face.center.z;
+  if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;
+  const pts=face.vertices.map(vertex=>project(vertex,cam,w,h));
+  if(pts.some(point=>!point)||!projectedPolygonVisible(pts,w,h,2))continue;
+  queue.push({...face,pts,depth:pts.reduce((sum,point)=>sum+point.d,0)/pts.length});
+ }
+}
 function addRenderChunkItem(map,x,z,item){
  const key=renderChunkKey(x,z);let items=map.get(key);
  if(!items){items=[];map.set(key,items);}
@@ -341,7 +394,7 @@ function rebuildFishRenderChunks(){
  fishSpots.forEach((fish,index)=>addRenderChunkItem(fishRenderChunks,fish.x,fish.z,{fish,index}));
 }
 function rebuildRenderChunks(){
- blockRenderChunks=new Map();excavationRenderChunks=new Map();waterRenderChunks=new Map();
+ blockRenderChunks=new Map();excavationRenderChunks=new Map();waterRenderChunks=new Map();blockChunkMeshCache.clear();
  for(const block of world.blocks)addRenderChunkItem(blockRenderChunks,block.x,block.z,block);
  for(const cell of groundDepths.keys()){const [x,z]=cell.split(',').map(Number);addRenderChunkItem(excavationRenderChunks,x,z,cell);}
  for(const cell of waterCells){const [x,z]=cell.split(',').map(Number);addRenderChunkItem(waterRenderChunks,x,z,cell);}
@@ -385,14 +438,14 @@ function addBlock(x,y,z,type=selected){
   if(type==='door')b.open=false;
  }
  world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);
- addRenderChunkItem(blockRenderChunks,b.x,b.z,b);
+ addRenderChunkItem(blockRenderChunks,b.x,b.z,b);invalidateBlockChunkMeshesAt(b.x,b.z);
  invalidateNeighborNavigation();save();return true;
 }
 function removeBlock(x,y,z){
  const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;
  if(isProtectedDigCell(b.x,b.z)){showStatus('This block is inside a protected neighbor area. Their homes stay safe!');return false;}
  if(!addBucketItem(b)){showStatus('Your Material Bucket is full. Use or clear some recovered blocks first.');return false;}
- world.blocks=world.blocks.filter(v=>v!==b);removeRenderChunkItem(blockRenderChunks,b.x,b.z,b);blockLookup.delete(keyBlock(b.x,b.y,b.z));
+ world.blocks=world.blocks.filter(v=>v!==b);removeRenderChunkItem(blockRenderChunks,b.x,b.z,b);blockLookup.delete(keyBlock(b.x,b.y,b.z));invalidateBlockChunkMeshesAt(b.x,b.z);
  if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));
  doorMotions.delete(keyBlock(b.x,b.y,b.z));invalidateNeighborNavigation();save();return true;
 }
@@ -520,7 +573,7 @@ function makeTileTexturePatterns(){
  }
 }
 
-function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
+function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
 // Character blocks rotate as complete cuboids, not just as relocated centers.
 function pushTileSlab(queue,cam,w,h,b){
  const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';
@@ -531,7 +584,7 @@ function pushTileSlab(queue,cam,w,h,b){
   const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;
   if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;
   const pts=f.ids.map(i=>project(vs[i],cam,w,h));
-  if(pts.some(p=>!p))continue;
+  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
   const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
   const poly={pts,depth,color:shadeColor(color,f.shade),outline:true,material:null,customTint:false};
   if(ny===1)poly.tileTexture=textureTiles.get('tile-'+pattern);
@@ -555,7 +608,7 @@ function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=t
   const viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;
   if(normalX*viewX+ny*viewY+normalZ*viewZ<=0)continue;
   const pts=f.ids.map(i=>project(vs[i],cam,w,h));
-  if(pts.some(p=>!p))continue;
+  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
   const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;
   queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material:null,customTint:false});
  }
@@ -587,7 +640,7 @@ function pushDoorCube(queue,cam,w,h,pivot,x,y,z,sx,sy,sz,color,angle){
   const viewX=cam.pos.x-center.x,viewY=cam.pos.y-center.y,viewZ=cam.pos.z-center.z;
   if(normalX*viewX+ny*viewY+normalZ*viewZ<=0)continue;
   const pts=f.ids.map(i=>project(vs[i],cam,w,h));
-  if(pts.some(p=>!p))continue;
+  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
   const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
   queue.push({pts,depth,color:shadeColor(color,f.shade),outline:true,material:null,customTint:false});
  }
@@ -1123,7 +1176,7 @@ function addCharacterFaceDetails(queue,cam,w,h,n,bob){
 function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
 function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.id==='sheep'?'Pip the sheep':'Mochi');$('animalCareTitle').textContent=(a.emoji||'🐾')+' Care for '+selectedAnimalName;const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=selectedAnimalName+' enjoys gentle care. Care activities together: '+count;$('animalCareFeedback').textContent=selectedAnimalName+' is happy to see you.';openShade('animalCareShade');}
 function careForAnimal(action){const info={snack:['🍎','A tasty snack. '+selectedAnimalName+' is happily nibbling!'],water:['💧','Fresh water. '+selectedAnimalName+' has had a lovely drink!'],brush:['✨','A gentle brush. '+selectedAnimalName+' looks extra fluffy!'],play:['💚','A little playtime. '+selectedAnimalName+' is happily playing!']}[action];if(!info)return;world.animalCare=world.animalCare||{};world.animalCare[selectedAnimalId]=Math.min(999,(world.animalCare[selectedAnimalId]||0)+1);animalCareFlashUntil=performance.now()+1900;animalCareFlashEmoji=info[0];$('animalCareFeedback').textContent=info[1];$('animalCareNote').textContent=selectedAnimalName+' has enjoyed '+world.animalCare[selectedAnimalId]+' caring moments with you.';save();showStatus(info[1]);}
-function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt'){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true,material});}
+function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt'){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true,material});}
 function pushGroundSurface(queue,cam,w,h,color){
  const radius=24,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),focal=Math.min(w,h)*.94,horizontalLimit=(w*.5+30)/focal;
  const minX=Math.max(-WORLD_LIMIT,cx-radius),maxX=Math.min(WORLD_LIMIT-1,cx+radius);
@@ -1136,7 +1189,7 @@ function pushGroundSurface(queue,cam,w,h,color){
   if(screenY< -cellRadius-24||screenY>h+cellRadius+24)continue;
   if(groundDepthAt(x,z)>0)continue;
   const vertices=[{x,y:0,z},{x:x+1,y:0,z},{x:x+1,y:0,z:z+1},{x,y:0,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));
-  if(pts.some(p=>!p))continue;
+  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
   const left=Math.min(...pts.map(p=>p.x)),right=Math.max(...pts.map(p=>p.x));
   const top=Math.min(...pts.map(p=>p.y)),bottom=Math.max(...pts.map(p=>p.y));
   if(right< -24||left>w+24||bottom< -24||top>h+24)continue;
@@ -1165,7 +1218,7 @@ function pushWaterSurfaces(queue,cam,w,h){
   const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z),topY=waterTopAt(x,z);
   if(depth<1||topY===null||Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)return;
   const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
-  const topPts=topVertices.map(v=>project(v,cam,w,h));if(topPts.some(p=>!p))return;
+  const topPts=topVertices.map(v=>project(v,cam,w,h));if(topPts.some(p=>!p)||!projectedPolygonVisible(topPts,w,h,3))return;
   for(const p of topPts){minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
   visible.push({x,z,depth,topY,floorY:-depth,topPts});
  });
@@ -1204,7 +1257,7 @@ function pushWaterSurfaces(queue,cam,w,h){
    for(let layer=0;layer<layerCount;layer++){
     const layerBottom=floorY+layer,layerTop=Math.min(topY,layerBottom+1),low=Math.max(layerBottom,exposedFrom),high=layerTop;
     if(high-low<.015)continue;
-    const pts=side.verticesAt(low,high).map(v=>project(v,cam,w,h));if(pts.some(p=>!p))continue;
+    const pts=side.verticesAt(low,high).map(v=>project(v,cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
     const averageSideDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
     queue.push({pts,depth:averageSideDepth-.018,color:'#55c9eb',alpha:.37,outline:false,waterSide:true,waterGradient:sideGradient,waterLayer:layer});
    }
@@ -1284,8 +1337,7 @@ function pushFishOverlays(queue,cam,w,h){
    point(.135,-.05),point(.19,0),point(.135,.05),point(.01,.078),
    point(-.07,.052),point(-.105,.065)
   ];
-  const pts=silhouette.map(v=>project(v,cam,w,h));
-  if(pts.some(p=>!p))return;
+  const pts=silhouette.map(v=>project(v,cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))return;
   const d=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
   queue.push({pts,depth:d,color:colors[i%colors.length],outline:false});
   const eye=project(point(.125,-.018),cam,w,h);
@@ -1304,14 +1356,14 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  pushWaterSurfaces(polys,cam,w,h);
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
- // Blocks
- visitNearbyRenderChunks(blockRenderChunks,cam,24,b=>{
-  if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)return;
-  if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);return;}
-  if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);return;}
-  const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):b.color?validHex(b.color,meta?.color||'#a0a0a0'):meta?.color;
-  const texture=b.texture||(b.type==='custom'?'custom':b.type);
-  if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,texture,!!b.color);
+ // Camera-independent 16×16 chunk meshes cache static cube faces; animated doors and slabs stay dynamic.
+ visitNearbyBlockChunkMeshes(cam,24,mesh=>{
+  appendBlockChunkMesh(polys,mesh,cam,w,h);
+  for(const b of mesh.specials){
+   if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)continue;
+   if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b);
+   else if(b.type==='tile')pushTileSlab(polys,cam,w,h,b);
+  }
  });
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
@@ -1588,7 +1640,19 @@ function move(dt){
  }
  p.y=Math.max(-MAX_DIG_DEPTH,next);
 }
-function loop(time){requestAnimationFrame(loop);if(time-lastTime<30)return;const dt=Math.min(.05,(time-lastTime)/1000||0);lastTime=time;move(dt);render();}
+const FIXED_UPDATE_STEP=1/60,MAX_FRAME_DELTA=.1,MAX_FIXED_STEPS_PER_FRAME=6;
+function loop(time){
+ requestAnimationFrame(loop);
+ if(document.hidden){lastTime=0;frameAccumulator=0;return;}
+ if(!lastTime){lastTime=time;render();return;}
+ const elapsed=Math.min(MAX_FRAME_DELTA,Math.max(0,(time-lastTime)/1000));lastTime=time;
+ frameAccumulator=Math.min(frameAccumulator+elapsed,FIXED_UPDATE_STEP*MAX_FIXED_STEPS_PER_FRAME);
+ let steps=0;
+ while(frameAccumulator+1e-9>=FIXED_UPDATE_STEP&&steps<MAX_FIXED_STEPS_PER_FRAME){
+  move(FIXED_UPDATE_STEP);frameAccumulator-=FIXED_UPDATE_STEP;steps++;
+ }
+ render();
+}
 function renderSlots(){
  const root=$('slots');root.replaceChildren();
  $('clearBucketBtn').classList.toggle('hidden',inventoryTab!=='bucket');
@@ -2063,6 +2127,6 @@ function prepareOfflinePlay(){
 
 // Keep one local autosave. No gameplay networking, analytics, third-party scripts or multiplayer.
 makeTexturePatterns();makeTileTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
-window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);prepareOfflinePlay();
+window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{lastTime=0;frameAccumulator=0;if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);prepareOfflinePlay();
 })();
 
