@@ -421,7 +421,7 @@ function syncTimeControls(){
 function setTimeMode(mode,announce=true){
  if(!['day','sunset','night','auto'].includes(mode))return;
  world.timeMode=mode;syncTimeControls();save();render();
- if(announce)showStatus(mode==='auto'?'Automatic day and night cycle enabled.':TIME_MODE_LABELS[mode]+' selected.');
+ if(announce)showStatus(mode==='night'?'Night has arrived. Everyone is tucked in for bed.':mode==='auto'?'Automatic day and night cycle enabled.':TIME_MODE_LABELS[mode]+' selected.');
 }
 function save(silent=true){try{world.name=$('worldName').value.trim().slice(0,30)||world.name;localStorage.setItem(STORE_KEY,JSON.stringify(world));if(!silent)showStatus('World saved on this device.');}catch(e){if(!storageUnavailable){storageUnavailable=true;if(!silent)showStatus('Device storage is unavailable. Use Backup to keep your world.');}}}
 function addItem(id,target='crafted',label=''){const arr=world[target];const same=arr.find(v=>v&&v.id===id&&v.count<99);if(same){same.count++;return true;}const i=arr.findIndex(v=>!v);if(i<0)return false;arr[i]={id,count:1,label};return true;}
@@ -429,10 +429,12 @@ function renderHotbar(){const root=$('hotbar');root.replaceChildren();const choi
 function keyBlock(x,y,z){return x+','+y+','+z;}
 const STARTER_BLOCK_KEYS=new Set(freshWorld().blocks.map(b=>keyBlock(b.x,b.y,b.z)));
 function clearPlacedBlocks(){const before=world.blocks.length;world.blocks=world.blocks.filter(b=>STARTER_BLOCK_KEYS.has(keyBlock(b.x,b.y,b.z)));rebuildLookup();save();render();showStatus(Math.max(0,before-world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.');}
-let blockLookup=new Map();function rebuildLookup(){blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
+let blockLookup=new Map(),worldGeometryRevision=0,neighborObstacleCache=null,neighborPathCache=new Map();
+function invalidateNeighborNavigation(){worldGeometryRevision++;neighborObstacleCache=null;neighborPathCache.clear();}
+function rebuildLookup(){invalidateNeighborNavigation();blockLookup=new Map();for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door'&&b.y<64)blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}}
 function solid(x,y,z){if(y<0)return Math.abs(x)<=WORLD_LIMIT&&Math.abs(z)<=WORLD_LIMIT;return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
-function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='tile'){b.color=validHex(world.tileDesign.color,'#c5a98a');b.tilePattern=TILE_DESIGNS.some(t=>t.id===world.tileDesign.pattern)?world.tileDesign.pattern:'grid';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);save();return true;}
-function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));save();return true;}
+function addBlock(x,y,z,type=selected){if(y<0||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT)return false;const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);if(blockLookup.has(k))return false;if(type==='door'&&(y>=64||blockLookup.has(upperKey)))return false;if(world.blocks.length>=MAX_BLOCKS){showStatus('This world has reached its safe building limit. Save a backup before expanding.');return false;}const b={x,y,z,type};if(type==='custom'){b.color=validHex(world.customBlock.color,'#aa83d8');b.texture=CUSTOM_TEXTURES.some(t=>t.id===world.customBlock.texture)?world.customBlock.texture:'custom';}if(type==='tile'){b.color=validHex(world.tileDesign.color,'#c5a98a');b.tilePattern=TILE_DESIGNS.some(t=>t.id===world.tileDesign.pattern)?world.tileDesign.pattern:'grid';}if(type==='door'){b.color=validHex(world.doorDesign.color,'#a97545');b.style=['classic','window','garden'].includes(world.doorDesign.style)?world.doorDesign.style:'classic';b.orientation=Math.abs(Math.cos(world.player.yaw))>=Math.abs(Math.sin(world.player.yaw))?'ns':'ew';b.swing=1;b.open=false;}world.blocks.push(b);blockLookup.set(k,b);if(type==='door')blockLookup.set(upperKey,b);invalidateNeighborNavigation();save();return true;}
+function removeBlock(x,y,z){const k=keyBlock(x,y,z),b=blockLookup.get(k);if(!b)return false;world.blocks=world.blocks.filter(v=>v!==b);blockLookup.delete(keyBlock(b.x,b.y,b.z));if(b.type==='door')blockLookup.delete(keyBlock(b.x,b.y+1,b.z));doorMotions.delete(keyBlock(b.x,b.y,b.z));invalidateNeighborNavigation();save();return true;}
 function cameraState(){const p=world.player,cp=Math.cos(p.pitch),sp=Math.sin(p.pitch),sy=Math.sin(p.yaw),cy=Math.cos(p.yaw);if(cameraMode==='first')return {pos:{x:p.x,y:p.y+1.58,z:p.z},yaw:p.yaw,pitch:p.pitch};const target={x:p.x+sy*6,y:p.y+2.1,z:p.z-cy*6},pos={x:p.x-sy*5.6,y:p.y+2.8,z:p.z+cy*5.6};const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;return {pos,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};}
 function project(v,cam,w,h){const dx=v.x-cam.pos.x,dy=v.y-cam.pos.y,dz=v.z-cam.pos.z,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);const rx=dx*cy+dz*sy,uy=-dx*sy*sp+dy*cp+dz*cy*sp,depth=dx*sy*cp+dy*sp-dz*cy*cp;if(depth<.12)return null;const focal=Math.min(w,h)*.94;return {x:w/2+rx*focal/depth,y:h*.51-uy*focal/depth,d:depth};}
 const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
@@ -543,7 +545,7 @@ function toggleDoor(door){
  const now=performance.now(),from=doorVisualAngle(door,now);
  door.open=!door.open;
  doorMotions.set(keyBlock(door.x,door.y,door.z),{from,to:door.open?1.32:0,start:now});
- save();showStatus(door.open?'Door opened. Tap again to close it.':'Door closed.');render();
+ invalidateNeighborNavigation();save();showStatus(door.open?'Door opened. Tap again to close it.':'Door closed.');render();
 }
 function pushDoorCube(queue,cam,w,h,pivot,x,y,z,sx,sy,sz,color,angle){
  const c=Math.cos(angle),s=Math.sin(angle);
@@ -686,14 +688,14 @@ const NEIGHBOR_ROUTES={
  mira:[
   {x:-5,z:-8,pause:2.8,activity:'👋'},
   {x:-7,z:-7,pause:2.0,activity:'🌼'},
-  {x:-10,z:-3.0,pause:2.7,activity:'🏡'},
+  {x:-10,z:-1.8,pause:2.7,activity:'🏡'},
   {x:-10,z:-9.5,pause:2.5,activity:'🌳'},
   {x:-6,z:-11,pause:2.4,activity:'🌸'}
  ],
  theo:[
   {x:5,z:-11,pause:2.3,activity:'👋'},
   {x:8,z:-10,pause:2.0,activity:'🌱'},
-  {x:12,z:-12.5,pause:2.8,activity:'🏡'},
+  {x:12,z:-12.1,pause:2.8,activity:'🏡'},
   {x:9,z:-8.5,pause:2.2,activity:'☀️'},
   {x:4,z:-7,pause:2.8,activity:'🐑'}
  ],
@@ -705,7 +707,133 @@ const NEIGHBOR_ROUTES={
   {x:15,z:-5,pause:2.8,activity:'🌸'}
  ]
 };
+// Neighbor navigation: local half-block grid, house walls and player-built obstacles.
+const NAV_CELL_SCALE=2,NAV_NEIGHBOR_RADIUS=.23,NAV_NEIGHBOR_HEIGHT=2.16;
+const NAV_STEPS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+function navCellKey(x,z){return x+','+z;}
+function navCircleHitsRect(px,pz,x,z,w,d){
+ const nx=Math.max(x,Math.min(x+w,px)),nz=Math.max(z,Math.min(z+d,pz));
+ const dx=px-nx,dz=pz-nz;
+ return dx*dx+dz*dz<NAV_NEIGHBOR_RADIUS*NAV_NEIGHBOR_RADIUS;
+}
+function markNeighborObstacleRect(set,x,z,w,d){
+ const minX=Math.floor((x-NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ const maxX=Math.ceil((x+w+NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ const minZ=Math.floor((z-NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ const maxZ=Math.ceil((z+d+NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++){
+  if(navCircleHitsRect(ix/NAV_CELL_SCALE,iz/NAV_CELL_SCALE,x,z,w,d))set.add(navCellKey(ix,iz));
+ }
+}
+function buildNeighborObstacleSet(){
+ if(neighborObstacleCache&&neighborObstacleCache.revision===worldGeometryRevision)return neighborObstacleCache.cells;
+ const cells=new Set();
+ for(const b of world.blocks){
+  if(b.type==='tile'||(b.type==='door'&&b.open)||b.y>=NAV_NEIGHBOR_HEIGHT||b.y+1<=0)continue;
+  markNeighborObstacleRect(cells,b.x,b.z,1,1);
+ }
+ // The three village cottages are drawn scenery, so include their actual wall segments here.
+ const houses=[[-13,-7],[10,-17],[16,-9]];
+ for(const [x,z] of houses){
+  markNeighborObstacleRect(cells,x,z,4.3,.18);
+  markNeighborObstacleRect(cells,x,z+.18,.18,3.95);
+  markNeighborObstacleRect(cells,x+4.12,z+.18,.18,3.95);
+  markNeighborObstacleRect(cells,x,z+4.12,1.58,.18);
+  markNeighborObstacleRect(cells,x+2.50,z+4.12,1.80,.18);
+ }
+ neighborObstacleCache={revision:worldGeometryRevision,cells};
+ return cells;
+}
+function nearestOpenNeighborCell(ix,iz,cells,minX,maxX,minZ,maxZ){
+ if(!cells.has(navCellKey(ix,iz)))return {x:ix,z:iz};
+ for(let radius=1;radius<=20;radius++)for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+  if(Math.max(Math.abs(dx),Math.abs(dz))!==radius)continue;
+  const x=ix+dx,z=iz+dz;
+  if(x<minX||x>maxX||z<minZ||z>maxZ||cells.has(navCellKey(x,z)))continue;
+  return {x,z};
+ }
+ return null;
+}
+function findNeighborPath(start,end){
+ const key=worldGeometryRevision+'|'+start.x.toFixed(2)+','+start.z.toFixed(2)+'>'+end.x.toFixed(2)+','+end.z.toFixed(2);
+ const cached=neighborPathCache.get(key);if(cached)return cached;
+ const cells=buildNeighborObstacleSet();
+ let sx=Math.round(start.x*NAV_CELL_SCALE),sz=Math.round(start.z*NAV_CELL_SCALE);
+ let gx=Math.round(end.x*NAV_CELL_SCALE),gz=Math.round(end.z*NAV_CELL_SCALE);
+ const margin=24,minX=Math.max(-WORLD_LIMIT*NAV_CELL_SCALE,Math.min(sx,gx)-margin),maxX=Math.min(WORLD_LIMIT*NAV_CELL_SCALE,Math.max(sx,gx)+margin);
+ const minZ=Math.max(-WORLD_LIMIT*NAV_CELL_SCALE,Math.min(sz,gz)-margin),maxZ=Math.min(WORLD_LIMIT*NAV_CELL_SCALE,Math.max(sz,gz)+margin);
+ const originalStartFree=!cells.has(navCellKey(sx,sz)),originalEndFree=!cells.has(navCellKey(gx,gz));
+ const openStart=nearestOpenNeighborCell(sx,sz,cells,minX,maxX,minZ,maxZ);
+ const openGoal=nearestOpenNeighborCell(gx,gz,cells,minX,maxX,minZ,maxZ);
+ if(!openStart||!openGoal){const stuck=[{x:start.x,z:start.z}];neighborPathCache.set(key,stuck);return stuck;}
+ sx=openStart.x;sz=openStart.z;gx=openGoal.x;gz=openGoal.z;
+ const directSteps=Math.max(1,Math.ceil(Math.hypot(end.x-start.x,end.z-start.z)*4));
+ let clear=true;
+ for(let i=0;i<=directSteps;i++){
+  const t=i/directSteps,ix=Math.round((start.x+(end.x-start.x)*t)*NAV_CELL_SCALE),iz=Math.round((start.z+(end.z-start.z)*t)*NAV_CELL_SCALE);
+  if(cells.has(navCellKey(ix,iz))){clear=false;break;}
+ }
+ if(clear&&originalStartFree&&originalEndFree){
+  const direct=[{x:start.x,z:start.z},{x:end.x,z:end.z}];neighborPathCache.set(key,direct);return direct;
+ }
+ const width=maxZ-minZ+1,total=(maxX-minX+1)*width,indexOf=(x,z)=>(x-minX)*width+(z-minZ);
+ const startIndex=indexOf(sx,sz),goalIndex=indexOf(gx,gz),parent=new Int32Array(total);parent.fill(-1);
+ const seen=new Uint8Array(total),queue=new Int32Array(total);
+ let head=0,tail=0,found=startIndex===goalIndex;queue[tail++]=startIndex;seen[startIndex]=1;
+ while(head<tail&&!found&&tail<total){
+  const current=queue[head++],cx=Math.floor(current/width)+minX,cz=current%width+minZ;
+  for(const [dx,dz] of NAV_STEPS){
+   const nx=cx+dx,nz=cz+dz;
+   if(nx<minX||nx>maxX||nz<minZ||nz>maxZ||cells.has(navCellKey(nx,nz)))continue;
+   if(dx&&dz&&(cells.has(navCellKey(cx+dx,cz))||cells.has(navCellKey(cx,cz+dz))))continue;
+   const next=indexOf(nx,nz);if(seen[next])continue;
+   seen[next]=1;parent[next]=current;queue[tail++]=next;
+   if(next===goalIndex){found=true;break;}
+  }
+ }
+ if(!found){const stuck=[{x:originalStartFree?start.x:sx/NAV_CELL_SCALE,z:originalStartFree?start.z:sz/NAV_CELL_SCALE}];neighborPathCache.set(key,stuck);return stuck;}
+ const reverse=[];let cursor=goalIndex;
+ while(cursor!==-1){reverse.push({x:(Math.floor(cursor/width)+minX)/NAV_CELL_SCALE,z:(cursor%width+minZ)/NAV_CELL_SCALE});if(cursor===startIndex)break;cursor=parent[cursor];}
+ reverse.reverse();
+ const path=[],first=originalStartFree?{x:start.x,z:start.z}:reverse[0];path.push(first);
+ for(const point of reverse){const last=path[path.length-1];if(Math.hypot(point.x-last.x,point.z-last.z)>.04)path.push(point);}
+ const last=path[path.length-1],destination=originalEndFree?{x:end.x,z:end.z}:reverse[reverse.length-1];
+ if(Math.hypot(destination.x-last.x,destination.z-last.z)>.04)path.push(destination);
+ neighborPathCache.set(key,path);return path;
+}
+function neighborPathLength(path){
+ let length=0;for(let i=1;i<path.length;i++)length+=Math.hypot(path[i].x-path[i-1].x,path[i].z-path[i-1].z);return length;
+}
 function neighborOnRoute(route,tick,phase,speed=1.05){
+ const segments=route.map((point,i)=>{
+  const next=route[(i+1)%route.length],path=findNeighborPath(point,next),length=neighborPathLength(path);
+  return {point,next,path,length,travel:Math.max(1.8,length/speed),pause:point.pause||1};
+ });
+ const cycle=segments.reduce((sum,segment)=>sum+segment.pause+segment.travel,0);
+ let time=((tick+phase)%cycle+cycle)%cycle;
+ for(const segment of segments){
+  const path=segment.path,first=path[0]||segment.point,second=path[1]||segment.next;
+  const initialFacing=Math.atan2(second.x-first.x,second.z-first.z);
+  if(time<segment.pause)return {...segment.point,x:first.x,z:first.z,facing:initialFacing,moving:false,walk:0};
+  time-=segment.pause;
+  if(time<segment.travel&&segment.length>.001){
+   const raw=Math.max(0,Math.min(1,time/segment.travel)),progress=raw*raw*(3-2*raw);
+   let distance=progress*segment.length;
+   for(let i=1;i<path.length;i++){
+    const a=path[i-1],b=path[i],dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz);
+    if(distance<=length||i===path.length-1){
+     const ratio=length?Math.min(1,distance/length):0;
+     return {x:a.x+dx*ratio,z:a.z+dz*ratio,facing:Math.atan2(dx,dz),moving:true,walk:Math.sin(time*8+phase),activity:''};
+    }
+    distance-=length;
+   }
+  }
+  time-=segment.travel;
+ }
+ const first=segments[0]?.path[0]||route[0];
+ return {...route[0],x:first.x,z:first.z,facing:0,moving:false,walk:0};
+}
+
  const segments=route.map((point,i)=>{
   const next=route[(i+1)%route.length],distance=Math.hypot(next.x-point.x,next.z-point.z);
   return {point,next,travel:Math.max(1.8,distance/speed),pause:point.pause||1};
@@ -763,7 +891,16 @@ const FAMILY_ROUTES={
   {x:12.8,z:-4.7,pause:.8,activity:'🏃'}
  ]
 };
-function familyMembers(t){
+const NEIGHBOR_SLEEP_SPOTS={
+ mira:{x:-10.85,z:-4.85,facing:Math.PI/2},
+ theo:{x:12.15,z:-14.85,facing:Math.PI/2},
+ dad:{x:17.0,z:-7.9,facing:Math.PI/2},
+ mom:{x:19.1,z:-7.9,facing:Math.PI/2},
+ lia:{x:17.0,z:-6.2,facing:Math.PI/2},
+ maya:{x:19.1,z:-6.2,facing:Math.PI/2},
+ nico:{x:18.1,z:-8.35,facing:Math.PI/2}
+};
+function familyMembers(t,night=false){
  const people=[
   {id:'dad',name:'Miguel',route:FAMILY_ROUTES.dad,speed:1.12,pace:7.2,phase:1.5,scale:1.10,shirt:'#477b9a',hair:'#392b24',skin:'#c9916d',pants:'#40516c',shoes:'#493b35',eyes:'#302820',hairStyle:'short',outfitStyle:'tee',accessory:'none'},
   {id:'mom',name:'Ana',route:FAMILY_ROUTES.mom,speed:.92,pace:6.8,phase:8.2,scale:1.02,shirt:'#bd7896',hair:'#493127',skin:'#edc19e',pants:'#557c65',shoes:'#88516c',eyes:'#302820',hairStyle:'long',outfitStyle:'dress',accessory:'flower',accessoryColor:'#f2c768'},
@@ -773,22 +910,23 @@ function familyMembers(t){
  ];
  return people.map(p=>({
   ...p,
-  ...neighborOnRoute(p.route,t,p.phase,p.speed),
+  ...(night?{...NEIGHBOR_SLEEP_SPOTS[p.id],sleeping:true,moving:false,walk:0}:neighborOnRoute(p.route,t,p.phase,p.speed)),
   activity:undefined,homeX:16,homeZ:-9
  }));
 }
-function currentNeighbors(t=performance.now()/1000){
- const mira=neighborOnRoute(NEIGHBOR_ROUTES.mira,t,0);
- const theo=neighborOnRoute(NEIGHBOR_ROUTES.theo,t,11);
+function currentNeighbors(t=performance.now()/1000,night=getTimePalette(t).mode==='night'){
+ const mira=night?{...NEIGHBOR_SLEEP_SPOTS.mira,sleeping:true,moving:false,walk:0}:neighborOnRoute(NEIGHBOR_ROUTES.mira,t,0);
+ const theo=night?{...NEIGHBOR_SLEEP_SPOTS.theo,sleeping:true,moving:false,walk:0}:neighborOnRoute(NEIGHBOR_ROUTES.theo,t,11);
  return [
   {id:'mira',name:'Mira',...mira,phase:0,shirt:'#d94b3d',hair:'#493127',skin:'#f0c7a3',pants:'#287b8a',shoes:'#bd4540',eyes:'#302820',hairStyle:'bob',outfitStyle:'hoodie',accessory:'none',homeX:-13,homeZ:-7},
   {id:'theo',name:'Theo',...theo,phase:11,shirt:'#48a78b',hair:'#efbd43',skin:'#dfab83',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',accessoryColor:'#ec83ba',homeX:10,homeZ:-17},
-  ...familyMembers(t)
+  ...familyMembers(t,night)
  ];
 }
 function neighborAtScreen(px,py){
  const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;
  for(const n of currentNeighbors()){
+  if(n.sleeping)continue;
   const facing=n.facing||0;
   const p=project({x:n.x+Math.sin(facing)*.38,y:1.18,z:n.z+Math.cos(facing)*.38},cam,w,h);if(!p)continue;
   const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=n;}
@@ -1033,16 +1171,24 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Blocks
  for(const b of world.blocks){if(Math.abs(b.x-cam.pos.x)>30||Math.abs(b.z-cam.pos.z)>30)continue;if(b.type==='door'){drawVoxelDoor(polys,cam,w,h,b);continue;}if(b.type==='tile'){pushTileSlab(polys,cam,w,h,b);continue;}const meta=blockMap.get(b.type),color=b.type==='custom'?validHex(b.color,'#aa83d8'):meta?.color;if(color)pushCube(polys,cam,w,h,b.x,b.y,b.z,color,1,1,1,true,b.type==='custom'?(b.texture||'custom'):b.type,b.type==='custom');}
  // Neighbor homes are permanent landmarks in the peaceful starter village.
- const tick=performance.now()/1000,neighbors=currentNeighbors(tick);
+ const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
  drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
  drawNeighborHome(polys,cam,w,h,10,-17,'#b9d4c6','#668f8b','#71594d');
  drawNeighborHome(polys,cam,w,h,16,-9,'#e8d5b8','#b97870','#80604e');
  // Friendly neighbors have visible arms, hands, legs and shoes.
  for(const n of neighbors){
+  if(n.sleeping)continue;
   const walkPace=Number.isFinite(n.pace)?n.pace:8;
   const bob=n.moving?Math.abs(Math.sin(tick*walkPace+n.phase))*.055:Math.sin(tick*1.7+n.phase)*.018;
   drawNeighborFigure(polys,cam,w,h,n,bob,tick);
   addCharacterFaceDetails(polys,cam,w,h,n,bob);
+ }
+ if(palette.mode==='night'){
+  const sleepHomes=[{x:-10.85,z:-4.85},{x:12.15,z:-14.85},{x:18.15,z:-6.85}];
+  for(const home of sleepHomes){
+   const hp=project({x:home.x,y:4.45,z:home.z},cam,w,h);
+   if(hp){ctx.save();ctx.font='bold 23px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText('Zzz',hp.x,hp.y);ctx.fillStyle='#425d78';ctx.fillText('Zzz',hp.x,hp.y);ctx.font='21px system-ui';ctx.fillText('💤',hp.x+22,hp.y-19);ctx.restore();}
+  }
  }
  // Gentle, protected animals with visible feet and friendly faces.
  const animals=animalPositions(tick),sheep=animals.find(a=>a.id==='sheep'),cat=animals.find(a=>a.id==='cat');
@@ -1084,6 +1230,34 @@ function surfaceHeightAt(x,z){
  }
  return 0;
 }
+const PLAYER_RADIUS=.23,PLAYER_BODY_HEIGHT=1.72,PLAYER_STEP_HEIGHT=.18;
+function playerCollisionAt(x,z,y){
+ const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
+ const minZ=Math.floor(z-PLAYER_RADIUS),maxZ=Math.floor(z+PLAYER_RADIUS);
+ const minY=Math.max(0,Math.floor(y)),maxY=Math.min(64,Math.floor(y+PLAYER_BODY_HEIGHT));
+ const checked=new Set();
+ for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++)for(let by=minY;by<=maxY;by++){
+  const b=blockLookup.get(keyBlock(bx,by,bz));if(!b||checked.has(b))continue;checked.add(b);
+  if(b.type==='door'&&b.open)continue;
+  const bottom=b.type==='tile'?b.y+TILE_BASE_OFFSET:b.y;
+  const top=b.type==='tile'?bottom+TILE_THICKNESS:b.y+1;
+  if(b.type==='tile'&&top<=y+PLAYER_STEP_HEIGHT+.001)continue;
+  if(y>=top-.001||y+PLAYER_BODY_HEIGHT<=bottom+.001)continue;
+  const nearX=Math.max(b.x,Math.min(b.x+1,x)),nearZ=Math.max(b.z,Math.min(b.z+1,z));
+  const dx=x-nearX,dz=z-nearZ;
+  if(dx*dx+dz*dz<PLAYER_RADIUS*PLAYER_RADIUS)return true;
+ }
+ return false;
+}
+function nudgePlayerOutOfBlocks(){
+ const p=world.player;if(!playerCollisionAt(p.x,p.z,p.y))return;
+ for(let radius=.3;radius<=1.8;radius+=.15){
+  for(let i=0;i<24;i++){
+   const angle=i*Math.PI/12,x=p.x+Math.cos(angle)*radius,z=p.z+Math.sin(angle)*radius;
+   if(!playerCollisionAt(x,z,p.y)){p.x=x;p.z=z;save(true);showStatus('Moved you clear of a nearby block.');return;}
+  }
+ }
+}
 function jump(){
  if(flying){showStatus('Flight is on. Turn it off to use Jump.');return;}
  if(!playerGrounded)return;
@@ -1092,6 +1266,7 @@ function jump(){
 }
 function move(dt){
  const p=world.player,speed=flying?7:4.2;
+ nudgePlayerOutOfBlocks();
  let forward=moveZ,right=moveX;
  if(keys.w||keys.ArrowUp)forward+=1;
  if(keys.s||keys.ArrowDown)forward-=1;
@@ -1099,15 +1274,19 @@ function move(dt){
  if(keys.d||keys.ArrowRight)right+=1;
  const len=Math.hypot(forward,right)||1;
  forward/=len;right/=len;
- p.x+=(Math.sin(p.yaw)*forward+Math.cos(p.yaw)*right)*speed*dt;
- p.z+=(-Math.cos(p.yaw)*forward+Math.sin(p.yaw)*right)*speed*dt;
- p.x=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.x));
- p.z=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.z));
+ const dx=(Math.sin(p.yaw)*forward+Math.cos(p.yaw)*right)*speed*dt;
+ const dz=(-Math.cos(p.yaw)*forward+Math.sin(p.yaw)*right)*speed*dt;
+ const nextX=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.x+dx));
+ const nextZ=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.z+dz));
+ // Resolve axes separately so the player slides along walls instead of sticking on corners.
+ if(!playerCollisionAt(nextX,p.z,p.y))p.x=nextX;
+ if(!playerCollisionAt(p.x,nextZ,p.y))p.z=nextZ;
  if(flying){
   let v=vertical;
   if(keys[' '])v+=1;
   if(keys.Shift)v-=1;
-  p.y=Math.max(0,Math.min(60,p.y+v*speed*dt));
+  const nextY=Math.max(0,Math.min(60,p.y+v*speed*dt));
+  if(!playerCollisionAt(p.x,p.z,nextY))p.y=nextY;
   jumpVelocity=0;playerGrounded=true;
   return;
  }
@@ -1119,7 +1298,8 @@ function move(dt){
   else return;
  }
  jumpVelocity-=PLAYER_GRAVITY*dt;
- const next=p.y+jumpVelocity*dt;
+ let next=p.y+jumpVelocity*dt;
+ if(jumpVelocity>0&&playerCollisionAt(p.x,p.z,next)){jumpVelocity=0;next=p.y;}
  if(jumpVelocity<=0){
   const floor=surfaceHeightAt(p.x,p.z);
   if(next<=floor&&before>=floor-.04){
@@ -1429,7 +1609,7 @@ function syncTimeControls(){
 function setTimeMode(mode,announce=true){
  if(!['day','sunset','night','auto'].includes(mode))return;
  world.timeMode=mode;syncTimeControls();save();render();
- if(announce)showStatus(mode==='auto'?'Automatic day and night cycle enabled.':TIME_MODE_LABELS[mode]+' selected.');
+ if(announce)showStatus(mode==='night'?'Night has arrived. Everyone is tucked in for bed.':mode==='auto'?'Automatic day and night cycle enabled.':TIME_MODE_LABELS[mode]+' selected.');
 }
 syncTimeControls();
 $('timeBtn').addEventListener('click',()=>{
