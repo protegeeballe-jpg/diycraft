@@ -335,11 +335,31 @@ function projectedPolygonVisible(pts,w,h,margin=2){
  for(const p of pts){if(!p)return false;minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
  return maxX>=-margin&&minX<=w+margin&&maxY>=-margin&&minY<=h+margin;
 }
+function chunkBoundsVisible(bounds,cam,w,h,margin=16){
+ if(!bounds||!(w>0&&h>0))return true;
+ let minScreenX=Infinity,minScreenY=Infinity,maxScreenX=-Infinity,maxScreenY=-Infinity;
+ // If any corner touches/crosses the camera plane, keep the chunk: its
+ // projected bounds are not safely bounded by the remaining seven corners.
+ for(const x of [bounds.minX,bounds.maxX])for(const y of [bounds.minY,bounds.maxY])for(const z of [bounds.minZ,bounds.maxZ]){
+  const point=project({x,y,z},cam,w,h);
+  if(!point)return true;
+  minScreenX=Math.min(minScreenX,point.x);maxScreenX=Math.max(maxScreenX,point.x);
+  minScreenY=Math.min(minScreenY,point.y);maxScreenY=Math.max(maxScreenY,point.y);
+ }
+ return maxScreenX>=-margin&&minScreenX<=w+margin&&maxScreenY>=-margin&&minScreenY<=h+margin;
+}
 function buildBlockChunkMesh(key,items){
  const faces=[],specials=[];
+ let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
  for(const block of items){
-  if(block.type==='door'){specials.push(block);continue;}
-  if(block.type==='tile'){
+  const door=block.type==='door',tile=block.type==='tile';
+  const x0=door?block.x-1:block.x,x1=door?block.x+2:block.x+1;
+  const z0=door?block.z-1:block.z,z1=door?block.z+2:block.z+1;
+  const y0=block.y,y1=block.y+(door?2:tile?TILE_BASE_OFFSET+TILE_THICKNESS:1);
+  minX=Math.min(minX,x0);minY=Math.min(minY,y0);minZ=Math.min(minZ,z0);
+  maxX=Math.max(maxX,x1);maxY=Math.max(maxY,y1);maxZ=Math.max(maxZ,z1);
+  if(door){specials.push(block);continue;}
+  if(tile){
    const pattern=TILE_DESIGNS.some(t=>t.id===block.tilePattern)?block.tilePattern:'grid';
    const color=validHex(block.color,'#c5a98a');
    const vertices=cubeVerts(block.x,block.y+TILE_BASE_OFFSET,block.z,1,TILE_THICKNESS,1);
@@ -363,7 +383,8 @@ function buildBlockChunkMesh(key,items){
     vertices:face.ids.map(index=>vertices[index]),color:shadeColor(color,face.shade),material:texture,customTint:!!block.color,outline:true});
   }
  }
- return {key,faces,specials};
+ const bounds=Number.isFinite(minX)?{minX,minY,minZ,maxX,maxY,maxZ}:null;
+ return {key,faces,specials,bounds};
 }
 function getBlockChunkMesh(key,items){
  let mesh=blockChunkMeshCache.get(key);
@@ -372,12 +393,14 @@ function getBlockChunkMesh(key,items){
  if(blockChunkMeshCache.size>MAX_BLOCK_CHUNK_CACHE)blockChunkMeshCache.delete(blockChunkMeshCache.keys().next().value);
  return mesh;
 }
-function visitNearbyBlockChunkMeshes(cam,radius,visit){
+function visitNearbyBlockChunkMeshes(cam,radius,visit,w,h){
  const minX=Math.floor((cam.pos.x-radius)/RENDER_CHUNK_SIZE),maxX=Math.floor((cam.pos.x+radius)/RENDER_CHUNK_SIZE);
  const minZ=Math.floor((cam.pos.z-radius)/RENDER_CHUNK_SIZE),maxZ=Math.floor((cam.pos.z+radius)/RENDER_CHUNK_SIZE);
  for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){
   const key=cx+','+cz,items=blockRenderChunks.get(key);if(!items||!items.length)continue;
-  visit(getBlockChunkMesh(key,items));
+  const mesh=getBlockChunkMesh(key,items);
+  if(Number.isFinite(w)&&Number.isFinite(h)&&!chunkBoundsVisible(mesh.bounds,cam,w,h,16))continue;
+  visit(mesh);
  }
 }
 function appendBlockChunkMesh(queue,mesh,cam,w,h){
@@ -1448,7 +1471,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)continue;
    if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b);
   }
- });
+ },w,h);
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
  const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;

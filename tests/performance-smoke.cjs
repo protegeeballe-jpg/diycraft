@@ -42,7 +42,7 @@ function makeApi(blocks = [], cacheLimit = 32) {
     'blockChunkMeshCache', 'blockRenderChunks', 'blockMap', 'blockLookup',
     'keyBlock', 'validHex', 'shadeColor', 'cubeVerts', 'FACES', 'project',
     'TILE_DESIGNS', 'TILE_BASE_OFFSET', 'TILE_THICKNESS', 'textureTiles',
-    helpers + '\nreturn {renderChunkKey,isOpaqueCubeBlock,projectedPolygonVisible,invalidateBlockChunkMeshesAt,buildBlockChunkMesh,getBlockChunkMesh,visitNearbyBlockChunkMeshes,appendBlockChunkMesh,addRenderChunkItem,removeRenderChunkItem,visitNearbyRenderChunks};'
+    helpers + '\nreturn {renderChunkKey,isOpaqueCubeBlock,projectedPolygonVisible,chunkBoundsVisible,invalidateBlockChunkMeshesAt,buildBlockChunkMesh,getBlockChunkMesh,visitNearbyBlockChunkMeshes,appendBlockChunkMesh,addRenderChunkItem,removeRenderChunkItem,visitNearbyRenderChunks};'
   );
   const api = create(
     16, cacheLimit, opaqueTypes, cache, chunks, blockMap, lookup,
@@ -208,6 +208,19 @@ check(apiSet.api.projectedPolygonVisible([
 check(!apiSet.api.projectedPolygonVisible([
   { x: -30, y: 40 }, { x: -20, y: 40 }, { x: -20, y: 50 }, { x: -30, y: 50 }
 ], 100, 100), 'A polygon fully outside the viewport must be culled.');
+const cullCamera = { pos: { x: 0, y: 0, z: 0 }, yaw: 0, pitch: 0 };
+check(apiSet.api.chunkBoundsVisible(
+  { minX: -5, minY: 20, minZ: -12, maxX: 5, maxY: 30, maxZ: -8 },
+  cullCamera, 100, 100
+), 'A chunk whose projected bounds cross the viewport must remain visible.');
+check(!apiSet.api.chunkBoundsVisible(
+  { minX: 180, minY: 20, minZ: -12, maxX: 190, maxY: 30, maxZ: -8 },
+  cullCamera, 100, 100
+), 'A complete chunk outside the viewport must be rejected before per-face projection.');
+check(apiSet.api.chunkBoundsVisible(
+  { minX: 180, minY: 20, minZ: -12, maxX: 190, maxY: 30, maxZ: -8 },
+  cullCamera, 100, 100, 100
+), 'A chunk intersecting the expanded safety margin must be retained.');
 
 const isolated = { x: 0, y: 0, z: 0, type: 'grass' };
 apiSet = makeApi([isolated]);
@@ -285,6 +298,16 @@ check(exposedFaceCount === 8400, 'The 60×60×5 prism must cache only its 8,400 
 let nearbyChunkCount = 0;
 apiSet.api.visitNearbyBlockChunkMeshes({ pos: { x: 2, z: 2 } }, 24, () => nearbyChunkCount++);
 check(nearbyChunkCount === 4, 'Nearby rendering must visit only the four chunks within the test camera radius.');
+const visibleBlock = { x: 0, y: 0, z: -8, type: 'grass' };
+const offscreenBlock = { x: 0, y: 200, z: -24, type: 'grass' };
+apiSet = makeApi([visibleBlock, offscreenBlock]);
+apiSet.api.addRenderChunkItem(apiSet.chunks, visibleBlock.x, visibleBlock.z, visibleBlock);
+apiSet.api.addRenderChunkItem(apiSet.chunks, offscreenBlock.x, offscreenBlock.z, offscreenBlock);
+let viewportChunks = 0;
+apiSet.api.visitNearbyBlockChunkMeshes(cullCamera, 24, () => viewportChunks++, 100, 100);
+check(viewportChunks === 1, 'Nearby chunk traversal must skip a vertically off-screen chunk before projecting its individual faces.');
+check(apiSet.api.buildBlockChunkMesh('0,-2', [offscreenBlock]).bounds.maxY === 201,
+  'Chunk visibility bounds must include the full height of stored blocks.');
 
 const excavationIndex = new Map();
 const waterIndex = new Map();
