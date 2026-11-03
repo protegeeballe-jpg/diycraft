@@ -1,6 +1,6 @@
 /* DIYCraft same-origin offline shell and game-engine cache. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v52';;
+const CACHE_NAME = 'diycraft-shell-v53';;
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;
@@ -45,11 +45,20 @@ self.addEventListener('fetch', event => {
   // Serve the precached copy first so offline play works after installation.
   const gameScriptUrl = new URL('diycraft.js', self.registration.scope);
   if (url.pathname === gameScriptUrl.pathname) {
+    // Prefer the latest published engine while online. Use the cached engine only
+    // when offline, so an older installed worker cannot pin the game to stale code.
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(gameScriptUrl.href);
-      if (cached) return cached;
-      return fetch(request);
+      try {
+        const response = await fetch(request, { cache: 'no-cache' });
+        if (response && response.ok) {
+          await cache.put(gameScriptUrl.href, response.clone());
+        }
+        return response;
+      } catch (error) {
+        const cached = await cache.match(gameScriptUrl.href);
+        return cached || Response.error();
+      }
     })());
     return;
   }
