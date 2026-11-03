@@ -1544,12 +1544,11 @@ function traceWorldRay(cam,dir,maxDistance,step){
 }
 function rayHit(){const cam=cameraState(),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),dir={x:sy*cp,y:sp,z:-cy*cp};return traceWorldRay(cam,dir,24,.06);}
 function rayHitAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight,focal=Math.min(w,h)*.94;if(!w||!h)return rayHit();const rx=(px-w/2)/focal,uy=(h*.51-py)/focal,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);let dir={x:sy*cp+cy*rx-sy*sp*uy,y:sp+cp*uy,z:-cy*cp+sy*rx+cy*sp*uy};const len=Math.hypot(dir.x,dir.y,dir.z)||1;dir={x:dir.x/len,y:dir.y/len,z:dir.z/len};const hit=traceWorldRay(cam,dir,28,.045);if(hit)return hit;const t=dir.y<-.02?(0.06-cam.pos.y)/dir.y:8;const x=cam.pos.x+dir.x*Math.max(2,Math.min(22,t)),y=cam.pos.y+dir.y*Math.max(2,Math.min(22,t)),z=cam.pos.z+dir.z*Math.max(2,Math.min(22,t));return {place:{x:Math.floor(x),y:Math.max(-MAX_DIG_DEPTH,Math.floor(y)),z:Math.floor(z)}};}
-function buildAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){const hit=rayHitAtScreen(px,py);if(!hit){showStatus('Tap a place in the world to build.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus(selected==='door'?'Door built! Tap it to open or close it.':(blockMap.get(selected)?.name||'Block')+' placed where you tapped.');render();}else showStatus(selected==='door'?'A door needs two clear spaces, one above the other.':'That space is occupied or outside the safe building area.');}
-function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- if(selected==='water'){waterAtScreen(px,py);return;}
- const hit=rayHitAtScreen(px,py);
- if(hit&&hit.ground&&groundDepthAt(hit.x,hit.z)>0){fillAtScreen(px,py);return;}
- buildAtScreen(px,py);
+function buildAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){if(!hit){showStatus('Tap a place in the world to build.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus(selected==='door'?'Door built! Tap it to open or close it.':(blockMap.get(selected)?.name||'Block')+' placed where you tapped.');render();}else showStatus(selected==='door'?'A door needs two clear spaces, one above the other.':'That space is occupied or outside the safe building area.');}
+function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){
+ if(selected==='water'){waterAtScreen(px,py,hit);return;}
+ if(hit&&hit.ground&&groundDepthAt(hit.x,hit.z)>0){fillAtScreen(px,py,hit);return;}
+ buildAtScreen(px,py,hit);
 }
 function build(){buildOrFillAtScreen();}
 function erase(){const hit=rayHit();if(!hit||!hit.block){showStatus('Aim at a block you placed to remove it.');return;}if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){showStatus('Block removed.');render();}}
@@ -1577,8 +1576,7 @@ function collectWaterLayer(x,z){
  showStatus(level>1?'Top water layer collected into your Material Bucket.':'Last water layer collected into your Material Bucket.');
  return true;
 }
-function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- const hit=rayHitAtScreen(px,py);
+function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){
  if(hit&&hit.water){if(isProtectedDigCell(hit.x,hit.z)){showStatus('This patch is protected for the neighbors and their homes.');return;}collectWaterLayer(hit.x,hit.z);return;}
  if(hit&&hit.block){const block=hit.block,itemId=blockDropItem(block);
   if(isProtectedDigCell(block.x,block.z)){showStatus('That block is too close to a neighbor or animal. Their homes and little friends are protected!');return;}
@@ -1600,8 +1598,7 @@ function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  }
  showStatus('Aim the shovel at a block or a patch of ground, then tap to dig.');
 }
-function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- const hit=rayHitAtScreen(px,py);if(!hit||!hit.ground){showStatus('Aim at the floor of a hole to fill it.');return;}
+function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){if(!hit||!hit.ground){showStatus('Aim at the floor of a hole to fill it.');return;}
  const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
  if(depth<=0){showStatus('That ground is already at its original level.');return;}
  if(selected==='door'){showStatus('Choose a solid building block to fill a hole.');return;}
@@ -1615,8 +1612,7 @@ function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  syncExcavations();syncWaterLife();invalidateNeighborNavigation();save();render();
  showStatus('Hole filled with '+(blockMap.get(selected)?.name||'Custom')+'.');
 }
-function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- const hit=rayHitAtScreen(px,py);
+function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){
  if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a dug pool floor or the surface of existing water.');return;}
  const x=hit.x,z=hit.z,key=keyGround(x,z),depth=groundDepthAt(x,z);
  if(depth<=0){showStatus('Dig a pool cell first, then add water.');return;}
@@ -1627,8 +1623,7 @@ function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
  syncWaterLife();save();render();
  showStatus(level===0?'Water added to the pool floor! Tap the water again to stack another layer.':'Water layer added on top · '+(level+1)+' of '+depth+' layers.');
 }
-function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2){
- const hit=rayHitAtScreen(px,py);if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a water cell to add a fish.');return;}
+function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a water cell to add a fish.');return;}
  const x=hit.x,z=hit.z,key=keyGround(x,z);
  if(!waterCells.has(key)){showStatus('Add water to this dug cell first.');return;}
  if(fishSpots.filter(f=>keyGround(f.x,f.z)===key).length>=3){showStatus('This water cell already has three fish.');return;}
@@ -1779,12 +1774,31 @@ const performanceHud=DEBUG_PERFORMANCE?(()=>{
  return panel;
 })():null;
 const performanceMetrics={windowStart:null,rafFrames:0,renderFrames:0,frameMsTotal:0,frameMsMax:0,renderMsTotal:0,renderMsMax:0,updateMsTotal:0,updateSteps:0,slowFrames:0};
+const inputEventMetrics=performanceHud?{
+ down:{count:0,total:0,max:0},move:{count:0,total:0,max:0},up:{count:0,total:0,max:0}
+}:null;
+function resetInputEventMetrics(){
+ if(!inputEventMetrics)return;
+ for(const metric of Object.values(inputEventMetrics)){metric.count=0;metric.total=0;metric.max=0;}
+}
+function trackPointerHandler(name,handler){
+ if(!performanceHud)return handler;
+ return function(event){
+  const started=performance.now();
+  try{return handler.call(this,event);}
+  finally{
+   const metric=inputEventMetrics[name],duration=performance.now()-started;
+   metric.count++;metric.total+=duration;metric.max=Math.max(metric.max,duration);
+  }
+ };
+}
 function resetPerformanceMetrics(windowStart){
  performanceMetrics.windowStart=windowStart;
  performanceMetrics.rafFrames=0;performanceMetrics.renderFrames=0;
  performanceMetrics.frameMsTotal=0;performanceMetrics.frameMsMax=0;
  performanceMetrics.renderMsTotal=0;performanceMetrics.renderMsMax=0;
  performanceMetrics.updateMsTotal=0;performanceMetrics.updateSteps=0;performanceMetrics.slowFrames=0;
+ resetInputEventMetrics();
 }
 function renderMeasuredFrame(){
  if(!performanceHud){render();return;}
@@ -1803,13 +1817,15 @@ function updatePerformanceHud(time){
  if(elapsed<1000)return;
  const rate=count=>(count*1000/elapsed).toFixed(1);
  const average=(total,count)=>count?(total/count).toFixed(1):'—';
+ const eventMetric=metric=>metric.count?(metric.total/metric.count).toFixed(1)+'/'+metric.max.toFixed(1):'—';
  performanceHud.textContent=[
   'RAF '+rate(performanceMetrics.rafFrames)+' fps  DRAW '+rate(performanceMetrics.renderFrames)+' fps',
   'Frame '+average(performanceMetrics.frameMsTotal,performanceMetrics.rafFrames)+' / '+performanceMetrics.frameMsMax.toFixed(1)+' ms',
   'Draw  '+average(performanceMetrics.renderMsTotal,performanceMetrics.renderFrames)+' / '+performanceMetrics.renderMsMax.toFixed(1)+' ms',
-  'Move  '+average(performanceMetrics.updateMsTotal,performanceMetrics.updateSteps)+' ms/tick',
-  '>50ms frames: '+performanceMetrics.slowFrames
- ].join('\n');
+  'Sim   '+average(performanceMetrics.updateMsTotal,performanceMetrics.updateSteps)+' ms/tick',
+  'Input D/U '+eventMetric(inputEventMetrics.down)+' / '+eventMetric(inputEventMetrics.up)+' ms',
+  'Drag '+eventMetric(inputEventMetrics.move)+' ms  >50ms '+performanceMetrics.slowFrames
+ ].join('\\n');
  resetPerformanceMetrics(time);
 }
 
@@ -1824,6 +1840,7 @@ function renderPlayerFrame(alpha){
 function loop(time){
  requestAnimationFrame(loop);
  if(document.hidden){lastTime=0;frameAccumulator=0;renderAccumulator=0;previousPlayerRenderState=null;return;}
+ processPendingLook();
  if(!lastTime){
   lastTime=time;renderAccumulator=0;previousPlayerRenderState=capturePlayerRenderState();
   if(performanceHud)resetPerformanceMetrics(time);
@@ -2164,78 +2181,88 @@ async function expandToggle(){if(!document.fullscreenElement&&document.documentE
 document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();if(!e.repeat)jump();}keys[e.key===' '?' ':e.key]=true;if(e.key.toLowerCase()==='v'){cameraMode=cameraMode==='first'?'third':'first';updateViewButton();}if(e.key.toLowerCase()==='f'){flying=!flying;updateFlyControls();showStatus(flying?'Creative flight enabled.':'Flight turned off.');}if(e.key==='e'||e.key==='E')openBucket();if(e.key==='Escape'){closeShades();if(focusMode)focusToggle();}});
 document.addEventListener('keyup',e=>{keys[e.key===' '?' ':e.key]=false;});
 // Mouse or finger drag looks around. A single tap builds; a quick double-tap on the same block removes it.
-let activePointer=null,movedPointer=false,startPt=null,lastPt=null;
+let activePointer=null,movedPointer=false,startPt=null,lastPt=null,pointerTarget=null,pendingLookPoint=null;
 let holdTimer=null,holdTriggered=false,holdBlockKey=null;
 const HOLD_TO_REMOVE_MS=600;
 function clearBlockHold(){
  if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null;}
  holdBlockKey=null;
 }
-function handleWorldTap(px,py){
- const hit=rayHitAtScreen(px,py);
+function processPendingLook(){
+ if(!pendingLookPoint||activePointer===null||!movedPointer||!lastPt)return;
+ const point=pendingLookPoint,dx=point.x-lastPt.x,dy=point.y-lastPt.y;
+ pendingLookPoint=null;
+ world.player.yaw-=dx*.006;
+ world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));
+ lastPt=point;
+}
+function handleWorldTap(px,py,target=null){
+ const hit=target&&target.hasHit?target.hit:rayHitAtScreen(px,py);
  if(hit&&hit.block&&hit.block.type==='door'&&toolMode==='build'){toggleDoor(hit.block);return;}
- const animal=animalAtScreen(px,py);
+ const animal=target?target.animal:animalAtScreen(px,py);
  if(animal){openAnimalCare(animal);return;}
- const neighbor=neighborAtScreen(px,py);
+ const neighbor=target?target.neighbor:neighborAtScreen(px,py);
  if(neighbor){openColoring(neighbor.name);return;}
- if(toolMode==='fish'){fishAtScreen(px,py);return;}
+ if(toolMode==='fish'){fishAtScreen(px,py,hit);return;}
  if(placementPaused){showStatus('Building is paused. Choose a block to resume placing.');return;}
- buildOrFillAtScreen(px,py);
+ buildOrFillAtScreen(px,py,hit);
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{
+canvas.addEventListener('pointerdown',trackPointerHandler('down',e=>{
  if(e.pointerType==='mouse'&&e.button===2){e.preventDefault();erase();return;}
  if(e.pointerType==='mouse'&&e.button!==0)return;
- activePointer=e.pointerId;movedPointer=false;holdTriggered=false;
+ activePointer=e.pointerId;movedPointer=false;holdTriggered=false;pointerTarget=null;pendingLookPoint=null;
  startPt={x:e.clientX,y:e.clientY};lastPt=startPt;
  canvas.setPointerCapture(e.pointerId);
  const rect=canvas.getBoundingClientRect();
  const px=e.clientX-rect.left,py=e.clientY-rect.top;
- if(toolMode==='build'&&!animalAtScreen(px,py)&&!neighborAtScreen(px,py)){
-  const hit=rayHitAtScreen(px,py);
-  const targetType=hit&&hit.block?'block':hit&&hit.ground?'ground':null;
-  const targetKey=targetType==='block'?keyBlock(hit.block.x,hit.block.y,hit.block.z):targetType==='ground'?keyGround(hit.x,hit.z):null;
-  if(targetType&&targetKey!==null){
-   holdBlockKey=targetType+':'+targetKey;
-   const holdId=holdBlockKey;
-   holdTimer=setTimeout(()=>{
-    if(activePointer!==e.pointerId||movedPointer||holdBlockKey!==holdId)return;
-    const current=rayHitAtScreen(px,py);
-    const sameBlock=targetType==='block'&&current&&current.block&&keyBlock(current.block.x,current.block.y,current.block.z)===targetKey;
-    const sameGround=targetType==='ground'&&current&&current.ground&&keyGround(current.x,current.z)===targetKey;
-    if(sameBlock||sameGround){
-     holdTriggered=true;clearBlockHold();
-     if(sameBlock){
-      if(removeBlock(current.block.x,current.block.y,current.block.z)){render();showStatus('Block removed.');}
-     }else digAtScreen(px,py);
-    }
-   },HOLD_TO_REMOVE_MS);
+ if(toolMode==='build'){
+  const animal=animalAtScreen(px,py);
+  const neighbor=animal?null:neighborAtScreen(px,py);
+  const hit=animal||neighbor?null:rayHitAtScreen(px,py);
+  pointerTarget={animal,neighbor,hit,hasHit:!!hit};
+  if(!animal&&!neighbor){
+   const targetType=hit&&hit.block?'block':hit&&hit.ground?'ground':null;
+   const targetKey=targetType==='block'?keyBlock(hit.block.x,hit.block.y,hit.block.z):targetType==='ground'?keyGround(hit.x,hit.z):null;
+   if(targetType&&targetKey!==null){
+    holdBlockKey=targetType+':'+targetKey;
+    const holdId=holdBlockKey,initialHit=hit;
+    holdTimer=setTimeout(()=>{
+     if(activePointer!==e.pointerId||movedPointer||holdBlockKey!==holdId)return;
+     const current=initialHit;
+     const sameBlock=targetType==='block'&&current&&current.block&&keyBlock(current.block.x,current.block.y,current.block.z)===targetKey;
+     const sameGround=targetType==='ground'&&current&&current.ground&&keyGround(current.x,current.z)===targetKey;
+     if(sameBlock||sameGround){
+      holdTriggered=true;clearBlockHold();
+      if(sameBlock){
+       if(removeBlock(current.block.x,current.block.y,current.block.z)){render();showStatus('Block removed.');}
+      }else digAtScreen(px,py,current);
+     }
+    },HOLD_TO_REMOVE_MS);
+   }
   }
  }
-});
-canvas.addEventListener('pointermove',e=>{
+}));
+canvas.addEventListener('pointermove',trackPointerHandler('move',e=>{
  if(activePointer!==e.pointerId||!lastPt)return;
- const dx=e.clientX-lastPt.x,dy=e.clientY-lastPt.y;
  if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5){
   if(!movedPointer){movedPointer=true;clearBlockHold();}
  }
- if(movedPointer){
-  world.player.yaw-=dx*.006;
-  world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));
- }
- lastPt={x:e.clientX,y:e.clientY};
-});
-canvas.addEventListener('pointerup',e=>{
+ if(movedPointer)pendingLookPoint={x:e.clientX,y:e.clientY};
+}));
+canvas.addEventListener('pointerup',trackPointerHandler('up',e=>{
  if(activePointer!==e.pointerId)return;
+ processPendingLook();
  clearBlockHold();
  if(!movedPointer&&!holdTriggered&&(e.pointerType!=='mouse'||e.button===0)){
   const rect=canvas.getBoundingClientRect();
-  handleWorldTap(e.clientX-rect.left,e.clientY-rect.top);
+  handleWorldTap(e.clientX-rect.left,e.clientY-rect.top,pointerTarget);
  }
- activePointer=null;startPt=null;lastPt=null;holdTriggered=false;
-});
+ activePointer=null;startPt=null;lastPt=null;pointerTarget=null;pendingLookPoint=null;holdTriggered=false;
+}));
 canvas.addEventListener('pointercancel',()=>{
- clearBlockHold();activePointer=null;startPt=null;lastPt=null;holdTriggered=false;
+ processPendingLook();
+ clearBlockHold();activePointer=null;startPt=null;lastPt=null;pointerTarget=null;pendingLookPoint=null;holdTriggered=false;
 });
 // On-screen movement pads support press-and-hold on iPad.
 document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
