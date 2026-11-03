@@ -123,6 +123,17 @@ assert(source.includes("'RAF '+rate(performanceMetrics.rafFrames)") &&
   source.includes("rate(performanceMetrics.renderFrames)") &&
   source.includes("'Move  '+average(performanceMetrics.updateMsTotal"),
   'The diagnostics must distinguish browser frame rate, game draw rate, and simulation update cost.');
+assert(source.includes('function trackPointerHandler(name,handler)') &&
+  source.includes("'Input D/U '+eventMetric(inputEventMetrics.down)"),
+  'The debug monitor must measure pointerdown and pointerup callback time.');
+assert(source.includes('function processPendingLook()') &&
+  source.includes('pendingLookPoint={x:e.clientX,y:e.clientY};'),
+  'Pointer-move camera updates must be coalesced and processed from the animation loop.');
+assert(source.includes('function handleWorldTap(px,py,target=null)') &&
+  source.includes('buildOrFillAtScreen(px,py,hit);'),
+  'A tap must reuse its raycast result through the world action path.');
+assert(source.includes('digAtScreen(px,py,current);'),
+  'Long-press digging must reuse its initial target rather than raycasting it again.');
 
 
 function simulateCadence(refreshRate) {
