@@ -183,7 +183,7 @@ jobs:
             "textureTiles.get('tile-'+pattern)",
             'const FIXED_UPDATE_STEP=1/60',
             'MAX_FRAME_DELTA=.1',
-            'visitNearbyBlockChunkMeshes(cam,24,mesh=>',
+            'visitNearbyBlockChunkMeshes(cam,BLOCK_RENDER_RADIUS,mesh=>',
             'invalidateBlockChunkMeshesAt(b.x,b.z)',
             "if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b)"
           ];
