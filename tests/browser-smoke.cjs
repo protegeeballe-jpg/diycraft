@@ -61,9 +61,21 @@ async function verifyGame(page, label) {
   }
   await page.locator('#animalCareShade [data-close]').click();
 
+  // Profile the real renderer using its built-in debug HUD before any tuning.
+  await page.goto(label === 'local'
+    ? 'http://127.0.0.1:4173/?debug=1'
+    : 'https://protegeeballe-jpg.github.io/diycraft/?debug=1&perf-smoke=1',
+    { waitUntil: 'networkidle', timeout: 60000 });
+  await page.waitForTimeout(3200);
+  const performanceText = await page.locator('#performanceHud').textContent().catch(() => '');
+  if (!performanceText || !performanceText.includes('DRAW')) {
+    throw new Error(label + ': performance HUD did not produce renderer measurements.');
+  }
+  console.log(label + ' renderer baseline:\n' + performanceText);
+
   if (errors.length) throw new Error(label + ': browser console/runtime errors:\n' + errors.join('\n\n'));
   console.log(label + ' browser test passed. Canvas: ' + JSON.stringify(canvasState));
-  console.log(label + ': settings, close, camera view, and flight controls responded.');
+  console.log(label + ': settings, close, camera view, flight and animal-care controls responded.');
 }
 
 (async () => {
