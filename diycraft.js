@@ -348,6 +348,34 @@ function chunkBoundsVisible(bounds,cam,w,h,margin=16){
  }
  return maxScreenX>=-margin&&minScreenX<=w+margin&&maxScreenY>=-margin&&minScreenY<=h+margin;
 }
+function blockFaceTexture(block,normal,fallback){
+ const [nx,ny,nz]=normal;
+ // A saved designer or recovered-bucket texture remains an explicit all-face override.
+ if(block.texture)return fallback;
+ if(block.type==='grass'){
+  if(ny>0)return 'grass';
+  if(ny<0)return 'dirt';
+  return nx>0||nz<0?'grass-side-right':'grass-side-bottom';
+ }
+ if(block.type==='wood'){
+  if(ny!==0)return 'wood-end';
+  return nx>0||nz<0?'wood-side-horizontal':'wood-side-vertical';
+ }
+ return fallback;
+}
+function blockFaceColor(block,normal,baseColor){
+ const [nx,ny,nz]=normal;
+ if(block.texture)return baseColor;
+ if(block.type==='grass'){
+  if(ny<0)return '#765039';
+  if(ny===0)return '#8e6544';
+ }
+ if(block.type==='wood'){
+  if(ny!==0)return '#b98550';
+  return '#98643d';
+ }
+ return baseColor;
+}
 function buildBlockChunkMesh(key,items){
  const faces=[],specials=[];
  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
@@ -379,8 +407,10 @@ function buildBlockChunkMesh(key,items){
   for(const face of FACES){
    const [nx,ny,nz]=face.normal,neighbor=blockLookup.get(keyBlock(block.x+nx,block.y+ny,block.z+nz));
    if(isOpaqueCubeBlock(neighbor))continue;
+   const material=blockFaceTexture(block,face.normal,texture);
+   const faceColor=blockFaceColor(block,face.normal,color);
    faces.push({center:{x:block.x+.5+nx*.5,y:block.y+.5+ny*.5,z:block.z+.5+nz*.5},normal:face.normal,
-    vertices:face.ids.map(index=>vertices[index]),color:shadeColor(color,face.shade),material:texture,customTint:!!block.color,outline:true});
+    vertices:face.ids.map(index=>vertices[index]),color:shadeColor(faceColor,face.shade),material,customTint:!!block.color,outline:true});
   }
  }
  const bounds=Number.isFinite(minX)?{minX,minY,minZ,maxX,maxY,maxZ}:null;
@@ -590,6 +620,40 @@ function makeTexturePatterns(){
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
  };
  for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ // Direction-aware overlays keep the grass lip on the physical top edge of each side face.
+ const faceMakers={
+  'grass-side-right':c=>{
+   for(let i=0;i<46;i++){const x=(i*29+7)%96,y=(i*43+11)%96;c.fillStyle=i%3?'#5c3d2d88':'#b2875b88';c.beginPath();c.ellipse(x,y,1+(i%3),.8+(i%2),i*.4,0,Math.PI*2);c.fill();}
+   c.fillStyle='#285d32';c.fillRect(75,0,4,96);c.fillStyle='#4d963f';c.fillRect(79,0,17,96);
+   for(let y=4;y<96;y+=9){c.strokeStyle=y%2?'#b4d979':'#2c6e35';c.lineWidth=1.5;c.beginPath();c.moveTo(82,y);c.lineTo(76-(y%3),y-3);c.stroke();}
+   c.fillStyle='#8fbd5b';for(let y=7;y<96;y+=19)c.fillRect(87,y,5,2);
+  },
+  'grass-side-bottom':c=>{
+   for(let i=0;i<46;i++){const x=(i*29+7)%96,y=(i*43+11)%96;c.fillStyle=i%3?'#5c3d2d88':'#b2875b88';c.beginPath();c.ellipse(x,y,1+(i%3),.8+(i%2),i*.4,0,Math.PI*2);c.fill();}
+   c.fillStyle='#285d32';c.fillRect(0,74,96,4);c.fillStyle='#4d963f';c.fillRect(0,78,96,18);
+   for(let x=4;x<96;x+=9){c.strokeStyle=x%2?'#b4d979':'#2c6e35';c.lineWidth=1.5;c.beginPath();c.moveTo(x,82);c.lineTo(x-3,76+(x%3));c.stroke();}
+   c.fillStyle='#8fbd5b';for(let x=7;x<96;x+=19)c.fillRect(x,87,2,5);
+  },
+  'wood-side-horizontal':c=>{
+   for(let y=5;y<96;y+=13){c.strokeStyle=y%2?'#603818bb':'#e5bd7f99';c.lineWidth=y%2?2.2:1.2;c.beginPath();c.moveTo(0,y);c.bezierCurveTo(22,y-4,41,y+5,63,y);c.bezierCurveTo(78,y-4,87,y+4,96,y-1);c.stroke();}
+   for(let i=0;i<11;i++){const x=(i*37+9)%96,y=(i*29+12)%96;c.strokeStyle=i%2?'#58351f99':'#d5a46b99';c.lineWidth=1.4;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+5,y-4,x+10,y+1);c.stroke();}
+   [[28,31],[74,72]].forEach(([x,y])=>{c.strokeStyle='#60391fbb';c.lineWidth=1.7;c.beginPath();c.ellipse(x,y,8,3,.08,0,Math.PI*2);c.ellipse(x,y,3,1.5,.08,0,Math.PI*2);c.stroke();});
+  },
+  'wood-side-vertical':c=>{
+   for(let x=5;x<96;x+=13){c.strokeStyle=x%2?'#603818bb':'#e5bd7f99';c.lineWidth=x%2?2.2:1.2;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x-4,22,x+5,41,x,63);c.bezierCurveTo(x-4,78,x+4,87,x-1,96);c.stroke();}
+   for(let i=0;i<11;i++){const x=(i*37+9)%96,y=(i*29+12)%96;c.strokeStyle=i%2?'#58351f99':'#d5a46b99';c.lineWidth=1.4;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x-4,y+5,x+1,y+10);c.stroke();}
+   [[28,31],[74,72]].forEach(([x,y])=>{c.strokeStyle='#60391fbb';c.lineWidth=1.7;c.beginPath();c.ellipse(x,y,3,8,.08,0,Math.PI*2);c.ellipse(x,y,1.5,3,.08,0,Math.PI*2);c.stroke();});
+  },
+  'wood-end':c=>{
+   const cx=48,cy=48;
+   for(let r=42;r>=5;r-=6){c.strokeStyle=(r/6)%2?'#704522bb':'#e3b979bb';c.lineWidth=r%12===0?2:1.3;c.beginPath();c.ellipse(cx+(r%7)-3,cy+(r%5)-2,r,r*.88,0,0,Math.PI*2);c.stroke();}
+   c.fillStyle='#6d4327';c.beginPath();c.arc(cx,cy,3.2,0,Math.PI*2);c.fill();
+   c.strokeStyle='#754a2caa';c.lineWidth=1.5;
+   for(const a of [-2.5,-1.1,.55,2.2]){c.beginPath();c.moveTo(cx+Math.cos(a)*9,cy+Math.sin(a)*8);c.lineTo(cx+Math.cos(a)*44,cy+Math.sin(a)*40);c.stroke();}
+   c.strokeStyle='#f0d09a99';c.lineWidth=1;c.beginPath();c.arc(cx-1,cy-1,34,.3,2.3);c.stroke();
+  }
+ };
+ for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=96;draw(tile.getContext('2d'));textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 
 // Original tile surfaces: all twenty are drawn locally, with no image downloads.
@@ -745,7 +809,8 @@ function paintTexture(poly){
  if(!image)return;
  // Projected 3D faces are perspective quads, not parallelograms.
  // Map both halves separately so the fourth corner cannot drift.
- paintMappedQuad(image,poly.pts,poly.customTint?.42:.72);
+ const alpha=poly.material==='dirt' ? .82 : (poly.material.startsWith('grass-side-') ? .92 : (poly.customTint ? .42 : .72));
+ paintMappedQuad(image,poly.pts,alpha);
 }
 // All textured quads use the same diagonal and perspective-correct affine
 // mapping on each half. A sub-pixel overlap hides antialiased hairline seams.
