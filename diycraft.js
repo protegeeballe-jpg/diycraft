@@ -887,12 +887,20 @@ function findNeighborPath(start,end){
 function neighborPathLength(path){
  let length=0;for(let i=1;i<path.length;i++)length+=Math.hypot(path[i].x-path[i-1].x,path[i].z-path[i-1].z);return length;
 }
-function neighborOnRoute(route,tick,phase,speed=1.05){
+const neighborRouteSegmentsCache=new WeakMap();
+function getNeighborRouteSegments(route,speed){
+ let cached=neighborRouteSegmentsCache.get(route);
+ if(cached&&cached.revision===worldGeometryRevision&&cached.speed===speed)return cached;
  const segments=route.map((point,i)=>{
   const next=route[(i+1)%route.length],path=findNeighborPath(point,next),length=neighborPathLength(path);
   return {point,next,path,length,travel:Math.max(1.8,length/speed),pause:point.pause||1};
  });
- const cycle=segments.reduce((sum,segment)=>sum+segment.pause+segment.travel,0);
+ cached={revision:worldGeometryRevision,speed,segments,cycle:segments.reduce((sum,segment)=>sum+segment.pause+segment.travel,0)};
+ neighborRouteSegmentsCache.set(route,cached);
+ return cached;
+}
+function neighborOnRoute(route,tick,phase,speed=1.05){
+ const {segments,cycle}=getNeighborRouteSegments(route,speed);
  let time=((tick+phase)%cycle+cycle)%cycle;
  for(const segment of segments){
   const path=segment.path,first=path[0]||segment.point,second=path[1]||segment.next;
@@ -1744,7 +1752,7 @@ function move(dt){
  }
  p.y=Math.max(-MAX_DIG_DEPTH,next);
 }
-const FIXED_UPDATE_STEP=1/60,MAX_FRAME_DELTA=.1,MAX_FIXED_STEPS_PER_FRAME=6;
+const FIXED_UPDATE_STEP=1/60,MAX_FRAME_DELTA=.1,MAX_FIXED_STEPS_PER_FRAME=6,MIN_RENDER_INTERVAL=1000/60-.5;
 function capturePlayerRenderState(p=world.player){
  return {x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch};
 }
@@ -1759,7 +1767,7 @@ function interpolatePlayerState(previous,current,alpha){
   pitch:previous.pitch+(current.pitch-previous.pitch)*t
  };
 }
-let previousPlayerRenderState=null;
+let previousPlayerRenderState=null,renderAccumulator=0;
 function renderPlayerFrame(alpha){
  const p=world.player,current=capturePlayerRenderState(p);
  if(!previousPlayerRenderState){previousPlayerRenderState=current;render();return;}
@@ -1770,17 +1778,21 @@ function renderPlayerFrame(alpha){
 }
 function loop(time){
  requestAnimationFrame(loop);
- if(document.hidden){lastTime=0;frameAccumulator=0;previousPlayerRenderState=null;return;}
- if(!lastTime){lastTime=time;previousPlayerRenderState=capturePlayerRenderState();render();return;}
- const elapsed=Math.min(MAX_FRAME_DELTA,Math.max(0,(time-lastTime)/1000));lastTime=time;
+ if(document.hidden){lastTime=0;frameAccumulator=0;renderAccumulator=0;previousPlayerRenderState=null;return;}
+ if(!lastTime){lastTime=time;renderAccumulator=0;previousPlayerRenderState=capturePlayerRenderState();render();return;}
+ const frameElapsedMs=Math.max(0,time-lastTime),elapsed=Math.min(MAX_FRAME_DELTA,frameElapsedMs/1000);lastTime=time;
  frameAccumulator=Math.min(frameAccumulator+elapsed,FIXED_UPDATE_STEP*MAX_FIXED_STEPS_PER_FRAME);
+ renderAccumulator+=frameElapsedMs;
  let steps=0;
  while(frameAccumulator+1e-9>=FIXED_UPDATE_STEP&&steps<MAX_FIXED_STEPS_PER_FRAME){
   previousPlayerRenderState=capturePlayerRenderState();
   move(FIXED_UPDATE_STEP);frameAccumulator-=FIXED_UPDATE_STEP;steps++;
  }
- // Keep the 60 Hz fixed simulation, but interpolate and draw at the display refresh rate.
- renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);
+ // Keep movement at 60 Hz while avoiding redundant full-world draws on high-refresh displays.
+ if(renderAccumulator>=MIN_RENDER_INTERVAL){
+  renderAccumulator%=MIN_RENDER_INTERVAL;
+  renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);
+ }
 }
 function renderSlots(){
  const root=$('slots');root.replaceChildren();
