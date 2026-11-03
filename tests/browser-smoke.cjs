@@ -54,11 +54,13 @@ async function verifyGame(page, label) {
     throw new Error(label + ': flight button did not respond.');
   }
 
+  await page.locator('#menuBtn').click();
   await page.locator('#animalCareBtn').click();
   if (!(await page.locator('#animalCareShade').evaluate(el => el.classList.contains('open')))) {
     throw new Error(label + ': animal-care button did not open its care panel.');
   }
   await page.locator('#animalCareShade [data-close]').click();
+  await page.locator('#menuShade [data-close]').first().click();
 
   if (errors.length) throw new Error(label + ': browser console/runtime errors:\n' + errors.join('\n\n'));
   console.log(label + ' browser test passed. Canvas: ' + JSON.stringify(canvasState));
