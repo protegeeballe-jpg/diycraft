@@ -1,6 +1,6 @@
 /* DIYCraft same-origin offline shell and game-engine cache. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v50';;
+const CACHE_NAME = 'diycraft-shell-v51';;
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;
