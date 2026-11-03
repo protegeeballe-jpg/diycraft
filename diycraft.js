@@ -2155,6 +2155,89 @@ for(const id of CHARACTER_FIELDS){
 document.querySelectorAll('[data-look]').forEach(b=>b.addEventListener('click',()=>applyPresetToStudio(b.dataset.look)));
 function openShade(id){$(id).classList.add('open');}function closeShades(){stopNeighborColoring();document.querySelectorAll('.menu-shade.open').forEach(e=>e.classList.remove('open'));}
 let draftCustomColor='#aa83d8',draftCustomTexture='custom',draftSolidType='custom';
+let globalBlockSpectrumPicker=null,customBlockSpectrumPicker=null,tileSpectrumPicker=null;
+
+function colorUnit(value){return Math.max(0,Math.min(1,value));}
+function hexToHsv(hex){
+ const value=String(hex||'#000000').replace('#','');
+ const r=parseInt(value.slice(0,2),16)/255,g=parseInt(value.slice(2,4),16)/255,b=parseInt(value.slice(4,6),16)/255;
+ const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+ let h=0;
+ if(delta){
+  if(max===r)h=60*(((g-b)/delta)%6);
+  else if(max===g)h=60*((b-r)/delta+2);
+  else h=60*((r-g)/delta+4);
+ }
+ return {h:(h+360)%360,s:max===0?0:delta/max,v:max};
+}
+function hsvToHex(hsv){
+ const h=((hsv.h%360)+360)%360,s=colorUnit(hsv.s),v=colorUnit(hsv.v),chroma=v*s,sector=h/60;
+ const x=chroma*(1-Math.abs((sector%2)-1));
+ let rgb;
+ if(sector<1)rgb=[chroma,x,0];
+ else if(sector<2)rgb=[x,chroma,0];
+ else if(sector<3)rgb=[0,chroma,x];
+ else if(sector<4)rgb=[0,x,chroma];
+ else if(sector<5)rgb=[x,0,chroma];
+ else rgb=[chroma,0,x];
+ const match=v-chroma;
+ return '#'+rgb.map(channel=>Math.round((channel+match)*255).toString(16).padStart(2,'0')).join('');
+}
+function bindSpectrumPicker(prefix,inputId,onColor){
+ const area=$(prefix+'Spectrum'),hueInput=$(prefix+'Hue'),colorInput=$(inputId);
+ if(!area||!hueInput||!colorInput)return {setColor:function(){}};
+ const cursor=area.querySelector('.spectrum-cursor');
+ let hsv=hexToHsv(colorInput.value),dragging=false;
+ function render(){
+  area.style.backgroundColor='hsl('+Math.round(hsv.h)+' 100% 50%)';
+  cursor.style.left=(hsv.s*100)+'%';cursor.style.top=((1-hsv.v)*100)+'%';
+  hueInput.value=String(Math.round(hsv.h)%360);
+  area.setAttribute('aria-valuenow',String(Math.round(hsv.s*100)));
+  area.setAttribute('aria-valuetext','Saturation '+Math.round(hsv.s*100)+'%, brightness '+Math.round(hsv.v*100)+'%, '+hsvToHex(hsv).toUpperCase());
+ }
+ function commit(){
+  const color=hsvToHex(hsv);
+  colorInput.value=color;
+  if(typeof onColor==='function')onColor(color);
+  render();
+ }
+ function pickAt(event){
+  const rect=area.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  hsv.s=colorUnit((event.clientX-rect.left)/rect.width);
+  hsv.v=1-colorUnit((event.clientY-rect.top)/rect.height);
+  commit();
+ }
+ area.addEventListener('pointerdown',event=>{
+  event.preventDefault();dragging=true;
+  try{area.setPointerCapture(event.pointerId);}catch(error){}
+  pickAt(event);
+ });
+ area.addEventListener('pointermove',event=>{if(dragging)pickAt(event);});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(type=>area.addEventListener(type,()=>{dragging=false;}));
+ area.addEventListener('keydown',event=>{
+  const step=event.shiftKey?.1:.025;
+  if(event.key==='ArrowLeft')hsv.s=colorUnit(hsv.s-step);
+  else if(event.key==='ArrowRight')hsv.s=colorUnit(hsv.s+step);
+  else if(event.key==='ArrowUp')hsv.v=colorUnit(hsv.v+step);
+  else if(event.key==='ArrowDown')hsv.v=colorUnit(hsv.v-step);
+  else if(event.key==='Home'){hsv.s=0;hsv.v=1;}
+  else if(event.key==='End'){hsv.s=1;hsv.v=0;}
+  else return;
+  event.preventDefault();commit();
+ });
+ hueInput.addEventListener('input',()=>{
+  hsv.h=Number(hueInput.value)||0;commit();
+ });
+ render();
+ return {
+  setColor:function(color){
+   if(!/^#[0-9a-f]{6}$/i.test(String(color||'')))return;
+   colorInput.value=color.toLowerCase();hsv=hexToHsv(color);render();
+  }
+ };
+}
+
 function renderCustomPreview(){
  const canvas=$('customPreview'),c=canvas.getContext('2d');
  c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle='#f8faf4';c.fillRect(0,0,canvas.width,canvas.height);
@@ -2185,7 +2268,7 @@ function renderCustomColorSwatches(){
 }
 function setDraftCustomColor(color){
  if(!/^#[0-9a-f]{6}$/i.test(color))return;
- draftCustomColor=color.toLowerCase();$('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();renderCustomPreview();
+ draftCustomColor=color.toLowerCase();$('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();customBlockSpectrumPicker?.setColor(draftCustomColor);renderCustomPreview();
 }
 function openCustomBlockDesigner(){
  draftSolidType=SOLID_STYLE_TYPES.includes(selected)?selected:'custom';
@@ -2195,7 +2278,7 @@ function openCustomBlockDesigner(){
  const fallback=BLOCKS.find(b=>b.id===draftSolidType);
  draftCustomColor=saved?.color||fallback?.color||'#aa83d8';
  draftCustomTexture=saved?.texture||(draftSolidType==='custom'?'custom':draftSolidType);
- $('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();
+ setDraftCustomColor(draftCustomColor);
  renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();openShade('customBlockShade');
 }
 $('solidDesignType').addEventListener('change',e=>{
@@ -2212,7 +2295,7 @@ $('customBlockHex').addEventListener('change',e=>{const v=e.target.value.trim();
 $('applyCustomBlock').addEventListener('click',()=>{
  if(draftSolidType==='custom'){
   world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
-  $('customColor').value=draftCustomColor;selected='custom';placementPaused=false;
+  $('customColor').value=draftCustomColor;globalBlockSpectrumPicker?.setColor(draftCustomColor);selected='custom';placementPaused=false;
   showStatus('Custom solid ready. Choose a place to build it.');
  }else{
   world.solidStyles=world.solidStyles||{};
@@ -2277,18 +2360,21 @@ function renderTileColorSwatches(){
 }
 function setDraftTileColor(color){
  if(!/^#[0-9a-f]{6}$/i.test(color))return;
- draftTileColor=color.toLowerCase();$('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();
+ draftTileColor=color.toLowerCase();$('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();tileSpectrumPicker?.setColor(draftTileColor);
  renderTileChoices();renderTilePreview();
 }
 function openTileDesigner(){
  draftTileColor=world.tileDesign?.color||'#c5a98a';draftTilePattern=world.tileDesign?.pattern||'grid';
- $('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();
+ $('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();tileSpectrumPicker?.setColor(draftTileColor);
  renderTileChoices();renderTileColorSwatches();renderTilePreview();openShade('tileShade');
 }
 $('tileDesignBtn').addEventListener('click',()=>{closeShades();openTileDesigner();});
 $('tileColor').addEventListener('input',e=>setDraftTileColor(e.target.value));$('tileColor').addEventListener('change',e=>setDraftTileColor(e.target.value));
 $('tileHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);});
 $('tileHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);else e.target.value=draftTileColor.toUpperCase();});
+globalBlockSpectrumPicker=bindSpectrumPicker('globalBlock','customColor',color=>{world.customBlock.color=validHex(color,world.customBlock.color);if(selected==='custom')renderHotbar();save();});
+customBlockSpectrumPicker=bindSpectrumPicker('customBlock','customBlockColor',setDraftCustomColor);
+tileSpectrumPicker=bindSpectrumPicker('tile','tileColor',setDraftTileColor);
 $('applyTileDesign').addEventListener('click',()=>{
  world.tileDesign={color:validHex(draftTileColor,'#c5a98a'),pattern:TILE_DESIGNS.some(t=>t.id===draftTilePattern)?draftTilePattern:'grid'};
  selected='tile';selectedBucketItem=null;placementPaused=false;setToolMode('build',false);save();renderHotbar();closeShades();
@@ -2478,7 +2564,7 @@ function returnToNeighborhood(){
  showStatus('Welcome back! You are home in the neighborhood. 🌼');
  return true;
 }
-$('neighborsBtn').addEventListener('click',()=>{closeShades();returnToNeighborhood();});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',()=>{controlsToggle();$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';closeShades();});$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();openBucket();});
+$('neighborsBtn').addEventListener('click',()=>{closeShades();returnToNeighborhood();});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);globalBlockSpectrumPicker?.setColor($('customColor').value);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',()=>{controlsToggle();$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';closeShades();});$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();openBucket();});
 $('clearBucketBtn').addEventListener('click',()=>{if(!world.bucket.length){showStatus('Your Material Bucket is already empty.');return;}if(!window.confirm('Empty the Material Bucket? Recovered blocks will be discarded.'))return;world.bucket=[];selectedBucketItem=null;save();renderSlots();renderHotbar();showStatus('Material Bucket emptied.');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();openCharacterStudio();});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
 $('applyCharacter').addEventListener('click',()=>{
  const p=characterValue();
@@ -2556,7 +2642,7 @@ function prepareOfflinePlay(){
 }
 
 // Keep one local autosave. No gameplay networking, analytics, third-party scripts or multiplayer.
-makeTexturePatterns();makeTileTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
+makeTexturePatterns();makeTileTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;globalBlockSpectrumPicker?.setColor(world.customBlock.color);draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
 window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{lastTime=0;frameAccumulator=0;if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);prepareOfflinePlay();
 })();
 
