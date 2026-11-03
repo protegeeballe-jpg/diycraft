@@ -77,6 +77,13 @@ jobs:
           const source = fs.readFileSync('diycraft.js', 'utf8');
           const required = [
             'function getTimePalette',
+            'function animalPositions',
+            'function pushAnimalSprite',
+            'function drawAnimalSprite',
+            'if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}',
+            'animals:[]',
+            'w.animals=d.animals.slice(0,100)',
+
             'function setPlayerActivity(activity)',
             "const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'",
             "if(activity==='sleep'||activity==='transformer'||activity==='bed'){",
