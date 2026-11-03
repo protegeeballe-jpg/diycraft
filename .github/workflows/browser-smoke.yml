@@ -1,0 +1,37 @@
+name: DIYCraft browser smoke test
+
+on:
+  push:
+    paths:
+      - index.html
+      - diycraft.js
+      - sw.js
+      - tests/browser-smoke.cjs
+      - .github/workflows/browser-smoke.yml
+  pull_request:
+    paths:
+      - index.html
+      - diycraft.js
+      - sw.js
+      - tests/browser-smoke.cjs
+      - .github/workflows/browser-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Chromium test runner
+        run: |
+          npm init -y
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Launch DIYCraft and test real controls
+        run: node tests/browser-smoke.cjs
