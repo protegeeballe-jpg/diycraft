@@ -152,6 +152,7 @@ function validWorld(d){
    waterColumns.set(key,[x,z,level]);
   }
  }else{
+  // Pre-stacking worlds stored only a wet/dry flag, so preserve each old pool as one layer.
   for(const [x,z] of w.waterCells){const key=x+','+z,depth=dugDepths.get(key);if(depth)waterColumns.set(key,[x,z,1]);}
  }
  w.waterLevels=Array.from(waterColumns.values());
@@ -236,6 +237,7 @@ function addBucketItem(block){
  if(world.bucket.length>=MAX_BUCKET_ITEMS)return false;
  const item={type:block.type};
  for(const key of ['color','texture','tilePattern','style','orientation','swing'])if(block[key]!==undefined)item[key]=block[key];
+ // Older/default solids may not have explicit appearance fields. Freeze their original defaults now.
  if(SOLID_STYLE_TYPES.includes(block.type)){
   const meta=BLOCKS.find(b=>b.id===block.type);
   if(!item.color)item.color=meta?.color||'#9a9a9a';
@@ -258,9 +260,9 @@ function syncToolButtons(){
      :'Tap to build or fill · Hold 0.6s to dig soil or remove a block';
 }
 function setToolMode(mode,announce=true){
- toolMode=mode==='fish'?'fish':mode==='animal'?'animal':'build';
+ toolMode=mode==='fish'?'fish':'build';
  syncToolButtons();
- if(announce)showStatus(toolMode==='fish'?'Fish placement enabled. Tap a water cell to add a fish.':toolMode==='animal'?'Animal placement enabled. Tap on the ground to drop your animal.':'Build mode ready.');
+ if(announce)showStatus(toolMode==='fish'?'Fish placement enabled. Tap a water cell to add a fish.':'Build mode ready.');
 }
 function pauseBuildPlacement(){
  placementPaused=true;
@@ -351,7 +353,7 @@ function renderHotbar(){
   {id:'tile',label:'Slabs / Tiles',icon:'▦',title:'Design and select slabs or tiles'},
   {id:'door',label:'Door',icon:'🚪',title:'Design and select a door'},
   {id:'water',label:'Water',icon:'💧',title:'Select the water block'},
-  {id:'animal',label:'Animals',icon:'🐄',title:'Choose an animal to drop'}, // <--- Comma fixed here!
+  {id:'animal',label:'Animals',icon:'🐄',title:'Choose an animal to drop'}, // <--- ADD THIS
   {id:'bucket',label:'Bucket',icon:'🪣',title:'Open the Material Bucket'},
   {id:'pause',label:placementPaused?'No Block':'Pause',icon:'✋',title:'Pause block placement'}
  ];
@@ -360,6 +362,7 @@ function renderHotbar(){
   const icon=document.createElement('span');icon.className='emoji';icon.textContent=item.icon;
   const label=document.createElement('small');label.textContent=item.label;btn.append(icon,label);btn.title=item.title;
   
+  // Highlight active button if animal mode is selected
   const active=(item.id==='pause'&&placementPaused)||(!placementPaused&&((item.id==='solid'&&['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','custom'].includes(selected))
    ||(item.id==='tile'&&selected==='tile')||(item.id==='door'&&selected==='door')||(item.id==='water'&&selected==='water')||(item.id==='animal'&&toolMode==='animal')));
   if(active)btn.classList.add('active');
@@ -370,7 +373,7 @@ function renderHotbar(){
    if(item.id==='tile'){selectedBucketItem=null;setToolMode('build',false);openTileDesigner();return;}
    if(item.id==='door'){selectedBucketItem=null;setToolMode('build',false);openDoorDesigner();return;}
    if(item.id==='water'){chooseMaterial('water');return;}
-   if(item.id==='animal'){openAnimalPicker();return;}
+   if(item.id==='animal'){openAnimalPicker();return;} // <--- OPEN ANIMAL PICKER
    openBucket();
   });
   root.append(btn);
@@ -407,6 +410,7 @@ const RENDER_CHUNK_SIZE=16;
 const BLOCK_RENDER_DISTANCE_CHUNKS=1.5;
 const BLOCK_RENDER_RADIUS=RENDER_CHUNK_SIZE*BLOCK_RENDER_DISTANCE_CHUNKS;
 let blockRenderChunks=new Map(),excavationRenderChunks=new Map(),waterRenderChunks=new Map(),fishRenderChunks=new Map();
+// The LRU mesh cache stays capped independently of the saved world-block records.
 function isPlantBlock(block){return !!block&&(block.type==='flower'||block.type==='tall_grass');}
 const MAX_BLOCK_CHUNK_CACHE=16,OPAQUE_CUBE_TYPES=new Set([...SOLID_STYLE_TYPES.filter(type=>type!=='flower'),'custom']);
 let blockChunkMeshCache=new Map();
@@ -424,6 +428,8 @@ function projectedPolygonVisible(pts,w,h,margin=2){
 function chunkBoundsVisible(bounds,cam,w,h,margin=16){
  if(!bounds||!(w>0&&h>0))return true;
  let minScreenX=Infinity,minScreenY=Infinity,maxScreenX=-Infinity,maxScreenY=-Infinity;
+ // If any corner touches/crosses the camera plane, keep the chunk: its
+ // projected bounds are not safely bounded by the remaining seven corners.
  for(const x of [bounds.minX,bounds.maxX])for(const y of [bounds.minY,bounds.maxY])for(const z of [bounds.minZ,bounds.maxZ]){
   const point=project({x,y,z},cam,w,h);
   if(!point)return true;
@@ -434,14 +440,19 @@ function chunkBoundsVisible(bounds,cam,w,h,margin=16){
 }
 function blockFaceTexture(block,normal,fallback){
  const [nx,ny,nz]=normal;
+ // A saved designer or recovered-bucket texture remains an explicit all-face override.
  if(block.texture)return fallback;
  if(block.type==='grass'){
   if(ny>0)return 'grass';
   if(ny<0)return 'dirt';
+  // Face vertex order differs on opposing sides; these two variants keep
+  // the grass band glued to the top edge instead of rotating onto a side edge.
   return nx>0||nz<0?'grass-side-right':'grass-side-bottom';
  }
  if(block.type==='wood'){
   if(ny!==0)return 'wood-end';
+  // Both side variants have longitudinal bark grain; their slight color
+  // difference avoids a mirrored, copy-pasted look around the trunk.
   return nx>0||nz<0?'wood-side-horizontal':'wood-side-vertical';
  }
  return fallback;
@@ -673,6 +684,7 @@ function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
  c.fillStyle='#f2cb59';c.beginPath();c.arc(cx,cy,7,0,Math.PI*2);c.fill();
  c.fillStyle='#fff0a0';c.beginPath();c.arc(cx-2,cy-2,2,0,Math.PI*2);c.fill();
 }
+// Small, locally generated patterns give every material its own tactile surface.
 const TEXTURE_REFERENCE_SIZE=96,TEXTURE_TILE_SIZE=32,TEXTURE_DRAW_SCALE=TEXTURE_TILE_SIZE/TEXTURE_REFERENCE_SIZE;
 const texturePatterns=new Map(),textureTiles=new Map();
 const flowerPlantTextureCache=new Map();
@@ -744,9 +756,11 @@ function makeTexturePatterns(){
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
  };
  for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ // Direction-aware overlays keep the grass lip on the physical top edge of each side face.
  const faceMakers={
   'grass-side-right':c=>{
    for(let i=0;i<46;i++){const x=(i*29+7)%96,y=(i*43+11)%96;c.fillStyle=i%3?'#5c3d2d88':'#b2875b88';c.beginPath();c.ellipse(x,y,1+(i%3),.8+(i%2),i*.4,0,Math.PI*2);c.fill();}
+   // Texture top edge maps to the block's upper edge on +X and -Z faces.
    c.fillStyle='#285d32';c.fillRect(0,0,96,4);c.fillStyle='#4d963f';c.fillRect(0,4,96,14);
    for(let x=4;x<96;x+=9){c.strokeStyle=x%2?'#b4d979':'#2c6e35';c.lineWidth=1.5;c.beginPath();c.moveTo(x,14);c.lineTo(x-3,20+(x%3));c.stroke();}
    c.fillStyle='#8fbd5b';for(let x=7;x<96;x+=19)c.fillRect(x,5,5,2);
@@ -758,6 +772,7 @@ function makeTexturePatterns(){
    c.fillStyle='#8fbd5b';for(let x=7;x<96;x+=19)c.fillRect(x,87,2,5);
   },
   'wood-side-horizontal':c=>{
+   // Grain runs vertically with the trunk on every side orientation.
    for(let x=5;x<96;x+=13){c.strokeStyle=x%2?'#603818bb':'#e5bd7f99';c.lineWidth=x%2?2.2:1.2;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x-4,22,x+5,41,x,63);c.bezierCurveTo(x-4,78,x+4,87,x-1,96);c.stroke();}
    for(let i=0;i<11;i++){const x=(i*37+9)%96,y=(i*29+12)%96;c.strokeStyle=i%2?'#58351f99':'#d5a46b99';c.lineWidth=1.4;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x-4,y+5,x+1,y+10);c.stroke();}
    [[28,31],[74,72]].forEach(([x,y])=>{c.strokeStyle='#60391fbb';c.lineWidth=1.7;c.beginPath();c.ellipse(x,y,3,8,.08,0,Math.PI*2);c.ellipse(x,y,1.5,3,.08,0,Math.PI*2);c.stroke();});
@@ -779,6 +794,7 @@ function makeTexturePatterns(){
  for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 
+// Original tile surfaces: all twenty are drawn locally at 32×32 pixels.
 function makeTileTexturePatterns(){
  const makers={
   grid:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let p=0;p<=96;p+=32){c.beginPath();c.moveTo(p,0);c.lineTo(p,96);c.moveTo(0,p);c.lineTo(96,p);c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1;c.strokeRect(2,2,92,92);},
@@ -811,6 +827,7 @@ function makeTileTexturePatterns(){
 }
 
 function pushCube(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,outline=true,material=null,customTint=false){const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;for(const f of FACES){const [nx,ny,nz]=f.normal,viewX=cam.pos.x-cx,viewY=cam.pos.y-cy,viewZ=cam.pos.z-cz;if(nx*viewX+ny*viewY+nz*viewZ<=0)continue;const pts=f.ids.map(i=>project(vs[i],cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;const avg=pts.reduce((t,p)=>t+p.d,0)/pts.length;queue.push({pts,depth:avg,color:shadeColor(color,f.shade),outline,material,customTint});}}
+// Character blocks rotate as complete cuboids, not just as relocated centers.
 function pushTileSlab(queue,cam,w,h,b){
  const pattern=TILE_DESIGNS.some(t=>t.id===b.tilePattern)?b.tilePattern:'grid';
  const x=b.x,y=b.y+TILE_BASE_OFFSET,z=b.z;
@@ -827,6 +844,7 @@ function pushTileSlab(queue,cam,w,h,b){
   queue.push(poly);
  }
 }
+// Character blocks rotate as complete cuboids, not just as relocated centers.
 function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=true){
  const vs=cubeVerts(x,y,z,sx,sy,sz),cx=x+sx/2,cy=y+sy/2,cz=z+sz/2;
  const c=Math.cos(yaw),s=Math.sin(yaw);
@@ -849,6 +867,7 @@ function pushCubeFacing(queue,cam,w,h,x,y,z,color,sx=1,sy=1,sz=1,yaw=0,outline=t
  }
 }
 
+// Doors are small hinged voxel assemblies. Their animation never changes their saved footprint.
 const doorMotions=new Map();
 function doorVisualAngle(door,now=performance.now()){
  const key=keyBlock(door.x,door.y,door.z),motion=doorMotions.get(key);
@@ -888,6 +907,7 @@ function drawVoxelDoor(queue,cam,w,h,door){
  const draw=(x,y,z,sx,sy,sz,color)=>pushDoorCube(queue,cam,w,h,pivot,x,y,z,sx,sy,sz,color,angle);
  const wood=validHex(door.color,'#a97545');
  draw(0,0,-.06,.84,1.96,.12,wood);
+ // Raised inset panels on both sides, so the door looks finished from either direction.
  for(const side of [-1,1]){
   const face=side*.062,faceDepth=.016;
   if(door.style==='window'){
@@ -913,8 +933,10 @@ function drawVoxelDoor(queue,cam,w,h,door){
     draw(.43,1.43,face+side*.032,.10,.10,.018,'#f3d36c');
    }
   }
+  // A little golden handle on each side.
   draw(.70,.88,side*.083,.07,.13,.055,'#e6bd62');
  }
+ // Slim hinge marks along the hanging edge.
  draw(.035,.28,-.078,.05,.12,.036,'#6a4933');
  draw(.035,1.55,-.078,.05,.12,.036,'#6a4933');
 }
@@ -928,6 +950,7 @@ function drawWindSwayingPlant(queue,cam,w,h,block,tick){
  const phase=block.x*.71+block.z*.53+(flower?1.35:0);
  const gust=Math.sin(tick*1.55+phase)+Math.sin(tick*.72+phase*.43)*.34;
  const swayX=gust*.105,swayZ=Math.sin(tick*1.27+phase+1.6)*.075;
+ // Two crossed, transparent planes keep the plant visible from every direction.
  const planes=[
   [
    {x:cx-halfWidth+swayX,y:baseY+height,z:cz},
@@ -943,6 +966,7 @@ function drawWindSwayingPlant(queue,cam,w,h,block,tick){
   ]
  ];
  for(const vertices of planes){
+  // Top-left, top-right, bottom-right, bottom-left keeps the blade roots at the ground.
   const pts=vertices.map(vertex=>project(vertex,cam,w,h));
   if(pts.some(point=>!point)||!projectedPolygonVisible(pts,w,h,2))continue;
   const depth=pts.reduce((sum,point)=>sum+point.d,0)/pts.length;
@@ -954,9 +978,13 @@ function paintTexture(poly){
  if(poly.pts.length!==4)return;
  const image=textureTiles.get(poly.material);
  if(!image)return;
+ // Projected 3D faces are perspective quads, not parallelograms.
+ // Map both halves separately so the fourth corner cannot drift.
  const alpha=poly.material==='dirt' ? .82 : (poly.material.startsWith('grass-side-') ? .92 : (poly.customTint ? .42 : .72));
  paintMappedQuad(image,poly.pts,alpha);
 }
+// All textured quads use the same diagonal and perspective-correct affine
+// mapping on each half. A sub-pixel overlap hides antialiased hairline seams.
 function paintTileTriangle(image,src,dst,alpha=.9,overlap=.45){
  const [s0,s1,s2]=src,[d0,d1,d2]=dst;
  const sx1=s1.x-s0.x,sy1=s1.y-s0.y,sx2=s2.x-s0.x,sy2=s2.y-s0.y;
@@ -991,6 +1019,7 @@ function paintTileTexture(poly){
  const image=poly.tileTexture;if(!image||poly.pts.length!==4)return;
  const [p0,p1,p2,p3]=poly.pts;
  ctx.save();clipProjectedQuad(poly.pts);
+ // Keep the tile studio's established top-face orientation.
  paintTileTriangle(image,[{x:0,y:0},{x:0,y:96},{x:96,y:96}],[p0,p1,p2],.9);
  paintTileTriangle(image,[{x:0,y:0},{x:96,y:96},{x:96,y:0}],[p0,p2,p3],.9);
  ctx.restore();
@@ -1019,4 +1048,1713 @@ const NEIGHBOR_ROUTES={
   {x:15,z:-5,pause:2.8,activity:'🌸'}
  ]
 };
-const NAV_CELL_SCALE=2,NAV_NEIGHBOR_RADIUS=.23,NAV_NEIGHBOR_
+// Neighbor navigation: local half-block grid, house walls and player-built obstacles.
+const NAV_CELL_SCALE=2,NAV_NEIGHBOR_RADIUS=.23,NAV_NEIGHBOR_HEIGHT=2.16;
+const NAV_STEPS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+function navCellKey(x,z){return x+','+z;}
+function navCircleHitsRect(px,pz,x,z,w,d){
+ const nx=Math.max(x,Math.min(x+w,px)),nz=Math.max(z,Math.min(z+d,pz));
+ const dx=px-nx,dz=pz-nz;
+ return dx*dx+dz*dz<NAV_NEIGHBOR_RADIUS*NAV_NEIGHBOR_RADIUS;
+}
+function markNeighborObstacleRect(set,x,z,w,d){
+ const minX=Math.floor((x-NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ const maxX=Math.ceil((x+w+NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ const minZ=Math.floor((z-NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ const maxZ=Math.ceil((z+d+NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+ for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++){
+  if(navCircleHitsRect(ix/NAV_CELL_SCALE,iz/NAV_CELL_SCALE,x,z,w,d))set.add(navCellKey(ix,iz));
+ }
+}
+function buildNeighborObstacleSet(){
+ if(neighborObstacleCache&&neighborObstacleCache.revision===worldGeometryRevision)return neighborObstacleCache.cells;
+ const cells=new Set();
+ for(const b of world.blocks){
+  if(isPlantBlock(b)||b.type==='tile'||(b.type==='door'&&b.open)||b.y>=NAV_NEIGHBOR_HEIGHT||b.y+1<=0)continue;
+  markNeighborObstacleRect(cells,b.x,b.z,1,1);
+ }
+ for(const [cell,depth] of groundDepths){if(depth>0){const [x,z]=cell.split(',').map(Number);markNeighborObstacleRect(cells,x,z,1,1);}}
+ // The three village cottages are drawn scenery, so include their actual wall segments here.
+ const houses=[[-13,-7],[10,-17],[16,-9]];
+ for(const [x,z] of houses){
+  markNeighborObstacleRect(cells,x,z,4.3,.18);
+  markNeighborObstacleRect(cells,x,z+.18,.18,3.95);
+  markNeighborObstacleRect(cells,x+4.12,z+.18,.18,3.95);
+  markNeighborObstacleRect(cells,x,z+4.12,1.58,.18);
+  markNeighborObstacleRect(cells,x+2.50,z+4.12,1.80,.18);
+ }
+ neighborObstacleCache={revision:worldGeometryRevision,cells};
+ return cells;
+}
+function nearestOpenNeighborCell(ix,iz,cells,minX,maxX,minZ,maxZ){
+ if(!cells.has(navCellKey(ix,iz)))return {x:ix,z:iz};
+ for(let radius=1;radius<=20;radius++)for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+  if(Math.max(Math.abs(dx),Math.abs(dz))!==radius)continue;
+  const x=ix+dx,z=iz+dz;
+  if(x<minX||x>maxX||z<minZ||z>maxZ||cells.has(navCellKey(x,z)))continue;
+  return {x,z};
+ }
+ return null;
+}
+function findNeighborPath(start,end){
+ const key=worldGeometryRevision+'|'+start.x.toFixed(2)+','+start.z.toFixed(2)+'>'+end.x.toFixed(2)+','+end.z.toFixed(2);
+ const cached=neighborPathCache.get(key);if(cached)return cached;
+ const cells=buildNeighborObstacleSet();
+ let sx=Math.round(start.x*NAV_CELL_SCALE),sz=Math.round(start.z*NAV_CELL_SCALE);
+ let gx=Math.round(end.x*NAV_CELL_SCALE),gz=Math.round(end.z*NAV_CELL_SCALE);
+ const margin=24,minX=Math.max(-WORLD_LIMIT*NAV_CELL_SCALE,Math.min(sx,gx)-margin),maxX=Math.min(WORLD_LIMIT*NAV_CELL_SCALE,Math.max(sx,gx)+margin);
+ const minZ=Math.max(-WORLD_LIMIT*NAV_CELL_SCALE,Math.min(sz,gz)-margin),maxZ=Math.min(WORLD_LIMIT*NAV_CELL_SCALE,Math.max(sz,gz)+margin);
+ const originalStartFree=!cells.has(navCellKey(sx,sz)),originalEndFree=!cells.has(navCellKey(gx,gz));
+ const openStart=nearestOpenNeighborCell(sx,sz,cells,minX,maxX,minZ,maxZ);
+ const openGoal=nearestOpenNeighborCell(gx,gz,cells,minX,maxX,minZ,maxZ);
+ if(!openStart||!openGoal){const stuck=[{x:start.x,z:start.z}];neighborPathCache.set(key,stuck);return stuck;}
+ sx=openStart.x;sz=openStart.z;gx=openGoal.x;gz=openGoal.z;
+ const directSteps=Math.max(1,Math.ceil(Math.hypot(end.x-start.x,end.z-start.z)*4));
+ let clear=true;
+ for(let i=0;i<=directSteps;i++){
+  const t=i/directSteps,ix=Math.round((start.x+(end.x-start.x)*t)*NAV_CELL_SCALE),iz=Math.round((start.z+(end.z-start.z)*t)*NAV_CELL_SCALE);
+  if(cells.has(navCellKey(ix,iz))){clear=false;break;}
+ }
+ if(clear&&originalStartFree&&originalEndFree){
+  const direct=[{x:start.x,z:start.z},{x:end.x,z:end.z}];neighborPathCache.set(key,direct);return direct;
+ }
+ const width=maxZ-minZ+1,total=(maxX-minX+1)*width,indexOf=(x,z)=>(x-minX)*width+(z-minZ);
+ const startIndex=indexOf(sx,sz),goalIndex=indexOf(gx,gz),parent=new Int32Array(total);parent.fill(-1);
+ const seen=new Uint8Array(total),queue=new Int32Array(total);
+ let head=0,tail=0,found=startIndex===goalIndex;queue[tail++]=startIndex;seen[startIndex]=1;
+ while(head<tail&&!found&&tail<total){
+  const current=queue[head++],cx=Math.floor(current/width)+minX,cz=current%width+minZ;
+  for(const [dx,dz] of NAV_STEPS){
+   const nx=cx+dx,nz=cz+dz;
+   if(nx<minX||nx>maxX||nz<minZ||nz>maxZ||cells.has(navCellKey(nx,nz)))continue;
+   if(dx&&dz&&(cells.has(navCellKey(cx+dx,cz))||cells.has(navCellKey(cx,cz+dz))))continue;
+   const next=indexOf(nx,nz);if(seen[next])continue;
+   seen[next]=1;parent[next]=current;queue[tail++]=next;
+   if(next===goalIndex){found=true;break;}
+  }
+ }
+ if(!found){const stuck=[{x:originalStartFree?start.x:sx/NAV_CELL_SCALE,z:originalStartFree?start.z:sz/NAV_CELL_SCALE}];neighborPathCache.set(key,stuck);return stuck;}
+ const reverse=[];let cursor=goalIndex;
+ while(cursor!==-1){reverse.push({x:(Math.floor(cursor/width)+minX)/NAV_CELL_SCALE,z:(cursor%width+minZ)/NAV_CELL_SCALE});if(cursor===startIndex)break;cursor=parent[cursor];}
+ reverse.reverse();
+ const path=[],first=originalStartFree?{x:start.x,z:start.z}:reverse[0];path.push(first);
+ for(const point of reverse){const last=path[path.length-1];if(Math.hypot(point.x-last.x,point.z-last.z)>.04)path.push(point);}
+ const last=path[path.length-1],destination=originalEndFree?{x:end.x,z:end.z}:reverse[reverse.length-1];
+ if(Math.hypot(destination.x-last.x,destination.z-last.z)>.04)path.push(destination);
+ neighborPathCache.set(key,path);return path;
+}
+function neighborPathLength(path){
+ let length=0;for(let i=1;i<path.length;i++)length+=Math.hypot(path[i].x-path[i-1].x,path[i].z-path[i-1].z);return length;
+}
+const neighborRouteSegmentsCache=new WeakMap();
+function getNeighborRouteSegments(route,speed){
+ let cached=neighborRouteSegmentsCache.get(route);
+ if(cached&&cached.revision===worldGeometryRevision&&cached.speed===speed)return cached;
+ const segments=route.map((point,i)=>{
+  const next=route[(i+1)%route.length],path=findNeighborPath(point,next),length=neighborPathLength(path);
+  return {point,next,path,length,travel:Math.max(1.8,length/speed),pause:point.pause||1};
+ });
+ cached={revision:worldGeometryRevision,speed,segments,cycle:segments.reduce((sum,segment)=>sum+segment.pause+segment.travel,0)};
+ neighborRouteSegmentsCache.set(route,cached);
+ return cached;
+}
+function neighborOnRoute(route,tick,phase,speed=1.05){
+ const {segments,cycle}=getNeighborRouteSegments(route,speed);
+ let time=((tick+phase)%cycle+cycle)%cycle;
+ for(const segment of segments){
+  const path=segment.path,first=path[0]||segment.point,second=path[1]||segment.next;
+  const initialFacing=Math.atan2(second.x-first.x,second.z-first.z);
+  if(time<segment.pause)return {...segment.point,x:first.x,z:first.z,facing:initialFacing,moving:false,walk:0};
+  time-=segment.pause;
+  if(time<segment.travel&&segment.length>.001){
+   const raw=Math.max(0,Math.min(1,time/segment.travel)),progress=raw*raw*(3-2*raw);
+   let distance=progress*segment.length;
+   for(let i=1;i<path.length;i++){
+    const a=path[i-1],b=path[i],dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz);
+    if(distance<=length||i===path.length-1){
+     const ratio=length?Math.min(1,distance/length):0;
+     return {x:a.x+dx*ratio,z:a.z+dz*ratio,facing:Math.atan2(dx,dz),moving:true,walk:Math.sin(time*8+phase),activity:''};
+    }
+    distance-=length;
+   }
+  }
+  time-=segment.travel;
+ }
+ const first=segments[0]?.path[0]||route[0];
+ return {...route[0],x:first.x,z:first.z,facing:0,moving:false,walk:0};
+}
+const FAMILY_ROUTES={
+ dad:[
+  {x:14,z:-4.8,pause:1.4,activity:'👋'},
+  {x:14,z:-1.4,pause:2.0,activity:'🌳'},
+  {x:17,z:-.8,pause:1.0,activity:'☀️'},
+  {x:19.5,z:-2.0,pause:1.8,activity:'🏡'},
+  {x:17,z:-3.3,pause:1.1,activity:'🌼'}
+ ],
+ mom:[
+  {x:22,z:-4.4,pause:2.4,activity:'🌸'},
+  {x:23.5,z:-1.8,pause:2.1,activity:'🌷'},
+  {x:20.8,z:-.5,pause:2.8,activity:'☀️'},
+  {x:19.8,z:-2.5,pause:2.0,activity:'🏡'}
+ ],
+ lia:[
+  {x:15.2,z:-1.1,pause:1.4,activity:'🦋'},
+  {x:16.5,z:-.4,pause:1.0,activity:'🌼'},
+  {x:17.3,z:-1.7,pause:1.2,activity:'🌷'},
+  {x:16.2,z:-2.7,pause:1.0,activity:'💐'}
+ ],
+ maya:[
+  {x:19.2,z:-1.2,pause:1.1,activity:'🌻'},
+  {x:21.4,z:-.8,pause:1.5,activity:'🐾'},
+  {x:22.3,z:-2.2,pause:1.0,activity:'🌺'},
+  {x:20.4,z:-3.2,pause:1.3,activity:'🌿'}
+ ],
+ nico:[
+  {x:13.2,z:-7.7,pause:.7,activity:'🏃'},
+  {x:13.6,z:-5.5,pause:.6,activity:'🐕'},
+  {x:14.8,z:-3.9,pause:.9,activity:'⚽'},
+  {x:13.7,z:-2.5,pause:.6,activity:'🌳'},
+  {x:12.8,z:-4.7,pause:.8,activity:'🏃'}
+ ]
+};
+const NEIGHBOR_SLEEP_SPOTS={
+ hyacinth:{x:-10.85,z:-4.85,facing:Math.PI/2},
+ theo:{x:12.15,z:-14.85,facing:Math.PI/2},
+ dad:{x:17.0,z:-7.9,facing:Math.PI/2},
+ mom:{x:19.1,z:-7.9,facing:Math.PI/2},
+ lia:{x:17.0,z:-6.2,facing:Math.PI/2},
+ maya:{x:19.1,z:-6.2,facing:Math.PI/2},
+ nico:{x:18.1,z:-8.35,facing:Math.PI/2}
+};
+function familyMembers(t,night=false){
+ const people=[
+  {id:'dad',name:'Miguel',route:FAMILY_ROUTES.dad,speed:1.12,pace:7.2,phase:1.5,scale:1.10,shirt:'#477b9a',hair:'#392b24',skin:'#c9916d',pants:'#40516c',shoes:'#493b35',eyes:'#302820',hairStyle:'short',outfitStyle:'tee',accessory:'none'},
+  {id:'mom',name:'Ana',route:FAMILY_ROUTES.mom,speed:.92,pace:6.8,phase:8.2,scale:1.02,shirt:'#bd7896',hair:'#493127',skin:'#edc19e',pants:'#557c65',shoes:'#88516c',eyes:'#302820',hairStyle:'long',outfitStyle:'dress',accessory:'flower',accessoryColor:'#f2c768'},
+  {id:'lia',name:'Lia',route:FAMILY_ROUTES.lia,speed:1.42,pace:10.2,phase:3.4,scale:.78,shirt:'#e58eaa',hair:'#57372b',skin:'#f0c9a9',pants:'#83a86c',shoes:'#c75e7c',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'dress',accessory:'bow',accessoryColor:'#f4c4d5'},
+  {id:'maya',name:'Maya',route:FAMILY_ROUTES.maya,speed:1.30,pace:9.6,phase:12.7,scale:.75,shirt:'#e6bb58',hair:'#3f3028',skin:'#e8b995',pants:'#5593a0',shoes:'#b87845',eyes:'#302820',hairStyle:'bob',outfitStyle:'overalls',accessory:'flower',accessoryColor:'#f28cae'},
+  {id:'nico',name:'Nico',route:FAMILY_ROUTES.nico,speed:1.68,pace:11.4,phase:5.9,scale:.82,shirt:'#6d9b70',hair:'#382921',skin:'#dba77f',pants:'#526d8c',shoes:'#5d4b3e',eyes:'#302820',hairStyle:'curly',outfitStyle:'hoodie',accessory:'none'}
+ ];
+ return people.map(p=>({
+  ...p,
+  ...(night?{...NEIGHBOR_SLEEP_SPOTS[p.id],sleeping:true,moving:false,walk:0}:neighborOnRoute(p.route,t,p.phase,p.speed)),
+  activity:undefined,homeX:16,homeZ:-9
+ }));
+}
+function currentNeighbors(t=performance.now()/1000,night=getTimePalette(t).mode==='night'){
+ const hyacinth=night?{...NEIGHBOR_SLEEP_SPOTS.hyacinth,sleeping:true,moving:false,walk:0}:neighborOnRoute(NEIGHBOR_ROUTES.hyacinth,t,0);
+ const theo=night?{...NEIGHBOR_SLEEP_SPOTS.theo,sleeping:true,moving:false,walk:0}:neighborOnRoute(NEIGHBOR_ROUTES.theo,t,11);
+ return [
+  {id:'hyacinth',name:'hyacinth',...hyacinth,phase:0,shirt:'#d94b3d',hair:'#493127',skin:'#f0c7a3',pants:'#287b8a',shoes:'#bd4540',eyes:'#302820',hairStyle:'bob',outfitStyle:'hoodie',accessory:'none',homeX:-13,homeZ:-7},
+  {id:'theo',name:'Theo',...theo,phase:11,shirt:'#48a78b',hair:'#efbd43',skin:'#dfab83',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',accessoryColor:'#ec83ba',homeX:10,homeZ:-17},
+  ...familyMembers(t,night)
+ ];
+}
+function neighborAtScreen(px,py){
+ const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;
+ for(const n of currentNeighbors()){
+  if(n.sleeping)continue;
+  const facing=n.facing||0;
+  const p=project({x:n.x+Math.sin(facing)*.38,y:1.18,z:n.z+Math.cos(facing)*.38},cam,w,h);if(!p)continue;
+  const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=n;}
+ }
+ return hit;
+}
+function animalPositions(t=performance.now()/1000){
+ const stroll=(x,z,phase,rate=.28,rx=.58,rz=.40)=>({x:x+Math.sin(t*rate+phase)*rx,z:z+Math.cos(t*(rate*.82)+phase)*rz,
+  facing:Math.atan2(rate*Math.cos(t*rate+phase)*rx,-rate*.82*Math.sin(t*(rate*.82)+phase)*rz),moving:true,phase});
+ const residents=[
+  {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',...stroll(-2,-7,.2,.22,.42,.30)},
+  {id:'cat_mochi',name:'Mochi',species:'cat',emoji:'🐱',body:'#d8a66d',accent:'#f4e0c4',...stroll(3,-7,1.6,.25,.42,.30)},
+  {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐶',body:'#c98a4d',accent:'#f5dfbd',...stroll(-5,-5,2.8,.26,.48,.34)},
+  {id:'cow_bessie',name:'Bessie',species:'cow',emoji:'🐮',body:'#f5f2e9',accent:'#514b48',...stroll(8,-2.2,.5,.18,.52,.36)},
+  {id:'horse_spirit',name:'Spirit',species:'horse',emoji:'🐴',body:'#a65e37',accent:'#573a2c',...stroll(-6,-12,2.1,.24,.56,.36)},
+  {id:'bird_chirpy',name:'Chirpy',species:'bird',emoji:'🐦',body:'#75b9df',accent:'#f3bd54',...stroll(5,-10,4,.42,.34,.24)},
+  {id:'giraffe_raffy',name:'Raffy',species:'giraffe',emoji:'🦒',body:'#edbd59',accent:'#a96b32',...stroll(14,-14,1.8,.16,.48,.34)}
+ ];
+ const saved=Array.isArray(world.animals)?world.animals:[],ids=new Set(residents.map(a=>a.id));
+ for(const a of saved)if(a&&!ids.has(a.id)){residents.push({...a,emoji:({sheep:'🐑',cat:'🐱',dog:'🐶',cow:'🐮',horse:'🐴',bird:'🐦',giraffe:'🦒'})[a.species]||'🐾'});ids.add(a.id);}
+ return residents.map(a=>({...a,phase:Number.isFinite(a.phase)?a.phase:0}));
+}
+function animalAtScreen(px,py){
+ const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;
+ for(const a of animalPositions()){const p=project({x:a.x,y:a.species==='giraffe'?.8:.48,z:a.z},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=a;}}
+ return hit;
+}
+function pushAnimalSprite(queue,cam,w,h,a,tick){
+ const groundY=surfaceHeightAt(a.x,a.z),base=project({x:a.x,y:groundY,z:a.z},cam,w,h),unit=project({x:a.x,y:groundY+1,z:a.z},cam,w,h);
+ if(!base||!unit)return;
+ const scale=Math.max(4.5,Math.min(54,Math.hypot(base.x-unit.x,base.y-unit.y)));
+ if(base.x<-100||base.x>w+100||base.y<-160||base.y>h+100)return;
+ queue.push({animalSprite:{animal:a,tick,x:base.x,y:base.y,scale},depth:base.d});
+}
+function drawAnimalSprite(sprite){
+ const a=sprite.animal,t=sprite.tick,phase=a.phase||0,sp=a.species,bob=Math.abs(Math.sin(t*5.2+phase))*.018,stride=Math.sin(t*7.6+phase),wag=Math.sin(t*8+phase);
+ const body=a.body||({sheep:'#f5f0e6',cat:'#d8a66d',dog:'#c98a4d',cow:'#f5f2e9',horse:'#a65e37',bird:'#75b9df',giraffe:'#edbd59'})[sp]||'#d2a578';
+ const accent=a.accent||({sheep:'#786d62',cat:'#e8c48d',dog:'#f5dfbd',cow:'#514b48',horse:'#573a2c',bird:'#f3bd54',giraffe:'#a96b32'})[sp]||'#80634f';
+ ctx.save();ctx.translate(sprite.x,sprite.y);ctx.scale(sprite.scale,sprite.scale);ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=.028;
+ const oval=(x,y,rx,ry,color,stroke='#5d5146',width=.025)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}};
+ const strokePath=(draw,color,width=.10)=>{ctx.beginPath();draw();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();};
+ const triangle=(points,color,stroke='#5d5146')=>{ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.025;ctx.stroke();}};
+ const leg=(x,index,color='#6f5948',width=.11)=>{const lift=Math.max(0,Math.sin(t*8+phase+index*Math.PI/2))*.045,swing=stride*(index%2===0?1:-1)*.045;strokePath(()=>{ctx.moveTo(x,-.31-bob);ctx.quadraticCurveTo(x+swing,-.17-lift,x+swing,-.035-lift);},color,width);oval(x+swing,-.035-lift,width*.56,.035,color,null);};
+ ctx.fillStyle='rgba(39,49,35,.18)';ctx.beginPath();ctx.ellipse(0,-.015,.55,.105,0,0,Math.PI*2);ctx.fill();ctx.translate(0,-bob);
+ if(sp==='sheep'){
+  for(const x of [-.30,-.12,.08,.28])leg(x,Math.round((x+.4)*10),accent,.105);
+  oval(0,-.46,.57,.35,'#f7f3e9');for(const [x,y,r] of [[-.40,-.54,.20],[-.25,-.70,.20],[0,-.74,.21],[.26,-.68,.20],[.43,-.51,.19],[-.12,-.43,.22]])oval(x,y,r,r*.90,'#fffaf1','#d9d1c5',.018);
+  oval(.40,-.68,.22,.25,'#77716a');oval(.25,-.70,.11,.07,'#77716a');oval(.57,-.70,.11,.07,'#77716a');oval(.40,-.55,.055,.04,'#d98e91',null);oval(.34,-.73,.025,.032,'#282624',null);oval(.48,-.73,.025,.032,'#282624',null);
+ }else if(sp==='cat'){
+  for(const x of [-.24,-.05,.22,.38])leg(x,Math.round((x+.4)*10),body,.075);
+  strokePath(()=>{ctx.moveTo(-.42,-.43);ctx.bezierCurveTo(-.75,-.60,-.72,-.91,-.48,-.95);},body,.10);oval(.02,-.43,.48,.25,body);oval(.43,-.67,.23,.23,body);
+  triangle([[.27,-.78],[.30,-1.02],[.46,-.84]],body);triangle([[.48,-.84],[.66,-1.02],[.64,-.75]],body);triangle([[.32,-.84],[.34,-.94],[.41,-.85]],'#e9a4b6',null);triangle([[.54,-.85],[.62,-.94],[.61,-.80]],'#e9a4b6',null);
+  oval(.35,-.66,.027,.038,'#292622',null);oval(.51,-.66,.027,.038,'#292622',null);triangle([[.40,-.57],[.47,-.57],[.435,-.525]],'#d88991',null);strokePath(()=>{ctx.moveTo(.43,-.53);ctx.lineTo(.43,-.49);ctx.lineTo(.32,-.46);ctx.moveTo(.43,-.49);ctx.lineTo(.54,-.46);},'#5f5148',.018);
+ }else if(sp==='dog'){
+  for(const x of [-.26,-.08,.22,.40])leg(x,Math.round((x+.4)*10),accent,.105);
+  strokePath(()=>{ctx.moveTo(-.43,-.45);ctx.quadraticCurveTo(-.68,-.64,-.70-wag*.04,-.84);},body,.105);oval(.02,-.46,.52,.31,body);oval(.43,-.68,.25,.25,body);oval(.58,-.58,.19,.14,accent);
+  oval(.69,-.60,.065,.055,'#302824',null);oval(.39,-.69,.028,.035,'#292622',null);oval(.53,-.68,.028,.035,'#292622',null);oval(.23,-.72,.12,.22,body);oval(.60,-.73,.11,.20,body);
+  strokePath(()=>{ctx.moveTo(.18,-.38);ctx.quadraticCurveTo(.28,-.34,.38,-.38);},'#d85d62',.075);
+ }else if(sp==='cow'){
+  for(const x of [-.32,-.12,.22,.42])leg(x,Math.round((x+.4)*10),'#55504a',.12);
+  oval(0,-.48,.62,.37,'#faf8f2');oval(-.28,-.57,.19,.16,accent,null);oval(.20,-.37,.17,.18,accent,null);oval(.43,-.70,.27,.25,'#faf8f2');oval(.43,-.56,.18,.105,'#eaa4a0');
+  oval(.34,-.72,.028,.036,'#292622',null);oval(.53,-.72,.028,.036,'#292622',null);triangle([[.28,-.88],[.23,-1.02],[.36,-.91]],'#eee0bb');triangle([[.53,-.88],[.62,-1.02],[.61,-.89]],'#eee0bb');oval(.24,-.88,.075,.06,'#f0c29f');oval(.63,-.88,.075,.06,'#f0c29f');
+ }else if(sp==='horse'){
+  for(const x of [-.30,-.12,.23,.43])leg(x,Math.round((x+.4)*10),'#45352f',.095);oval(-.02,-.46,.57,.29,body);
+  ctx.beginPath();ctx.moveTo(.18,-.59);ctx.quadraticCurveTo(.40,-.91,.48,-1.10);ctx.quadraticCurveTo(.61,-1.18,.68,-1.02);ctx.lineTo(.48,-.53);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle='#5d4034';ctx.lineWidth=.025;ctx.stroke();
+  strokePath(()=>{ctx.moveTo(.28,-.73);ctx.quadraticCurveTo(.42,-.92,.38,-1.11);},accent,.10);oval(.55,-1.08,.19,.18,body);oval(.70,-1.02,.13,.09,'#e1b18c');oval(.60,-1.10,.022,.03,'#292622',null);
+  strokePath(()=>{ctx.moveTo(-.48,-.42);ctx.quadraticCurveTo(-.67,-.60,-.62-wag*.05,-.82);},accent,.12);
+ }else if(sp==='bird'){
+  const flap=Math.sin(t*18+phase)*.12;strokePath(()=>{ctx.moveTo(-.08,-.12);ctx.lineTo(-.10,-.015);ctx.moveTo(.10,-.12);ctx.lineTo(.12,-.015);},'#775b3c',.035);
+  oval(0,-.42,.29,.30,body);oval(.18,-.69,.21,.21,body);oval(.04,-.35,.16,.17,'#dcebf0','#a7c7d5',.018);
+  strokePath(()=>{ctx.moveTo(-.15,-.49);ctx.quadraticCurveTo(-.44,-.56-flap,-.30,-.27);},accent,.11);strokePath(()=>{ctx.moveTo(.13,-.50);ctx.quadraticCurveTo(.42,-.56+flap,.30,-.28);},accent,.11);
+  triangle([[.34,-.68],[.56,-.63],[.34,-.58]],'#f2ae42',null);oval(.23,-.73,.025,.03,'#292622',null);
+ }else if(sp==='giraffe'){
+  for(const x of [-.30,-.12,.22,.40])leg(x,Math.round((x+.4)*10),'#8a5c32',.085);oval(-.06,-.43,.52,.28,body);
+  for(const [x,y] of [[-.30,-.43],[-.05,-.57],[.19,-.35]])oval(x,y,.09,.10,accent,null);
+  ctx.beginPath();ctx.moveTo(.18,-.55);ctx.quadraticCurveTo(.30,-.83,.42,-1.18);ctx.lineTo(.58,-1.17);ctx.quadraticCurveTo(.55,-.79,.45,-.52);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle='#806039';ctx.lineWidth=.025;ctx.stroke();
+  oval(.53,-1.24,.19,.19,body);oval(.40,-1.39,.035,.11,accent);oval(.63,-1.39,.035,.11,accent);oval(.59,-1.27,.022,.03,'#292622',null);oval(.68,-1.17,.10,.06,'#f0bd68');oval(.28,-.89,.075,.08,accent,null);oval(.38,-.72,.075,.08,accent,null);
+ }
+ ctx.restore();
+}
+
+function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
+ const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
+ const phase=Number.isFinite(n.phase)?n.phase:0;
+ const unitScale=Number.isFinite(n.scale)?n.scale:1;
+ const baseY=Number.isFinite(n.y)?n.y:0;
+ const pace=Number.isFinite(n.pace)?n.pace:8;
+ const activity=n.activity||'';
+ const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit';
+ const beat=tick*7+phase;
+ const walk=dancing?Math.sin(beat)*.8:n.moving?Math.sin(tick*pace+phase):0;
+ const legSwing=dancing?walk*.20:walk*.13;
+ const leftLift=dancing?Math.max(0,Math.sin(beat))*.16:n.moving?Math.max(0,Math.cos(tick*pace+phase))*.045:0;
+ const rightLift=dancing?Math.max(0,-Math.sin(beat))*.16:n.moving?Math.max(0,-Math.cos(tick*pace+phase))*.045:0;
+ const armSwing=working?Math.sin(tick*8+phase)*.15:dancing?Math.sin(beat)*.16:-legSwing*.72;
+ const workTap=working?Math.sin(tick*8+phase)*.055:0;
+ const shoe=n.shoes||'#665348',pants=n.pants||'#48617a';
+ const hairStyle=n.hairStyle||'short',outfit=n.outfitStyle||'hoodie';
+ const accessory=n.accessory||'none',accent=n.accessoryColor||'#f4a8bb';
+
+ // All x/z inputs below describe the CENTER of each piece.
+ // Convert that center to the lower corner expected by pushCube.
+ // This keeps the head, torso, limbs and accessories on one shared axis.
+ const cube=(dx,y,dz,color,sx,sy,sz)=>{
+  const centerX=n.x+dx*unitScale*c+dz*unitScale*s;
+  const centerZ=n.z-dx*unitScale*s+dz*unitScale*c;
+  pushCubeFacing(queue,cam,w,h,centerX-sx*unitScale/2,baseY+y*unitScale,centerZ-sz*unitScale/2,color,sx*unitScale,sy*unitScale,sz*unitScale,facing);
+ };
+
+ if(activity==='sleep'||activity==='transformer'||activity==='bed'){
+  const sleepCube=(dx,y,dz,color,sx,sy,sz)=>cube(dx,y+.18,dz,color,sx,sy,sz);
+  // The sleeper rests on the mattress, with a pillow and a soft quilt.
+  sleepCube(0,.34,-.12,n.shirt,.68,.36,1.08);
+  sleepCube(0,.57,.60,'#fffdf4',.76,.15,.66);
+  sleepCube(0,.64,.64,n.skin,.56,.48,.55);
+  sleepCube(0,.91,.64,n.hair,.62,.14,.58);
+  sleepCube(-.32,.27,-.66,pants,.23,.22,.45);
+  sleepCube(.32,.27,-.66,pants,.23,.22,.45);
+  sleepCube(-.32,.16,-.96,shoe,.29,.13,.25);
+  sleepCube(.32,.16,-.96,shoe,.29,.13,.25);
+  sleepCube(-.40,.42,.14,n.shirt,.20,.28,.65);
+  sleepCube(.40,.42,.14,n.shirt,.20,.28,.65);
+  sleepCube(0,.43,-.20,'#91b7c8',.78,.18,1.22);
+  sleepCube(0,.535,.30,'#d8e8ed',.78,.055,.16);
+  sleepCube(0,.48,-.78,'#91b7c8',.70,.12,.16);
+  return;
+ }
+
+ // Torso and outfit.
+ cube(0,(sitting?.66:.78)+bob,0,n.shirt,.70,.82,.46);
+ if(outfit==='hoodie'){
+  cube(0,1.13+bob,-.25,n.hair,.44,.20,.08);
+  cube(0,.57+bob,.245,shadeColor(n.shirt,.78),.34,.17,.035);
+  cube(-.12,.58+bob,.27,'#f2e5d4',.025,.07,.015);
+  cube(.12,.58+bob,.27,'#f2e5d4',.025,.07,.015);
+ }else if(outfit==='sweater'){
+  cube(0,.40+bob,.02,shadeColor(n.shirt,1.16),.58,.10,.035);
+  cube(-.25,.55+bob,.24,shadeColor(n.shirt,.82),.13,.12,.035);
+  cube(.25,.55+bob,.24,shadeColor(n.shirt,.82),.13,.12,.035);
+ }else if(outfit==='overalls'){
+  cube(0,.76+bob,.245,pants,.43,.57,.055);
+  cube(-.18,1.04+bob,.245,pants,.105,.30,.055);
+  cube(.18,1.04+bob,.245,pants,.105,.30,.055);
+  cube(0,.78+bob,.282,'#f0dda7',.12,.10,.025);
+ }else if(outfit==='dress'){
+  cube(0,.43+bob,.015,n.pants||n.shirt,.86,.48,.54);
+  cube(0,.22+bob,.025,shadeColor(n.shirt,.90),.74,.08,.55);
+ }else if(outfit==='tee'){
+  cube(-.22,.78+bob,.245,shadeColor(n.shirt,1.12),.12,.45,.035);
+  cube(.22,.78+bob,.245,shadeColor(n.shirt,1.12),.12,.45,.035);
+ }
+
+ // Legs and shoes change shape for a relaxed seated pose or a little dance.
+ if(sitting){
+  cube(-.19,.22+bob,.22,pants,.42,.24,.48);
+  cube(.19,.22+bob,.22,pants,.42,.24,.48);
+  cube(-.19,.10+bob,.48,shoe,.42,.14,.24);
+  cube(.19,.10+bob,.48,shoe,.42,.14,.24);
+ }else{
+  cube(-.18,.18+bob+leftLift,-.025+legSwing,pants,.25,.62,.30);
+  cube(.18,.18+bob+rightLift,-.025-legSwing,pants,.25,.62,.30);
+  cube(-.19,.025+bob+leftLift,.045+legSwing,shoe,.32,.16,.39);
+  cube(.19,.025+bob+rightLift,.045-legSwing,shoe,.32,.16,.39);
+ }
+
+ // Neck and centered head.
+ cube(0,1.35+bob,0,n.skin,.22,.20,.24);
+ cube(0,1.49+bob,0,n.skin,.60,.62,.56);
+
+ // Hair cap and hairstyle pieces.
+ cube(0,1.99+bob,-.025,n.hair,.64,.18,.60);
+ if(hairStyle==='bob'){
+  cube(-.30,1.25+bob,-.015,n.hair,.16,.60,.48);
+  cube(.30,1.25+bob,-.015,n.hair,.16,.60,.48);
+ }else if(hairStyle==='long'){
+  cube(-.30,.98+bob,-.035,n.hair,.15,.92,.42);
+  cube(.30,.98+bob,-.035,n.hair,.15,.92,.42);
+  cube(0,1.02+bob,-.285,n.hair,.52,.96,.12);
+ }else if(hairStyle==='ponytail'){
+  cube(.27,1.58+bob,-.32,n.hair,.24,.25,.24);
+  cube(.34,1.27+bob,-.40,n.hair,.20,.42,.20);
+ }else if(hairStyle==='pigtails'){
+  cube(-.39,1.47+bob,-.04,n.hair,.22,.30,.25);
+  cube(.39,1.47+bob,-.04,n.hair,.22,.30,.25);
+  cube(-.41,1.22+bob,-.075,n.hair,.19,.30,.20);
+  cube(.41,1.22+bob,-.075,n.hair,.19,.30,.20);
+ }else if(hairStyle==='curly'){
+  for(const [dx,dy,dz] of [[-.27,1.96,-.08],[-.14,2.05,-.08],[0,2.08,-.08],[.14,2.05,-.08],[.27,1.96,-.08],[-.33,1.80,-.07],[.33,1.80,-.07]]){
+   cube(dx,dy+bob,dz,n.hair,.20,.20,.20);
+  }
+ }else if(hairStyle==='buns'){
+  cube(-.32,2.00+bob,-.03,n.hair,.26,.25,.26);
+  cube(.32,2.00+bob,-.03,n.hair,.26,.25,.26);
+ }else{
+  cube(-.30,1.49+bob,-.035,n.hair,.14,.34,.40);
+  cube(.30,1.49+bob,-.035,n.hair,.14,.34,.40);
+ }
+
+ // Face and fringe are drawn as depth-sorted decals below. They stay attached
+ // to the head without tiny cubes being culled at oblique camera angles.
+
+ // Dancing raises both arms; working hands move in a small alternating rhythm.
+ const armHeight=dancing?1.38:working?.76:sitting?.68:.82;
+ const handHeight=dancing?1.68:working?.53:sitting?.43:.60;
+ cube(-.44,armHeight+bob+workTap,-.005+armSwing,n.shirt,.22,.56,.28);
+ cube(.44,armHeight+bob-workTap,-.005-armSwing,n.shirt,.22,.56,.28);
+ cube(-.44,handHeight+bob+workTap,.025+armSwing,n.skin,.20,.22,.22);
+ cube(.44,handHeight+bob-workTap,.025-armSwing,n.skin,.20,.22,.22);
+
+ // Accessories are centered and attached to the hairline or face.
+ if(accessory==='bow'){
+  cube(-.255,2.01+bob,.04,accent,.19,.12,.12);
+  cube(-.085,2.01+bob,.04,accent,.19,.12,.12);
+  cube(-.17,2.01+bob,.11,'#f7e8d0',.065,.08,.06);
+ }else if(accessory==='flower'){
+  cube(-.34,1.98+bob,.055,accent,.15,.15,.12);
+  cube(-.34,1.84+bob,.07,'#f6d36b',.07,.07,.06);
+ }else if(accessory==='glasses'){
+  cube(-.13,1.78+bob,.335,accent,.18,.11,.045);
+  cube(.13,1.78+bob,.335,accent,.18,.11,.045);
+  cube(0,1.78+bob,.355,accent,.07,.03,.025);
+ }else if(accessory==='cap'){
+  cube(0,2.04+bob,-.035,accent,.70,.13,.62);
+  cube(0,1.97+bob,.20,accent,.73,.055,.23);
+ }
+}
+function addCharacterFaceDetails(queue,cam,w,h,n,bob){
+ const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing),scale=Number.isFinite(n.scale)?n.scale:1;
+ const sleeping=n.activity==='sleep'||n.activity==='transformer'||n.activity==='bed';
+ const vx=cam.pos.x-n.x,vz=cam.pos.z-n.z,dist=Math.hypot(vx,vz)||1;
+ const front=(s*vx+c*vz)/dist;
+ // Keep the original face visible through normal turns; fade only as it turns away.
+ const alpha=Math.max(0,Math.min(1,(front+.05)/.15));
+ if(alpha<=0)return;
+ const point=(dx,y,dz)=>{
+  const v={x:n.x+dx*scale*c+dz*scale*s,y:(Number.isFinite(n.y)?n.y:0)+y*scale,z:n.z-dx*scale*s+dz*scale*c};
+  return project(v,cam,w,h);
+ };
+ // These flat front faces use the exact sizes and positions of the original
+ // little voxel details, but stay in the shared depth queue while the avatar moves.
+ const addPatch=(cx,baseY,frontZ,width,height,color)=>{
+  const pts=[
+   point(cx-width/2,baseY+height,frontZ),
+   point(cx+width/2,baseY+height,frontZ),
+   point(cx+width/2,baseY,frontZ),
+   point(cx-width/2,baseY,frontZ)
+  ];
+  if(pts.some(p=>!p))return;
+  const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length-.012;
+  queue.push({faceMark:'patch',pts,depth,color:shadeColor(color,.90),alpha,outline:true});
+ };
+ if(sleeping){
+  addPatch(0,1.00,.925,.40,.10,n.hair||'#493127');
+  addPatch(-.13,.74,.91,.07,.025,n.eyes||'#302820');
+  addPatch(.13,.74,.91,.07,.025,n.eyes||'#302820');
+  addPatch(0,.63,.91,.09,.025,'#9a6c5c');
+ }else{
+  addPatch(0,1.94+bob,.3525,.42,.13,n.hair||'#493127');
+  addPatch(-.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
+  addPatch(.13,1.78+bob,.3145,.065,.065,n.eyes||'#302820');
+  addPatch(0,1.66+bob,.319,.10,.025,'#9a6c5c');
+ }
+}
+function drawNeighborHome(queue,cam,w,h,x,z,wall,roof,door){pushCube(queue,cam,w,h,x,0,z, '#80654b',4.3,.16,4.3);pushCube(queue,cam,w,h,x,.16,z,wall,4.3,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x+3.25,.16,z+4.12,wall,1.05,2.25,.18);pushCube(queue,cam,w,h,x,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+4.12,.16,z+.18,wall,.18,2.25,3.95);pushCube(queue,cam,w,h,x+1.58,.16,z+4.02,door,.92,1.65,.20);pushCube(queue,cam,w,h,x+.52,1.05,z+4.03,'#a9dce8',.65,.58,.05);pushCube(queue,cam,w,h,x+3.12,1.05,z+4.03,'#a9dce8',.65,.58,.05);for(let row=0;row<3;row++){const inset=row*.42;pushCube(queue,cam,w,h,x+inset,2.36+row*.42,z-inset,roof,4.3-inset*2,.48,4.55+inset*2);}pushCube(queue,cam,w,h,x+1.5,2.9,z+4.34,'#e5d49b',1.05,.34,.12);pushCube(queue,cam,w,h,x+.15,.04,z+4.4,'#6b9857',.48,.24,.32);pushCube(queue,cam,w,h,x+3.6,.04,z+4.4,'#6b9857',.48,.24,.32);}
+function openAnimalCare(a){selectedAnimalId=a.id;selectedAnimalName=a.name||(a.id==='sheep'?'Pip the sheep':'Mochi');$('animalCareTitle').textContent=(a.emoji||'🐾')+' Care for '+selectedAnimalName;const count=world.animalCare?.[a.id]||0;$('animalCareNote').textContent=selectedAnimalName+' enjoys gentle care. Care activities together: '+count;$('animalCareFeedback').textContent=selectedAnimalName+' is happy to see you.';openShade('animalCareShade');}
+function careForAnimal(action){const info={snack:['🍎','A tasty snack. '+selectedAnimalName+' is happily nibbling!'],water:['💧','Fresh water. '+selectedAnimalName+' has had a lovely drink!'],brush:['✨','A gentle brush. '+selectedAnimalName+' looks extra fluffy!'],play:['💚','A little playtime. '+selectedAnimalName+' is happily playing!']}[action];if(!info)return;world.animalCare=world.animalCare||{};world.animalCare[selectedAnimalId]=Math.min(999,(world.animalCare[selectedAnimalId]||0)+1);animalCareFlashUntil=performance.now()+1900;animalCareFlashEmoji=info[0];$('animalCareFeedback').textContent=info[1];$('animalCareNote').textContent=selectedAnimalName+' has enjoyed '+world.animalCare[selectedAnimalId]+' caring moments with you.';save();showStatus(info[1]);}
+function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt'){const pts=vertices.map(v=>project(v,cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))return;const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;queue.push({pts,depth,color,outline:true,material});}
+function pushGroundSurface(queue,cam,w,h,color){
+ const radius=24,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),focal=Math.min(w,h)*.94,horizontalLimit=(w*.5+30)/focal;
+ const minX=Math.max(-WORLD_LIMIT,cx-radius),maxX=Math.min(WORLD_LIMIT-1,cx+radius);
+ const minZ=Math.max(-WORLD_LIMIT,cz-radius),maxZ=Math.min(WORLD_LIMIT-1,cz+radius);
+ for(let x=minX;x<=maxX;x++)for(let z=minZ;z<=maxZ;z++){
+  const dx=x+.5-cam.pos.x,dz=z+.5-cam.pos.z,forward=dx*sy-dz*cy;
+  const depth=forward*cp-cam.pos.y*sp;if(depth<=.12)continue;
+  const lateral=dx*cy+dz*sy;if(Math.abs(lateral)>depth*horizontalLimit+1.2)continue;
+  const up=-forward*sp-cam.pos.y*cp,screenY=h*.51-up*focal/depth,cellRadius=focal/depth*1.15;
+  if(screenY< -cellRadius-24||screenY>h+cellRadius+24)continue;
+  if(groundDepthAt(x,z)>0)continue;
+  const vertices=[{x,y:0,z},{x:x+1,y:0,z},{x:x+1,y:0,z:z+1},{x,y:0,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));
+  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
+  const left=Math.min(...pts.map(p=>p.x)),right=Math.max(...pts.map(p=>p.x));
+  const top=Math.min(...pts.map(p=>p.y)),bottom=Math.max(...pts.map(p=>p.y));
+  if(right< -24||left>w+24||bottom< -24||top>h+24)continue;
+  const underground=cam.pos.y<-.15;
+  const visibleColor=underground?'#76553d':color;
+  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:visibleColor,outline:false,material:underground?'dirt':'grass'});
+ }
+}
+function pushExcavationTerrain(queue,cam,w,h){
+ visitNearbyRenderChunks(excavationRenderChunks,cam,24,cell=>{
+  const depth=groundDepths.get(cell);if(depth<1)return;
+  const [x,z]=cell.split(',').map(Number);if(Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)return;
+  const floorY=-depth;
+ pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1}],'#775236','dirt');
+ const west=groundDepthAt(x-1,z),east=groundDepthAt(x+1,z),north=groundDepthAt(x,z-1),south=groundDepthAt(x,z+1);
+ if(west<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x,y:-west,z},{x,y:-west,z:z+1},{x,y:floorY,z:z+1}],'#98704b','dirt');
+ if(east<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x:x+1,y:-east,z:z+1},{x:x+1,y:-east,z},{x:x+1,y:floorY,z}],'#765034','dirt');
+ if(north<depth)pushTerrainFace(queue,cam,w,h,[{x,y:floorY,z},{x:x+1,y:floorY,z},{x:x+1,y:-north,z},{x,y:-north,z}],'#8c6543','dirt');
+ if(south<depth)pushTerrainFace(queue,cam,w,h,[{x:x+1,y:floorY,z:z+1},{x,y:floorY,z:z+1},{x,y:-south,z:z+1},{x:x+1,y:-south,z:z+1}],'#68482f','dirt');
+ });
+}
+function pushWaterSurfaces(queue,cam,w,h){
+ const visible=[];let minY=Infinity,maxY=-Infinity;
+ // One shared color field is built from the visible water area, not each cell.
+ visitNearbyRenderChunks(waterRenderChunks,cam,24,cell=>{
+  const [x,z]=cell.split(',').map(Number),depth=groundDepthAt(x,z),topY=waterTopAt(x,z);
+  if(depth<1||topY===null||Math.abs(x-cam.pos.x)>24||Math.abs(z-cam.pos.z)>24)return;
+  const topVertices=[{x,y:topY,z},{x:x+1,y:topY,z},{x:x+1,y:topY,z:z+1},{x,y:topY,z:z+1}];
+  const topPts=topVertices.map(v=>project(v,cam,w,h));if(topPts.some(p=>!p)||!projectedPolygonVisible(topPts,w,h,3))return;
+  for(const p of topPts){minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
+  visible.push({x,z,depth,topY,floorY:-depth,topPts});
+ });
+ if(!visible.length)return;
+ const span=Math.max(100,maxY-minY),gradientTop=minY-span*.08,gradientBottom=maxY+span*.08;
+ const surfaceGradient=ctx.createLinearGradient(0,gradientTop,0,gradientBottom);
+ surfaceGradient.addColorStop(0,'#a8f1ff');surfaceGradient.addColorStop(.42,'#55c5ed');surfaceGradient.addColorStop(1,'#0877b8');
+ const sideGradient=ctx.createLinearGradient(0,gradientTop,0,gradientBottom);
+ sideGradient.addColorStop(0,'#55c9ed');sideGradient.addColorStop(.48,'#168ec5');sideGradient.addColorStop(1,'#075184');
+ for(const item of visible){
+  const {x,z,depth,topY,floorY,topPts}=item;
+  const averageDepth=topPts.reduce((sum,p)=>sum+p.d,0)/topPts.length;
+  const wallCentreY=-depth/2,surfaceBehindRim=Math.max(0,-(topY-wallCentreY)*Math.sin(cam.pitch));
+  queue.push({pts:topPts,depth:averageDepth+surfaceBehindRim+.012,color:'#61cfee',alpha:.60,outline:false,waterSurface:true,waterGradient:surfaceGradient,waterX:x,waterZ:z});
+  // Neighbor culling: only the pool's exposed shoreline/step edges are drawn.
+  const topEdges=[{dx:0,dz:-1,a:0,b:1},{dx:1,dz:0,a:1,b:2},{dx:0,dz:1,a:2,b:3},{dx:-1,dz:0,a:3,b:0}];
+  for(const edge of topEdges){
+   const neighborTop=waterTopAt(x+edge.dx,z+edge.dz);
+   if(neighborTop!==null&&neighborTop>=topY-.001)continue;
+   const p=topPts[edge.a],q=topPts[edge.b];
+   queue.push({line:true,p,q,depth:(p.d+q.d)/2-.006,color:'rgba(232,251,255,.38)',width:.8,waterBoundary:true});
+  }
+  const sides=[
+   {dx:0,dz:-1,normal:[0,0,-1],verticesAt:(low,high)=>[{x,y:low,z},{x:x+1,y:low,z},{x:x+1,y:high,z},{x,y:high,z}]},
+   {dx:0,dz:1,normal:[0,0,1],verticesAt:(low,high)=>[{x:x+1,y:low,z:z+1},{x,y:low,z:z+1},{x,y:high,z:z+1},{x:x+1,y:high,z:z+1}]},
+   {dx:-1,dz:0,normal:[-1,0,0],verticesAt:(low,high)=>[{x,y:low,z:z+1},{x,y:low,z},{x,y:high,z},{x,y:high,z:z+1}]},
+   {dx:1,dz:0,normal:[1,0,0],verticesAt:(low,high)=>[{x:x+1,y:low,z},{x:x+1,y:low,z:z+1},{x:x+1,y:high,z:z+1},{x:x+1,y:high,z}]}
+  ];
+  for(const side of sides){
+   const neighborTop=waterTopAt(x+side.dx,z+side.dz);
+   if(neighborTop!==null&&neighborTop>=topY-.001)continue;
+   const exposedFrom=neighborTop===null?floorY:Math.max(floorY,neighborTop);
+   const viewX=cam.pos.x-(x+.5),viewZ=cam.pos.z-(z+.5);
+   if(side.normal[0]*viewX+side.normal[2]*viewZ<=0)continue;
+   const pts=side.verticesAt(exposedFrom,topY).map(v=>project(v,cam,w,h));
+   if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
+   const averageSideDepth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+   queue.push({pts,depth:averageSideDepth-.018,color:'#55c9eb',alpha:.37,outline:false,waterSide:true,waterGradient:sideGradient});
+  }
+ }
+}
+function paintWaterFace(poly,time){
+ const pts=poly.pts;if(!pts||pts.length!==4)return;
+ const minX=Math.min(...pts.map(p=>p.x))-3,maxX=Math.max(...pts.map(p=>p.x))+3;
+ const minY=Math.min(...pts.map(p=>p.y))-3,maxY=Math.max(...pts.map(p=>p.y))+3;
+ const waterX=poly.waterX??0,waterZ=poly.waterZ??0;
+ const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+ // Bilinear screen mapping keeps every ripple attached to its world-space
+ // position, including where the curve crosses into the neighboring cell.
+ const pointAt=(u,v)=>lerp(lerp(pts[0],pts[1],u),lerp(pts[3],pts[2],u),v);
+ ctx.save();
+ ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.clip();
+ const gradient=poly.waterGradient;
+ ctx.fillStyle=gradient||(poly.waterSurface?'#55c5ed':'#168ec5');
+ ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
+ if(poly.waterSurface){
+  // Cross-current A: broad, slow diagonal swells.
+  // Its phase is derived from absolute world X/Z, never from a tile-local seed.
+  const spacingA=2.9;
+  const firstA=Math.floor((waterZ+.35*waterX-.2)/spacingA)-1;
+  const lastA=Math.ceil((waterZ+1+.35*(waterX+1)+.2)/spacingA)+1;
+  ctx.save();ctx.lineWidth=1.05;ctx.lineCap='round';ctx.lineJoin='round';
+  for(let k=firstA;k<=lastA;k++){
+   ctx.beginPath();let started=false;
+   for(let s=0;s<=16;s++){
+    const u=s/16,worldX=waterX+u;
+    const worldZ=k*spacingA-.35*worldX-.15*Math.sin(worldX*.82-time*.00048+k*.7);
+    const p=pointAt(u,worldZ-waterZ);
+    if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
+   }
+   ctx.strokeStyle='rgba(239,253,255,.22)';ctx.stroke();
+  }
+  ctx.restore();
+  // Cross-current B: finer ripples travel in a different direction and speed.
+  // The curves intersect A to create a subtle interference-like water pattern.
+  const spacingB=3.35;
+  const firstB=Math.floor((waterX+.48*waterZ-.2)/spacingB)-1;
+  const lastB=Math.ceil((waterX+1+.48*(waterZ+1)+.2)/spacingB)+1;
+  ctx.save();ctx.lineWidth=.8;ctx.lineCap='round';ctx.lineJoin='round';
+  for(let k=firstB;k<=lastB;k++){
+   ctx.beginPath();let started=false;
+   for(let s=0;s<=16;s++){
+    const v=s/16,worldZ=waterZ+v;
+    const worldX=k*spacingB-.48*worldZ-.12*Math.sin(worldZ*.94+time*.00072+k*.55);
+    const p=pointAt(worldX-waterX,v);
+    if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
+   }
+   ctx.strokeStyle='rgba(176,237,255,.17)';ctx.stroke();
+  }
+  ctx.restore();
+  // Soft moving highlights add depth without drawing tile-shaped borders.
+  const glowPhase=time*.00038+waterX*.31+waterZ*.23;
+  const glowU=.5+Math.sin(glowPhase)*.25,glowV=.5+Math.cos(glowPhase*.83)*.22;
+  const glowPoint=pointAt(glowU,glowV);
+  const radius=Math.max(7,Math.min(20,(maxX-minX)*.18));
+  const glow=ctx.createRadialGradient(glowPoint.x,glowPoint.y,1,glowPoint.x,glowPoint.y,radius);
+  glow.addColorStop(0,'rgba(245,255,255,.16)');glow.addColorStop(1,'rgba(245,255,255,0)');
+  ctx.fillStyle=glow;ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
+ }
+ ctx.restore();
+}
+function pushFishOverlays(queue,cam,w,h){
+ const time=performance.now()/1000,colors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
+ visitNearbyRenderChunks(fishRenderChunks,cam,24,entry=>{
+  const fish=entry.fish,i=entry.index,depth=groundDepthAt(fish.x,fish.z),key=keyGround(fish.x,fish.z);
+  if(depth<1||!waterCells.has(key))return;
+  const phase=time*1.05+i*1.9,cx=fish.x+.5+Math.sin(phase)*.055,cz=fish.z+.5+Math.cos(phase*.8)*.055;
+  const angle=phase*.48,ca=Math.cos(angle),sa=Math.sin(angle),y=-depth+.59;
+  const point=(lx,lz)=>({x:cx+lx*ca-lz*sa,y,z:cz+lx*sa+lz*ca});
+  const silhouette=[
+   point(-.19,0),point(-.105,-.065),point(-.07,-.052),point(.01,-.078),
+   point(.135,-.05),point(.19,0),point(.135,.05),point(.01,.078),
+   point(-.07,.052),point(-.105,.065)
+  ];
+  const pts=silhouette.map(v=>project(v,cam,w,h));if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))return;
+  const d=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+  queue.push({pts,depth:d,color:colors[i%colors.length],outline:false});
+  const eye=project(point(.125,-.018),cam,w,h);
+  if(eye)queue.push({fishEye:true,x:eye.x,y:eye.y,depth:eye.d,radius:Math.max(.7,Math.min(2.1,10/eye.d))});
+ });
+}
+function drawPlayerBed(queue,cam,w,h,bed){
+ if(!bed||!Number.isFinite(bed.x)||!Number.isFinite(bed.z))return;
+ const x=bed.x,y=Number.isFinite(bed.y)?bed.y:0,z=bed.z,yaw=Number.isFinite(bed.yaw)?bed.yaw:0,c=Math.cos(yaw),s=Math.sin(yaw);
+ const piece=(dx,cy,dz,color,sx,sy,sz)=>{
+  const cx=x+dx*c+dz*s,cz=z-dx*s+dz*c;
+  pushCubeFacing(queue,cam,w,h,cx-sx/2,y+cy-sy/2,cz-sz/2,color,sx,sy,sz,yaw);
+ };
+ // The saved home bed remains visible even when the player is elsewhere.
+ piece(-.44,.11,-.83,'#795438',.14,.22,.14);piece(.44,.11,-.83,'#795438',.14,.22,.14);
+ piece(-.44,.11,.63,'#795438',.14,.22,.14);piece(.44,.11,.63,'#795438',.14,.22,.14);
+ piece(0,.15,-.10,'#795438',1.16,.18,2.02);
+ piece(0,.245,-.10,'#c89b68',1.12,.10,1.98);
+ piece(0,.32,-.10,'#f5f1e9',1.04,.14,1.90);
+ piece(0,.56,.88,'#795438',1.16,.82,.14);
+}
+function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.3),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
+ const tick=performance.now()/1000,palette=getTimePalette(tick),cam=cameraState(),polys=[];
+ const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+ // Celestial objects live on the world sky dome, not at fixed screen coordinates.
+ drawSkyDecorations(cam,w,h,palette);
+ // Draw the ground as camera-visible cells. A single world-sized polygon
+ // can have corners behind the camera, causing the entire floor to disappear.
+ pushGroundSurface(polys,cam,w,h,palette.ground);
+ pushExcavationTerrain(polys,cam,w,h);
+ pushWaterSurfaces(polys,cam,w,h);
+ // Keep the ground visually continuous. Perspective grid strokes were removed
+ // because they created a distracting horizontal line across the world view.
+ // Camera-independent 16×16 chunk meshes cache static cubes and floor tiles; only animated doors stay dynamic.
+ visitNearbyBlockChunkMeshes(cam,BLOCK_RENDER_RADIUS,mesh=>{
+  appendBlockChunkMesh(polys,mesh,cam,w,h);
+  for(const b of mesh.specials){
+   if(Math.abs(b.x-cam.pos.x)>BLOCK_RENDER_RADIUS||Math.abs(b.z-cam.pos.z)>BLOCK_RENDER_RADIUS)continue;
+   if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b);
+   else if(isPlantBlock(b))drawWindSwayingPlant(polys,cam,w,h,b,tick);
+  }
+ },w,h);
+ // The starter neighborhood is fixed in world space and only rendered nearby.
+ const neighbors=currentNeighbors(tick,palette.mode==='night');
+ const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
+ if(nearWorldPoint(-13,-7))drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
+ if(nearWorldPoint(10,-17))drawNeighborHome(polys,cam,w,h,10,-17,'#b9d4c6','#668f8b','#71594d');
+ if(nearWorldPoint(16,-9))drawNeighborHome(polys,cam,w,h,16,-9,'#e8d5b8','#b97870','#80604e');
+ // Residents remain on their neighborhood routes instead of following the explorer.
+ for(const n of neighbors){
+  if(n.sleeping||!nearWorldPoint(n.x,n.z,26))continue;
+  const walkPace=Number.isFinite(n.pace)?n.pace:8;
+  const bob=n.moving?Math.abs(Math.sin(tick*walkPace+n.phase))*.055:Math.sin(tick*1.7+n.phase)*.018;
+  drawNeighborFigure(polys,cam,w,h,n,bob,tick);
+  addCharacterFaceDetails(polys,cam,w,h,n,bob);
+ }
+ if(palette.mode==='night'){
+  const sleepHomes=[{x:-10.85,z:-4.85},{x:12.15,z:-14.85},{x:18.15,z:-6.85}];
+  for(const home of sleepHomes){
+   if(!nearWorldPoint(home.x,home.z,26))continue;
+   const hp=project({x:home.x,y:4.45,z:home.z},cam,w,h);
+   if(hp){ctx.save();ctx.font='bold 23px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText('Zzz',hp.x,hp.y);ctx.fillStyle='#425d78';ctx.fillText('Zzz',hp.x,hp.y);ctx.font='21px system-ui';ctx.fillText('💤',hp.x+22,hp.y-19);ctx.restore();}
+  }
+ }
+ // Rounded, friendly animal characters replace the old cuboid animals.
+ const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,26));
+ for(const animal of animals)pushAnimalSprite(polys,cam,w,h,animal,tick);
+ drawPlayerBed(polys,cam,w,h,world.player.bed);
+ const restPlayer=world.player;
+ if(shouldDrawTemporaryRestBed(playerActivity,restPlayer.bed,restPlayer.x,restPlayer.z)){
+  drawPlayerBed(polys,cam,w,h,{x:restPlayer.x,y:surfaceHeightAt(restPlayer.x,restPlayer.z,restPlayer.y),z:restPlayer.z,yaw:restPlayer.yaw});
+ }
+
+ // Third-person avatar; activities automatically switch to this view so the player can see their pose.
+ if(cameraMode==='third'){
+  const p=world.player,pc={id:'player',shirt:p.shirt,hair:p.hair,skin:p.skin,pants:p.pants,shoes:p.shoes,eyes:p.eyes,hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,x:p.x,y:p.y,z:p.z,facing:p.yaw,phase:0,moving:false,activity:playerActivity};
+  const playerBob=playerActivity==='dance'?Math.abs(Math.sin(tick*7))*.11:playerActivity==='work'?Math.sin(tick*8)*.025:0;
+  drawNeighborFigure(polys,cam,w,h,pc,playerBob,tick);addCharacterFaceDetails(polys,cam,w,h,pc,playerBob);
+  const activityIcons={sleep:'💤',transformer:'😂',bed:'💤',sit:'🪑',work:'🛠️',dance:'💃'};
+  if(playerActivity){
+   const sleepingActivity=playerActivity==='sleep'||playerActivity==='transformer'||playerActivity==='bed';
+   const marker=project({x:p.x,y:p.y+(sleepingActivity?1.53:2.55),z:p.z},cam,w,h);
+   if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
+  }
+ }
+ // Fish are world geometry now, so ground, walls, and blocks can occlude them.
+ pushFishOverlays(polys,cam,w,h);
+ polys.sort((a,b)=>b.depth-a.depth);
+ for(const poly of polys){
+  if(poly.faceMark==='plant'){
+   const image=poly.plantTexture||textureTiles.get(poly.material);
+   if(image){ctx.save();ctx.globalAlpha=poly.alpha??.98;paintMappedQuad(image,poly.pts,1);ctx.restore();}
+   continue;
+  }
+  if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}
+   if(poly.faceMark){
+   ctx.save();ctx.globalAlpha=poly.alpha??1;
+   ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
+   ctx.fillStyle=poly.color;ctx.fill();
+   if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
+   ctx.restore();continue;
+  }
+  if(poly.line){ctx.strokeStyle=poly.color;ctx.lineWidth=poly.width;ctx.beginPath();ctx.moveTo(poly.p.x,poly.p.y);ctx.lineTo(poly.q.x,poly.q.y);ctx.stroke();continue;}
+  if(poly.fishEye){ctx.save();ctx.fillStyle='#fffdf4';ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#243c37';ctx.beginPath();ctx.arc(poly.x,poly.y,poly.radius*.52,0,Math.PI*2);ctx.fill();ctx.restore();continue;}
+  const isWaterFace=poly.waterSurface||poly.waterSide,translucent=poly.alpha!==undefined;
+  if(translucent&&!isWaterFace){ctx.save();ctx.globalAlpha=poly.alpha;}
+  ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
+  if(isWaterFace){ctx.save();ctx.globalAlpha=(poly.alpha??1)*(.96+Math.sin(performance.now()*.0018)*.025);paintWaterFace(poly,performance.now());ctx.restore();}
+  else{ctx.fillStyle=poly.color;ctx.fill();if(poly.tileTexture)paintTileTexture(poly);else if(poly.material)paintTexture(poly);}
+  if(poly.outline){ctx.strokeStyle='#31453233';ctx.lineWidth=.7;ctx.stroke();}
+  
+  if(translucent&&!isWaterFace)ctx.restore();
+ }
+ if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
+ for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
+ if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.22,y:a.species==='giraffe'?1.65:1.12,z:a.z},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
+ // Home labels disappear with their anchored homes at a distance.
+ for(const n of neighbors.filter(v=>(v.id==='hyacinth'||v.id==='theo')&&nearWorldPoint(v.homeX,v.homeZ,26))){const hp=project({x:n.homeX+2.1,y:3.55,z:n.homeZ+4.55},cam,w,h);if(hp){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(n.name+"'s home",hp.x,hp.y);ctx.fillStyle='#35533e';ctx.fillText(n.name+"'s home",hp.x,hp.y);ctx.restore();}}
+ if(nearWorldPoint(18.1,-4.65,26)){const familySign=project({x:18.1,y:3.55,z:-4.65},cam,w,h);if(familySign){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText("The Pagibig Family",familySign.x,familySign.y);ctx.fillStyle='#35533e';ctx.fillText("The Pagibig Family",familySign.x,familySign.y);ctx.restore();}}
+}
+function traceWorldRay(cam,dir,maxDistance,step){
+ let prev=null,prevInGround=false,prevInWater=false,prevY=null;
+ for(let t=.16;t<maxDistance;t+=step){
+  const x=cam.pos.x+dir.x*t,y=cam.pos.y+dir.y*t,z=cam.pos.z+dir.z*t,ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z);
+  if(Math.abs(ix)<=WORLD_LIMIT&&Math.abs(iz)<=WORLD_LIMIT){
+   const b=blockLookup.get(keyBlock(ix,iy,iz));
+   if(b)return {block:b,place:prev||{x:ix,y:Math.max(-MAX_DIG_DEPTH,iy+1),z:iz}};
+   const floorY=-groundDepthAt(ix,iz),topY=waterTopAt(ix,iz);
+   const inWater=topY!==null&&y>floorY+.015&&y<topY-.015;
+   const enteredThroughTop=dir.y<-.03&&prevY!==null&&prevY>=topY-.015;
+   if(inWater&&!prevInWater&&enteredThroughTop)return {water:true,x:ix,z:iz,hitY:y};
+   prevInWater=inWater;
+   const inGround=y<floorY-.025;
+   if(inGround&&!prevInGround)return {ground:true,x:ix,z:iz,hitY:y,place:{x:ix,y:floorY,z:iz}};
+   prevInGround=inGround;prev={x:ix,y:iy,z:iz};prevY=y;
+  }else{prevInGround=false;prevInWater=false;prev=null;prevY=null;}
+ }
+ return null;
+}
+function rayHit(){const cam=cameraState(),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),dir={x:sy*cp,y:sp,z:-cy*cp};return traceWorldRay(cam,dir,24,.06);}
+function rayHitAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight,focal=Math.min(w,h)*.94;if(!w||!h)return rayHit();const rx=(px-w/2)/focal,uy=(h*.51-py)/focal,sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch);let dir={x:sy*cp+cy*rx-sy*sp*uy,y:sp+cp*uy,z:-cy*cp+sy*rx+cy*sp*uy};const len=Math.hypot(dir.x,dir.y,dir.z)||1;dir={x:dir.x/len,y:dir.y/len,z:dir.z/len};const hit=traceWorldRay(cam,dir,28,.045);if(hit)return hit;const t=dir.y<-.02?(0.06-cam.pos.y)/dir.y:8;const x=cam.pos.x+dir.x*Math.max(2,Math.min(22,t)),y=cam.pos.y+dir.y*Math.max(2,Math.min(22,t)),z=cam.pos.z+dir.z*Math.max(2,Math.min(22,t));return {place:{x:Math.floor(x),y:Math.max(-MAX_DIG_DEPTH,Math.floor(y)),z:Math.floor(z)}};}
+function buildAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){if(!hit){showStatus('Tap a place in the world to build.');return;}let p=hit.place;if(hit.block&&(!p||solid(p.x,p.y,p.z)))p={x:hit.block.x,y:hit.block.y+1,z:hit.block.z};if(addBlock(p.x,p.y,p.z,selected)){showStatus(selected==='door'?'Door built! Tap it to open or close it.':(blockMap.get(selected)?.name||'Block')+' placed where you tapped.');render();}else showStatus(selected==='door'?'A door needs two clear spaces, one above the other.':'That space is occupied or outside the safe building area.');}
+function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){
+ if(selected==='water'){waterAtScreen(px,py,hit);return;}
+ if(hit&&hit.ground&&groundDepthAt(hit.x,hit.z)>0){fillAtScreen(px,py,hit);return;}
+ buildAtScreen(px,py,hit);
+}
+function build(){buildOrFillAtScreen();}
+function erase(){const hit=rayHit();if(!hit||!hit.block){showStatus('Aim at a block you placed to remove it.');return;}if(removeBlock(hit.block.x,hit.block.y,hit.block.z)){showStatus('Block removed.');render();}}
+const PROTECTED_NEIGHBOR_HOMES=[{x:-13,z:-7},{x:10,z:-17},{x:16,z:-9}];
+function isProtectedDigCell(x,z){
+ const cx=Math.floor(x)+.5,cz=Math.floor(z)+.5;
+ for(const home of PROTECTED_NEIGHBOR_HOMES){if(cx>=home.x-.75&&cx<=home.x+5.05&&cz>=home.z-.75&&cz<=home.z+5.05)return true;}
+ const tick=performance.now()/1000,night=getTimePalette(tick).mode==='night';
+ for(const n of currentNeighbors(tick,night)){if(Math.hypot(cx-n.x,cz-n.z)<1.05)return true;}
+ for(const animal of animalPositions(tick)){if(Math.hypot(cx-animal.x,cz-animal.z)<.7)return true;}
+ return false;
+}
+function canStoreItem(id,target='materials'){const slots=world[target]||[];return slots.some(item=>item&&item.id===id&&item.count<99)||slots.some(item=>!item);}
+function blockDropItem(block){if(block.type==='door')return 'wood';return ITEM_META[block.type]?block.type:'stone';}
+function collectWaterLayer(x,z){
+ const key=keyGround(x,z),level=waterLevelAt(x,z);
+ if(level<1)return false;
+ if(!addBucketItem({type:'water'})){showStatus('Your Material Bucket is full.');return false;}
+ if(level>1){waterLevels.set(key,level-1);}
+ else{
+  waterLevels.delete(key);waterCells.delete(key);removeRenderChunkItem(waterRenderChunks,x,z,key);
+  fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);rebuildFishRenderChunks();
+ }
+ syncWaterLife();save();render();
+ showStatus(level>1?'Top water layer collected into your Material Bucket.':'Last water layer collected into your Material Bucket.');
+ return true;
+}
+function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){
+ if(hit&&hit.water){if(isProtectedDigCell(hit.x,hit.z)){showStatus('This patch is protected for the neighbors and their homes.');return;}collectWaterLayer(hit.x,hit.z);return;}
+ if(hit&&hit.block){const block=hit.block,itemId=blockDropItem(block);
+  if(isProtectedDigCell(block.x,block.z)){showStatus('That block is too close to a neighbor or animal. Their homes and little friends are protected!');return;}
+  if(!canStoreItem(itemId,'materials')){showStatus('Your materials pouch is full. Make room before digging.');return;}
+  if(removeBlock(block.x,block.y,block.z)){addItem(itemId,'materials');save();render();showStatus('Dug '+(ITEM_META[block.type]?.name||'block')+' · recovered in your Material Bucket.');}
+  return;
+ }
+ if(hit&&hit.ground){const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
+  if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
+  if(waterCells.has(key)){collectWaterLayer(x,z);return;}
+  if(depth>=MAX_DIG_DEPTH){showStatus('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');return;}
+  if(!groundDepths.has(key)&&groundDepths.size>=GROUND_DIG_LIMIT){showStatus('This world has reached its safe excavation limit.');return;}
+  if(!canStoreItem('dirt','materials')){showStatus('Your resources pouch is full. Make room before digging.');return;}
+  if(!addBucketItem({type:'dirt'})){showStatus('Your Material Bucket is full.');return;}
+  const newDepth=depth+1;
+  if(newDepth<=depth){showStatus('The ground is already at its safe digging depth.');return;}
+  if(!groundDepths.has(key))addRenderChunkItem(excavationRenderChunks,x,z,key);
+  groundDepths.set(key,newDepth);syncExcavations();addItem('dirt','materials');invalidateNeighborNavigation();save();render();showStatus('Ground excavated · Dirt recovered in your Material Bucket.');return;
+ }
+ showStatus('Aim the shovel at a block or a patch of ground, then tap to dig.');
+}
+function fillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){if(!hit||!hit.ground){showStatus('Aim at the floor of a hole to fill it.');return;}
+ const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
+ if(depth<=0){showStatus('That ground is already at its original level.');return;}
+ if(selected==='door'){showStatus('Choose a solid building block to fill a hole.');return;}
+ if(world.blocks.length+depth>MAX_BLOCKS){showStatus('Not enough building space available.');return;}
+ for(let y=-depth;y<0;y++){
+  if(!addBlock(x,y,z,selected,false)){showStatus('Could not place the selected block in this hole.');return;}
+ }
+ groundDepths.delete(key);removeRenderChunkItem(excavationRenderChunks,x,z,key);
+ waterLevels.delete(key);waterCells.delete(key);removeRenderChunkItem(waterRenderChunks,x,z,key);
+ fishSpots=fishSpots.filter(f=>keyGround(f.x,f.z)!==key);rebuildFishRenderChunks();
+ syncExcavations();syncWaterLife();invalidateNeighborNavigation();save();render();
+ showStatus('Hole filled with '+(blockMap.get(selected)?.name||'Custom')+'.');
+}
+function waterAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){
+ if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a dug pool floor or the surface of existing water.');return;}
+ const x=hit.x,z=hit.z,key=keyGround(x,z),depth=groundDepthAt(x,z);
+ if(depth<=0){showStatus('Dig a pool cell first, then add water.');return;}
+ if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
+ const level=waterLevelAt(x,z);
+ if(level>=depth){showStatus('This pool cell is full to the rim.');return;}
+ waterLevels.set(key,level+1);if(!waterCells.has(key)){waterCells.add(key);addRenderChunkItem(waterRenderChunks,x,z,key);}
+ syncWaterLife();save();render();
+ showStatus(level===0?'Water added to the pool floor! Tap the water again to stack another layer.':'Water layer added on top · '+(level+1)+' of '+depth+' layers.');
+}
+function fishAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py)){if(!hit||(!hit.ground&&!hit.water)){showStatus('Aim at a water cell to add a fish.');return;}
+ const x=hit.x,z=hit.z,key=keyGround(x,z);
+ if(!waterCells.has(key)){showStatus('Add water to this dug cell first.');return;}
+ if(fishSpots.filter(f=>keyGround(f.x,f.z)===key).length>=3){showStatus('This water cell already has three fish.');return;}
+ const fish={x,z};fishSpots.push(fish);addRenderChunkItem(fishRenderChunks,x,z,{fish,index:fishSpots.length-1});syncWaterLife();save();render();showStatus('A little fish is swimming in your water!');
+}
+function surfaceHeightAt(x,z,atOrBelowY=Infinity){
+ const bx=Math.floor(x),bz=Math.floor(z),ground=-groundDepthAt(bx,bz);
+ let highest=ground;
+ const column=blockColumnBlocks.get(keyGround(bx,bz))||[];
+ for(const b of column){
+  if(isPlantBlock(b))continue;
+  const top=b.type==='tile'?b.y+TILE_BASE_OFFSET+TILE_THICKNESS:b.y+1;
+  if(top<=atOrBelowY+.18&&top>highest)highest=top;
+ }
+ return highest;
+}
+const GROUND_BASE_Y=-MAX_DIG_DEPTH;
+function terrainCollisionAt(x,z,y){
+ if(y>=-.001)return false;
+ const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
+ const minZ=Math.floor(z-PLAYER_RADIUS),maxZ=Math.floor(z+PLAYER_RADIUS);
+ const head=y+PLAYER_BODY_HEIGHT;
+ for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++){
+  const solidTop=-groundDepthAt(bx,bz);
+  if(y>=solidTop-.001||head<=GROUND_BASE_Y+.001)continue;
+  if(head<=GROUND_BASE_Y+.001||y>=solidTop-.001)continue;
+  const nearX=Math.max(bx,Math.min(bx+1,x)),nearZ=Math.max(bz,Math.min(bz+1,z));
+  const dx=x-nearX,dz=z-nearZ;
+  if(dx*dx+dz*dz<PLAYER_RADIUS*PLAYER_RADIUS)return true;
+ }
+ return false;
+}
+const PLAYER_RADIUS=.23,PLAYER_BODY_HEIGHT=1.72,PLAYER_STEP_HEIGHT=.18;
+function playerCollisionAt(x,z,y){
+ const minX=Math.floor(x-PLAYER_RADIUS),maxX=Math.floor(x+PLAYER_RADIUS);
+ const minZ=Math.floor(z-PLAYER_RADIUS),maxZ=Math.floor(z+PLAYER_RADIUS);
+ const minY=Math.max(-MAX_DIG_DEPTH,Math.floor(y)),maxY=Math.min(64,Math.floor(y+PLAYER_BODY_HEIGHT));
+ const checked=new Set();
+ for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++)for(let by=minY;by<=maxY;by++){
+  const b=blockLookup.get(keyBlock(bx,by,bz));if(!b||isPlantBlock(b)||checked.has(b))continue;checked.add(b);
+  if(b.type==='door'&&b.open)continue;
+  const bottom=b.type==='tile'?b.y+TILE_BASE_OFFSET:b.y;
+  const top=b.type==='tile'?bottom+TILE_THICKNESS:b.y+1;
+  if(b.type==='tile'&&top<=y+PLAYER_STEP_HEIGHT+.001)continue;
+  if(y>=top-.001||y+PLAYER_BODY_HEIGHT<=bottom+.001)continue;
+  const nearX=Math.max(b.x,Math.min(b.x+1,x)),nearZ=Math.max(b.z,Math.min(b.z+1,z));
+  const dx=x-nearX,dz=z-nearZ;
+  if(dx*dx+dz*dz<PLAYER_RADIUS*PLAYER_RADIUS)return true;
+ }
+ return terrainCollisionAt(x,z,y);
+}
+function nudgePlayerOutOfBlocks(){
+ const p=world.player;if(!playerCollisionAt(p.x,p.z,p.y))return;
+ for(let radius=.3;radius<=1.8;radius+=.15){
+  for(let i=0;i<24;i++){
+   const angle=i*Math.PI/12,x=p.x+Math.cos(angle)*radius,z=p.z+Math.sin(angle)*radius;
+   if(!playerCollisionAt(x,z,p.y)){p.x=x;p.z=z;save(true);showStatus('Moved you clear of a nearby block.');return;}
+  }
+ }
+}
+function jump(){
+ if(isStationaryRestActivity(playerActivity)||playerActivity==='transformer')return;
+ playerActivity='';
+ if(flying){showStatus('Flight is on. Turn it off to use Jump.');return;}
+ if(!playerGrounded)return;
+ jumpVelocity=PLAYER_JUMP_SPEED;playerGrounded=false;
+ showStatus('Jump!');
+}
+function isStationaryRestActivity(activity){return activity==='sleep'||activity==='bed';}
+function shouldDrawTemporaryRestBed(activity,homeBed,x,z){
+ return (activity==='sleep'||activity==='transformer')&&(!homeBed||!Number.isFinite(homeBed.x)||!Number.isFinite(homeBed.z)||Math.hypot(x-homeBed.x,z-homeBed.z)>1.2);
+}
+function move(dt){
+ // Ordinary sleep and Go to Bed stay still; only Transformer sleep may slide around.
+ if(isStationaryRestActivity(playerActivity)){moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;return;}
+ const p=world.player,speed=flying?7:4.2;
+ if(playerActivity&&playerActivity!=='transformer'&&(moveX!==0||moveZ!==0||vertical!==0||keys.w||keys.a||keys.s||keys.d||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))playerActivity='';
+ nudgePlayerOutOfBlocks();
+ const terrainFloor=-groundDepthAt(p.x,p.z);
+ if(p.y<terrainFloor-.04){p.y=surfaceHeightAt(p.x,p.z,p.y);jumpVelocity=0;playerGrounded=true;save(true);}
+ let forward=moveZ,right=moveX;
+ if(keys.w||keys.ArrowUp)forward+=1;
+ if(keys.s||keys.ArrowDown)forward-=1;
+ if(keys.a||keys.ArrowLeft)right-=1;
+ if(keys.d||keys.ArrowRight)right+=1;
+ const len=Math.hypot(forward,right)||1;
+ forward/=len;right/=len;
+ const dx=(Math.sin(p.yaw)*forward+Math.cos(p.yaw)*right)*speed*dt;
+ const dz=(-Math.cos(p.yaw)*forward+Math.sin(p.yaw)*right)*speed*dt;
+ const nextX=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.x+dx));
+ const nextZ=Math.max(-WORLD_LIMIT+1,Math.min(WORLD_LIMIT-1,p.z+dz));
+ // Resolve axes separately so the player slides along walls instead of sticking on corners.
+ if(!playerCollisionAt(nextX,p.z,p.y))p.x=nextX;
+ if(!playerCollisionAt(p.x,nextZ,p.y))p.z=nextZ;
+ if(flying){
+  let v=vertical;
+  if(keys[' '])v+=1;
+  if(keys.Shift)v-=1;
+  const nextY=Math.max(-MAX_DIG_DEPTH,Math.min(60,p.y+v*speed*dt));
+  if(!playerCollisionAt(p.x,p.z,nextY))p.y=nextY;
+  jumpVelocity=0;playerGrounded=true;
+  return;
+ }
+ const before=p.y;
+ if(playerGrounded){
+  const floor=surfaceHeightAt(p.x,p.z,p.y);
+  if(floor<p.y-.04){playerGrounded=false;jumpVelocity=0;}
+  else if(floor<=p.y+.18){p.y=floor;return;}
+  else {p.y=floor;jumpVelocity=0;save(true);return;}
+ }
+ jumpVelocity-=PLAYER_GRAVITY*dt;
+ let next=p.y+jumpVelocity*dt;
+ if(jumpVelocity>0&&playerCollisionAt(p.x,p.z,next)){jumpVelocity=0;next=p.y;}
+ if(jumpVelocity<=0){
+  const floor=surfaceHeightAt(p.x,p.z,p.y);
+  if(next<=floor){
+   p.y=floor;jumpVelocity=0;playerGrounded=true;save(true);return;
+  }
+  if(next<=-MAX_DIG_DEPTH&&before>=-MAX_DIG_DEPTH){
+   p.y=-MAX_DIG_DEPTH;jumpVelocity=0;playerGrounded=true;save(true);return;
+  }
+ }
+ p.y=Math.max(-MAX_DIG_DEPTH,next);
+}
+const FIXED_UPDATE_STEP=1/60,MAX_FRAME_DELTA=.1,MAX_FIXED_STEPS_PER_FRAME=6,MIN_RENDER_INTERVAL=1000/60-.5;
+function capturePlayerRenderState(p=world.player){
+ return {x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch};
+}
+function interpolatePlayerState(previous,current,alpha){
+ const t=Math.max(0,Math.min(1,alpha));
+ const yawDelta=Math.atan2(Math.sin(current.yaw-previous.yaw),Math.cos(current.yaw-previous.yaw));
+ return {
+  x:previous.x+(current.x-previous.x)*t,
+  y:previous.y+(current.y-previous.y)*t,
+  z:previous.z+(current.z-previous.z)*t,
+  yaw:previous.yaw+yawDelta*t,
+  pitch:previous.pitch+(current.pitch-previous.pitch)*t
+ };
+}
+let previousPlayerRenderState=null,renderAccumulator=0;
+const DEBUG_PERFORMANCE=new URLSearchParams(location.search).get('debug')==='1';
+const performanceHud=DEBUG_PERFORMANCE?(()=>{
+ const panel=document.createElement('pre');
+ panel.id='performanceHud';
+ panel.setAttribute('aria-hidden','true');
+ panel.style.cssText='position:fixed;z-index:30;top:max(66px,calc(env(safe-area-inset-top) + 66px));right:8px;margin:0;padding:7px 9px;border:1px solid #ffffff55;border-radius:9px;background:#10251ee8;color:#eaffed;font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;pointer-events:none;user-select:none;-webkit-user-select:none;box-shadow:0 2px 12px #0004';
+ panel.textContent='DIYCraft performance monitor\nCollecting...';
+ document.body.appendChild(panel);
+ return panel;
+})():null;
+const performanceMetrics={windowStart:null,rafFrames:0,renderFrames:0,frameMsTotal:0,frameMsMax:0,renderMsTotal:0,renderMsMax:0,updateMsTotal:0,updateSteps:0,slowFrames:0};
+const inputEventMetrics=performanceHud?{
+ down:{count:0,total:0,max:0},move:{count:0,total:0,max:0},up:{count:0,total:0,max:0}
+}:null;
+function resetInputEventMetrics(){
+ if(!inputEventMetrics)return;
+ for(const metric of Object.values(inputEventMetrics)){metric.count=0;metric.total=0;metric.max=0;}
+}
+function trackPointerHandler(name,handler){
+ if(!performanceHud)return handler;
+ return function(event){
+  const started=performance.now();
+  try{return handler.call(this,event);}
+  finally{
+   const metric=inputEventMetrics[name],duration=performance.now()-started;
+   metric.count++;metric.total+=duration;metric.max=Math.max(metric.max,duration);
+  }
+ };
+}
+function resetPerformanceMetrics(windowStart){
+ performanceMetrics.windowStart=windowStart;
+ performanceMetrics.rafFrames=0;performanceMetrics.renderFrames=0;
+ performanceMetrics.frameMsTotal=0;performanceMetrics.frameMsMax=0;
+ performanceMetrics.renderMsTotal=0;performanceMetrics.renderMsMax=0;
+ performanceMetrics.updateMsTotal=0;performanceMetrics.updateSteps=0;performanceMetrics.slowFrames=0;
+ resetInputEventMetrics();
+}
+function renderMeasuredFrame(){
+ if(!performanceHud){render();return;}
+ const started=performance.now();
+ try{render();}
+ finally{
+  const duration=Math.max(0,performance.now()-started);
+  performanceMetrics.renderFrames++;performanceMetrics.renderMsTotal+=duration;
+  performanceMetrics.renderMsMax=Math.max(performanceMetrics.renderMsMax,duration);
+ }
+}
+function updatePerformanceHud(time){
+ if(!performanceHud)return;
+ if(performanceMetrics.windowStart===null){resetPerformanceMetrics(time);return;}
+ const elapsed=time-performanceMetrics.windowStart;
+ if(elapsed<1000)return;
+ const rate=count=>(count*1000/elapsed).toFixed(1);
+ const average=(total,count)=>count?(total/count).toFixed(1):'—';
+ const eventMetric=metric=>metric.count?(metric.total/metric.count).toFixed(1)+'/'+metric.max.toFixed(1):'—';
+ performanceHud.textContent=[
+  'RAF '+rate(performanceMetrics.rafFrames)+' fps  DRAW '+rate(performanceMetrics.renderFrames)+' fps',
+  'Frame '+average(performanceMetrics.frameMsTotal,performanceMetrics.rafFrames)+' / '+performanceMetrics.frameMsMax.toFixed(1)+' ms',
+  'Draw  '+average(performanceMetrics.renderMsTotal,performanceMetrics.renderFrames)+' / '+performanceMetrics.renderMsMax.toFixed(1)+' ms',
+  'Sim   '+average(performanceMetrics.updateMsTotal,performanceMetrics.updateSteps)+' ms/tick',
+  'Input D/U '+eventMetric(inputEventMetrics.down)+' / '+eventMetric(inputEventMetrics.up)+' ms',
+  'Drag '+eventMetric(inputEventMetrics.move)+' ms  >50ms '+performanceMetrics.slowFrames
+ ].join('\n');
+ resetPerformanceMetrics(time);
+}
+
+function renderPlayerFrame(alpha){
+ const p=world.player,current=capturePlayerRenderState(p);
+ if(!previousPlayerRenderState){previousPlayerRenderState=current;renderMeasuredFrame();return;}
+ const interpolated=interpolatePlayerState(previousPlayerRenderState,current,alpha);
+ Object.assign(p,interpolated);
+ try{renderMeasuredFrame();}
+ finally{Object.assign(p,current);}
+}
+function loop(time){
+ requestAnimationFrame(loop);
+ if(document.hidden){lastTime=0;frameAccumulator=0;renderAccumulator=0;previousPlayerRenderState=null;return;}
+ processPendingLook();
+ if(!lastTime){
+  lastTime=time;renderAccumulator=0;previousPlayerRenderState=capturePlayerRenderState();
+  if(performanceHud)resetPerformanceMetrics(time);
+  renderMeasuredFrame();return;
+ }
+ const frameElapsedMs=Math.max(0,time-lastTime),elapsed=Math.min(MAX_FRAME_DELTA,frameElapsedMs/1000);lastTime=time;
+ if(performanceHud){
+  performanceMetrics.rafFrames++;performanceMetrics.frameMsTotal+=frameElapsedMs;
+  performanceMetrics.frameMsMax=Math.max(performanceMetrics.frameMsMax,frameElapsedMs);
+  if(frameElapsedMs>50)performanceMetrics.slowFrames++;
+ }
+ frameAccumulator=Math.min(frameAccumulator+elapsed,FIXED_UPDATE_STEP*MAX_FIXED_STEPS_PER_FRAME);
+ renderAccumulator+=frameElapsedMs;
+ const updateStarted=performanceHud&&frameAccumulator+1e-9>=FIXED_UPDATE_STEP?performance.now():0;
+ let steps=0;
+ while(frameAccumulator+1e-9>=FIXED_UPDATE_STEP&&steps<MAX_FIXED_STEPS_PER_FRAME){
+  previousPlayerRenderState=capturePlayerRenderState();
+  move(FIXED_UPDATE_STEP);frameAccumulator-=FIXED_UPDATE_STEP;steps++;
+ }
+ if(performanceHud&&steps){
+  performanceMetrics.updateMsTotal+=performance.now()-updateStarted;
+  performanceMetrics.updateSteps+=steps;
+ }
+ // Keep movement at 60 Hz while avoiding redundant full-world draws on high-refresh displays.
+ if(renderAccumulator>=MIN_RENDER_INTERVAL){
+  renderAccumulator%=MIN_RENDER_INTERVAL;
+  renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);
+ }
+ if(performanceHud)updatePerformanceHud(time);
+}
+function renderSlots(){
+ const root=$('slots');root.replaceChildren();
+ $('clearBucketBtn').classList.toggle('hidden',inventoryTab!=='bucket');
+ if(inventoryTab==='bucket'){
+  const arr=world.bucket||[];
+  if(!arr.length){const note=document.createElement('p');note.className='note';note.textContent='Your Material Bucket is empty. Long-press a block or dig soil to collect it here.';root.append(note);return;}
+  arr.forEach((item,index)=>{
+   const meta=BLOCKS.find(b=>b.id===item.type),icon=item.type==='water'?'💧':item.type==='custom'?'🎨':item.type==='door'?'🚪':item.type==='tile'?'▦':meta?.emoji||'🧱';
+   const name=item.type==='water'?'Water':item.type==='custom'?'Custom solid':item.type==='door'?'Door':item.type==='tile'?'Slab / Tile':meta?.name||item.type;
+   const slot=document.createElement('button');slot.type='button';slot.className='slot bucket-item';slot.title='Select this recovered '+name;
+   const ico=document.createElement('span');ico.className='ico';ico.textContent=icon;
+   const label=document.createElement('small');label.textContent=name;
+   const details=document.createElement('small');details.textContent=item.color?item.color.toUpperCase():'Recovered';
+   slot.append(ico,label,details);
+   slot.addEventListener('click',()=>{
+    selectedBucketItem={...item};selected=item.type;placementPaused=false;setToolMode('build',false);renderHotbar();closeShades();
+    showStatus(name+' selected from your Material Bucket. It stays available for reuse.');
+   });
+   root.append(slot);
+  });
+  return;
+ }
+ const arr=world[inventoryTab]||[];
+ for(let i=0;i<60;i++){
+  const slot=document.createElement('div');slot.className='slot';const item=arr[i];
+  if(item){const meta=ITEM_META[item.id]||{name:item.id,icon:'📦'};const ico=document.createElement('div');ico.className='ico';ico.textContent=meta.icon;const name=document.createElement('small');name.textContent=item.label||meta.name;const count=document.createElement('small');count.textContent='×'+item.count;slot.append(ico,name,count);}
+  else{const n=document.createElement('small');n.textContent=String(i+1);n.style.color='#a7b4a7';slot.append(n);}
+  root.append(slot);
+ }
+}
+const CHARACTER_PRESETS={
+ explorer:{hairStyle:'short',outfitStyle:'hoodie',accessory:'none',hair:'#493127',skin:'#efc39d',shirt:'#d94b3d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',accessoryColor:'#f4a8bb'},
+ sunshine:{hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',hair:'#efbd43',skin:'#f2cda9',shirt:'#48a78b',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',accessoryColor:'#ec83ba'},
+ artist:{hairStyle:'bob',outfitStyle:'sweater',accessory:'flower',hair:'#754c3c',skin:'#e8b995',shirt:'#9b79b7',pants:'#48617a',shoes:'#6b527c',eyes:'#302820',accessoryColor:'#ef82a4'},
+ garden:{hairStyle:'long',outfitStyle:'dress',accessory:'bow',hair:'#5a3827',skin:'#f0c7a3',shirt:'#e98eae',pants:'#68a96d',shoes:'#d45b80',eyes:'#302820',accessoryColor:'#f4c6dc'}
+};
+const CHARACTER_FIELDS=['hairStyle','outfitStyle','accessory','accessoryColor','hairColor','skinColor','shirtColor','pantsColor','shoesColor','eyeColor'];
+function characterValue(){
+ return {
+  hairStyle:$('hairStyle').value,outfitStyle:$('outfitStyle').value,accessory:$('accessory').value,
+  accessoryColor:$('accessoryColor').value,hair:$('hairColor').value,skin:$('skinColor').value,
+  shirt:$('shirtColor').value,pants:$('pantsColor').value,shoes:$('shoesColor').value,eyes:$('eyeColor').value
+ };
+}
+function applyPresetToStudio(key){
+ const p=CHARACTER_PRESETS[key];if(!p)return;
+ $('hairStyle').value=p.hairStyle;$('outfitStyle').value=p.outfitStyle;$('accessory').value=p.accessory;
+ $('accessoryColor').value=p.accessoryColor;$('hairColor').value=p.hair;$('skinColor').value=p.skin;
+ $('shirtColor').value=p.shirt;$('pantsColor').value=p.pants;$('shoesColor').value=p.shoes;$('eyeColor').value=p.eyes;
+ document.querySelectorAll('[data-look]').forEach(b=>b.classList.toggle('selected',b.dataset.look===key));
+ updateCharacterPreview();
+}
+function setStudioFromPlayer(p){
+ $('hairStyle').value=p.hairStyle||'short';$('outfitStyle').value=p.outfitStyle||'hoodie';$('accessory').value=p.accessory||'none';
+ $('accessoryColor').value=p.accessoryColor||'#f4a8bb';$('hairColor').value=p.hair||'#493127';$('skinColor').value=p.skin||'#efc39d';
+ $('shirtColor').value=p.shirt||'#d94b3d';$('pantsColor').value=p.pants||'#397d8f';$('shoesColor').value=p.shoes||'#bd4540';$('eyeColor').value=p.eyes||'#302820';
+ document.querySelectorAll('[data-look]').forEach(b=>b.classList.remove('selected'));
+ updateCharacterPreview();
+}
+function updateCharacterPreview(){
+ const p=characterValue(),c=$('characterPreview').getContext('2d');
+ const w=256,h=284;
+ c.clearRect(0,0,w,h);
+ const bg=c.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#d4e9ed');bg.addColorStop(1,'#eff2d8');c.fillStyle=bg;c.fillRect(0,0,w,h);
+ c.fillStyle='#94bd78';c.fillRect(0,232,w,52);
+ c.fillStyle='#6e9d57';c.fillRect(0,232,w,5);
+ // Shoes and legs.
+ c.fillStyle=p.shoes;c.fillRect(81,244,42,18);c.fillRect(136,244,42,18);
+ c.fillStyle=p.pants;c.fillRect(86,190,32,58);c.fillRect(141,190,32,58);
+ // Outfit body and sleeves.
+ c.fillStyle=p.shirt;c.fillRect(67,111,122,83);c.fillRect(45,120,26,70);c.fillRect(185,120,26,70);
+ c.fillStyle=p.skin;c.fillRect(45,184,26,20);c.fillRect(185,184,26,20);
+ if(p.outfitStyle==='dress'){
+  c.fillStyle=p.pants;c.beginPath();c.moveTo(67,168);c.lineTo(189,168);c.lineTo(205,221);c.lineTo(51,221);c.closePath();c.fill();
+  c.fillStyle=p.shoes;c.fillRect(81,244,42,18);c.fillRect(136,244,42,18);
+ }else if(p.outfitStyle==='overalls'){
+  c.fillStyle=p.pants;c.fillRect(93,126,70,75);c.fillRect(91,110,16,59);c.fillRect(149,110,16,59);
+  c.fillStyle='#f0dda7';c.fillRect(121,151,14,12);
+ }else if(p.outfitStyle==='hoodie'){
+  c.fillStyle='#00000018';c.fillRect(112,169,32,8);
+ }
+ // Neck and face.
+ c.fillStyle=p.skin;c.fillRect(111,91,34,24);c.fillRect(87,35,82,68);
+ c.fillStyle=p.hair;c.fillRect(82,27,92,24);
+ if(p.hairStyle==='bob'){c.fillRect(78,44,18,63);c.fillRect(160,44,18,63);}
+ if(p.hairStyle==='long'){c.fillRect(77,42,20,125);c.fillRect(160,42,20,125);}
+ if(p.hairStyle==='ponytail'){c.fillRect(159,35,29,56);c.fillRect(171,72,18,65);}
+ if(p.hairStyle==='pigtails'){c.fillRect(70,48,23,56);c.fillRect(158,48,23,56);c.fillRect(68,88,24,30);c.fillRect(160,88,24,30);}
+ if(p.hairStyle==='curly'){for(const [x,y] of [[82,24],[105,14],[130,14],[151,24],[72,43],[166,43]]){c.fillRect(x,y,27,28);}}
+ if(p.hairStyle==='buns'){c.fillRect(65,18,35,34);c.fillRect(157,18,35,34);}
+ // Front fringe and eyes.
+ c.fillStyle=p.hair;c.fillRect(83,46,34,15);c.fillRect(118,35,54,15);
+ c.fillStyle=p.eyes;c.fillRect(105,71,8,7);c.fillRect(145,71,8,7);
+ c.fillStyle='#9b6959';c.fillRect(124,83,13,4);
+ // Accessories.
+ if(p.accessory==='bow'){c.fillStyle=p.accessoryColor;c.fillRect(69,30,19,13);c.fillRect(90,30,19,13);c.fillRect(85,32,9,10);}
+ if(p.accessory==='flower'){c.fillStyle=p.accessoryColor;c.fillRect(75,31,19,19);c.fillStyle='#f6d36b';c.fillRect(81,37,8,8);}
+ if(p.accessory==='glasses'){c.strokeStyle=p.accessoryColor;c.lineWidth=5;c.strokeRect(96,65,27,20);c.strokeRect(137,65,27,20);c.beginPath();c.moveTo(123,74);c.lineTo(137,74);c.stroke();}
+ if(p.accessory==='cap'){c.fillStyle=p.accessoryColor;c.fillRect(78,15,100,18);c.fillRect(78,30,115,9);}
+ $('characterPreviewName').textContent='Your character';
+ $('characterPreviewDescription').textContent=p.hairStyle+' hair · '+p.outfitStyle+' · '+p.accessory;
+}
+function openCharacterStudio(){
+ setStudioFromPlayer(world.player);
+ openShade('characterShade');
+}
+for(const id of CHARACTER_FIELDS){
+ const input=$(id);
+ input.addEventListener('input',()=>{
+  document.querySelectorAll('[data-look]').forEach(b=>b.classList.remove('selected'));
+  updateCharacterPreview();
+ });
+ input.addEventListener('change',updateCharacterPreview);
+}
+document.querySelectorAll('[data-look]').forEach(b=>b.addEventListener('click',()=>applyPresetToStudio(b.dataset.look)));
+function openShade(id){$(id).classList.add('open');}function closeShades(){stopNeighborColoring();document.querySelectorAll('.menu-shade.open').forEach(e=>e.classList.remove('open'));}
+let draftCustomColor='#aa83d8',draftCustomTexture='custom',draftSolidType='custom';
+let globalBlockSpectrumPicker=null,customBlockSpectrumPicker=null,tileSpectrumPicker=null;
+
+function colorUnit(value){return Math.max(0,Math.min(1,value));}
+function hexToHsv(hex){
+ const value=String(hex||'#000000').replace('#','');
+ const r=parseInt(value.slice(0,2),16)/255,g=parseInt(value.slice(2,4),16)/255,b=parseInt(value.slice(4,6),16)/255;
+ const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+ let h=0;
+ if(delta){
+  if(max===r)h=60*(((g-b)/delta)%6);
+  else if(max===g)h=60*((b-r)/delta+2);
+  else h=60*((r-g)/delta+4);
+ }
+ return {h:(h+360)%360,s:max===0?0:delta/max,v:max};
+}
+function hsvToHex(hsv){
+ const h=((hsv.h%360)+360)%360,s=colorUnit(hsv.s),v=colorUnit(hsv.v),chroma=v*s,sector=h/60;
+ const x=chroma*(1-Math.abs((sector%2)-1));
+ let rgb;
+ if(sector<1)rgb=[chroma,x,0];
+ else if(sector<2)rgb=[x,chroma,0];
+ else if(sector<3)rgb=[0,chroma,x];
+ else if(sector<4)rgb=[0,x,chroma];
+ else if(sector<5)rgb=[x,0,chroma];
+ else rgb=[chroma,0,x];
+ const match=v-chroma;
+ return '#'+rgb.map(channel=>Math.round((channel+match)*255).toString(16).padStart(2,'0')).join('');
+}
+function bindSpectrumPicker(prefix,inputId,onColor){
+ const area=$(prefix+'Spectrum'),hueInput=$(prefix+'Hue'),colorInput=$(inputId);
+ if(!area||!hueInput||!colorInput)return {setColor:function(){}};
+ const cursor=area.querySelector('.spectrum-cursor');
+ let hsv=hexToHsv(colorInput.value),dragging=false;
+ function render(){
+  area.style.backgroundColor='hsl('+Math.round(hsv.h)+' 100% 50%)';
+  cursor.style.left=(hsv.s*100)+'%';cursor.style.top=((1-hsv.v)*100)+'%';
+  hueInput.value=String(Math.round(hsv.h)%360);
+  area.setAttribute('aria-valuenow',String(Math.round(hsv.s*100)));
+  area.setAttribute('aria-valuetext','Saturation '+Math.round(hsv.s*100)+'%, brightness '+Math.round(hsv.v*100)+'%, '+hsvToHex(hsv).toUpperCase());
+ }
+ function commit(){
+  const color=hsvToHex(hsv);
+  colorInput.value=color;
+  if(typeof onColor==='function')onColor(color);
+  render();
+ }
+ function pickAt(event){
+  const rect=area.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  hsv.s=colorUnit((event.clientX-rect.left)/rect.width);
+  hsv.v=1-colorUnit((event.clientY-rect.top)/rect.height);
+  commit();
+ }
+ area.addEventListener('pointerdown',event=>{
+  event.preventDefault();dragging=true;
+  try{area.setPointerCapture(event.pointerId);}catch(error){}
+  pickAt(event);
+ });
+ area.addEventListener('pointermove',event=>{if(dragging)pickAt(event);});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(type=>area.addEventListener(type,()=>{dragging=false;}));
+ area.addEventListener('keydown',event=>{
+  const step=event.shiftKey?.1:.025;
+  if(event.key==='ArrowLeft')hsv.s=colorUnit(hsv.s-step);
+  else if(event.key==='ArrowRight')hsv.s=colorUnit(hsv.s+step);
+  else if(event.key==='ArrowUp')hsv.v=colorUnit(hsv.v+step);
+  else if(event.key==='ArrowDown')hsv.v=colorUnit(hsv.v-step);
+  else if(event.key==='Home'){hsv.s=0;hsv.v=1;}
+  else if(event.key==='End'){hsv.s=1;hsv.v=0;}
+  else return;
+  event.preventDefault();commit();
+ });
+ hueInput.addEventListener('input',()=>{
+  hsv.h=Number(hueInput.value)||0;commit();
+ });
+ render();
+ return {
+  setColor:function(color){
+   if(!/^#[0-9a-f]{6}$/i.test(String(color||'')))return;
+   colorInput.value=color.toLowerCase();hsv=hexToHsv(color);render();
+  }
+ };
+}
+
+function renderCustomPreview(){
+ const canvas=$('customPreview'),c=canvas.getContext('2d');
+ c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle='#f8faf4';c.fillRect(0,0,canvas.width,canvas.height);
+ c.fillStyle=draftCustomColor;c.fillRect(14,14,196,124);
+ const tile=textureTiles.get(draftCustomTexture),pattern=tile?c.createPattern(tile,'repeat'):null;
+ if(pattern){c.save();c.globalAlpha=.48;c.fillStyle=pattern;c.fillRect(14,14,196,124);c.restore();}
+ c.strokeStyle='#31453255';c.lineWidth=3;c.strokeRect(14,14,196,124);
+ const texture=CUSTOM_TEXTURES.find(t=>t.id===draftCustomTexture);
+ $('customPreviewName').textContent=draftSolidType==='custom'?'Your custom solid':('Your '+(BLOCKS.find(b=>b.id===draftSolidType)?.name||'solid')+' block');
+ $('customPreviewDetails').textContent=draftCustomColor.toUpperCase()+' · '+(texture?.name||'Speckled');
+}
+function renderCustomTextureChoices(){
+ const root=$('customTextureChoices');root.replaceChildren();
+ CUSTOM_TEXTURES.forEach(t=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='texture-choice'+(draftCustomTexture===t.id?' selected':'');
+  const emoji=document.createElement('span');emoji.className='texture-emoji';emoji.textContent=t.emoji;
+  const label=document.createElement('span');label.textContent=t.name;
+  btn.append(emoji,label);btn.addEventListener('click',()=>{draftCustomTexture=t.id;renderCustomTextureChoices();renderCustomPreview();});
+  root.append(btn);
+ });
+}
+function renderCustomColorSwatches(){
+ const root=$('customColorSwatches');root.replaceChildren();
+ CUSTOM_COLORS.forEach(color=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='color-swatch';btn.style.background=color;btn.title=color;btn.setAttribute('aria-label','Choose '+color);
+  btn.addEventListener('click',()=>setDraftCustomColor(color));root.append(btn);
+ });
+}
+function setDraftCustomColor(color){
+ if(!/^#[0-9a-f]{6}$/i.test(color))return;
+ draftCustomColor=color.toLowerCase();$('customBlockColor').value=draftCustomColor;$('customBlockHex').value=draftCustomColor.toUpperCase();customBlockSpectrumPicker?.setColor(draftCustomColor);renderCustomPreview();
+}
+function openCustomBlockDesigner(){
+ draftSolidType=SOLID_STYLE_TYPES.includes(selected)?selected:'custom';
+ $('solidDesignType').value=draftSolidType;
+ $('solidDesignerTitle').textContent=draftSolidType==='custom'?'🎨 Design a custom solid':('🎨 Design '+(BLOCKS.find(b=>b.id===draftSolidType)?.name||'solid')+' blocks');
+ $('customColorCaption').textContent=draftSolidType==='flower'?'Flower petal color':'Full color spectrum';
+ const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
+ const fallback=BLOCKS.find(b=>b.id===draftSolidType);
+ draftCustomColor=saved?.color||fallback?.color||'#aa83d8';
+ draftCustomTexture=saved?.texture||(draftSolidType==='custom'?'custom':draftSolidType);
+ setDraftCustomColor(draftCustomColor);
+ renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();openShade('customBlockShade');
+}
+$('solidDesignType').addEventListener('change',e=>{
+ draftSolidType=SOLID_STYLE_TYPES.includes(e.target.value)?e.target.value:'custom';
+ $('customColorCaption').textContent=draftSolidType==='flower'?'Flower petal color':'Full color spectrum';
+ const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
+ const fallback=BLOCKS.find(b=>b.id===draftSolidType);
+ setDraftCustomColor(saved?.color||fallback?.color||'#aa83d8');
+ draftCustomTexture=saved?.texture||(draftSolidType==='custom'?'custom':draftSolidType);
+ renderCustomTextureChoices();renderCustomPreview();
+});
+$('customBlockColor').addEventListener('input',e=>setDraftCustomColor(e.target.value));
+$('customBlockHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);});
+$('customBlockHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftCustomColor(v);else e.target.value=draftCustomColor.toUpperCase();});
+$('applyCustomBlock').addEventListener('click',()=>{
+ if(draftSolidType==='custom'){
+  world.customBlock={color:draftCustomColor,texture:draftCustomTexture};
+  $('customColor').value=draftCustomColor;globalBlockSpectrumPicker?.setColor(draftCustomColor);selected='custom';placementPaused=false;
+  showStatus('Custom solid ready. Choose a place to build it.');
+ }else{
+  world.solidStyles=world.solidStyles||{};
+  world.solidStyles[draftSolidType]={color:draftCustomColor,texture:draftCustomTexture};
+  selected=draftSolidType;placementPaused=false;
+  showStatus((BLOCKS.find(b=>b.id===draftSolidType)?.name||'Solid')+' finish saved. New blocks of this material will use it.');
+ }
+ selectedBucketItem=null;setToolMode('build',false);save();renderHotbar();closeShades();
+});
+
+let draftDoorColor='#a97545',draftDoorStyle='classic';
+const DOOR_STYLE_NAMES={classic:'Classic wooden door',window:'Door with a window',garden:'Garden flower door'};
+function renderDoorDesignPreview(){
+ $('doorPreview').style.setProperty('--door-preview',draftDoorColor);
+ $('doorPreviewDetails').textContent=DOOR_STYLE_NAMES[draftDoorStyle]+' · '+draftDoorColor.toUpperCase();
+ document.querySelectorAll('[data-door-style]').forEach(button=>button.classList.toggle('selected',button.dataset.doorStyle===draftDoorStyle));
+}
+function openDoorDesigner(){
+ draftDoorColor=world.doorDesign.color||'#a97545';draftDoorStyle=world.doorDesign.style||'classic';
+ $('doorColor').value=draftDoorColor;renderDoorDesignPreview();openShade('doorShade');
+}
+$('doorDesignBtn').addEventListener('click',()=>{closeShades();openDoorDesigner();});
+$('doorColor').addEventListener('input',e=>{draftDoorColor=e.target.value;renderDoorDesignPreview();});
+document.querySelectorAll('[data-door-style]').forEach(button=>button.addEventListener('click',()=>{
+ draftDoorStyle=button.dataset.doorStyle;renderDoorDesignPreview();
+}));
+$('applyDoorDesign').addEventListener('click',()=>{
+ world.doorDesign={color:validHex(draftDoorColor,'#a97545'),style:['classic','window','garden'].includes(draftDoorStyle)?draftDoorStyle:'classic'};
+ selected='door';selectedBucketItem=null;placementPaused=false;setToolMode('build',false);save();renderHotbar();closeShades();
+ showStatus('Your door design is ready. Choose a clear spot to build it!');
+});
+
+
+let draftTileColor='#c5a98a',draftTilePattern='grid';
+function drawTileSwatch(canvas,pattern,color){
+ const c=canvas.getContext('2d'),tile=textureTiles.get('tile-'+pattern);
+ c.clearRect(0,0,canvas.width,canvas.height);c.fillStyle=color;c.fillRect(0,0,canvas.width,canvas.height);
+ if(tile){c.save();c.globalAlpha=.78;c.drawImage(tile,0,0,canvas.width,canvas.height);c.restore();}
+ c.strokeStyle='#31453266';c.lineWidth=2;c.strokeRect(1,1,canvas.width-2,canvas.height-2);
+}
+function renderTilePreview(){
+ const design=TILE_DESIGNS.find(t=>t.id===draftTilePattern)||TILE_DESIGNS[0];
+ drawTileSwatch($('tilePreview'),design.id,draftTileColor);
+ $('tilePreviewName').textContent=design.name;$('tilePreviewDetails').textContent=draftTileColor.toUpperCase();
+ document.querySelectorAll('[data-tile-pattern]').forEach(btn=>btn.classList.toggle('selected',btn.dataset.tilePattern===draftTilePattern));
+}
+function renderTileChoices(){
+ const root=$('tileChoices');root.replaceChildren();
+ TILE_DESIGNS.forEach(design=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='tile-choice'+(draftTilePattern===design.id?' selected':'');btn.dataset.tilePattern=design.id;
+  const preview=document.createElement('canvas');preview.width=120;preview.height=58;preview.setAttribute('aria-hidden','true');drawTileSwatch(preview,design.id,draftTileColor);
+  const name=document.createElement('small');name.textContent=design.icon+' '+design.name;
+  btn.append(preview,name);btn.addEventListener('click',()=>{draftTilePattern=design.id;renderTileChoices();renderTilePreview();});root.append(btn);
+ });
+}
+function renderTileColorSwatches(){
+ const root=$('tileColorSwatches');root.replaceChildren();
+ CUSTOM_COLORS.forEach(color=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='color-swatch';btn.style.background=color;btn.title=color;btn.setAttribute('aria-label','Choose '+color);
+  btn.addEventListener('click',()=>setDraftTileColor(color));root.append(btn);
+ });
+}
+function setDraftTileColor(color){
+ if(!/^#[0-9a-f]{6}$/i.test(color))return;
+ draftTileColor=color.toLowerCase();$('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();tileSpectrumPicker?.setColor(draftTileColor);
+ renderTileChoices();renderTilePreview();
+}
+function openTileDesigner(){
+ draftTileColor=world.tileDesign?.color||'#c5a98a';draftTilePattern=world.tileDesign?.pattern||'grid';
+ $('tileColor').value=draftTileColor;$('tileHex').value=draftTileColor.toUpperCase();tileSpectrumPicker?.setColor(draftTileColor);
+ renderTileChoices();renderTileColorSwatches();renderTilePreview();openShade('tileShade');
+}
+$('tileDesignBtn').addEventListener('click',()=>{closeShades();openTileDesigner();});
+$('tileColor').addEventListener('input',e=>setDraftTileColor(e.target.value));$('tileColor').addEventListener('change',e=>setDraftTileColor(e.target.value));
+$('tileHex').addEventListener('input',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);});
+$('tileHex').addEventListener('change',e=>{const v=e.target.value.trim();if(/^#[0-9a-f]{6}$/i.test(v))setDraftTileColor(v);else e.target.value=draftTileColor.toUpperCase();});
+globalBlockSpectrumPicker=bindSpectrumPicker('globalBlock','customColor',color=>{world.customBlock.color=validHex(color,world.customBlock.color);if(selected==='custom')renderHotbar();save();});
+customBlockSpectrumPicker=bindSpectrumPicker('customBlock','customBlockColor',setDraftCustomColor);
+tileSpectrumPicker=bindSpectrumPicker('tile','tileColor',setDraftTileColor);
+$('applyTileDesign').addEventListener('click',()=>{
+ world.tileDesign={color:validHex(draftTileColor,'#c5a98a'),pattern:TILE_DESIGNS.some(t=>t.id===draftTilePattern)?draftTilePattern:'grid'};
+ selected='tile';selectedBucketItem=null;placementPaused=false;setToolMode('build',false);save();renderHotbar();closeShades();
+ showStatus('Tile design ready! Select a place to build your colorful tiles.');
+});
+
+function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
+function downloadBackup(){save();const blob=new Blob([JSON.stringify(world,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(world.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft')+'.json';a.click();URL.revokeObjectURL(url);showStatus('Backup file prepared. Keep it somewhere safe.');}
+async function restoreBackup(file){if(!file)return;try{const raw=await file.text(),parsed=JSON.parse(raw);world=validWorld(parsed);$('worldName').value=world.name;
+  waterLevels.clear();
+  for(const [x,z] of world.waterCells||[])waterLevels.set(keyGround(x,z),1);
+  for(const [x,z,level] of world.waterLevels||[])waterLevels.set(keyGround(x,z),level);
+  waterCells=new Set(waterLevels.keys());fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
+  rebuildLookup();save();render();showStatus('World backup restored.');}catch(e){showStatus('Backup could not be read. Your current world is unchanged.');}}
+function focusToggle(){focusMode=!focusMode;document.body.classList.toggle('focus-mode',focusMode);}
+function controlsToggle(){controllersHidden=!controllersHidden;document.body.classList.toggle('controllers-hidden',controllersHidden);$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';}
+function updateFlyControls(){
+ $('flyBtn').textContent='🕊 FLY: '+(flying?'ON':'OFF');
+ $('flyUpBtn').classList.toggle('hidden',!flying);
+ $('flyDownBtn').classList.toggle('hidden',!flying);
+}
+function resolveRestActivity(activity,bed){
+ return activity==='bed'&&!(bed&&Number.isFinite(bed.x)&&Number.isFinite(bed.z))?'sleep':activity;
+}
+function setPlayerActivity(activity){
+ if(activity==='set-bed'){
+  const p=world.player,floor=surfaceHeightAt(p.x,p.z,p.y);
+  p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw};
+  playerActivity='';save();closeShades();render();showStatus('Your home bed is saved here. You can return here anytime!');return;
+ }
+ const labels={sleep:'Sleep Here',transformer:'Transformer Sleep',bed:'Go Home & Sleep',sit:'Sit',work:'Work',dance:'Dance'};
+ if(activity!=='stop'&&!Object.prototype.hasOwnProperty.call(labels,activity))return;
+ const p=world.player,restActivity=resolveRestActivity(activity,p.bed),missingHomeBed=activity==='bed'&&restActivity==='sleep';
+ playerActivity=activity==='stop'?'':restActivity;
+ moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;
+ if(activity!=='stop'){
+  if(flying){flying=false;updateFlyControls();}
+  cameraMode='third';updateViewButton();
+  if(activity==='bed'&&!missingHomeBed){
+   const bed=p.bed;
+   p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0;
+   playerGrounded=true;save();
+  }else{
+   const floor=surfaceHeightAt(p.x,p.z,p.y);
+   if(activity==='sleep'||activity==='transformer'||p.y<=floor+.35){p.y=floor;playerGrounded=true;}
+  }
+ }
+ closeShades();render();
+ const status=activity==='stop'?'Standing up. Ready to explore!':
+  missingHomeBed?'No home bed saved yet. A temporary bed has been made right here.':
+  activity==='bed'?'Back home in bed. Sweet dreams!':
+  labels[activity]+' pose selected.';
+ showStatus(status);
+}
+async function expandToggle(){if(!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen();}catch(e){showStatus('Using the larger browser view instead.');}}document.body.classList.add('focus-mode');focusMode=true;}
+// Keyboard input is simple, local and has no external communication.
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();if(!e.repeat)jump();}keys[e.key===' '?' ':e.key]=true;if(e.key.toLowerCase()==='v'){cameraMode=cameraMode==='first'?'third':'first';updateViewButton();}if(e.key.toLowerCase()==='f'){flying=!flying;updateFlyControls();showStatus(flying?'Creative flight enabled.':'Flight turned off.');}if(e.key==='e'||e.key==='E')openBucket();if(e.key==='Escape'){closeShades();if(focusMode)focusToggle();}});
+document.addEventListener('keyup',e=>{keys[e.key===' '?' ':e.key]=false;});
+// Mouse or finger drag looks around. A single tap builds; a quick double-tap on the same block removes it.
+let activePointer=null,movedPointer=false,startPt=null,lastPt=null,pointerTarget=null,pendingLookPoint=null;
+let holdTimer=null,holdTriggered=false,holdBlockKey=null;
+const HOLD_TO_REMOVE_MS=600;
+function clearBlockHold(){
+ if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null;}
+ holdBlockKey=null;
+}
+function processPendingLook(){
+ if(!pendingLookPoint||activePointer===null||!movedPointer||!lastPt)return;
+ const point=pendingLookPoint,dx=point.x-lastPt.x,dy=point.y-lastPt.y;
+ pendingLookPoint=null;
+ world.player.yaw-=dx*.006;
+ world.player.pitch=Math.max(-1.22,Math.min(1.22,world.player.pitch-dy*.005));
+ lastPt=point;
+}
+function handleWorldTap(px,py,target=null){
+ const hit=target&&target.hasHit?target.hit:rayHitAtScreen(px,py);
+ if(hit&&hit.block&&hit.block.type==='door'&&toolMode==='build'){toggleDoor(hit.block);return;}
+ const animal=target?target.animal:animalAtScreen(px,py);
+ if(animal&&toolMode!=='animal'){openAnimalCare(animal);return;}
+ const neighbor=target?target.neighbor:neighborAtScreen(px,py);
+ if(neighbor){openColoring(neighbor.name);return;}
+ if(toolMode==='fish'){fishAtScreen(px,py,hit);return;}
+ if(toolMode==='animal'){spawnWorldElements(px,py,hit);return; /* <--- DROPS ANIMAL ON TAP */}
+ if(placementPaused){showStatus('Building is paused. Choose a block to resume placing.');return;}
+ buildOrFillAtScreen(px,py,hit);
+}
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',trackPointerHandler('down',e=>{
+ if(e.pointerType==='mouse'&&e.button===2){e.preventDefault();erase();return;}
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ activePointer=e.pointerId;movedPointer=false;holdTriggered=false;pointerTarget=null;pendingLookPoint=null;
+ startPt={x:e.clientX,y:e.clientY};lastPt=startPt;
+ canvas.setPointerCapture(e.pointerId);
+ const rect=canvas.getBoundingClientRect();
+ const px=e.clientX-rect.left,py=e.clientY-rect.top;
+ if(toolMode==='build'){
+  const animal=animalAtScreen(px,py);
+  const neighbor=animal?null:neighborAtScreen(px,py);
+  const hit=animal||neighbor?null:rayHitAtScreen(px,py);
+  pointerTarget={animal,neighbor,hit,hasHit:!!hit};
+  if(!animal&&!neighbor){
+   const targetType=hit&&hit.block?'block':hit&&hit.ground?'ground':null;
+   const targetKey=targetType==='block'?keyBlock(hit.block.x,hit.block.y,hit.block.z):targetType==='ground'?keyGround(hit.x,hit.z):null;
+   if(targetType&&targetKey!==null){
+    holdBlockKey=targetType+':'+targetKey;
+    const holdId=holdBlockKey,initialHit=hit;
+    holdTimer=setTimeout(()=>{
+     if(activePointer!==e.pointerId||movedPointer||holdBlockKey!==holdId)return;
+     const current=initialHit;
+     const sameBlock=targetType==='block'&&current&&current.block&&keyBlock(current.block.x,current.block.y,current.block.z)===targetKey;
+     const sameGround=targetType==='ground'&&current&&current.ground&&keyGround(current.x,current.z)===targetKey;
+     if(sameBlock||sameGround){
+      holdTriggered=true;clearBlockHold();
+      if(sameBlock){
+       if(removeBlock(current.block.x,current.block.y,current.block.z)){render();showStatus('Block removed.');}
+      }else digAtScreen(px,py,current);
+     }
+    },HOLD_TO_REMOVE_MS);
+   }
+  }
+ }
+}));
+canvas.addEventListener('pointermove',trackPointerHandler('move',e=>{
+ if(activePointer!==e.pointerId||!lastPt)return;
+ if(Math.abs(e.clientX-startPt.x)+Math.abs(e.clientY-startPt.y)>5){
+  if(!movedPointer){movedPointer=true;clearBlockHold();}
+ }
+ if(movedPointer)pendingLookPoint={x:e.clientX,y:e.clientY};
+}));
+canvas.addEventListener('pointerup',trackPointerHandler('up',e=>{
+ if(activePointer!==e.pointerId)return;
+ processPendingLook();
+ clearBlockHold();
+ if(!movedPointer&&!holdTriggered&&(e.pointerType!=='mouse'||e.button===0)){
+  const rect=canvas.getBoundingClientRect();
+  handleWorldTap(e.clientX-rect.left,e.clientY-rect.top,pointerTarget);
+ }
+ activePointer=null;startPt=null;lastPt=null;pointerTarget=null;pendingLookPoint=null;holdTriggered=false;
+}));
+canvas.addEventListener('pointercancel',()=>{
+ processPendingLook();
+ clearBlockHold();activePointer=null;startPt=null;lastPt=null;pointerTarget=null;pendingLookPoint=null;holdTriggered=false;
+});
+// On-screen movement pads support press-and-hold on iPad.
+document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
+$('fishModeToggle').addEventListener('click',()=>{setToolMode(toolMode==='fish'?'build':'fish');$('fishModeToggle').textContent='🐟 Fish placement: '+(toolMode==='fish'?'On':'Off');closeShades();});
+$('solidCustomizeBtn').addEventListener('click',()=>{closeShades();openCustomBlockDesigner();});
+$('flowerColorBtn').addEventListener('click',()=>{chooseMaterial('flower');closeShades();openCustomBlockDesigner();});
+$('jumpBtn').addEventListener('click',jump);
+$('flyBtn').addEventListener('click',()=>{flying=!flying;vertical=0;updateFlyControls();showStatus(flying?'Creative flight enabled.':'Flight turned off.');});
+syncToolButtons();updateFlyControls();const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
+
+$('flyUpBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=1;});$('flyDownBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);if(flying)vertical=-1;});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{ $('flyUpBtn').addEventListener(ev,()=>{if(vertical>0)vertical=0;});$('flyDownBtn').addEventListener(ev,()=>{if(vertical<0)vertical=0;});});window.addEventListener('pointerup',()=>{moveX=0;moveZ=0;vertical=0;});window.addEventListener('pointercancel',()=>{moveX=0;moveZ=0;vertical=0;});
+function updateViewButton(){$('viewBtn').textContent=cameraMode==='first'?'👁 1st':'👁 3rd';}
+$('viewBtn').addEventListener('click',()=>{cameraMode=cameraMode==='first'?'third':'first';updateViewButton();showStatus(cameraMode==='first'?'First-person view':'Third-person view');});updateViewButton();
+$('activityBtn').addEventListener('click',()=>openShade('activityShade'));
+document.querySelectorAll('[data-player-activity]').forEach(button=>button.addEventListener('click',()=>setPlayerActivity(button.dataset.playerActivity)));
+
+
+syncTimeControls();
+$('timeOfDay').addEventListener('change',e=>setTimeMode(e.target.value));
+$('useCustomColor').addEventListener('click',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);chooseMaterial('custom');save();renderHotbar();closeShades();showStatus('Custom color selected. Tap the world to build with it.');});
+function findNeighborhoodReturnSpot(){
+ const homeX=4.5,homeZ=-5.5,step=.5,maxRing=24;
+ for(let ring=0;ring<=maxRing;ring++){
+  for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
+   if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring)continue;
+   const x=homeX+dx*step,z=homeZ+dz*step;
+   if(Math.abs(x)>WORLD_LIMIT-1||Math.abs(z)>WORLD_LIMIT-1)continue;
+   const cellX=Math.floor(x),cellZ=Math.floor(z);
+   if(waterLevelAt(cellX,cellZ)>0)continue;
+   const y=surfaceHeightAt(x,z);
+   if(!Number.isFinite(y)||y< -MAX_DIG_DEPTH||y>58)continue;
+   if(playerCollisionAt(x,z,y))continue;
+   return {x,y,z};
+  }
+ }
+ return null;
+}
+function returnToNeighborhood(){
+ const spot=findNeighborhoodReturnSpot();
+ if(!spot){showStatus('The neighborhood return spot is blocked. Clear a little space near the village and try again.');return false;}
+ const p=world.player;
+ p.x=spot.x;p.y=spot.y;p.z=spot.z;
+ p.yaw=0;p.pitch=-.12;
+ moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;playerGrounded=true;
+ if(typeof clearBlockHold==='function')clearBlockHold();
+ save();render();
+ showStatus('Welcome back! You are home in the neighborhood. 🌼');
+ return true;
+}
+$('neighborsBtn').addEventListener('click',()=>{closeShades();returnToNeighborhood();});$('animalCareBtn').addEventListener('click',()=>{closeShades();showStatus('The sheep and cat enjoy gentle care. Every animal stays safe.');});$('customColor').addEventListener('input',()=>{world.customBlock.color=validHex($('customColor').value,world.customBlock.color);globalBlockSpectrumPicker?.setColor($('customColor').value);if(selected==='custom')renderHotbar();save();});$('controlsBtn').addEventListener('click',()=>{controlsToggle();$('controlsBtn').textContent=controllersHidden?'Show movement controls':'Hide movement controls';closeShades();});$('showControls').addEventListener('click',controlsToggle);$('expandBtn').addEventListener('click',expandToggle);$('focusExit').addEventListener('click',()=>{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(focusMode)focusToggle();});document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&focusMode)focusToggle();});$('menuBtn').addEventListener('click',()=>openShade('menuShade'));$('menuInventory').addEventListener('click',()=>{closeShades();openBucket();});
+$('clearBucketBtn').addEventListener('click',()=>{if(!world.bucket.length){showStatus('Your Material Bucket is already empty.');return;}if(!window.confirm('Empty the Material Bucket? Recovered blocks will be discarded.'))return;world.bucket=[];selectedBucketItem=null;save();renderSlots();renderHotbar();showStatus('Material Bucket emptied.');});$('craftBtn').addEventListener('click',()=>{closeShades();renderRecipes();openShade('craftShade');});$('artBtn').addEventListener('click',()=>{closeShades();openShade('artShade');});$('characterBtn').addEventListener('click',()=>{closeShades();openCharacterStudio();});$('saveBtn').addEventListener('click',()=>save(false));$('backupBtn').addEventListener('click',downloadBackup);$('restoreInput').addEventListener('change',e=>{restoreBackup(e.target.files?.[0]);e.target.value='';});$('worldName').addEventListener('change',()=>{world.name=$('worldName').value.slice(0,30);save();});$('clearBtn').addEventListener('click',()=>{if(!confirm('Remove all blocks you placed? Neighbors and animals will stay. Export a backup first if needed.'))return;world.blocks=[];rebuildLookup();save();render();closeShades();showStatus('Placed blocks cleared.');});document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeShades));document.querySelectorAll('.menu-shade').forEach(s=>s.addEventListener('pointerdown',e=>{if(e.target===s)closeShades();}));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{inventoryTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));renderSlots();}));
+$('applyCharacter').addEventListener('click',()=>{
+ const p=characterValue();
+ Object.assign(world.player,{
+  hairStyle:p.hairStyle,outfitStyle:p.outfitStyle,accessory:p.accessory,accessoryColor:p.accessoryColor,
+  hair:p.hair,skin:p.skin,shirt:p.shirt,pants:p.pants,shoes:p.shoes,eyes:p.eyes
+ });
+ save();render();closeShades();showStatus('Your new character look is saved!');
+});
+// Offline coloring sheets: original vector line art is embedded in this file.
+const COLOR_PAGES=[
+ {id:'cottage',name:'Cozy cottage',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><circle cx="520" cy="82" r="42" fill="white" stroke="#263c32" stroke-width="7"/><path d="M500 82h40M520 62v40M492 54l56 56M548 54l-56 56" stroke="#263c32" stroke-width="5" stroke-linecap="round"/><path d="M105 220L320 65l215 155" fill="white" stroke="#263c32" stroke-width="10" stroke-linejoin="round"/><path d="M145 204v205h350V204Z" fill="white" stroke="#263c32" stroke-width="9"/><rect x="270" y="285" width="105" height="124" rx="5" fill="white" stroke="#263c32" stroke-width="8"/><circle cx="355" cy="348" r="6" fill="#263c32"/><rect x="180" y="250" width="70" height="68" fill="white" stroke="#263c32" stroke-width="8"/><path d="M215 250v68M180 284h70" stroke="#263c32" stroke-width="6"/><rect x="405" y="250" width="65" height="68" fill="white" stroke="#263c32" stroke-width="8"/><path d="M437 250v68M405 284h65" stroke="#263c32" stroke-width="6"/><path d="M90 410h460M100 380q25-28 50 0q25-28 50 0M450 380q25-28 50 0q25-28 50 0" fill="none" stroke="#263c32" stroke-width="7" stroke-linecap="round"/><path d="M92 350q-25-25-5-45q25-12 34 10q9-23 32-10q20 24-6 45l-27 22zM520 350q-25-25-5-45q25-12 34 10q9-23 32-10q20 24-6 45l-27 22z" fill="white" stroke="#263c32" stroke-width="6"/></svg>`},
+ {id:'butterfly',name:'Garden butterfly',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><path d="M318 220C220 50 90 80 100 210c5 70 85 100 190 60C190 390 260 405 318 270C376 405 450 390 350 270c105 40 185 10 190-60C550 80 420 50 322 220Z" fill="white" stroke="#263c32" stroke-width="9" stroke-linejoin="round"/><ellipse cx="320" cy="252" rx="24" ry="88" fill="white" stroke="#263c32" stroke-width="8"/><path d="M306 173q-45-65-66-35M334 173q45-65 66-35" fill="none" stroke="#263c32" stroke-width="7" stroke-linecap="round"/><circle cx="195" cy="190" r="28" fill="white" stroke="#263c32" stroke-width="7"/><circle cx="445" cy="190" r="28" fill="white" stroke="#263c32" stroke-width="7"/><circle cx="235" cy="305" r="25" fill="white" stroke="#263c32" stroke-width="7"/><circle cx="405" cy="305" r="25" fill="white" stroke="#263c32" stroke-width="7"/><path d="M60 400h520M95 400q10-45 25-60q20 30 10 60M520 400q-10-45-25-60q-20 30-10 60" fill="none" stroke="#263c32" stroke-width="7" stroke-linecap="round"/><path d="M160 100q25-25 50 0q-25 25-50 0M430 100q25-25 50 0q-25 25-50 0" fill="white" stroke="#263c32" stroke-width="6"/></svg>`},
+ {id:'kitty',name:'Happy kitty',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><path d="M170 190L145 75l115 65q60-25 120 0L495 75l-25 115q25 70-5 140q-45 90-138 90t-138-90q-30-70-19-140Z" fill="white" stroke="#263c32" stroke-width="10" stroke-linejoin="round"/><path d="M195 168l-20-65 67 39M445 142l67-39-20 65" fill="none" stroke="#263c32" stroke-width="7"/><ellipse cx="245" cy="245" rx="18" ry="25" fill="white" stroke="#263c32" stroke-width="7"/><ellipse cx="395" cy="245" rx="18" ry="25" fill="white" stroke="#263c32" stroke-width="7"/><path d="M306 292q14-15 28 0q-14 20-28 0M320 310q-24 38-52 8M320 310q24 38 52 8" fill="white" stroke="#263c32" stroke-width="7" stroke-linecap="round"/><path d="M210 300l-95-15M210 325l-100 20M430 300l95-15M430 325l100 20" stroke="#263c32" stroke-width="6" stroke-linecap="round"/><path d="M215 385q-20 45 20 45h170q40 0 20-45" fill="white" stroke="#263c32" stroke-width="8"/><path d="M190 410q-60 0-55-55q5-38 45-35" fill="none" stroke="#263c32" stroke-width="12" stroke-linecap="round"/></svg>`},
+ {id:'flower',name:'Big happy flower',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><path d="M320 255v170M320 350q-90-70-125 0q65 65 125 0M320 385q90-70 125 0q-65 65-125 0" fill="white" stroke="#263c32" stroke-width="9" stroke-linejoin="round"/><g fill="white" stroke="#263c32" stroke-width="8"><ellipse cx="320" cy="112" rx="42" ry="68"/><ellipse cx="320" cy="250" rx="42" ry="68"/><ellipse cx="250" cy="180" rx="68" ry="42"/><ellipse cx="390" cy="180" rx="68" ry="42"/><ellipse cx="270" cy="130" rx="42" ry="64" transform="rotate(-45 270 130)"/><ellipse cx="370" cy="130" rx="42" ry="64" transform="rotate(45 370 130)"/><ellipse cx="270" cy="230" rx="42" ry="64" transform="rotate(45 270 230)"/><ellipse cx="370" cy="230" rx="42" ry="64" transform="rotate(-45 370 230)"/><circle cx="320" cy="180" r="57"/></g><path d="M90 425h460M130 420q0-55 35-75q35 25 35 75M440 420q0-55 35-75q35 25 35 75" fill="none" stroke="#263c32" stroke-width="7" stroke-linecap="round"/></svg>`},
+ {id:'rainbow',name:'Rainbow day',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><path d="M95 365a225 225 0 0 1 450 0h-42a183 183 0 0 0-366 0z" fill="white" stroke="#263c32" stroke-width="8" stroke-linejoin="round"/><path d="M137 365a183 183 0 0 1 366 0h-42a141 141 0 0 0-282 0z" fill="white" stroke="#263c32" stroke-width="7"/><path d="M179 365a141 141 0 0 1 282 0h-42a99 99 0 0 0-198 0z" fill="white" stroke="#263c32" stroke-width="7"/><path d="M221 365a99 99 0 0 1 198 0h-42a57 57 0 0 0-114 0z" fill="white" stroke="#263c32" stroke-width="7"/><path d="M80 365q-50-5-44-55q6-44 55-40q25-45 69-20q38 25 16 70q-13 28-45 28zM465 348q-45-40-12-82q32-39 72-7q41-4 54 37q12 42-28 59z" fill="white" stroke="#263c32" stroke-width="8"/><circle cx="320" cy="75" r="37" fill="white" stroke="#263c32" stroke-width="8"/><path d="M320 15v-12M320 135v-15M260 75h-16M396 75h-16M278 33l-12-12M362 117l-12-12M362 33l12-12" stroke="#263c32" stroke-width="7" stroke-linecap="round"/></svg>`},
+ {id:'sheep',name:'Fluffy sheep',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460"><rect width="640" height="460" fill="#fffdf8"/><g fill="white" stroke="#263c32" stroke-width="8"><circle cx="210" cy="220" r="70"/><circle cx="280" cy="165" r="72"/><circle cx="360" cy="165" r="72"/><circle cx="430" cy="225" r="70"/><circle cx="370" cy="285" r="72"/><circle cx="270" cy="290" r="72"/><circle cx="320" cy="225" r="85"/><path d="M400 205q75-5 80 60q-5 62-80 62q-22-5-28-22v-78q9-18 28-22z"/></g><circle cx="430" cy="245" r="7" fill="#263c32"/><circle cx="470" cy="245" r="7" fill="#263c32"/><path d="M440 278q15 13 30 0M210 320v75M260 335v60M390 335v60M440 320v75M145 395h340" fill="none" stroke="#263c32" stroke-width="9" stroke-linecap="round"/><path d="M105 395q10-40 35-55q25 15 30 55M500 395q10-40 35-55q25 15 30 55" fill="white" stroke="#263c32" stroke-width="7"/></svg>`}
+];
+let coloringNeighbor='hyacinth',colorPage=null,colorTool='fill',colorUndoStack=[],colorDrawing=false,colorLast=null,colorBaseData=null,neighborColorTimer=null,neighborBrushHideTimer=null,neighborColorStep=0;
+const colorCanvas=$('colorCanvas'),colorCtx=colorCanvas.getContext('2d',{willReadFrequently:true});
+function openColoring(neighborName='hyacinth'){stopNeighborColoring();coloringNeighbor=neighborName;$('colorNeighborNote').textContent=neighborName+' is sitting beside you for a quiet coloring activity. Choose a picture to share. No talking is needed.';$('neighborPainterTitle').textContent=neighborName+' is ready to color with you';$('neighborPainterStatus').textContent='Pick a picture. You will see their brush and colors appear on the shared page.';$('neighborProgress').style.width='0%';closeShades();renderColorTemplates();$('colorTemplateGrid').classList.remove('hidden');$('colorWorkspace').classList.add('hidden');openShade('coloringShade');}
+function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg.replace('<svg ','<svg width="640" height="460" '));}
+function renderColorTemplates(){const root=$('colorTemplateGrid');root.replaceChildren();for(const page of COLOR_PAGES){const btn=document.createElement('button');btn.className='color-template';const img=document.createElement('img');img.alt='Uncolored '+page.name+' line drawing';img.src=svgData(page.svg);const label=document.createElement('span');label.textContent=page.name;btn.append(img,label);btn.addEventListener('click',()=>loadColorPage(page));root.append(btn);}}
+function pushColorUndo(){try{colorUndoStack.push(colorCtx.getImageData(0,0,colorCanvas.width,colorCanvas.height));if(colorUndoStack.length>8)colorUndoStack.shift();}catch(e){showStatus('Undo is unavailable for this picture.');}}
+function drawColorSvg(page){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{colorCtx.fillStyle='#fffdf8';colorCtx.fillRect(0,0,colorCanvas.width,colorCanvas.height);const scale=Math.min(colorCanvas.width/img.width,colorCanvas.height/img.height),w=img.width*scale,h=img.height*scale;colorCtx.drawImage(img,(colorCanvas.width-w)/2,(colorCanvas.height-h)/2,w,h);colorBaseData=colorCtx.getImageData(0,0,colorCanvas.width,colorCanvas.height);resolve();};img.onerror=reject;img.src=svgData(page.svg);});}
+async function loadColorPage(page){try{stopNeighborColoring();await drawColorSvg(page);colorPage=page;colorUndoStack=[];$('colorPageTitle').textContent=page.name+' · coloring together with '+coloringNeighbor;$('colorTemplateGrid').classList.add('hidden');$('colorWorkspace').classList.remove('hidden');colorTool='fill';updateColorToolButtons();startNeighborColoring();}catch(e){showStatus('This coloring picture could not be opened.');}}
+function updateColorToolButtons(){$('bucketTool').classList.toggle('primary',colorTool==='fill');$('brushTool').classList.toggle('primary',colorTool==='brush');}
+function fillColorRegion(x,y,chosenColor=null,recordUndo=true,onlyWhite=false){const w=colorCanvas.width,h=colorCanvas.height,px=Math.max(0,Math.min(w-1,Math.round(x))),py=Math.max(0,Math.min(h-1,Math.round(y))),img=colorCtx.getImageData(0,0,w,h),data=img.data,idx=(py*w+px)*4;const target=[data[idx],data[idx+1],data[idx+2]],lum=(target[0]+target[1]+target[2])/3;if(lum<115||(onlyWhite&&lum<225))return 0;const chosen=chosenColor||$('coloringColor').value;const fill=[parseInt(chosen.slice(1,3),16),parseInt(chosen.slice(3,5),16),parseInt(chosen.slice(5,7),16)];if(target.every((v,i)=>Math.abs(v-fill[i])<3))return 0;const original=new Uint8ClampedArray(data),seen=new Uint8Array(w*h),stack=new Int32Array(w*h);let top=0,count=0;const start=py*w+px;stack[top++]=start;seen[start]=1;const tol=62;while(top){const p=stack[--top],i=p*4;const dr=original[i]-target[0],dg=original[i+1]-target[1],db=original[i+2]-target[2];if(dr*dr+dg*dg+db*db>tol*tol)continue;data[i]=fill[0];data[i+1]=fill[1];data[i+2]=fill[2];data[i+3]=255;count++;const xx=p%w,yy=(p/w)|0;if(xx>0&&!seen[p-1]){seen[p-1]=1;stack[top++]=p-1;}if(xx<w-1&&!seen[p+1]){seen[p+1]=1;stack[top++]=p+1;}if(yy>0&&!seen[p-w]){seen[p-w]=1;stack[top++]=p-w;}if(yy<h-1&&!seen[p+w]){seen[p+w]=1;stack[top++]=p+w;}}if(count){if(recordUndo)pushColorUndo();colorCtx.putImageData(img,0,0);}return count;}
+const NEIGHBOR_COLOR_PLANS={
+ cottage:[{x:520,y:60,color:'#f5cb54',label:'the sunny sky'},{x:320,y:238,color:'#efc9a1',label:'the cottage walls'},{x:320,y:330,color:'#8fba83',label:'the front door'}],
+ butterfly:[{x:195,y:190,color:'#f2a6bd',label:'a butterfly wing'},{x:445,y:190,color:'#9cc5ed',label:'the other wing'}],
+ kitty:[{x:245,y:245,color:'#f4b96b',label:'one kitty eye'},{x:395,y:245,color:'#8fc4df',label:'the other kitty eye'}],
+ flower:[{x:320,y:112,color:'#f4b6cb',label:'a flower petal'},{x:250,y:180,color:'#f5d268',label:'another petal'},{x:390,y:180,color:'#a5c98c',label:'a garden petal'}],
+ rainbow:[{x:320,y:160,color:'#e99b9b',label:'the outer rainbow'},{x:320,y:205,color:'#f0c46a',label:'the next rainbow band'},{x:320,y:245,color:'#8bb9d9',label:'a lower rainbow band'}],
+ sheep:[{x:210,y:220,color:'#c5d9ec',label:'Pip’s fluffy coat'},{x:280,y:165,color:'#f4d58a',label:'a woolly patch'},{x:360,y:165,color:'#eeb9cd',label:'another woolly patch'}]
+};
+function stopNeighborColoring(){if(neighborColorTimer!==null){clearTimeout(neighborColorTimer);neighborColorTimer=null;}if(neighborBrushHideTimer!==null){clearTimeout(neighborBrushHideTimer);neighborBrushHideTimer=null;}const cursor=$('neighborBrushCursor');if(cursor)cursor.classList.remove('active');}
+function showNeighborBrush(x,y,color){const cursor=$('neighborBrushCursor'),rect=colorCanvas.getBoundingClientRect(),wrap=$('colorCanvas').parentElement.getBoundingClientRect();cursor.style.left=(rect.left-wrap.left+x/colorCanvas.width*rect.width)+'px';cursor.style.top=(rect.top-wrap.top+y/colorCanvas.height*rect.height)+'px';cursor.style.background=color;cursor.classList.add('active');if(neighborBrushHideTimer!==null)clearTimeout(neighborBrushHideTimer);}
+function startNeighborColoring(){stopNeighborColoring();const actions=NEIGHBOR_COLOR_PLANS[colorPage?.id]||[];neighborColorStep=0;$('neighborPainterTitle').textContent=coloringNeighbor+' is coloring with you';$('neighborPainterStatus').textContent='Watch their brush move and add colors to your shared picture.';$('neighborProgress').style.width='0%';if(!actions.length){$('neighborPainterStatus').textContent=coloringNeighbor+' is here beside you. You can color together.';return;}const next=()=>{if(!colorPage||neighborColorStep>=actions.length){$('neighborPainterTitle').textContent=coloringNeighbor+' finished their colors';$('neighborPainterStatus').textContent='Your shared picture is ready for more colors from you.';$('neighborProgress').style.width='100%';$('neighborBrushCursor').classList.remove('active');neighborColorTimer=null;return;}const action=actions[neighborColorStep];showNeighborBrush(action.x,action.y,action.color);$('neighborPainterStatus').textContent=coloringNeighbor+' is coloring '+action.label+'…';neighborColorTimer=setTimeout(()=>{neighborColorTimer=null;const count=fillColorRegion(action.x,action.y,action.color,true,true);neighborColorStep++;$('neighborProgress').style.width=Math.round(neighborColorStep/actions.length*100)+'%';$('neighborPainterStatus').textContent=count?coloringNeighbor+' added color to '+action.label+'.':'Your area already has color, so '+coloringNeighbor+' is choosing another spot.';neighborBrushHideTimer=setTimeout(()=>$('neighborBrushCursor').classList.remove('active'),350);neighborColorTimer=setTimeout(next,850);},650);};neighborColorTimer=setTimeout(next,900);}
+function colorPoint(e){const r=colorCanvas.getBoundingClientRect();return {x:(e.clientX-r.left)*colorCanvas.width/r.width,y:(e.clientY-r.top)*colorCanvas.height/r.height};}
+colorCanvas.addEventListener('pointerdown',e=>{if(!colorPage)return;const p=colorPoint(e);if(colorTool==='fill'){fillColorRegion(p.x,p.y);return;}pushColorUndo();colorDrawing=true;colorLast=p;colorCanvas.setPointerCapture(e.pointerId);});
+colorCanvas.addEventListener('pointermove',e=>{if(!colorDrawing||!colorLast)return;const p=colorPoint(e);colorCtx.strokeStyle=$('coloringColor').value;colorCtx.lineWidth=Number($('coloringBrush').value);colorCtx.lineCap='round';colorCtx.lineJoin='round';colorCtx.beginPath();colorCtx.moveTo(colorLast.x,colorLast.y);colorCtx.lineTo(p.x,p.y);colorCtx.stroke();colorLast=p;});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>colorCanvas.addEventListener(ev,()=>{colorDrawing=false;colorLast=null;}));
+$('bucketTool').addEventListener('click',()=>{colorTool='fill';updateColorToolButtons();});$('brushTool').addEventListener('click',()=>{colorTool='brush';updateColorToolButtons();});
+$('colorUndo').addEventListener('click',()=>{const prev=colorUndoStack.pop();if(prev)colorCtx.putImageData(prev,0,0);else showStatus('There is nothing to undo yet.');});
+$('colorBackBtn').addEventListener('click',()=>{stopNeighborColoring();$('colorWorkspace').classList.add('hidden');$('colorTemplateGrid').classList.remove('hidden');});
+$('resetColoring').addEventListener('click',()=>{if(colorPage){stopNeighborColoring();colorUndoStack=[];drawColorSvg(colorPage).then(()=>{startNeighborColoring();showStatus('Fresh shared coloring page ready.');});}});
+$('saveColoring').addEventListener('click',()=>{if(!colorPage)return;if(world.artworks.length>=20){showStatus('Gallery is full. Export a backup first.');return;}try{const data=colorCanvas.toDataURL('image/png');if(data.length>550000){showStatus('This picture is too detailed to save. Try a simpler coloring page.');return;}if(!addItem('picture','crafted',colorPage.name+' with '+coloringNeighbor)){showStatus('Your crafted pouch is full.');return;}world.artworks.push({name:colorPage.name+' with '+coloringNeighbor,data});save();renderSlots();closeShades();showStatus('Your shared coloring picture has been saved.');}catch(e){showStatus('This picture could not be saved. Try again.');}});
+$('coloringBtn').addEventListener('click',()=>openColoring('hyacinth'));
+$('animalCareBtn').addEventListener('click',()=>openAnimalCare({id:'sheep'}));$('animalCareShade').addEventListener('click',e=>{const b=e.target.closest('[data-care]');if(b)careForAnimal(b.dataset.care);});
+$('inviteArtBtn').addEventListener('click',()=>openColoring('hyacinth'));
+// Art studio: local pixel-free line drawing with pointer/touch support.
+const art=$('artCanvas'),actx=art.getContext('2d');function clearArt(){actx.fillStyle='#fffdf8';actx.fillRect(0,0,art.width,art.height);actx.strokeStyle='#eee8da';actx.lineWidth=1;for(let x=24;x<art.width;x+=24){actx.beginPath();actx.moveTo(x,0);actx.lineTo(x,art.height);actx.stroke();}for(let y=24;y<art.height;y+=24){actx.beginPath();actx.moveTo(0,y);actx.lineTo(art.width,y);actx.stroke();}}function artPoint(e){const r=art.getBoundingClientRect();return {x:(e.clientX-r.left)*art.width/r.width,y:(e.clientY-r.top)*art.height/r.height};}art.addEventListener('pointerdown',e=>{artDrawing=true;artLast=artPoint(e);art.setPointerCapture(e.pointerId);});art.addEventListener('pointermove',e=>{if(!artDrawing)return;const p=artPoint(e);actx.strokeStyle=$('paintColor').value;actx.lineWidth=Number($('brushSize').value);actx.lineCap='round';actx.lineJoin='round';actx.beginPath();actx.moveTo(artLast.x,artLast.y);actx.lineTo(p.x,p.y);actx.stroke();artLast=p;});['pointerup','pointercancel'].forEach(ev=>art.addEventListener(ev,()=>{artDrawing=false;artLast=null;}));$('clearArt').addEventListener('click',clearArt);$('saveArt').addEventListener('click',()=>{if(world.artworks.length>=20){showStatus('Gallery is full. Export a backup first.');return;}let data=art.toDataURL('image/png');if(data.length>550000){showStatus('Drawing is too large to save.');return;}world.artworks.push({name:$('artName').value.slice(0,28)||'My picture',data});if(!addItem('picture','crafted')){world.artworks.pop();showStatus('Crafted pouch is full.');return;}save();closeShades();clearArt();showStatus('Artwork saved in the crafted pouch.');});
+
+function prepareOfflinePlay(){
+ const note=$('offlineReadyNote');
+ if(!('serviceWorker' in navigator)||!window.isSecureContext){
+  note.textContent='Offline caching is not supported in this browser. Keep the game open while disconnected.';
+  showStatus('This browser does not support offline caching.');
+  return;
+ }
+ const onOfflinePage=/\/offline(?:\/index\.html)?\/?$/.test(location.pathname);
+ const workerUrl=onOfflinePage?'../sw.js':'./sw.js';
+ note.textContent='Preparing the offline copy of both game pages…';
+ navigator.serviceWorker.register(workerUrl,{updateViaCache:'none'})
+  .then(()=>navigator.serviceWorker.ready)
+  .then(()=>{
+   note.textContent='Offline ready on this device! You can disconnect and reopen DIYCraft in this same browser.';
+   showStatus('Offline play is ready on this device. You can disconnect and reopen DIYCraft here.');
+  })
+  .catch(()=>{
+   note.textContent='Offline setup could not finish. Please open DIYCraft again while connected.';
+   showStatus('Offline setup could not finish. Please open DIYCraft again while connected.');
+  });
+}
+
+// Keep one local autosave. No gameplay networking, analytics, third-party scripts or multiplayer.
+makeTexturePatterns();makeTileTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;globalBlockSpectrumPicker?.setColor(world.customBlock.color);draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
+window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{lastTime=0;frameAccumulator=0;if(document.visibilityState==='hidden')save();});window.addEventListener('beforeunload',()=>save());setInterval(()=>save(),12000);requestAnimationFrame(loop);prepareOfflinePlay();
+})();
+
