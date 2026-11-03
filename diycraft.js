@@ -1831,14 +1831,18 @@ function drawPlayerBed(queue,cam,w,h,bed){
 }
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.3),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
  const tick=performance.now()/1000,palette=getTimePalette(tick),cam=cameraState(),polys=[];
+ let stageMark=performanceHud?performance.now():0;
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
  // Celestial objects live on the world sky dome, not at fixed screen coordinates.
  drawSkyDecorations(cam,w,h,palette);
+ if(performanceHud){performanceMetrics.stageTotals.sky+=performance.now()-stageMark;stageMark=performance.now();}
  // Draw the ground as camera-visible cells. A single world-sized polygon
  // can have corners behind the camera, causing the entire floor to disappear.
  pushGroundSurface(polys,cam,w,h,palette.ground);
+ if(performanceHud){performanceMetrics.stageTotals.ground+=performance.now()-stageMark;stageMark=performance.now();}
  pushExcavationTerrain(polys,cam,w,h);
  pushWaterSurfaces(polys,cam,w,h);
+ if(performanceHud){performanceMetrics.stageTotals.terrain+=performance.now()-stageMark;stageMark=performance.now();}
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Camera-independent 16×16 chunk meshes cache static cubes and floor tiles; only animated doors stay dynamic.
@@ -1850,6 +1854,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    else if(isPlantBlock(b))drawWindSwayingPlant(polys,cam,w,h,b,tick);
   }
  },w,h);
+ if(performanceHud){performanceMetrics.stageTotals.blocks+=performance.now()-stageMark;stageMark=performance.now();}
  // The starter neighborhood is fixed in world space and only rendered nearby.
  const neighbors=currentNeighbors(tick,palette.mode==='night');
  const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
@@ -1872,6 +1877,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(hp){ctx.save();ctx.font='bold 23px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText('Zzz',hp.x,hp.y);ctx.fillStyle='#425d78';ctx.fillText('Zzz',hp.x,hp.y);ctx.font='21px system-ui';ctx.fillText('💤',hp.x+22,hp.y-19);ctx.restore();}
   }
  }
+ if(performanceHud){performanceMetrics.stageTotals.characters+=performance.now()-stageMark;stageMark=performance.now();}
  // Rounded, friendly animal characters replace the old cuboid animals.
  const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,26));
  for(const animal of animals)pushAnimalModel(polys,cam,w,h,animal,tick);
@@ -1893,9 +1899,12 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(marker){ctx.save();ctx.font='21px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(activityIcons[playerActivity],marker.x,marker.y);ctx.fillStyle='#35533e';ctx.fillText(activityIcons[playerActivity],marker.x,marker.y);ctx.restore();}
   }
  }
+ if(performanceHud){performanceMetrics.stageTotals.animals+=performance.now()-stageMark;stageMark=performance.now();}
  // Fish are world geometry now, so ground, walls, and blocks can occlude them.
  pushFishOverlays(polys,cam,w,h);
+ const sortStart=performanceHud?performance.now():0;
  polys.sort((a,b)=>b.depth-a.depth);
+ if(performanceHud){performanceMetrics.stageTotals.sort+=performance.now()-sortStart;performanceMetrics.polygonTotal+=polys.length;performanceMetrics.polygonMax=Math.max(performanceMetrics.polygonMax,polys.length);stageMark=performance.now();}
  for(const poly of polys){
   if(poly.faceMark==='plant'){
    const image=poly.plantTexture||textureTiles.get(poly.material);
@@ -1920,6 +1929,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   
   if(translucent&&!isWaterFace)ctx.restore();
  }
+ if(performanceHud){performanceMetrics.stageTotals.paint+=performance.now()-stageMark;performanceMetrics.stageSamples++;}
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
  if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.22,y:a.species==='giraffe'?1.65:1.12,z:a.z},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
@@ -2178,7 +2188,7 @@ const performanceHud=DEBUG_PERFORMANCE?(()=>{
  document.body.appendChild(panel);
  return panel;
 })():null;
-const performanceMetrics={windowStart:null,rafFrames:0,renderFrames:0,frameMsTotal:0,frameMsMax:0,renderMsTotal:0,renderMsMax:0,updateMsTotal:0,updateSteps:0,slowFrames:0};
+const performanceMetrics={windowStart:null,rafFrames:0,renderFrames:0,frameMsTotal:0,frameMsMax:0,renderMsTotal:0,renderMsMax:0,updateMsTotal:0,updateSteps:0,slowFrames:0,stageSamples:0,polygonTotal:0,polygonMax:0,stageTotals:{sky:0,ground:0,terrain:0,blocks:0,characters:0,animals:0,sort:0,paint:0}};
 const inputEventMetrics=performanceHud?{
  down:{count:0,total:0,max:0},move:{count:0,total:0,max:0},up:{count:0,total:0,max:0}
 }:null;
@@ -2203,6 +2213,8 @@ function resetPerformanceMetrics(windowStart){
  performanceMetrics.frameMsTotal=0;performanceMetrics.frameMsMax=0;
  performanceMetrics.renderMsTotal=0;performanceMetrics.renderMsMax=0;
  performanceMetrics.updateMsTotal=0;performanceMetrics.updateSteps=0;performanceMetrics.slowFrames=0;
+ performanceMetrics.stageSamples=0;performanceMetrics.polygonTotal=0;performanceMetrics.polygonMax=0;
+ for(const key of Object.keys(performanceMetrics.stageTotals))performanceMetrics.stageTotals[key]=0;
  resetInputEventMetrics();
 }
 function renderMeasuredFrame(){
@@ -2229,7 +2241,9 @@ function updatePerformanceHud(time){
   'Draw  '+average(performanceMetrics.renderMsTotal,performanceMetrics.renderFrames)+' / '+performanceMetrics.renderMsMax.toFixed(1)+' ms',
   'Sim   '+average(performanceMetrics.updateMsTotal,performanceMetrics.updateSteps)+' ms/tick',
   'Input D/U '+eventMetric(inputEventMetrics.down)+' / '+eventMetric(inputEventMetrics.up)+' ms',
-  'Drag '+eventMetric(inputEventMetrics.move)+' ms  >50ms '+performanceMetrics.slowFrames
+  'Drag '+eventMetric(inputEventMetrics.move)+' ms  >50ms '+performanceMetrics.slowFrames,
+  'Polygons '+(performanceMetrics.stageSamples?Math.round(performanceMetrics.polygonTotal/performanceMetrics.stageSamples):0)+' avg / '+performanceMetrics.polygonMax+' max',
+  'Stages ms sky/ground/terrain/blocks/chars/animals/sort/paint '+Object.keys(performanceMetrics.stageTotals).map(k=>average(performanceMetrics.stageTotals[k],performanceMetrics.stageSamples)).join('/')
  ].join('\n');
  resetPerformanceMetrics(time);
 }
