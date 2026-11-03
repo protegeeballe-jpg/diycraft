@@ -4,6 +4,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const source = fs.readFileSync('diycraft.js', 'utf8');
+check(source.includes('function pushAnimalEllipsoid') &&
+  source.includes('function pushAnimalModel') &&
+  source.includes('for(const animal of animals)pushAnimalModel(polys,cam,w,h,animal,tick);'),
+  'Animals must use rounded, depth-sorted 3D world geometry rather than screen-space cartoon sprites.');
+check(!source.includes('function drawAnimalSprite') && !source.includes('poly.animalSprite'),
+  'The old flat animal sprite renderer must stay removed.');
 const html = fs.readFileSync('index.html', 'utf8');
 const helperStart = source.indexOf('function renderChunkKey');
 const helperEnd = source.indexOf('function rebuildFishRenderChunks', helperStart);
