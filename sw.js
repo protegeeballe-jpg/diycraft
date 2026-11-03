@@ -1,13 +1,13 @@
 /* DIYCraft same-origin offline shell and game-engine cache. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v40';
+const CACHE_NAME = 'diycraft-shell-v41';
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;
   const pages = [
     root,
     new URL('index.html', root).href,
-    new URL('play.html', root).href,
+    new URL('linkedin.html', root).href,
     new URL('offline/', root).href,
     new URL('offline/index.html', root).href,
     new URL('diycraft.js', root).href
