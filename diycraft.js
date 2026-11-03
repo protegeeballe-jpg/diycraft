@@ -1767,6 +1767,7 @@ function interpolatePlayerState(previous,current,alpha){
   pitch:previous.pitch+(current.pitch-previous.pitch)*t
  };
 }
+let previousPlayerRenderState=null,renderAccumulator=0;
 const DEBUG_PERFORMANCE=new URLSearchParams(location.search).get('debug')==='1';
 const performanceHud=DEBUG_PERFORMANCE?(()=>{
  const panel=document.createElement('pre');
@@ -1811,7 +1812,7 @@ function updatePerformanceHud(time){
  ].join('\n');
  resetPerformanceMetrics(time);
 }
-let previousPlayerRenderState=null,renderAccumulator=0;
+
 function renderPlayerFrame(alpha){
  const p=world.player,current=capturePlayerRenderState(p);
  if(!previousPlayerRenderState){previousPlayerRenderState=current;renderMeasuredFrame();return;}
