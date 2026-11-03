@@ -1391,7 +1391,7 @@ function pushAnimalModel(queue,cam,w,h,a,tick){
   add(0,.33+bob,-.04,.16,.08,.12,'#d9eaf0');
  }else{
   const headY=sp==='sheep'?.59:sp==='cow'?.62:.57;
-  const headZ=sp==='sheep'?.- .53:-.49;
+  const headZ=sp==='sheep' ? -.53 : -.49;
   const headRX=sp==='cow'?.27:sp==='sheep'?.205:.255;
   const headRY=sp==='cow'?.28:sp==='sheep'?.235:.25;
   const headRZ=sp==='cow'?.25:sp==='sheep'?.22:.25;
