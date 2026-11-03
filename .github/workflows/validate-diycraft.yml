@@ -47,12 +47,13 @@ jobs:
           const main = fs.readFileSync('index.html', 'utf8');
           const offline = fs.readFileSync('offline/index.html', 'utf8');
 
-          const normalizedOffline = offline.replace(
-            '<script src="../diycraft.js"></script>',
-            '<script src="./diycraft.js"></script>'
-          );
+          const normalizedOffline = offline
+            .replace('<link rel="manifest" href="../manifest.json">', '<link rel="manifest" href="./manifest.json">')
+            .replace('<link rel="icon" type="image/svg+xml" href="../diycraft-icon.svg">', '<link rel="icon" type="image/svg+xml" href="./diycraft-icon.svg">')
+            .replace('<link rel="apple-touch-icon" sizes="192x192" href="../diycraft-icon-192.png">', '<link rel="apple-touch-icon" sizes="192x192" href="./diycraft-icon-192.png">')
+            .replace('<script src="../diycraft.js"></script>', '<script src="./diycraft.js"></script>');
           if (main !== normalizedOffline) {
-            throw new Error('Main and offline pages must match apart from the relative game-script path.');
+            throw new Error('Main and offline pages must match apart from their expected relative asset paths.');
           }
 
           const html = main;
