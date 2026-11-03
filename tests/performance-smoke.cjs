@@ -104,38 +104,80 @@ for (const activity of ['sleep','transformer','bed','set-bed','sit','work','danc
 }
 assert(source.includes('const FIXED_UPDATE_STEP=1/60'), 'A fixed 60 Hz simulation step is required.');
 assert(source.includes('function interpolatePlayerState(previous,current,alpha)'), 'The player render state must interpolate between fixed simulation updates.');
-assert(source.includes('renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);'), 'The canvas must render smoothly at the display refresh rate.');
-assert(!source.includes('if(steps>0)render();'), 'The 60 Hz simulation must not throttle visual rendering to 60 Hz.');
+assert(source.includes('MIN_RENDER_INTERVAL=1000/60-.5'), 'Full-world rendering must be capped near the 60 Hz simulation rate.');
+assert(source.includes('renderAccumulator+=frameElapsedMs;') && source.includes('if(renderAccumulator>=MIN_RENDER_INTERVAL){'), 'Render timing must use an accumulator so high-refresh displays do not cause uneven frame pacing.');
+assert(source.includes('renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);'), 'Player rendering must continue to use interpolated simulation state.');
+assert(!source.includes('if(steps>0)render();'), 'Rendering must remain independent of whether a simulation step ran on that display frame.');
 assert(!source.includes("else if(b.type==='tile')pushTileSlab(polys,cam,w,h,b)"), 'Decorative tiles must not be projected as dynamic per-frame geometry.');
 assert(source.includes("tileTexture:textureTiles.get('tile-'+pattern)"), 'Cached floor tiles must preserve their selected pattern texture.');
 assert(source.includes('MAX_FRAME_DELTA=.1'), 'Frame delta must be clamped after tab suspension or a long frame.');
 assert(!source.includes('time-lastTime<30'), 'The old 30 ms frame gate must not return.');
-assert(source.includes('render();\n}'), 'The animation loop must render after fixed updates.');
+assert(source.includes('render();\n}'), 'The animation loop must render on startup.');
 
 function simulateCadence(refreshRate) {
   const step = 1 / 60;
   const maxFrameDelta = 0.1;
   const maxSteps = 6;
+  const minRenderInterval = 1000 / 60 - 0.5;
   let last = 0;
   let accumulator = 0;
+  let renderAccumulator = 0;
   let updates = 0;
+  let renders = 0;
   for (let frame = 1; frame <= refreshRate; frame++) {
     const now = frame * 1000 / refreshRate;
-    const elapsed = Math.min(maxFrameDelta, Math.max(0, (now - last) / 1000));
+    const frameElapsedMs = Math.max(0, now - last);
+    const elapsed = Math.min(maxFrameDelta, frameElapsedMs / 1000);
     last = now;
     accumulator = Math.min(accumulator + elapsed, step * maxSteps);
+    renderAccumulator += frameElapsedMs;
     let count = 0;
     while (accumulator + 1e-9 >= step && count < maxSteps) {
       updates++;
       count++;
       accumulator -= step;
     }
+    if (renderAccumulator >= minRenderInterval) {
+      renderAccumulator %= minRenderInterval;
+      renders++;
+    }
   }
-  return updates;
+  return { updates, renders };
 }
-for (const hz of [30, 60, 120]) {
-  check(simulateCadence(hz) === 60, hz + ' Hz display should advance exactly 60 fixed updates per second.');
+for (const hz of [30, 60, 75, 120, 144, 165]) {
+  const cadence = simulateCadence(hz);
+  check(cadence.updates === 60, hz + ' Hz display should advance exactly 60 fixed updates per second.');
+  if (hz <= 60) {
+    check(cadence.renders === hz, hz + ' Hz display should retain its native render cadence.');
+  } else {
+    check(cadence.renders >= 58 && cadence.renders <= 63, hz + ' Hz display should avoid redundant full-world draws while keeping roughly 60 FPS.');
+  }
 }
+
+const routeCacheStart = source.indexOf('function getNeighborRouteSegments(route,speed)');
+const routeCacheEnd = source.indexOf('\nfunction neighborOnRoute', routeCacheStart);
+assert(routeCacheStart >= 0 && routeCacheEnd > routeCacheStart, 'Neighbor route segment cache must be extractable.');
+const createRouteCache = new Function(
+  'WeakMap', 'findNeighborPath', 'neighborPathLength',
+  'let worldGeometryRevision=1; const neighborRouteSegmentsCache=new WeakMap();' +
+  source.slice(routeCacheStart, routeCacheEnd) +
+  '\nreturn {getNeighborRouteSegments,setRevision(value){worldGeometryRevision=value;}};'
+);
+let routePathCalls = 0;
+const routeCacheApi = createRouteCache(
+  WeakMap,
+  (start, end) => { routePathCalls++; return [start, end]; },
+  path => Math.hypot(path[1].x - path[0].x, path[1].z - path[0].z)
+);
+const routeFixture = [{x:0,z:0,pause:1},{x:3,z:0,pause:2},{x:3,z:4,pause:1}];
+const firstRouteSegments = routeCacheApi.getNeighborRouteSegments(routeFixture, 1.05);
+const reusedRouteSegments = routeCacheApi.getNeighborRouteSegments(routeFixture, 1.05);
+check(firstRouteSegments === reusedRouteSegments && routePathCalls === routeFixture.length,
+  'Neighbor route segments and path lengths must be reused across render frames.');
+routeCacheApi.setRevision(2);
+const refreshedRouteSegments = routeCacheApi.getNeighborRouteSegments(routeFixture, 1.05);
+check(refreshedRouteSegments !== firstRouteSegments && routePathCalls === routeFixture.length * 2,
+  'Neighbor route cache must rebuild after world geometry changes.');
 
 let apiSet = makeApi();
 check(apiSet.api.projectedPolygonVisible([
