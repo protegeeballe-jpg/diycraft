@@ -6,7 +6,7 @@ on:
       - index.html
       - offline/index.html
       - diycraft.js
-      - play.html
+      - linkedin.html
       - sw.js
       - tests/performance-smoke.cjs
       - offline/README.md
@@ -16,7 +16,7 @@ on:
       - index.html
       - offline/index.html
       - diycraft.js
-      - play.html
+      - linkedin.html
       - sw.js
       - tests/performance-smoke.cjs
       - offline/README.md
@@ -56,8 +56,8 @@ jobs:
           }
 
           const html = main;
-          const launch = fs.readFileSync('play.html', 'utf8');
-          if (!launch.includes('<title>DIYCraft — Play the Peaceful Voxel World</title>') ||
+          const launch = fs.readFileSync('linkedin.html', 'utf8');
+          if (!launch.includes('<title>DIYCraft</title>') ||
               !launch.includes('class="play-button" href="./index.html"') ||
               !launch.includes('https://github.com/protegeeballe-jpg/diycraft')) {
             throw new Error('The DIYCraft launch page or its play/source links are missing.');
@@ -212,7 +212,7 @@ jobs:
           const worker = fs.readFileSync('sw.js', 'utf8');
           if (!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)) throw new Error('Expected a versioned DIYCraft offline cache.');
           for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', "new URL('diycraft.js', root).href",
-            "new URL('play.html', root).href", "const gameScriptUrl = new URL('diycraft.js', self.registration.scope)", 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
+            "new URL('linkedin.html', root).href", "const gameScriptUrl = new URL('diycraft.js', self.registration.scope)", 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
             if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
           }
 
