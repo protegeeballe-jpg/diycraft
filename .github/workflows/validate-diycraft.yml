@@ -80,7 +80,7 @@ jobs:
             'function animalPositions',
             'function pushAnimalModel',
             'function pushAnimalEllipsoid',
-            'if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}',
+            'for(const animal of animals)pushAnimalModel(polys,cam,w,h,animal,tick);',
             'animals:[]',
             'w.animals=d.animals.slice(0,100)',
 
