@@ -1284,9 +1284,10 @@ function animalWorldPoint(a,x,y,z,groundY){
  const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
  return {x:a.x+x*c-z*s,y:groundY+y,z:a.z+x*s+z*c};
 }
-function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alpha=1){
+function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alpha=1,meshQuality=null){
  // Low-poly smooth ellipsoids give each animal real world depth and let terrain occlude it.
- const rings=4,segments=8,grid=[];
+ // Far animals use smaller meshes because their details are below a few screen pixels.
+ const rings=meshQuality?.rings||4,segments=meshQuality?.segments||8,grid=[];
  for(let i=0;i<=rings;i++){
   const lat=-Math.PI/2+Math.PI*i/rings,row=[];
   const cosLat=Math.cos(lat),sinLat=Math.sin(lat);
@@ -1322,10 +1323,14 @@ function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alp
 }
 function pushAnimalModel(queue,cam,w,h,a,tick){
  const groundY=surfaceHeightAt(a.x,a.z),sp=a.species,phase=a.phase||0;
+ const baseProbe=project({x:a.x,y:groundY,z:a.z},cam,w,h);
+ const topProbe=project({x:a.x,y:groundY+1,z:a.z},cam,w,h);
+ const screenUnit=baseProbe&&topProbe?Math.hypot(baseProbe.x-topProbe.x,baseProbe.y-topProbe.y):0;
+ const meshQuality=screenUnit>0&&screenUnit<18?{rings:2,segments:6}:screenUnit>0&&screenUnit<34?{rings:3,segments:7}:null;
  const stride=a.moving===false?0:Math.sin(tick*6.2+phase)*.035,bob=Math.abs(Math.sin(tick*4.2+phase))*.018;
  const body=a.body||({sheep:'#f4eee2',cat:'#d6a46f',dog:'#bd8653',cow:'#f3f0e8',horse:'#9e603d',bird:'#77b9df',giraffe:'#e9bd59'})[sp]||'#d2a578';
  const accent=a.accent||({sheep:'#71645b',cat:'#efd2ac',dog:'#f1d9b9',cow:'#4b4542',horse:'#4d332a',bird:'#f4bd54',giraffe:'#9d6337'})[sp]||'#80634f';
- const add=(x,y,z,rx,ry,rz,color,alpha=1)=>pushAnimalEllipsoid(queue,cam,w,h,a,groundY,x,y,z,rx,ry,rz,color,alpha);
+ const add=(x,y,z,rx,ry,rz,color,alpha=1)=>pushAnimalEllipsoid(queue,cam,w,h,a,groundY,x,y,z,rx,ry,rz,color,alpha,meshQuality);
  const legColor=sp==='cow'?'#eee9df':sp==='horse'?'#65402f':sp==='giraffe'?'#d9a94d':sp==='bird'?'#b77e42':sp==='cat'?'#bd956d':sp==='dog'?'#926443': '#81766c';
  const legHeight=sp==='horse'?.28:sp==='giraffe'?.24:sp==='bird'?.105:sp==='sheep'?.115:.19;
  const legRadius=sp==='horse'?.075:sp==='giraffe'?.068:sp==='bird'?.035:sp==='sheep'?.075:.065;
