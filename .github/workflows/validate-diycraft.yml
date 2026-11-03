@@ -103,7 +103,7 @@ jobs:
             'function traceWorldRay(cam,dir,maxDistance,step)',
             'function isProtectedDigCell(x,z)',
             'function digAtScreen(',
-            'function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2)',
+            'function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py))',
             'function pushGroundSurface(queue,cam,w,h,color)',
             "material:underground?'dirt':'grass'",
             "function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt')",
