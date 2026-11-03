@@ -1282,7 +1282,7 @@ function animalAtScreen(px,py){
 }
 function animalWorldPoint(a,x,y,z,groundY){
  const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
- return {x:a.x+x*c+z*s,y:groundY+y,z:a.z-x*s+z*c};
+ return {x:a.x+x*c-z*s,y:groundY+y,z:a.z+x*s+z*c};
 }
 function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alpha=1){
  // Low-poly smooth ellipsoids give each animal real world depth and let terrain occlude it.
@@ -1301,7 +1301,7 @@ function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alp
   let nx=Math.cos(lat)*Math.cos(lon)/Math.max(.001,rx),ny=Math.sin(lat)/Math.max(.001,ry),nz=Math.cos(lat)*Math.sin(lon)/Math.max(.001,rz);
   const normalLength=Math.hypot(nx,ny,nz)||1;nx/=normalLength;ny/=normalLength;nz/=normalLength;
   const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
-  const worldNormal={x:nx*c+nz*s,y:ny,z:-nx*s+nz*c};
+  const worldNormal={x:nx*c-nz*s,y:ny,z:nx*s+nz*c};
   const v0=grid[i][j],v1=grid[i][j+1],v2=grid[i+1][j+1],v3=grid[i+1][j];
   const center={x:(v0.x+v1.x+v2.x+v3.x)/4,y:(v0.y+v1.y+v2.y+v3.y)/4,z:(v0.z+v1.z+v2.z+v3.z)/4};
   const toCamera={x:cam.pos.x-center.x,y:cam.pos.y-center.y,z:cam.pos.z-center.z};
