@@ -163,7 +163,7 @@ jobs:
           }
           const performanceRequired = [
             'const RENDER_CHUNK_SIZE=16',
-            'const MAX_BLOCK_CHUNK_CACHE=32',
+            'const MAX_BLOCK_CHUNK_CACHE=16',
             'function projectedPolygonVisible(pts,w,h,margin=2)',
             'function chunkBoundsVisible(bounds,cam,w,h,margin=16)',
             'function buildBlockChunkMesh(key,items)',
