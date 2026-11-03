@@ -63,6 +63,15 @@
 .custom-color-fields .field{margin:5px 0}
 .custom-color-fields input[type=color]{width:100%;height:43px;padding:3px;border:1px solid var(--line);border-radius:10px;background:white}
 .custom-color-fields input[type=text]{width:100%;min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);text-transform:uppercase}
+.spectrum-picker{display:grid;gap:9px;width:100%;min-width:0}
+.spectrum-sv{position:relative;width:100%;height:132px;overflow:hidden;border:1px solid #cbd9cb;border-radius:10px;background-color:#a080d8;background-image:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent);cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+.spectrum-cursor{position:absolute;left:50%;top:50%;width:17px;height:17px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #263c32,0 1px 4px #0009;transform:translate(-50%,-50%);pointer-events:none}
+.spectrum-hue-row{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:8px;font-size:11px;color:#617165}
+.spectrum-picker input.spectrum-hue{width:100%;height:18px!important;margin:0;padding:0!important;border:0!important;border-radius:999px!important;appearance:none;-webkit-appearance:none;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);cursor:pointer;box-shadow:inset 0 0 0 1px #263c3233}
+.spectrum-picker input.spectrum-hue::-webkit-slider-thumb{width:18px;height:18px;appearance:none;-webkit-appearance:none;border:2px solid #fff;border-radius:50%;background:#334b39;box-shadow:0 0 0 1px #263c32}
+.spectrum-picker input.spectrum-hue::-moz-range-thumb{width:14px;height:14px;border:2px solid #fff;border-radius:50%;background:#334b39;box-shadow:0 0 0 1px #263c32}
+.native-color-proxy{display:none!important}
+@media(max-width:430px){.spectrum-sv{height:116px}}
 .color-swatch-row{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px}
 .color-swatch{width:27px;height:27px;padding:0!important;border-radius:50%!important;border:2px solid #fff!important;outline:1px solid #cbd8ca;box-shadow:none!important}
 .color-swatch:focus-visible{outline:3px solid #39784e}
@@ -180,7 +189,13 @@
           <option value="auto">🔄 Automatic day/night cycle</option>
         </select>
       </label>
-      <label class="field">Choose any block color<input id="customColor" type="color" value="#aa83d8"></label><button id="useCustomColor" class="soft">Use this color for new blocks</button>
+      <div class="field">Choose any block color
+        <div class="spectrum-picker" role="group" aria-label="Custom block color spectrum">
+          <div class="spectrum-sv" id="globalBlockSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
+          <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="globalBlockHue" type="range" min="0" max="359" value="270" aria-label="Color hue"></div>
+        </div>
+        <input id="customColor" class="native-color-proxy" type="color" value="#aa83d8" aria-hidden="true" tabindex="-1">
+      </div><button id="useCustomColor" class="soft">Use this color for new blocks</button>
       <div class="menu-grid">
         <button id="menuInventory">🪣 Material Bucket & pouches</button><button id="craftBtn">🧺 Crafting settings</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Artwork with a neighbor</button><button id="characterBtn">🧑 Profile & appearance</button><button id="doorDesignBtn">🚪 Door design</button><button id="tileDesignBtn">▦ Slab / tile design</button><button id="fishModeToggle">🐟 Fish placement: Off</button><button id="controlsBtn">Hide movement controls</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
         <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn" title="Return to the neighborhood if you get lost">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
@@ -217,7 +232,13 @@
       <div class="texture-choice-grid" id="customTextureChoices"></div>
       <h3>2. Choose any color</h3>
       <div class="custom-color-fields">
-        <label class="field">Full color spectrum<input id="customBlockColor" type="color" value="#aa83d8" aria-label="Choose any color"></label>
+        <div class="field">Full color spectrum
+          <div class="spectrum-picker" role="group" aria-label="Custom solid color spectrum">
+            <div class="spectrum-sv" id="customBlockSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
+            <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="customBlockHue" type="range" min="0" max="359" value="270" aria-label="Color hue"></div>
+          </div>
+          <input id="customBlockColor" class="native-color-proxy" type="color" value="#aa83d8" aria-hidden="true" tabindex="-1">
+        </div>
         <label class="field">HEX color code<input id="customBlockHex" type="text" value="#AA83D8" maxlength="7" spellcheck="false" aria-label="Hex color code"></label>
       </div>
       <div class="note">Quick color choices</div>
@@ -252,7 +273,13 @@
       <div class="tile-choice-grid" id="tileChoices"></div>
       <div class="character-section-title">Choose any color</div>
       <div class="custom-color-fields">
-        <label class="field">Full color spectrum<input id="tileColor" type="color" value="#c5a98a" aria-label="Choose any tile color"></label>
+        <div class="field">Full color spectrum
+          <div class="spectrum-picker" role="group" aria-label="Tile color spectrum">
+            <div class="spectrum-sv" id="tileSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
+            <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="tileHue" type="range" min="0" max="359" value="30" aria-label="Color hue"></div>
+          </div>
+          <input id="tileColor" class="native-color-proxy" type="color" value="#c5a98a" aria-hidden="true" tabindex="-1">
+        </div>
         <label class="field">HEX color code<input id="tileHex" type="text" value="#C5A98A" maxlength="7" spellcheck="false" aria-label="Tile HEX color code"></label>
       </div>
       <div class="note">Quick color choices</div>
