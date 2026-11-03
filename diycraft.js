@@ -355,10 +355,14 @@ function blockFaceTexture(block,normal,fallback){
  if(block.type==='grass'){
   if(ny>0)return 'grass';
   if(ny<0)return 'dirt';
+  // Face vertex order differs on opposing sides; these two variants keep
+  // the grass band glued to the top edge instead of rotating onto a side edge.
   return nx>0||nz<0?'grass-side-right':'grass-side-bottom';
  }
  if(block.type==='wood'){
   if(ny!==0)return 'wood-end';
+  // Both side variants have longitudinal bark grain; their slight color
+  // difference avoids a mirrored, copy-pasted look around the trunk.
   return nx>0||nz<0?'wood-side-horizontal':'wood-side-vertical';
  }
  return fallback;
@@ -624,9 +628,10 @@ function makeTexturePatterns(){
  const faceMakers={
   'grass-side-right':c=>{
    for(let i=0;i<46;i++){const x=(i*29+7)%96,y=(i*43+11)%96;c.fillStyle=i%3?'#5c3d2d88':'#b2875b88';c.beginPath();c.ellipse(x,y,1+(i%3),.8+(i%2),i*.4,0,Math.PI*2);c.fill();}
-   c.fillStyle='#285d32';c.fillRect(75,0,4,96);c.fillStyle='#4d963f';c.fillRect(79,0,17,96);
-   for(let y=4;y<96;y+=9){c.strokeStyle=y%2?'#b4d979':'#2c6e35';c.lineWidth=1.5;c.beginPath();c.moveTo(82,y);c.lineTo(76-(y%3),y-3);c.stroke();}
-   c.fillStyle='#8fbd5b';for(let y=7;y<96;y+=19)c.fillRect(87,y,5,2);
+   // Texture top edge maps to the block's upper edge on +X and -Z faces.
+   c.fillStyle='#285d32';c.fillRect(0,0,96,4);c.fillStyle='#4d963f';c.fillRect(0,4,96,14);
+   for(let x=4;x<96;x+=9){c.strokeStyle=x%2?'#b4d979':'#2c6e35';c.lineWidth=1.5;c.beginPath();c.moveTo(x,14);c.lineTo(x-3,20+(x%3));c.stroke();}
+   c.fillStyle='#8fbd5b';for(let x=7;x<96;x+=19)c.fillRect(x,5,5,2);
   },
   'grass-side-bottom':c=>{
    for(let i=0;i<46;i++){const x=(i*29+7)%96,y=(i*43+11)%96;c.fillStyle=i%3?'#5c3d2d88':'#b2875b88';c.beginPath();c.ellipse(x,y,1+(i%3),.8+(i%2),i*.4,0,Math.PI*2);c.fill();}
@@ -635,9 +640,10 @@ function makeTexturePatterns(){
    c.fillStyle='#8fbd5b';for(let x=7;x<96;x+=19)c.fillRect(x,87,2,5);
   },
   'wood-side-horizontal':c=>{
-   for(let y=5;y<96;y+=13){c.strokeStyle=y%2?'#603818bb':'#e5bd7f99';c.lineWidth=y%2?2.2:1.2;c.beginPath();c.moveTo(0,y);c.bezierCurveTo(22,y-4,41,y+5,63,y);c.bezierCurveTo(78,y-4,87,y+4,96,y-1);c.stroke();}
-   for(let i=0;i<11;i++){const x=(i*37+9)%96,y=(i*29+12)%96;c.strokeStyle=i%2?'#58351f99':'#d5a46b99';c.lineWidth=1.4;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+5,y-4,x+10,y+1);c.stroke();}
-   [[28,31],[74,72]].forEach(([x,y])=>{c.strokeStyle='#60391fbb';c.lineWidth=1.7;c.beginPath();c.ellipse(x,y,8,3,.08,0,Math.PI*2);c.ellipse(x,y,3,1.5,.08,0,Math.PI*2);c.stroke();});
+   // Grain runs vertically with the trunk on every side orientation.
+   for(let x=5;x<96;x+=13){c.strokeStyle=x%2?'#603818bb':'#e5bd7f99';c.lineWidth=x%2?2.2:1.2;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x-4,22,x+5,41,x,63);c.bezierCurveTo(x-4,78,x+4,87,x-1,96);c.stroke();}
+   for(let i=0;i<11;i++){const x=(i*37+9)%96,y=(i*29+12)%96;c.strokeStyle=i%2?'#58351f99':'#d5a46b99';c.lineWidth=1.4;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x-4,y+5,x+1,y+10);c.stroke();}
+   [[28,31],[74,72]].forEach(([x,y])=>{c.strokeStyle='#60391fbb';c.lineWidth=1.7;c.beginPath();c.ellipse(x,y,3,8,.08,0,Math.PI*2);c.ellipse(x,y,1.5,3,.08,0,Math.PI*2);c.stroke();});
   },
   'wood-side-vertical':c=>{
    for(let x=5;x<96;x+=13){c.strokeStyle=x%2?'#603818bb':'#e5bd7f99';c.lineWidth=x%2?2.2:1.2;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x-4,22,x+5,41,x,63);c.bezierCurveTo(x-4,78,x+4,87,x-1,96);c.stroke();}
