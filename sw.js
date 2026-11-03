@@ -1,6 +1,6 @@
 /* DIYCraft same-origin offline shell and game-engine cache. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v46';
+const CACHE_NAME = 'diycraft-shell-v47';
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;
@@ -12,7 +12,9 @@ self.addEventListener('install', event => {
     new URL('offline/index.html', root).href,
     new URL('diycraft.js', root).href,
     new URL('manifest.json', root).href,
-    new URL('diycraft-icon.svg', root).href
+    new URL('diycraft-icon.svg', root).href,
+    new URL('diycraft-icon-192.png', root).href,
+    new URL('diycraft-icon-512.png', root).href
   ];
   event.waitUntil(
     caches.open(CACHE_NAME)
