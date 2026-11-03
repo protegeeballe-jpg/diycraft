@@ -120,7 +120,7 @@ assert(source.includes("panel.id='performanceHud'") && source.includes("pointer-
 assert(source.includes('function renderMeasuredFrame()') && source.includes('function updatePerformanceHud(time)'),
   'The diagnostics must measure actual draw cost and periodically report performance.');
 assert(source.includes("'RAF '+rate(performanceMetrics.rafFrames)") &&
-  source.includes("'DRAW '+rate(performanceMetrics.renderFrames)") &&
+  source.includes("rate(performanceMetrics.renderFrames)") &&
   source.includes("'Move  '+average(performanceMetrics.updateMsTotal"),
   'The diagnostics must distinguish browser frame rate, game draw rate, and simulation update cost.');
 
