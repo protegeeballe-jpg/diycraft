@@ -79,7 +79,7 @@ jobs:
             'function getTimePalette',
             'function animalPositions',
             'function pushAnimalModel',
-            'function drawAnimalSprite',
+            'function pushAnimalEllipsoid',
             'if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}',
             'animals:[]',
             'w.animals=d.animals.slice(0,100)',
