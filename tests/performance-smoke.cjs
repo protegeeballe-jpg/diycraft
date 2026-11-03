@@ -30,7 +30,7 @@ const cubeVerts = (x, y, z, sx = 1, sy = 1, sz = 1) => [
 ];
 const project = vertex => ({ x: vertex.x, y: vertex.y, d: 1 });
 
-function makeApi(blocks = [], cacheLimit = 32) {
+function makeApi(blocks = [], cacheLimit = 16) {
   const lookup = new Map(blocks.map(block => [keyBlock(block.x, block.y, block.z), block]));
   for (const block of blocks) {
     if (block.type === 'door') lookup.set(keyBlock(block.x, block.y + 1, block.z), block);
@@ -274,10 +274,10 @@ apiSet.api.invalidateBlockChunkMeshesAt(16, 0);
 check(!apiSet.cache.has('0,0') && !apiSet.cache.has('1,0'),
   'An edit at x=16 must invalidate meshes in both chunks touching that boundary.');
 
-apiSet = makeApi([], 32);
-for (let i = 0; i < 40; i++) apiSet.api.getBlockChunkMesh(String(i) + ',0', []);
-check(apiSet.cache.size === 32 && !apiSet.cache.has('0,0'),
-  'The least-recently-used chunk mesh cache must remain capped at 32 entries.');
+apiSet = makeApi([], 16);
+for (let i = 0; i < 24; i++) apiSet.api.getBlockChunkMesh(String(i) + ',0', []);
+check(apiSet.cache.size === 16 && !apiSet.cache.has('0,0'),
+  'The least-recently-used chunk mesh cache must remain capped at 16 entries.');
 
 const stressBlocks = [];
 for (let y = 0; y < 5; y++) {
