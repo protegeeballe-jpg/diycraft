@@ -251,11 +251,13 @@ function syncToolButtons(){
  if(button)button.textContent='🐟 Fish placement: '+(toolMode==='fish'?'On':'Off');
  $('topHint').textContent=toolMode==='fish'
   ?'Fish placement · Tap a water cell to add a fish'
-  :placementPaused
-   ?'Block placement paused · Choose a block to resume · Hold 0.6s to dig or remove'
-   :selected==='water'
-    ?'Water block selected · Tap water to stack another layer · Hold to collect a layer'
-    :'Tap to build or fill · Hold 0.6s to dig soil or remove a block';
+  :toolMode==='animal'
+   ?'Animal placement · Tap anywhere on the ground to drop your animal'
+   :placementPaused
+    ?'Block placement paused · Choose a block to resume · Hold 0.6s to dig or remove'
+    :selected==='water'
+     ?'Water block selected · Tap water to stack another layer · Hold to collect a layer'
+     :'Tap to build or fill · Hold 0.6s to dig soil or remove a block';
 }
 function setToolMode(mode,announce=true){
  toolMode=mode==='fish'?'fish':'build';
@@ -277,6 +279,73 @@ function openBucket(){
  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='bucket'));
  renderSlots();openShade('inventoryShade');
 }
+let selectedSpawnSpecies = 'sheep';
+
+function openAnimalPicker(){
+ toolMode='animal';
+ syncToolButtons();
+ renderHotbar();
+ let shade=$('animalPickerShade');
+ if(!shade){
+  shade=document.createElement('div');
+  shade.id='animalPickerShade';
+  shade.className='menu-shade';
+  shade.innerHTML=`<div class="menu-card"><h3>Choose an Animal to Drop 🐾</h3><p class="note">Tap an animal, then tap anywhere on the ground to place it!</p><div id="animalChoices" class="grid-choices" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0;"></div><button type="button" class="primary" data-close>Done</button></div>`;
+  document.body.append(shade);
+  shade.addEventListener('pointerdown',e=>{if(e.target===shade)closeShades();});
+  shade.querySelector('[data-close]').addEventListener('click',closeShades);
+ }
+ const container=$('animalChoices');
+ container.replaceChildren();
+ const list=[
+  {species:'sheep',name:'Sheep',emoji:'🐑'},
+  {species:'cat',name:'Cat',emoji:'🐱'},
+  {species:'dog',name:'Dog',emoji:'🐶'},
+  {species:'cow',name:'Cow',emoji:'🐮'},
+  {species:'horse',name:'Horse',emoji:'🐴'},
+  {species:'bird',name:'Bird',emoji:'🐦'},
+  {species:'giraffe',name:'Giraffe',emoji:'🦒'}
+ ];
+ list.forEach(item=>{
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.className=selectedSpawnSpecies===item.species?'primary':'';
+  btn.style.cssText='padding:10px;font-size:14px;display:flex;align-items:center;gap:8px;justify-content:center;';
+  btn.textContent=item.emoji+' '+item.name;
+  btn.addEventListener('click',()=>{
+   selectedSpawnSpecies=item.species;
+   toolMode='animal';
+   closeShades();
+   showStatus(item.name+' selected! Tap anywhere on the ground to place it.');
+   renderHotbar();
+   syncToolButtons();
+  });
+  container.append(btn);
+ });
+ openShade('animalPickerShade');
+}
+
+function spawnWorldElements(px,py,hit){
+ const targetHit=hit||rayHitAtScreen(px,py);
+ if(!targetHit){showStatus('Tap on the ground to place your animal.');return;}
+ const x=targetHit.place?targetHit.place.x:(targetHit.x!==undefined?targetHit.x:world.player.x);
+ const z=targetHit.place?targetHit.place.z:(targetHit.z!==undefined?targetHit.z:world.player.z);
+ 
+ if(!Array.isArray(world.animals))world.animals=[];
+ const speciesName=selectedSpawnSpecies.charAt(0).toUpperCase()+selectedSpawnSpecies.slice(1);
+ world.animals.push({
+  id:'spawned_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+  species:selectedSpawnSpecies,
+  name:speciesName,
+  x:x+0.5,
+  z:z+0.5,
+  facing:Math.random()*Math.PI*2,
+  phase:Math.random()*5
+ });
+ save();
+ render();
+ showStatus('A new '+speciesName+' appeared in your world! 🎉');
+}
 function renderHotbar(){
  const root=$('hotbar');root.replaceChildren();
  const categories=[
@@ -284,22 +353,27 @@ function renderHotbar(){
   {id:'tile',label:'Slabs / Tiles',icon:'▦',title:'Design and select slabs or tiles'},
   {id:'door',label:'Door',icon:'🚪',title:'Design and select a door'},
   {id:'water',label:'Water',icon:'💧',title:'Select the water block'},
+  {id:'animal',label:'Animals',icon:'🐄',title:'Choose an animal to drop'}, // <--- ADD THIS
   {id:'bucket',label:'Bucket',icon:'🪣',title:'Open the Material Bucket'},
-  {id:'pause',label:placementPaused?'No Block':'Pause',icon:'✋',title:'Pause block placement until you choose another block'}
+  {id:'pause',label:placementPaused?'No Block':'Pause',icon:'✋',title:'Pause block placement'}
  ];
  categories.forEach(item=>{
   const btn=document.createElement('button');btn.type='button';btn.className='material-category';
   const icon=document.createElement('span');icon.className='emoji';icon.textContent=item.icon;
   const label=document.createElement('small');label.textContent=item.label;btn.append(icon,label);btn.title=item.title;
+  
+  // Highlight active button if animal mode is selected
   const active=(item.id==='pause'&&placementPaused)||(!placementPaused&&((item.id==='solid'&&['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','custom'].includes(selected))
-   ||(item.id==='tile'&&selected==='tile')||(item.id==='door'&&selected==='door')||(item.id==='water'&&selected==='water')));
+   ||(item.id==='tile'&&selected==='tile')||(item.id==='door'&&selected==='door')||(item.id==='water'&&selected==='water')||(item.id==='animal'&&toolMode==='animal')));
   if(active)btn.classList.add('active');
+  
   btn.addEventListener('click',()=>{
    if(item.id==='pause'){pauseBuildPlacement();return;}
    if(item.id==='solid'){openSolidPicker();return;}
    if(item.id==='tile'){selectedBucketItem=null;setToolMode('build',false);openTileDesigner();return;}
    if(item.id==='door'){selectedBucketItem=null;setToolMode('build',false);openDoorDesigner();return;}
    if(item.id==='water'){chooseMaterial('water');return;}
+   if(item.id==='animal'){openAnimalPicker();return;} // <--- OPEN ANIMAL PICKER
    openBucket();
   });
   root.append(btn);
@@ -2489,10 +2563,11 @@ function handleWorldTap(px,py,target=null){
  const hit=target&&target.hasHit?target.hit:rayHitAtScreen(px,py);
  if(hit&&hit.block&&hit.block.type==='door'&&toolMode==='build'){toggleDoor(hit.block);return;}
  const animal=target?target.animal:animalAtScreen(px,py);
- if(animal){openAnimalCare(animal);return;}
+ if(animal&&toolMode!=='animal'){openAnimalCare(animal);return;}
  const neighbor=target?target.neighbor:neighborAtScreen(px,py);
  if(neighbor){openColoring(neighbor.name);return;}
  if(toolMode==='fish'){fishAtScreen(px,py,hit);return;}
+ if(toolMode==='animal'){spawnWorldElements(px,py,hit);return; /* <--- DROPS ANIMAL ON TAP */}
  if(placementPaused){showStatus('Building is paused. Choose a block to resume placing.');return;}
  buildOrFillAtScreen(px,py,hit);
 }
