@@ -8,6 +8,7 @@ const BLOCKS=[
  {id:'stone',name:'Stone',emoji:'⬜',color:'#9ca6a1'}, {id:'wood',name:'Wood',emoji:'🪵',color:'#a97545'},
  {id:'leaves',name:'Leaves',emoji:'🌳',color:'#4e9a59'}, {id:'brick',name:'Brick',emoji:'🧱',color:'#c87862'},
  {id:'glass',name:'Glass',emoji:'🔹',color:'#a5dce3'}, {id:'flower',name:'Flower',emoji:'🌸',color:'#e9a4c1'},
+ {id:'tall_grass',name:'Tall Grass',emoji:'🌿',color:'#4ea859'},
  {id:'sand',name:'Sand',emoji:'🟨',color:'#e8d38b'}, {id:'snow',name:'Snow',emoji:'❄️',color:'#f2f8fa'},
  {id:'tile',name:'Decorative Tile',emoji:'🧩',color:'#c5a98a'},
  {id:'door',name:'Door',emoji:'🚪',color:'#a97545'}
@@ -51,7 +52,7 @@ const TILE_DESIGNS=[
  {id:'spiral',name:'Spiral Garden',icon:'◎'}
 ];
 const ITEM_META={
- seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},grass:{name:'Grass',icon:'🟩'},dirt:{name:'Dirt',icon:'🟫'},leaves:{name:'Leaves',icon:'🌳'},brick:{name:'Brick',icon:'🧱'},glass:{name:'Glass',icon:'🔹'},flower:{name:'Flower',icon:'🌸'},sand:{name:'Sand',icon:'🟨'},snow:{name:'Snow',icon:'❄️'},tile:{name:'Decorative tile',icon:'🧩'},custom:{name:'Custom block pieces',icon:'🎨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
+ seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},grass:{name:'Grass',icon:'🟩'},dirt:{name:'Dirt',icon:'🟫'},leaves:{name:'Leaves',icon:'🌳'},brick:{name:'Brick',icon:'🧱'},glass:{name:'Glass',icon:'🔹'},flower:{name:'Flower',icon:'🌸'},tall_grass:{name:'Tall Grass',icon:'🌿'},sand:{name:'Sand',icon:'🟨'},snow:{name:'Snow',icon:'❄️'},tile:{name:'Decorative tile',icon:'🧩'},custom:{name:'Custom block pieces',icon:'🎨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
 };
 const RECIPES=[
  {id:'flowerpot',name:'Flower pot',desc:'A little pot for a bright flower.',icon:'🪴',cost:{wood:1,seed:1}},
@@ -279,7 +280,7 @@ function renderHotbar(){
   const btn=document.createElement('button');btn.type='button';btn.className='material-category';
   const icon=document.createElement('span');icon.className='emoji';icon.textContent=item.icon;
   const label=document.createElement('small');label.textContent=item.label;btn.append(icon,label);btn.title=item.title;
-  const active=(item.id==='pause'&&placementPaused)||(!placementPaused&&((item.id==='solid'&&['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom'].includes(selected))
+  const active=(item.id==='pause'&&placementPaused)||(!placementPaused&&((item.id==='solid'&&['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','custom'].includes(selected))
    ||(item.id==='tile'&&selected==='tile')||(item.id==='door'&&selected==='door')||(item.id==='water'&&selected==='water')));
   if(active)btn.classList.add('active');
   btn.addEventListener('click',()=>{
@@ -325,10 +326,11 @@ const BLOCK_RENDER_DISTANCE_CHUNKS=1.5;
 const BLOCK_RENDER_RADIUS=RENDER_CHUNK_SIZE*BLOCK_RENDER_DISTANCE_CHUNKS;
 let blockRenderChunks=new Map(),excavationRenderChunks=new Map(),waterRenderChunks=new Map(),fishRenderChunks=new Map();
 // The LRU mesh cache stays capped independently of the saved world-block records.
-const MAX_BLOCK_CHUNK_CACHE=16,OPAQUE_CUBE_TYPES=new Set([...SOLID_STYLE_TYPES,'custom']);
+function isPlantBlock(block){return !!block&&(block.type==='flower'||block.type==='tall_grass');}
+const MAX_BLOCK_CHUNK_CACHE=16,OPAQUE_CUBE_TYPES=new Set([...SOLID_STYLE_TYPES.filter(type=>type!=='flower'),'custom']);
 let blockChunkMeshCache=new Map();
 function renderChunkKey(x,z){return Math.floor(x/RENDER_CHUNK_SIZE)+','+Math.floor(z/RENDER_CHUNK_SIZE);}
-function isOpaqueCubeBlock(block){return !!block&&OPAQUE_CUBE_TYPES.has(block.type);}
+function isOpaqueCubeBlock(block){return !!block&&!isPlantBlock(block)&&OPAQUE_CUBE_TYPES.has(block.type);}
 function invalidateBlockChunkMeshesAt(x,z){
  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)blockChunkMeshCache.delete(renderChunkKey(x+dx,z+dz));
 }
@@ -387,13 +389,13 @@ function buildBlockChunkMesh(key,items){
  const faces=[],specials=[];
  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
  for(const block of items){
-  const door=block.type==='door',tile=block.type==='tile';
+  const door=block.type==='door',tile=block.type==='tile',plant=isPlantBlock(block);
   const x0=door?block.x-1:block.x,x1=door?block.x+2:block.x+1;
   const z0=door?block.z-1:block.z,z1=door?block.z+2:block.z+1;
   const y0=block.y,y1=block.y+(door?2:tile?TILE_BASE_OFFSET+TILE_THICKNESS:1);
   minX=Math.min(minX,x0);minY=Math.min(minY,y0);minZ=Math.min(minZ,z0);
   maxX=Math.max(maxX,x1);maxY=Math.max(maxY,y1);maxZ=Math.max(maxZ,z1);
-  if(door){specials.push(block);continue;}
+  if(door||plant){specials.push(block);continue;}
   if(tile){
    const pattern=TILE_DESIGNS.some(t=>t.id===block.tilePattern)?block.tilePattern:'grid';
    const color=validHex(block.color,'#c5a98a');
@@ -505,7 +507,7 @@ function rebuildLookup(){
  }
  rebuildRenderChunks();
 }
-function solid(x,y,z){return blockLookup.has(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));}
+function solid(x,y,z){const block=blockLookup.get(keyBlock(Math.floor(x),Math.floor(y),Math.floor(z)));return !!block&&!isPlantBlock(block);}
 function addBlock(x,y,z,type=selected,saveImmediately=true){
  if(y< -MAX_DIG_DEPTH||y>64||Math.abs(x)>WORLD_LIMIT||Math.abs(z)>WORLD_LIMIT||y< -groundDepthAt(x,z))return false;
  const k=keyBlock(x,y,z),upperKey=keyBlock(x,y+1,z);
@@ -623,6 +625,34 @@ function makeTexturePatterns(){
   brick:c=>{c.strokeStyle='#f8dfcacc';c.lineWidth=3;[0,32,64,96].forEach(y=>{c.beginPath();c.moveTo(0,y);c.lineTo(96,y);c.stroke();});[[24,0,24,32],[72,0,72,32],[0,32,0,64],[48,32,48,64],[96,32,96,64],[24,64,24,96],[72,64,72,96]].forEach(a=>{c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(a[2],a[3]);c.stroke();});c.strokeStyle='#9f544955';c.lineWidth=1;c.strokeRect(2,2,92,92);},
   glass:c=>{c.strokeStyle='#ffffffcc';c.lineWidth=3;c.beginPath();c.moveTo(8,80);c.lineTo(38,12);c.moveTo(55,88);c.lineTo(86,25);c.stroke();c.strokeStyle='#75c9d888';c.lineWidth=2;c.strokeRect(5,5,86,86);c.fillStyle='#ffffff44';c.fillRect(12,12,12,5);c.fillRect(65,70,18,4);},
   flower:c=>{for(let i=0;i<24;i++){const x=(i*31)%96,y=(i*47)%96;c.fillStyle=i%3?'#f8d5e5bb':'#a84f89aa';for(let p=0;p<5;p++){c.beginPath();c.ellipse(x+Math.cos(p*1.256)*4,y+Math.sin(p*1.256)*4,2.7,1.8,p*1.256,0,Math.PI*2);c.fill();}c.fillStyle='#f6d46c';c.beginPath();c.arc(x,y,1.6,0,Math.PI*2);c.fill();}},
+  tall_grass:c=>{
+   c.clearRect(0,0,96,96);c.lineCap='round';c.lineJoin='round';
+   const blades=[
+    [17,8,7,64,-5],[27,20,20,55,-4],[38,7,32,58,3],
+    [49,14,59,54,4],[61,6,76,62,7],[75,24,87,60,4],
+    [86,34,78,68,-2],[9,34,22,67,5],[45,29,47,62,-1],
+    [57,38,42,70,-5],[31,38,12,73,-3]
+   ];
+   blades.forEach(([x,tip,control,mid,bend],i)=>{
+    c.strokeStyle=['#2f783b','#4b9843','#70ad48','#a7ca54'][i%4];
+    c.lineWidth=i%3===0?5.4:4.2;c.beginPath();c.moveTo(x,95);
+    c.quadraticCurveTo(control+bend,mid,control,tip);c.stroke();
+    c.strokeStyle=i%2?'#c4da70aa':'#d8e88b99';c.lineWidth=1.2;
+    c.beginPath();c.moveTo(x,93);c.quadraticCurveTo(control+bend,mid+4,control,tip+8);c.stroke();
+   });
+   c.strokeStyle='#3f873d';c.lineWidth=3;
+   [[24,86,10,72],[43,91,54,76],[68,89,84,74]].forEach(([x,y,tx,ty])=>{c.beginPath();c.moveTo(x,y);c.quadraticCurveTo((x+tx)/2,y-5,tx,ty);c.stroke();});
+  },
+  'flower-plant':c=>{
+   c.clearRect(0,0,96,96);c.lineCap='round';c.lineJoin='round';
+   c.strokeStyle='#397f43';c.lineWidth=5;c.beginPath();c.moveTo(48,94);c.quadraticCurveTo(42,62,49,37);c.stroke();
+   c.fillStyle='#4b984b';c.beginPath();c.ellipse(34,70,14,5,-.48,0,Math.PI*2);c.fill();
+   c.beginPath();c.ellipse(61,58,13,5,.48,0,Math.PI*2);c.fill();
+   const cx=49,cy=26;
+   for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillStyle=i%2?'#e58caf':'#f4bfd1';c.beginPath();c.ellipse(cx+Math.cos(a)*12,cy+Math.sin(a)*12,10,6,a,0,Math.PI*2);c.fill();}
+   c.fillStyle='#f2cb59';c.beginPath();c.arc(cx,cy,7,0,Math.PI*2);c.fill();
+   c.fillStyle='#fff0a0';c.beginPath();c.arc(cx-2,cy-2,2,0,Math.PI*2);c.fill();
+  },
   sand:c=>{for(let i=0;i<115;i++){const x=(i*37)%96,y=(i*61)%96;c.fillStyle=i%3?'#b4945a99':'#fff4c6bb';c.fillRect(x,y,1.4+(i%3),1.2+(i%2));}c.strokeStyle='#fff1bd66';c.lineWidth=1.2;for(let y=18;y<96;y+=29){c.beginPath();c.moveTo(0,y);c.quadraticCurveTo(45,y-8,96,y+1);c.stroke();}},
   snow:c=>{for(let i=0;i<12;i++){const x=(i*29+9)%96,y=(i*41+6)%96;c.strokeStyle=i%2?'#9bc6dcaa':'#ffffffdd';c.lineWidth=1.5;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.moveTo(x-3.5,y-3.5);c.lineTo(x+3.5,y+3.5);c.stroke();}for(let i=0;i<25;i++){c.fillStyle='#ffffffdd';c.fillRect((i*17)%96,(i*43)%96,2,2);}},
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
@@ -813,6 +843,38 @@ function drawVoxelDoor(queue,cam,w,h,door){
  draw(.035,1.55,-.078,.05,.12,.036,'#6a4933');
 }
 
+function drawWindSwayingPlant(queue,cam,w,h,block,tick){
+ const flower=block.type==='flower',material=flower?'flower-plant':'tall_grass';
+ if(!textureTiles.has(material))return;
+ const cx=block.x+.5,cz=block.z+.5,baseY=block.y+.018;
+ const height=flower ? .86 : .96,halfWidth=flower ? .29 : .37;
+ const phase=block.x*.71+block.z*.53+(flower?1.35:0);
+ const gust=Math.sin(tick*1.55+phase)+Math.sin(tick*.72+phase*.43)*.34;
+ const swayX=gust*.105,swayZ=Math.sin(tick*1.27+phase+1.6)*.075;
+ // Two crossed, transparent planes keep the plant visible from every direction.
+ const planes=[
+  [
+   {x:cx-halfWidth+swayX,y:baseY+height,z:cz},
+   {x:cx+halfWidth+swayX,y:baseY+height,z:cz},
+   {x:cx+halfWidth,y:baseY,z:cz},
+   {x:cx-halfWidth,y:baseY,z:cz}
+  ],
+  [
+   {x:cx,y:baseY+height,z:cz-halfWidth+swayZ},
+   {x:cx,y:baseY+height,z:cz+halfWidth+swayZ},
+   {x:cx,y:baseY,z:cz+halfWidth},
+   {x:cx,y:baseY,z:cz-halfWidth}
+  ]
+ ];
+ for(const vertices of planes){
+  // Top-left, top-right, bottom-right, bottom-left keeps the blade roots at the ground.
+  const pts=vertices.map(vertex=>project(vertex,cam,w,h));
+  if(pts.some(point=>!point)||!projectedPolygonVisible(pts,w,h,2))continue;
+  const depth=pts.reduce((sum,point)=>sum+point.d,0)/pts.length;
+  queue.push({pts,depth,material,faceMark:'plant',alpha:.98,outline:false});
+ }
+}
+
 function paintTexture(poly){
  if(poly.pts.length!==4)return;
  const image=textureTiles.get(poly.material);
@@ -909,7 +971,7 @@ function buildNeighborObstacleSet(){
  if(neighborObstacleCache&&neighborObstacleCache.revision===worldGeometryRevision)return neighborObstacleCache.cells;
  const cells=new Set();
  for(const b of world.blocks){
-  if(b.type==='tile'||(b.type==='door'&&b.open)||b.y>=NAV_NEIGHBOR_HEIGHT||b.y+1<=0)continue;
+  if(isPlantBlock(b)||b.type==='tile'||(b.type==='door'&&b.open)||b.y>=NAV_NEIGHBOR_HEIGHT||b.y+1<=0)continue;
   markNeighborObstacleRect(cells,b.x,b.z,1,1);
  }
  for(const [cell,depth] of groundDepths){if(depth>0){const [x,z]=cell.split(',').map(Number);markNeighborObstacleRect(cells,x,z,1,1);}}
@@ -1528,7 +1590,7 @@ function drawPlayerBed(queue,cam,w,h,bed){
  piece(0,.56,.88,'#795438',1.16,.82,.14);
 }
 function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height;if(!w||!h)return;const dpr=Math.min(devicePixelRatio||1,1.3),W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}ctx.setTransform(dpr,0,0,dpr,0,0);
- const palette=getTimePalette(performance.now()/1000),cam=cameraState(),polys=[];
+ const tick=performance.now()/1000,palette=getTimePalette(tick),cam=cameraState(),polys=[];
  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,palette.sky[0]);sky.addColorStop(.7,palette.sky[1]);sky.addColorStop(1,palette.sky[2]);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
  // Celestial objects live on the world sky dome, not at fixed screen coordinates.
  drawSkyDecorations(cam,w,h,palette);
@@ -1545,10 +1607,11 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
   for(const b of mesh.specials){
    if(Math.abs(b.x-cam.pos.x)>BLOCK_RENDER_RADIUS||Math.abs(b.z-cam.pos.z)>BLOCK_RENDER_RADIUS)continue;
    if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b);
+   else if(isPlantBlock(b))drawWindSwayingPlant(polys,cam,w,h,b,tick);
   }
  },w,h);
  // The starter neighborhood is fixed in world space and only rendered nearby.
- const tick=performance.now()/1000,neighbors=currentNeighbors(tick,palette.mode==='night');
+ const neighbors=currentNeighbors(tick,palette.mode==='night');
  const nearWorldPoint=(x,z,radius=26)=>Math.hypot(x-cam.pos.x,z-cam.pos.z)<=radius;
  if(nearWorldPoint(-13,-7))drawNeighborHome(polys,cam,w,h,-13,-7,'#e7c6a7','#a96f65','#815b4a');
  if(nearWorldPoint(10,-17))drawNeighborHome(polys,cam,w,h,10,-17,'#b9d4c6','#668f8b','#71594d');
@@ -1596,6 +1659,11 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  pushFishOverlays(polys,cam,w,h);
  polys.sort((a,b)=>b.depth-a.depth);
  for(const poly of polys){
+  if(poly.faceMark==='plant'){
+   const image=textureTiles.get(poly.material);
+   if(image){ctx.save();ctx.globalAlpha=poly.alpha??.98;paintMappedQuad(image,poly.pts,1);ctx.restore();}
+   continue;
+  }
   if(poly.faceMark){
    ctx.save();ctx.globalAlpha=poly.alpha??1;
    ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
@@ -1732,6 +1800,7 @@ function surfaceHeightAt(x,z,atOrBelowY=Infinity){
  let highest=ground;
  const column=blockColumnBlocks.get(keyGround(bx,bz))||[];
  for(const b of column){
+  if(isPlantBlock(b))continue;
   const top=b.type==='tile'?b.y+TILE_BASE_OFFSET+TILE_THICKNESS:b.y+1;
   if(top<=atOrBelowY+.18&&top>highest)highest=top;
  }
@@ -1760,7 +1829,7 @@ function playerCollisionAt(x,z,y){
  const minY=Math.max(-MAX_DIG_DEPTH,Math.floor(y)),maxY=Math.min(64,Math.floor(y+PLAYER_BODY_HEIGHT));
  const checked=new Set();
  for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++)for(let by=minY;by<=maxY;by++){
-  const b=blockLookup.get(keyBlock(bx,by,bz));if(!b||checked.has(b))continue;checked.add(b);
+  const b=blockLookup.get(keyBlock(bx,by,bz));if(!b||isPlantBlock(b)||checked.has(b))continue;checked.add(b);
   if(b.type==='door'&&b.open)continue;
   const bottom=b.type==='tile'?b.y+TILE_BASE_OFFSET:b.y;
   const top=b.type==='tile'?bottom+TILE_THICKNESS:b.y+1;
