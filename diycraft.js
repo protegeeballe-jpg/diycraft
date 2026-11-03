@@ -1940,7 +1940,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(winding!==0){
     while(batchEnd<polys.length){
      const candidate=polys[batchEnd];
-     if(candidate.material!==undefined||candidate.tileTexture||candidate.waterSurface||candidate.waterSide||candidate.alpha!==undefined||candidate.outline||candidate.color!==poly.color||candidate.pts?.length!==4)break;
+     if(candidate.faceMark||candidate.line||candidate.fishEye||candidate.plantTexture||candidate.material!==undefined||candidate.tileTexture||candidate.waterSurface||candidate.waterSide||candidate.alpha!==undefined||candidate.outline||candidate.color!==poly.color||candidate.pts?.length!==4)break;
      if(screenPolygonWindingSign(candidate.pts)!==winding)break;
      batchEnd++;
     }
