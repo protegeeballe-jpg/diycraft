@@ -62,8 +62,21 @@ const RECIPES=[
 ];
 const emptySlots=()=>Array.from({length:60},()=>null);
 function freshWorld(){
- const blocks=[];
- const put=(x,y,z,type)=>blocks.push({x,y,z,type});
+ // ... (keep existing cottage and tree code)
+ return {
+  version:1,
+  name:'My Peaceful World',
+  blocks,
+  excavations:[],
+  waterCells:[],
+  waterLevels:[],
+  fish:[],
+  bucket:[],
+  animals: [], // <--- ADD THIS TO SAVE SPAWNED ANIMALS
+  player:{x:0,y:0,z:7,yaw:0,pitch:-.12,bed:{x:-1,y:0,z:-11,yaw:0},shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},
+  // ... (keep the rest of freshWorld)
+ };
+}
  // A small welcome cottage and a tree garden, all built from friendly materials.
  for(let x=-3;x<=1;x++)for(let z=-13;z<=-9;z++){put(x,0,z,'wood');if(x===-3||x===1||z===-13||z===-9){put(x,1,z,'brick');put(x,2,z,'brick');}}
  for(let x=-4;x<=2;x++)for(let z=-14;z<=-8;z++)put(x,3,z,'wood');
@@ -83,6 +96,17 @@ function freshWorld(){
 }
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
+if(Array.isArray(d.animals)){
+ w.animals=d.animals.slice(0,200).filter(a=>a&&typeof a.species==='string'&&Number.isFinite(a.x)&&Number.isFinite(a.z)).map(a=>({
+  id:String(a.id||'animal_'+Math.random()),
+  species:a.species,
+  name:String(a.name||a.species).slice(0,20),
+  x:Number(a.x),
+  z:Number(a.z),
+  facing:Number(a.facing||0),
+  phase:Number(a.phase||Math.random()*5)
+ }));
+}
  if(!d||typeof d!=='object')throw new Error('That file is not a DIYCraft world.');
  const w=freshWorld();w.name=String(d.name||w.name).slice(0,30);
  if(d.customBlock&&typeof d.customBlock==='object'){
