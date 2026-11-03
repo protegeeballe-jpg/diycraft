@@ -16,6 +16,7 @@ const faces = Function('return ' + faceMatch[1])();
 
 const solidTypes = ['grass', 'dirt', 'stone', 'wood', 'leaves', 'brick', 'glass', 'flower', 'sand', 'snow'];
 const opaqueTypes = new Set([...solidTypes, 'custom']);
+const isPlantBlock = block => !!block && (block.type === 'flower' || block.type === 'tall_grass');
 const blockMap = new Map([
   ['grass', { color: '#70b85a' }],
   ['custom', { color: '#aa83d8' }]
@@ -38,14 +39,14 @@ function makeApi(blocks = [], cacheLimit = 16) {
   const cache = new Map();
   const chunks = new Map();
   const create = new Function(
-    'RENDER_CHUNK_SIZE', 'MAX_BLOCK_CHUNK_CACHE', 'OPAQUE_CUBE_TYPES',
+    'RENDER_CHUNK_SIZE', 'MAX_BLOCK_CHUNK_CACHE', 'isPlantBlock', 'OPAQUE_CUBE_TYPES',
     'blockChunkMeshCache', 'blockRenderChunks', 'blockMap', 'blockLookup',
     'keyBlock', 'validHex', 'shadeColor', 'cubeVerts', 'FACES', 'project',
     'TILE_DESIGNS', 'TILE_BASE_OFFSET', 'TILE_THICKNESS', 'textureTiles',
     helpers + '\nreturn {renderChunkKey,isOpaqueCubeBlock,projectedPolygonVisible,chunkBoundsVisible,invalidateBlockChunkMeshesAt,buildBlockChunkMesh,getBlockChunkMesh,visitNearbyBlockChunkMeshes,appendBlockChunkMesh,addRenderChunkItem,removeRenderChunkItem,visitNearbyRenderChunks};'
   );
   const api = create(
-    16, cacheLimit, opaqueTypes, cache, chunks, blockMap, lookup,
+    16, cacheLimit, isPlantBlock, opaqueTypes, cache, chunks, blockMap, lookup,
     keyBlock, validHex, shadeColor, cubeVerts, faces, project,
     [{ id: 'grid' }], 0.02, 0.13, new Map([['tile-grid', { id: 'grid-texture' }]])
   );
