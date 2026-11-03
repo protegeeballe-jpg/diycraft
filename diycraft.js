@@ -1825,7 +1825,7 @@ function updatePerformanceHud(time){
   'Sim   '+average(performanceMetrics.updateMsTotal,performanceMetrics.updateSteps)+' ms/tick',
   'Input D/U '+eventMetric(inputEventMetrics.down)+' / '+eventMetric(inputEventMetrics.up)+' ms',
   'Drag '+eventMetric(inputEventMetrics.move)+' ms  >50ms '+performanceMetrics.slowFrames
- ].join('\\n');
+ ].join('\n');
  resetPerformanceMetrics(time);
 }
 
