@@ -588,9 +588,31 @@ function drawSkyDecorations(cam,w,h,palette){
 const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
 function cubeVerts(x,y,z,sx=1,sy=1,sz=1){return [{x,y,z},{x:x+sx,y,z},{x:x+sx,y,z:z+sz},{x,y,z:z+sz},{x,y:y+sy,z},{x:x+sx,y:y+sy,z},{x:x+sx,y:y+sy,z:z+sz},{x,y:y+sy,z:z+sz}];}
 function shadeColor(hex,mul){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.max(0,Math.round(((n>>16)&255)*mul))),g=Math.min(255,Math.max(0,Math.round(((n>>8)&255)*mul))),b=Math.min(255,Math.max(0,Math.round((n&255)*mul)));return `rgb(${r},${g},${b})`;}
+const DEFAULT_FLOWER_PETAL_COLOR='#e9a4c1';
+function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
+ c.clearRect(0,0,96,96);c.lineCap='round';c.lineJoin='round';
+ c.strokeStyle='#397f43';c.lineWidth=5;c.beginPath();c.moveTo(48,94);c.quadraticCurveTo(42,62,49,37);c.stroke();
+ c.fillStyle='#4b984b';c.beginPath();c.ellipse(34,70,14,5,-.48,0,Math.PI*2);c.fill();
+ c.beginPath();c.ellipse(61,58,13,5,.48,0,Math.PI*2);c.fill();
+ const cx=49,cy=26;
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillStyle=shadeColor(petalColor,i%2?.88:1.12);c.beginPath();c.ellipse(cx+Math.cos(a)*12,cy+Math.sin(a)*12,10,6,a,0,Math.PI*2);c.fill();}
+ c.fillStyle='#f2cb59';c.beginPath();c.arc(cx,cy,7,0,Math.PI*2);c.fill();
+ c.fillStyle='#fff0a0';c.beginPath();c.arc(cx-2,cy-2,2,0,Math.PI*2);c.fill();
+}
 // Small, locally generated patterns give every material its own tactile surface.
 const TEXTURE_REFERENCE_SIZE=96,TEXTURE_TILE_SIZE=32,TEXTURE_DRAW_SCALE=TEXTURE_TILE_SIZE/TEXTURE_REFERENCE_SIZE;
 const texturePatterns=new Map(),textureTiles=new Map();
+const flowerPlantTextureCache=new Map();
+function getFlowerPlantTexture(color){
+ const hex=validHex(color,DEFAULT_FLOWER_PETAL_COLOR).toLowerCase();
+ const cached=flowerPlantTextureCache.get(hex);
+ if(cached){flowerPlantTextureCache.delete(hex);flowerPlantTextureCache.set(hex,cached);return cached;}
+ const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;
+ const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);
+ drawFlowerPlantTexture(c,hex);flowerPlantTextureCache.set(hex,tile);
+ if(flowerPlantTextureCache.size>32)flowerPlantTextureCache.delete(flowerPlantTextureCache.keys().next().value);
+ return tile;
+}
 function makeTexturePatterns(){
  const makers={
   grass:c=>{
@@ -643,16 +665,7 @@ function makeTexturePatterns(){
    c.strokeStyle='#3f873d';c.lineWidth=3;
    [[24,86,10,72],[43,91,54,76],[68,89,84,74]].forEach(([x,y,tx,ty])=>{c.beginPath();c.moveTo(x,y);c.quadraticCurveTo((x+tx)/2,y-5,tx,ty);c.stroke();});
   },
-  'flower-plant':c=>{
-   c.clearRect(0,0,96,96);c.lineCap='round';c.lineJoin='round';
-   c.strokeStyle='#397f43';c.lineWidth=5;c.beginPath();c.moveTo(48,94);c.quadraticCurveTo(42,62,49,37);c.stroke();
-   c.fillStyle='#4b984b';c.beginPath();c.ellipse(34,70,14,5,-.48,0,Math.PI*2);c.fill();
-   c.beginPath();c.ellipse(61,58,13,5,.48,0,Math.PI*2);c.fill();
-   const cx=49,cy=26;
-   for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillStyle=i%2?'#e58caf':'#f4bfd1';c.beginPath();c.ellipse(cx+Math.cos(a)*12,cy+Math.sin(a)*12,10,6,a,0,Math.PI*2);c.fill();}
-   c.fillStyle='#f2cb59';c.beginPath();c.arc(cx,cy,7,0,Math.PI*2);c.fill();
-   c.fillStyle='#fff0a0';c.beginPath();c.arc(cx-2,cy-2,2,0,Math.PI*2);c.fill();
-  },
+  'flower-plant':c=>drawFlowerPlantTexture(c,DEFAULT_FLOWER_PETAL_COLOR),
   sand:c=>{for(let i=0;i<115;i++){const x=(i*37)%96,y=(i*61)%96;c.fillStyle=i%3?'#b4945a99':'#fff4c6bb';c.fillRect(x,y,1.4+(i%3),1.2+(i%2));}c.strokeStyle='#fff1bd66';c.lineWidth=1.2;for(let y=18;y<96;y+=29){c.beginPath();c.moveTo(0,y);c.quadraticCurveTo(45,y-8,96,y+1);c.stroke();}},
   snow:c=>{for(let i=0;i<12;i++){const x=(i*29+9)%96,y=(i*41+6)%96;c.strokeStyle=i%2?'#9bc6dcaa':'#ffffffdd';c.lineWidth=1.5;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.moveTo(x-3.5,y-3.5);c.lineTo(x+3.5,y+3.5);c.stroke();}for(let i=0;i<25;i++){c.fillStyle='#ffffffdd';c.fillRect((i*17)%96,(i*43)%96,2,2);}},
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
@@ -845,7 +858,8 @@ function drawVoxelDoor(queue,cam,w,h,door){
 
 function drawWindSwayingPlant(queue,cam,w,h,block,tick){
  const flower=block.type==='flower',material=flower?'flower-plant':'tall_grass';
- if(!textureTiles.has(material))return;
+ const plantImage=flower?getFlowerPlantTexture(block.color||world.solidStyles?.flower?.color||DEFAULT_FLOWER_PETAL_COLOR):textureTiles.get(material);
+ if(!plantImage)return;
  const cx=block.x+.5,cz=block.z+.5,baseY=block.y+.018;
  const height=flower ? .86 : .96,halfWidth=flower ? .29 : .37;
  const phase=block.x*.71+block.z*.53+(flower?1.35:0);
@@ -871,7 +885,7 @@ function drawWindSwayingPlant(queue,cam,w,h,block,tick){
   const pts=vertices.map(vertex=>project(vertex,cam,w,h));
   if(pts.some(point=>!point)||!projectedPolygonVisible(pts,w,h,2))continue;
   const depth=pts.reduce((sum,point)=>sum+point.d,0)/pts.length;
-  queue.push({pts,depth,material,faceMark:'plant',alpha:.98,outline:false});
+  queue.push({pts,depth,material,plantTexture:plantImage,faceMark:'plant',alpha:.98,outline:false});
  }
 }
 
@@ -1660,7 +1674,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  polys.sort((a,b)=>b.depth-a.depth);
  for(const poly of polys){
   if(poly.faceMark==='plant'){
-   const image=textureTiles.get(poly.material);
+   const image=poly.plantTexture||textureTiles.get(poly.material);
    if(image){ctx.save();ctx.globalAlpha=poly.alpha??.98;paintMappedQuad(image,poly.pts,1);ctx.restore();}
    continue;
   }
@@ -2274,6 +2288,7 @@ function openCustomBlockDesigner(){
  draftSolidType=SOLID_STYLE_TYPES.includes(selected)?selected:'custom';
  $('solidDesignType').value=draftSolidType;
  $('solidDesignerTitle').textContent=draftSolidType==='custom'?'🎨 Design a custom solid':('🎨 Design '+(BLOCKS.find(b=>b.id===draftSolidType)?.name||'solid')+' blocks');
+ $('customColorCaption').textContent=draftSolidType==='flower'?'Flower petal color':'Full color spectrum';
  const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
  const fallback=BLOCKS.find(b=>b.id===draftSolidType);
  draftCustomColor=saved?.color||fallback?.color||'#aa83d8';
@@ -2283,6 +2298,7 @@ function openCustomBlockDesigner(){
 }
 $('solidDesignType').addEventListener('change',e=>{
  draftSolidType=SOLID_STYLE_TYPES.includes(e.target.value)?e.target.value:'custom';
+ $('customColorCaption').textContent=draftSolidType==='flower'?'Flower petal color':'Full color spectrum';
  const saved=draftSolidType==='custom'?world.customBlock:world.solidStyles?.[draftSolidType];
  const fallback=BLOCKS.find(b=>b.id===draftSolidType);
  setDraftCustomColor(saved?.color||fallback?.color||'#aa83d8');
@@ -2521,6 +2537,7 @@ canvas.addEventListener('pointercancel',()=>{
 document.querySelectorAll('[data-move]').forEach(btn=>{const vec=btn.dataset.move.split(',').map(Number);const down=e=>{e.preventDefault();moveX=vec[0];moveZ = -vec[1];btn.setPointerCapture?.(e.pointerId);};const up=e=>{e.preventDefault();if(moveX===vec[0]&&moveZ===vec[1]){moveX=0;moveZ=0;}};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>btn.addEventListener(ev,up));});
 $('fishModeToggle').addEventListener('click',()=>{setToolMode(toolMode==='fish'?'build':'fish');$('fishModeToggle').textContent='🐟 Fish placement: '+(toolMode==='fish'?'On':'Off');closeShades();});
 $('solidCustomizeBtn').addEventListener('click',()=>{closeShades();openCustomBlockDesigner();});
+$('flowerColorBtn').addEventListener('click',()=>{chooseMaterial('flower');closeShades();openCustomBlockDesigner();});
 $('jumpBtn').addEventListener('click',jump);
 $('flyBtn').addEventListener('click',()=>{flying=!flying;vertical=0;updateFlyControls();showStatus(flying?'Creative flight enabled.':'Flight turned off.');});
 syncToolButtons();updateFlyControls();const clearButton=$('clearBtn');let clearHoldTimer=null,clearHoldFired=false;function cancelClearHold(){if(clearHoldTimer!==null){clearTimeout(clearHoldTimer);clearHoldTimer=null;}clearButton.classList.remove('holding');}clearButton.addEventListener('pointerdown',e=>{e.preventDefault();cancelClearHold();clearHoldFired=false;clearButton.classList.add('holding');try{clearButton.setPointerCapture(e.pointerId);}catch(_){}showStatus('Keep holding to clear your placed blocks…');clearHoldTimer=setTimeout(()=>{clearHoldTimer=null;clearButton.classList.remove('holding');clearHoldFired=true;if(window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))clearPlacedBlocks();else showStatus('Your world was left unchanged.');},1500);});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>clearButton.addEventListener(ev,cancelClearHold));clearButton.addEventListener('contextmenu',e=>e.preventDefault());
