@@ -113,6 +113,17 @@ assert(source.includes("tileTexture:textureTiles.get('tile-'+pattern)"), 'Cached
 assert(source.includes('MAX_FRAME_DELTA=.1'), 'Frame delta must be clamped after tab suspension or a long frame.');
 assert(!source.includes('time-lastTime<30'), 'The old 30 ms frame gate must not return.');
 assert(source.includes('render();\n}'), 'The animation loop must render on startup.');
+assert(source.includes("const DEBUG_PERFORMANCE=new URLSearchParams(location.search).get('debug')==='1';"),
+  'The on-screen performance monitor must be opt-in through the debug query parameter.');
+assert(source.includes("panel.id='performanceHud'") && source.includes("pointer-events:none"),
+  'The diagnostics panel must be a non-interactive overlay that does not intercept game controls.');
+assert(source.includes('function renderMeasuredFrame()') && source.includes('function updatePerformanceHud(time)'),
+  'The diagnostics must measure actual draw cost and periodically report performance.');
+assert(source.includes("'RAF '+rate(performanceMetrics.rafFrames)") &&
+  source.includes("'DRAW '+rate(performanceMetrics.renderFrames)") &&
+  source.includes("'Move  '+average(performanceMetrics.updateMsTotal"),
+  'The diagnostics must distinguish browser frame rate, game draw rate, and simulation update cost.');
+
 
 function simulateCadence(refreshRate) {
   const step = 1 / 60;
