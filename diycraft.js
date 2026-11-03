@@ -321,8 +321,11 @@ for(const [x,z,level] of world.waterLevels||[])waterLevels.set(keyGround(x,z),le
 let waterCells=new Set(waterLevels.keys());
 let fishSpots=(world.fish||[]).map(([x,z])=>({x,z}));
 const RENDER_CHUNK_SIZE=16;
+const BLOCK_RENDER_DISTANCE_CHUNKS=1.5;
+const BLOCK_RENDER_RADIUS=RENDER_CHUNK_SIZE*BLOCK_RENDER_DISTANCE_CHUNKS;
 let blockRenderChunks=new Map(),excavationRenderChunks=new Map(),waterRenderChunks=new Map(),fishRenderChunks=new Map();
-const MAX_BLOCK_CHUNK_CACHE=32,OPAQUE_CUBE_TYPES=new Set([...SOLID_STYLE_TYPES,'custom']);
+// The LRU mesh cache stays capped independently of the saved world-block records.
+const MAX_BLOCK_CHUNK_CACHE=16,OPAQUE_CUBE_TYPES=new Set([...SOLID_STYLE_TYPES,'custom']);
 let blockChunkMeshCache=new Map();
 function renderChunkKey(x,z){return Math.floor(x/RENDER_CHUNK_SIZE)+','+Math.floor(z/RENDER_CHUNK_SIZE);}
 function isOpaqueCubeBlock(block){return !!block&&OPAQUE_CUBE_TYPES.has(block.type);}
@@ -584,6 +587,7 @@ const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,
 function cubeVerts(x,y,z,sx=1,sy=1,sz=1){return [{x,y,z},{x:x+sx,y,z},{x:x+sx,y,z:z+sz},{x,y,z:z+sz},{x,y:y+sy,z},{x:x+sx,y:y+sy,z},{x:x+sx,y:y+sy,z:z+sz},{x,y:y+sy,z:z+sz}];}
 function shadeColor(hex,mul){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.max(0,Math.round(((n>>16)&255)*mul))),g=Math.min(255,Math.max(0,Math.round(((n>>8)&255)*mul))),b=Math.min(255,Math.max(0,Math.round((n&255)*mul)));return `rgb(${r},${g},${b})`;}
 // Small, locally generated patterns give every material its own tactile surface.
+const TEXTURE_REFERENCE_SIZE=96,TEXTURE_TILE_SIZE=32,TEXTURE_DRAW_SCALE=TEXTURE_TILE_SIZE/TEXTURE_REFERENCE_SIZE;
 const texturePatterns=new Map(),textureTiles=new Map();
 function makeTexturePatterns(){
  const makers={
@@ -623,7 +627,7 @@ function makeTexturePatterns(){
   snow:c=>{for(let i=0;i<12;i++){const x=(i*29+9)%96,y=(i*41+6)%96;c.strokeStyle=i%2?'#9bc6dcaa':'#ffffffdd';c.lineWidth=1.5;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.moveTo(x-3.5,y-3.5);c.lineTo(x+3.5,y+3.5);c.stroke();}for(let i=0;i<25;i++){c.fillStyle='#ffffffdd';c.fillRect((i*17)%96,(i*43)%96,2,2);}},
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
  };
- for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=96;const c=tile.getContext('2d');draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
  // Direction-aware overlays keep the grass lip on the physical top edge of each side face.
  const faceMakers={
   'grass-side-right':c=>{
@@ -659,10 +663,10 @@ function makeTexturePatterns(){
    c.strokeStyle='#f0d09a99';c.lineWidth=1;c.beginPath();c.arc(cx-1,cy-1,34,.3,2.3);c.stroke();
   }
  };
- for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=96;draw(tile.getContext('2d'));textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 
-// Original tile surfaces: all twenty are drawn locally, with no image downloads.
+// Original tile surfaces: all twenty are drawn locally at 32×32 pixels.
 function makeTileTexturePatterns(){
  const makers={
   grid:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(let p=0;p<=96;p+=32){c.beginPath();c.moveTo(p,0);c.lineTo(p,96);c.moveTo(0,p);c.lineTo(96,p);c.stroke();}c.strokeStyle='#354b3d55';c.lineWidth=1;c.strokeRect(2,2,92,92);},
@@ -687,8 +691,8 @@ function makeTileTexturePatterns(){
   spiral:c=>{c.strokeStyle='#fff9';c.lineWidth=3;for(const [x,y] of [[24,24],[72,24],[24,72],[72,72]]){c.beginPath();for(let a=0;a<Math.PI*3;a+=.12){const r=1+a*2,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(a)c.lineTo(px,py);else c.moveTo(px,py);}c.stroke();}}
  };
  for(const design of TILE_DESIGNS){
-  const tile=document.createElement('canvas');tile.width=tile.height=96;
-  const c=tile.getContext('2d');makers[design.id](c);
+  const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;
+  const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);makers[design.id](c);
   textureTiles.set('tile-'+design.id,tile);
   texturePatterns.set('tile-'+design.id,ctx.createPattern(tile,'repeat'));
  }
@@ -837,7 +841,7 @@ function paintTileTriangle(image,src,dst,alpha=.9,overlap=.45){
  const c0=clipPoint(d0),c1=clipPoint(d1),c2=clipPoint(d2);
  ctx.save();
  ctx.beginPath();ctx.moveTo(c0.x,c0.y);ctx.lineTo(c1.x,c1.y);ctx.lineTo(c2.x,c2.y);ctx.closePath();ctx.clip();
- ctx.transform(a,b,c,d,e,f);ctx.globalAlpha=alpha;ctx.drawImage(image,0,0,96,96);ctx.restore();
+ ctx.transform(a,b,c,d,e,f);ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;ctx.drawImage(image,0,0,TEXTURE_REFERENCE_SIZE,TEXTURE_REFERENCE_SIZE);ctx.restore();
 }
 function clipProjectedQuad(points){
  ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.clip();
@@ -1536,10 +1540,10 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  // Keep the ground visually continuous. Perspective grid strokes were removed
  // because they created a distracting horizontal line across the world view.
  // Camera-independent 16×16 chunk meshes cache static cubes and floor tiles; only animated doors stay dynamic.
- visitNearbyBlockChunkMeshes(cam,24,mesh=>{
+ visitNearbyBlockChunkMeshes(cam,BLOCK_RENDER_RADIUS,mesh=>{
   appendBlockChunkMesh(polys,mesh,cam,w,h);
   for(const b of mesh.specials){
-   if(Math.abs(b.x-cam.pos.x)>24||Math.abs(b.z-cam.pos.z)>24)continue;
+   if(Math.abs(b.x-cam.pos.x)>BLOCK_RENDER_RADIUS||Math.abs(b.z-cam.pos.z)>BLOCK_RENDER_RADIUS)continue;
    if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b);
   }
  },w,h);
