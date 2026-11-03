@@ -169,7 +169,7 @@ jobs:
             'if(isOpaqueCubeBlock(neighbor))continue;',
             'function invalidateBlockChunkMeshesAt(x,z)',
             'function appendBlockChunkMesh(queue,mesh,cam,w,h)',
-            "if(block.type==='tile')",
+            "const door=block.type==='door',tile=block.type==='tile'",
             "const DEBUG_PERFORMANCE=new URLSearchParams(location.search).get('debug')==='1';",
             'function renderMeasuredFrame()',
             'function updatePerformanceHud(time)',
