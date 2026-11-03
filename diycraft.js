@@ -62,22 +62,7 @@ const RECIPES=[
 ];
 const emptySlots=()=>Array.from({length:60},()=>null);
 function freshWorld(){
- // ... (keep existing cottage and tree code)
- return {
-  version:1,
-  name:'My Peaceful World',
-  blocks,
-  excavations:[],
-  waterCells:[],
-  waterLevels:[],
-  fish:[],
-  bucket:[],
-  animals: [], // <--- ADD THIS TO SAVE SPAWNED ANIMALS
-  player:{x:0,y:0,z:7,yaw:0,pitch:-.12,bed:{x:-1,y:0,z:-11,yaw:0},shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},
-  // ... (keep the rest of freshWorld)
- };
-}
- // A small welcome cottage and a tree garden, all built from friendly materials.
+ const blocks=[];const put=(x,y,z,type)=>blocks.push({x,y,z,type});
  for(let x=-3;x<=1;x++)for(let z=-13;z<=-9;z++){put(x,0,z,'wood');if(x===-3||x===1||z===-13||z===-9){put(x,1,z,'brick');put(x,2,z,'brick');}}
  for(let x=-4;x<=2;x++)for(let z=-14;z<=-8;z++)put(x,3,z,'wood');
  for(let x=-4;x<=2;x++){put(x,4,-14,'brick');put(x,4,-8,'brick');}
@@ -91,24 +76,26 @@ function freshWorld(){
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z++)put(x,0,z,'dirt');
  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z,'flower');
  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z,'flower');
-
- return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],waterLevels:[],fish:[],bucket:[],player:{x:0,y:0,z:7,yaw:0,pitch:-.12,bed:{x:-1,y:0,z:-11,yaw:0},shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],animalCare:{sheep:0,cat:0,cat_miso:0,cat_tofu:0,dog_buddy:0,dog_biscuit:0,dog_pepper:0}};
+ return {version:1,name:'My Peaceful World',blocks,excavations:[],waterCells:[],waterLevels:[],fish:[],bucket:[],animals:[],
+  player:{x:0,y:0,z:7,yaw:0,pitch:-.12,bed:{x:-1,y:0,z:-11,yaw:0},shirt:'#d94b3d',hair:'#493127',skin:'#efc39d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb'},
+  customBlock:{color:'#aa83d8',texture:'custom'},doorDesign:{color:'#a97545',style:'classic'},tileDesign:{color:'#c5a98a',pattern:'grid'},solidStyles:{},timeMode:'day',materials:emptySlots(),crafted:emptySlots(),artworks:[],
+  animalCare:{sheep:0,cat_mochi:0,dog_buddy:0,cow_bessie:0,horse_spirit:0,bird_chirpy:0,giraffe_raffy:0}};
 }
+
 function validHex(s,f){return /^#[0-9a-f]{6}$/i.test(s||'')?s:f;}
 function validWorld(d){
-if(Array.isArray(d.animals)){
- w.animals=d.animals.slice(0,200).filter(a=>a&&typeof a.species==='string'&&Number.isFinite(a.x)&&Number.isFinite(a.z)).map(a=>({
-  id:String(a.id||'animal_'+Math.random()),
-  species:a.species,
-  name:String(a.name||a.species).slice(0,20),
-  x:Number(a.x),
-  z:Number(a.z),
-  facing:Number(a.facing||0),
-  phase:Number(a.phase||Math.random()*5)
- }));
-}
  if(!d||typeof d!=='object')throw new Error('That file is not a DIYCraft world.');
  const w=freshWorld();w.name=String(d.name||w.name).slice(0,30);
+ if(Array.isArray(d.animals)){
+  const allowed=new Set(['sheep','cat','dog','cow','horse','bird','giraffe']);
+  w.animals=d.animals.slice(0,100).filter(a=>a&&allowed.has(a.species)&&Number.isFinite(a.x)&&Number.isFinite(a.z)).map((a,i)=>({
+   id:String(a.id||('saved_animal_'+i)).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40)||('saved_animal_'+i),
+   species:a.species,name:String(a.name||a.species).slice(0,24),
+   x:Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,Number(a.x))),z:Math.max(-WORLD_LIMIT,Math.min(WORLD_LIMIT,Number(a.z))),
+   facing:Number.isFinite(a.facing)?a.facing:0,phase:Number.isFinite(a.phase)?a.phase:i*1.7,
+   ...(validHex(a.body,'')?{body:validHex(a.body,'')}:{}),...(validHex(a.accent,'')?{accent:validHex(a.accent,'')}: {})
+  }));
+ }
  if(d.customBlock&&typeof d.customBlock==='object'){
   w.customBlock.color=validHex(d.customBlock.color,w.customBlock.color);
   w.customBlock.texture=CUSTOM_TEXTURES.some(t=>t.id===d.customBlock.texture)?d.customBlock.texture:'custom';
@@ -209,7 +196,7 @@ if(Array.isArray(d.animals)){
   });
  }
  if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&a.data.startsWith('data:image/png;base64,')&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
- if(d.animalCare&&typeof d.animalCare==='object'){for(const id of Object.keys(w.animalCare))w.animalCare[id]=Math.max(0,Math.min(999,Number(d.animalCare[id])||0));}
+ if(d.animalCare&&typeof d.animalCare==='object'){for(const [id,count] of Object.entries(d.animalCare).slice(0,200)){if(/^[a-zA-Z0-9_-]{1,40}$/.test(id))w.animalCare[id]=Math.max(0,Math.min(999,Number(count)||0));}}
  return w;
 }
 let toastTimer=0,storageUnavailable=false;
@@ -1199,175 +1186,80 @@ function neighborAtScreen(px,py){
  return hit;
 }
 function animalPositions(t=performance.now()/1000){
- const stroll=(x,z,phase,rate=.32)=>({
-  x:x+Math.sin(t*rate+phase)*.62,
-  z:z+Math.cos(t*(rate*.82)+phase)*.42,
-  facing:Math.atan2(rate*Math.cos(t*rate+phase),-rate*.82*Math.sin(t*(rate*.82)+phase)),
-  moving:true,phase
- });
- return [
-  {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',x:-2+Math.sin(t*.32)*.55,z:-7+Math.cos(t*.27)*.45},
-  {id:'cat_mochi',name:'Mochi',species:'cat',emoji:'🐱',x:3+Math.sin(t*.28)*.5,z:-7+Math.cos(t*.25)*.4},
-  {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐶',x:-5+Math.sin(t*.3)*.5,z:-5+Math.cos(t*.3)*.4},
-  {id:'cow_bessie',name:'Bessie',species:'cow',emoji:'🐮',...stroll(8,-2.2,0.5,.2)},
-  {id:'horse_spirit',name:'Spirit',species:'horse',emoji:'🐴',...stroll(-6,-12,2.1,.35)},
-  {id:'bird_chirpy',name:'Chirpy',species:'bird',emoji:'🐦',...stroll(5,-10,4.0,.5)},
-  {id:'giraffe_raffy',name:'Raffy',species:'giraffe',emoji:'🦒',...stroll(14,-14,1.8,.18)}
+ const stroll=(x,z,phase,rate=.28,rx=.58,rz=.40)=>({x:x+Math.sin(t*rate+phase)*rx,z:z+Math.cos(t*(rate*.82)+phase)*rz,
+  facing:Math.atan2(rate*Math.cos(t*rate+phase)*rx,-rate*.82*Math.sin(t*(rate*.82)+phase)*rz),moving:true,phase});
+ const residents=[
+  {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',...stroll(-2,-7,.2,.22,.42,.30)},
+  {id:'cat_mochi',name:'Mochi',species:'cat',emoji:'🐱',body:'#d8a66d',accent:'#f4e0c4',...stroll(3,-7,1.6,.25,.42,.30)},
+  {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐶',body:'#c98a4d',accent:'#f5dfbd',...stroll(-5,-5,2.8,.26,.48,.34)},
+  {id:'cow_bessie',name:'Bessie',species:'cow',emoji:'🐮',body:'#f5f2e9',accent:'#514b48',...stroll(8,-2.2,.5,.18,.52,.36)},
+  {id:'horse_spirit',name:'Spirit',species:'horse',emoji:'🐴',body:'#a65e37',accent:'#573a2c',...stroll(-6,-12,2.1,.24,.56,.36)},
+  {id:'bird_chirpy',name:'Chirpy',species:'bird',emoji:'🐦',body:'#75b9df',accent:'#f3bd54',...stroll(5,-10,4,.42,.34,.24)},
+  {id:'giraffe_raffy',name:'Raffy',species:'giraffe',emoji:'🦒',body:'#edbd59',accent:'#a96b32',...stroll(14,-14,1.8,.16,.48,.34)}
  ];
+ const saved=Array.isArray(world.animals)?world.animals:[],ids=new Set(residents.map(a=>a.id));
+ for(const a of saved)if(a&&!ids.has(a.id)){residents.push({...a,emoji:({sheep:'🐑',cat:'🐱',dog:'🐶',cow:'🐮',horse:'🐴',bird:'🐦',giraffe:'🦒'})[a.species]||'🐾'});ids.add(a.id);}
+ return residents.map(a=>({...a,phase:Number.isFinite(a.phase)?a.phase:0}));
 }
-function animalAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;for(const a of animalPositions()){const facing=a.facing||0,p=project({x:a.x+Math.sin(facing)*.30,y:.48,z:a.z+Math.cos(facing)*.30},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<64&&d<best){best=d;hit=a;}}return hit;}
-function drawPetFigure(queue, cam, w, h, a, tick) {
-    const facing = a.facing || 0, c = Math.cos(facing), s = Math.sin(facing);
-    
-    // Determine species from id or properties
-    const species = a.species || (
-        a.id.includes('cat') ? 'cat' : 
-        a.id.includes('dog') ? 'dog' : 
-        a.id.includes('cow') ? 'cow' : 
-        a.id.includes('horse') ? 'horse' : 
-        a.id.includes('bird') ? 'bird' : 
-        a.id.includes('giraffe') ? 'giraffe' : 'sheep'
-    );
-    
-    const body = a.body || (
-        species === 'sheep' ? '#f4f0e4' : 
-        species === 'cat' ? '#e8c48c' : 
-        species === 'dog' ? '#d6a15f' : 
-        species === 'cow' ? '#f4f4f4' : 
-        species === 'horse' ? '#a0522d' : 
-        species === 'bird' ? '#4a90e2' : 
-        species === 'giraffe' ? '#f4a460' : '#d6a15f'
-    );
-    
-    const accent = a.accent || (
-        species === 'sheep' ? '#d7d0c5' : 
-        species === 'cat' ? '#b88754' : 
-        species === 'dog' ? '#f1d7a8' : 
-        species === 'cow' ? '#2d2d2d' : // Cow patches
-        species === 'horse' ? '#5c3a21' : // Mane/tail color
-        species === 'bird' ? '#f5a623' : // Beak color
-        species === 'giraffe' ? '#8b4513' : '#f1d7a8' // Giraffe spots
-    );
-
-    const phase = Number.isFinite(a.phase) ? a.phase : 0;
-    const gaitRate = species === 'bird' ? 18.0 : species === 'dog' ? 12.5 : species === 'horse' ? 14.0 : 7.2;
-    const stride = Math.sin(tick * gaitRate + phase);
-    const bob = a.moving ? Math.abs(Math.sin(tick * gaitRate * 2 + phase)) * (species === 'bird' ? .01 : .03) : Math.sin(tick * 1.2 + phase) * .01;
-    const wag = Math.sin(tick * (species === 'dog' ? 15 : 6.5) + phase);
-
-    const cube = (dx, y, dz, color, sx, sy, sz) => {
-        const centerX = a.x + dx * c + dz * s, centerZ = a.z - dx * s + dz * c;
-        pushCubeFacing(queue, cam, w, h, centerX - sx / 2, y, centerZ - sz / 2, color, sx, sy, sz, facing, false);
-    };
-
-    if (species === 'sheep') {
-        // --- SHEEP ---
-        cube(0, .20 + bob, 0, body, .76, .52, 1.02);
-        cube(0, .32 + bob, .42, accent, .38, .36, .38);
-        cube(-.22, .52 + bob, .40, '#39332e', .09, .14, .08);
-        cube(.22,  .52 + bob, .40, '#39332e', .09, .14, .08);
-        cube(-.11, .42 + bob, .60, '#292622', .06, .06, .04);
-        cube(.11,  .42 + bob, .60, '#292622', .06, .06, .04);
-        for (const [dx, dz, index] of [[-.26, -.34, 0], [.26, -.34, Math.PI], [-.26, .34, Math.PI], [.26, .34, 0]]) {
-            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .05;
-            cube(dx, .015 + bob + lift, dz + step * .08, accent, .16, .26, .16);
-        }
-
-    } else if (species === 'dog') {
-        // --- DOG ---
-        cube(0, .18 + bob, -.02, body, .58, .38, .82);
-        cube(0, .24 + bob, .15, accent, .48, .30, .45);
-        cube(0, .46 + bob, .38, body, .40, .38, .38);
-        cube(0, .38 + bob, .56, accent, .24, .16, .20);
-        cube(0, .44 + bob, .66, '#292622', .08, .07, .06);
-        cube(-.14, .54 + bob, .42, '#292622', .06, .07, .035);
-        cube(.14,  .54 + bob, .42, '#292622', .06, .07, .035);
-        cube(-.24, .52 + bob, .34, accent, .12, .26, .14);
-        cube(.24,  .52 + bob, .34, accent, .12, .26, .14);
-        for (const [dx, dz, index] of [[-.20, -.26, 0], [.20, -.26, Math.PI], [-.20, .26, Math.PI], [.20, .26, 0]]) {
-            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .075;
-            cube(dx, .015 + bob + lift, dz + step * .10, body, .14, .27, .15);
-        }
-        cube(wag * .14, .42 + bob + Math.abs(wag) * .04, -.50, body, .12, .12, .34);
-
-    } else if (species === 'cat') {
-        // --- CAT ---
-        cube(0, .16 + bob, -.03, body, .46, .30, .64);
-        cube(0, .42 + bob, .28, body, .36, .36, .34);
-        cube(-.13, .70 + bob, .30, body, .12, .18, .10);
-        cube(.13,  .70 + bob, .30, body, .12, .18, .10);
-        cube(-.13, .68 + bob, .32, '#e8a4c1', .07, .11, .05);
-        cube(.13,  .68 + bob, .32, '#e8a4c1', .07, .11, .05);
-        cube(-.10, .48 + bob, .46, '#292622', .05, .06, .035);
-        cube(.10,  .48 + bob, .46, '#292622', .05, .06, .035);
-        cube(0,    .40 + bob, .48, accent, .14, .09, .08);
-        for (const [dx, dz, index] of [[-.15, -.22, 0], [.15, -.22, Math.PI], [-.15, .20, Math.PI], [.15, .20, 0]]) {
-            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .042;
-            cube(dx, .015 + bob + lift, dz + step * .055, body, .11, .22, .12);
-        }
-        cube(.26 + wag * .12, .26 + bob + Math.abs(wag) * .06, -.32, body, .10, .10, .42);
-
-    } else if (species === 'cow') {
-        // --- COW (Large body, patches, horns, and gentle snout) ---
-        cube(0, .24 + bob, 0, body, .82, .54, 1.22);
-        cube(-.15, .32 + bob, .2, accent, .32, .26, .32); // Patch
-        cube(.2, .42 + bob, -.3, accent, .28, .24, .28); // Patch
-        cube(0, .54 + bob, .58, body, .44, .40, .40); // Head
-        cube(0, .44 + bob, .76, '#e8a4c1', .26, .16, .18); // Snout
-        cube(-.28, .82 + bob, .54, '#dcdcdc', .08, .18, .08); // Left horn
-        cube(.28,  .82 + bob, .54, '#dcdcdc', .08, .18, .08); // Right horn
-        cube(-.15, .64 + bob, .62, '#292622', .06, .06, .03); // Eye
-        cube(.15,  .64 + bob, .62, '#292622', .06, .06, .03); // Eye
-        for (const [dx, dz, index] of [[-.30, -.42, 0], [.30, -.42, Math.PI], [-.30, .42, Math.PI], [.30, .42, 0]]) {
-            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .06;
-            cube(dx, .02 + bob + lift, dz + step * .1, body, .20, .32, .20);
-        }
-        cube(wag * .1, .38 + bob, -.62, accent, .10, .10, .38); // Tail
-
-    } else if (species === 'horse') {
-        // --- HORSE (Sleek body, sculpted neck, mane, and flowing tail) ---
-        cube(0, .32 + bob, -.05, body, .64, .48, 1.15); // Torso
-        cube(0, .52 + bob, .42, body, .32, .55, .30); // Upright Neck
-        cube(0, .82 + bob, .58, body, .28, .28, .42); // Head & Snout
-        cube(0, .68 + bob, .36, accent, .12, .52, .12); // Mane
-        for (const [dx, dz, index] of [[-.22, -.38, 0], [.22, -.38, Math.PI], [-.22, .38, Math.PI], [.22, .38, 0]]) {
-            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .08;
-            cube(dx, .02 + bob + lift, dz + step * .12, body, .13, .42, .14); // Long legs
-        }
-        cube(0, .26 + bob + Math.abs(wag) * .05, -.64, accent, .12, .45, .28); // Flowing tail
-
-    } else if (species === 'bird') {
-        // --- BIRD (Plump body, tiny feet, and flapping wings) ---
-        const flap = Math.sin(tick * 22 + phase) * .35;
-        cube(0, .35 + bob, 0, body, .32, .28, .36); // Body
-        cube(0, .52 + bob, .20, body, .24, .24, .24); // Head
-        cube(0, .48 + bob, .36, accent, .12, .08, .16); // Beak
-        // Flapping wings
-        cube(-.32 + flap, .42 + bob, 0, accent, .28, .08, .22);
-        cube(.32 - flap,  .42 + bob, 0, accent, .28, .08, .22);
-        cube(-.06, .04 + bob, 0, '#292622', .04, .12, .04);
-        cube(.06,  .04 + bob, 0, '#292622', .04, .12, .04);
-
-    } else if (species === 'giraffe') {
-        // --- GIRAFFE (Towering neck, spots, and small ossicones) ---
-        cube(0, .38 + bob, -.1, body, .68, .50, .95); // Body
-        cube(0, .75 + bob, .38, body, .25, 1.10, .25); // Long neck
-        cube(0, 1.35 + bob, .48, body, .30, .28, .38); // Head
-        cube(-.1, 1.55 + bob, .42, accent, .06, .12, .06); // Left horn
-        cube(.1,  1.55 + bob, .42, accent, .06, .12, .06); // Right horn
-        cube(-.12, 1.25 + bob, .52, '#292622', .05, .05, .03); // Eye
-        cube(.12,  1.25 + bob, .52, '#292622', .05, .05, .03); // Eye
-        // Giraffe spots on body & neck
-        cube(0, .52 + bob, .15, accent, .32, .22, .32);
-        cube(0, .95 + bob, .40, accent, .16, .35, .16);
-        // Slender long legs
-        for (const [dx, dz, index] of [[-.24, -.32, 0], [.24, -.32, Math.PI], [-.24, .32, Math.PI], [.24, .32, 0]]) {
-            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .07;
-            cube(dx, .02 + bob + lift, dz + step * .1, body, .12, .55, .12);
-        }
-    }
+function animalAtScreen(px,py){
+ const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;
+ for(const a of animalPositions()){const p=project({x:a.x,y:a.species==='giraffe'?.8:.48,z:a.z},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=a;}}
+ return hit;
 }
+function pushAnimalSprite(queue,cam,w,h,a,tick){
+ const groundY=surfaceHeightAt(a.x,a.z),base=project({x:a.x,y:groundY,z:a.z},cam,w,h),unit=project({x:a.x,y:groundY+1,z:a.z},cam,w,h);
+ if(!base||!unit)return;
+ const scale=Math.max(4.5,Math.min(54,Math.hypot(base.x-unit.x,base.y-unit.y)));
+ if(base.x<-100||base.x>w+100||base.y<-160||base.y>h+100)return;
+ queue.push({animalSprite:{animal:a,tick,x:base.x,y:base.y,scale},depth:base.d});
 }
+function drawAnimalSprite(sprite){
+ const a=sprite.animal,t=sprite.tick,phase=a.phase||0,sp=a.species,bob=Math.abs(Math.sin(t*5.2+phase))*.018,stride=Math.sin(t*7.6+phase),wag=Math.sin(t*8+phase);
+ const body=a.body||({sheep:'#f5f0e6',cat:'#d8a66d',dog:'#c98a4d',cow:'#f5f2e9',horse:'#a65e37',bird:'#75b9df',giraffe:'#edbd59'})[sp]||'#d2a578';
+ const accent=a.accent||({sheep:'#786d62',cat:'#e8c48d',dog:'#f5dfbd',cow:'#514b48',horse:'#573a2c',bird:'#f3bd54',giraffe:'#a96b32'})[sp]||'#80634f';
+ ctx.save();ctx.translate(sprite.x,sprite.y);ctx.scale(sprite.scale,sprite.scale);ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=.028;
+ const oval=(x,y,rx,ry,color,stroke='#5d5146',width=.025)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}};
+ const strokePath=(draw,color,width=.10)=>{ctx.beginPath();draw();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();};
+ const triangle=(points,color,stroke='#5d5146')=>{ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.025;ctx.stroke();}};
+ const leg=(x,index,color='#6f5948',width=.11)=>{const lift=Math.max(0,Math.sin(t*8+phase+index*Math.PI/2))*.045,swing=stride*(index%2===0?1:-1)*.045;strokePath(()=>{ctx.moveTo(x,-.31-bob);ctx.quadraticCurveTo(x+swing,-.17-lift,x+swing,-.035-lift);},color,width);oval(x+swing,-.035-lift,width*.56,.035,color,null);};
+ ctx.fillStyle='rgba(39,49,35,.18)';ctx.beginPath();ctx.ellipse(0,-.015,.55,.105,0,0,Math.PI*2);ctx.fill();ctx.translate(0,-bob);
+ if(sp==='sheep'){
+  for(const x of [-.30,-.12,.08,.28])leg(x,Math.round((x+.4)*10),accent,.105);
+  oval(0,-.46,.57,.35,'#f7f3e9');for(const [x,y,r] of [[-.40,-.54,.20],[-.25,-.70,.20],[0,-.74,.21],[.26,-.68,.20],[.43,-.51,.19],[-.12,-.43,.22]])oval(x,y,r,r*.90,'#fffaf1','#d9d1c5',.018);
+  oval(.40,-.68,.22,.25,'#77716a');oval(.25,-.70,.11,.07,'#77716a');oval(.57,-.70,.11,.07,'#77716a');oval(.40,-.55,.055,.04,'#d98e91',null);oval(.34,-.73,.025,.032,'#282624',null);oval(.48,-.73,.025,.032,'#282624',null);
+ }else if(sp==='cat'){
+  for(const x of [-.24,-.05,.22,.38])leg(x,Math.round((x+.4)*10),body,.075);
+  strokePath(()=>{ctx.moveTo(-.42,-.43);ctx.bezierCurveTo(-.75,-.60,-.72,-.91,-.48,-.95);},body,.10);oval(.02,-.43,.48,.25,body);oval(.43,-.67,.23,.23,body);
+  triangle([[.27,-.78],[.30,-1.02],[.46,-.84]],body);triangle([[.48,-.84],[.66,-1.02],[.64,-.75]],body);triangle([[.32,-.84],[.34,-.94],[.41,-.85]],'#e9a4b6',null);triangle([[.54,-.85],[.62,-.94],[.61,-.80]],'#e9a4b6',null);
+  oval(.35,-.66,.027,.038,'#292622',null);oval(.51,-.66,.027,.038,'#292622',null);triangle([[.40,-.57],[.47,-.57],[.435,-.525]],'#d88991',null);strokePath(()=>{ctx.moveTo(.43,-.53);ctx.lineTo(.43,-.49);ctx.lineTo(.32,-.46);ctx.moveTo(.43,-.49);ctx.lineTo(.54,-.46);},'#5f5148',.018);
+ }else if(sp==='dog'){
+  for(const x of [-.26,-.08,.22,.40])leg(x,Math.round((x+.4)*10),accent,.105);
+  strokePath(()=>{ctx.moveTo(-.43,-.45);ctx.quadraticCurveTo(-.68,-.64,-.70-wag*.04,-.84);},body,.105);oval(.02,-.46,.52,.31,body);oval(.43,-.68,.25,.25,body);oval(.58,-.58,.19,.14,accent);
+  oval(.69,-.60,.065,.055,'#302824',null);oval(.39,-.69,.028,.035,'#292622',null);oval(.53,-.68,.028,.035,'#292622',null);oval(.23,-.72,.12,.22,body);oval(.60,-.73,.11,.20,body);
+  strokePath(()=>{ctx.moveTo(.18,-.38);ctx.quadraticCurveTo(.28,-.34,.38,-.38);},'#d85d62',.075);
+ }else if(sp==='cow'){
+  for(const x of [-.32,-.12,.22,.42])leg(x,Math.round((x+.4)*10),'#55504a',.12);
+  oval(0,-.48,.62,.37,'#faf8f2');oval(-.28,-.57,.19,.16,accent,null);oval(.20,-.37,.17,.18,accent,null);oval(.43,-.70,.27,.25,'#faf8f2');oval(.43,-.56,.18,.105,'#eaa4a0');
+  oval(.34,-.72,.028,.036,'#292622',null);oval(.53,-.72,.028,.036,'#292622',null);triangle([[.28,-.88],[.23,-1.02],[.36,-.91]],'#eee0bb');triangle([[.53,-.88],[.62,-1.02],[.61,-.89]],'#eee0bb');oval(.24,-.88,.075,.06,'#f0c29f');oval(.63,-.88,.075,.06,'#f0c29f');
+ }else if(sp==='horse'){
+  for(const x of [-.30,-.12,.23,.43])leg(x,Math.round((x+.4)*10),'#45352f',.095);oval(-.02,-.46,.57,.29,body);
+  ctx.beginPath();ctx.moveTo(.18,-.59);ctx.quadraticCurveTo(.40,-.91,.48,-1.10);ctx.quadraticCurveTo(.61,-1.18,.68,-1.02);ctx.lineTo(.48,-.53);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle='#5d4034';ctx.lineWidth=.025;ctx.stroke();
+  strokePath(()=>{ctx.moveTo(.28,-.73);ctx.quadraticCurveTo(.42,-.92,.38,-1.11);},accent,.10);oval(.55,-1.08,.19,.18,body);oval(.70,-1.02,.13,.09,'#e1b18c');oval(.60,-1.10,.022,.03,'#292622',null);
+  strokePath(()=>{ctx.moveTo(-.48,-.42);ctx.quadraticCurveTo(-.67,-.60,-.62-wag*.05,-.82);},accent,.12);
+ }else if(sp==='bird'){
+  const flap=Math.sin(t*18+phase)*.12;strokePath(()=>{ctx.moveTo(-.08,-.12);ctx.lineTo(-.10,-.015);ctx.moveTo(.10,-.12);ctx.lineTo(.12,-.015);},'#775b3c',.035);
+  oval(0,-.42,.29,.30,body);oval(.18,-.69,.21,.21,body);oval(.04,-.35,.16,.17,'#dcebf0','#a7c7d5',.018);
+  strokePath(()=>{ctx.moveTo(-.15,-.49);ctx.quadraticCurveTo(-.44,-.56-flap,-.30,-.27);},accent,.11);strokePath(()=>{ctx.moveTo(.13,-.50);ctx.quadraticCurveTo(.42,-.56+flap,.30,-.28);},accent,.11);
+  triangle([[.34,-.68],[.56,-.63],[.34,-.58]],'#f2ae42',null);oval(.23,-.73,.025,.03,'#292622',null);
+ }else if(sp==='giraffe'){
+  for(const x of [-.30,-.12,.22,.40])leg(x,Math.round((x+.4)*10),'#8a5c32',.085);oval(-.06,-.43,.52,.28,body);
+  for(const [x,y] of [[-.30,-.43],[-.05,-.57],[.19,-.35]])oval(x,y,.09,.10,accent,null);
+  ctx.beginPath();ctx.moveTo(.18,-.55);ctx.quadraticCurveTo(.30,-.83,.42,-1.18);ctx.lineTo(.58,-1.17);ctx.quadraticCurveTo(.55,-.79,.45,-.52);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle='#806039';ctx.lineWidth=.025;ctx.stroke();
+  oval(.53,-1.24,.19,.19,body);oval(.40,-1.39,.035,.11,accent);oval(.63,-1.39,.035,.11,accent);oval(.59,-1.27,.022,.03,'#292622',null);oval(.68,-1.17,.10,.06,'#f0bd68');oval(.28,-.89,.075,.08,accent,null);oval(.38,-.72,.075,.08,accent,null);
+ }
+ ctx.restore();
+}
+
 function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
  const phase=Number.isFinite(n.phase)?n.phase:0;
@@ -1775,11 +1667,9 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(hp){ctx.save();ctx.font='bold 23px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText('Zzz',hp.x,hp.y);ctx.fillStyle='#425d78';ctx.fillText('Zzz',hp.x,hp.y);ctx.font='21px system-ui';ctx.fillText('💤',hp.x+22,hp.y-19);ctx.restore();}
   }
  }
- // Gentle, protected animals with visible feet and friendly faces.
- const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,26)),sheep=animals.find(a=>a.id==='sheep'),cat=animals.find(a=>a.id==='cat');
- if(sheep){const sx=sheep.x,sz=sheep.z;pushCube(polys,cam,w,h,sx-.42,.12,sz-.34,'#f4f0e4',.86,.62,1.12);pushCube(polys,cam,w,h,sx+.22,.38,sz+.52,'#f4f0e4',.46,.42,.43);pushCube(polys,cam,w,h,sx+.57,.53,sz+.85,'#47443f',.055,.055,.03);pushCube(polys,cam,w,h,sx+.03,.51,sz+.85,'#47443f',.055,.055,.03);for(const [dx,dz] of [[-.28,-.2],[.32,-.2],[-.28,.38],[.32,.38]])pushCube(polys,cam,w,h,sx+dx,.01,sz+dz,'#d7d0c5',.15,.3,.15);}
- if(cat){const cx=cat.x,cz=cat.z;pushCube(polys,cam,w,h,cx-.36,.12,cz-.3,'#e8c48c',.76,.5,.78);pushCube(polys,cam,w,h,cx-.14,.48,cz+.35,'#e8c48c',.46,.38,.42);pushCube(polys,cam,w,h,cx-.25,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx+.07,.78,cz+.36,'#e8c48c',.18,.27,.18);pushCube(polys,cam,w,h,cx-.18,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx+.13,.58,cz+.57,'#3a3935',.055,.055,.03);pushCube(polys,cam,w,h,cx-.3,.02,cz-.08,'#b88754',.18,.2,.2);pushCube(polys,cam,w,h,cx+.14,.02,cz-.08,'#b88754',.18,.2,.2);}
- for(const pet of animals){if(pet.id!=='sheep'&&pet.id!=='cat')drawPetFigure(polys,cam,w,h,pet,tick);}
+ // Rounded, friendly animal characters replace the old cuboid animals.
+ const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,26));
+ for(const animal of animals)pushAnimalSprite(polys,cam,w,h,animal,tick);
  drawPlayerBed(polys,cam,w,h,world.player.bed);
  const restPlayer=world.player;
  if(shouldDrawTemporaryRestBed(playerActivity,restPlayer.bed,restPlayer.x,restPlayer.z)){
@@ -1807,7 +1697,8 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(image){ctx.save();ctx.globalAlpha=poly.alpha??.98;paintMappedQuad(image,poly.pts,1);ctx.restore();}
    continue;
   }
-  if(poly.faceMark){
+  if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}
+   if(poly.faceMark){
    ctx.save();ctx.globalAlpha=poly.alpha??1;
    ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
    ctx.fillStyle=poly.color;ctx.fill();
@@ -1827,7 +1718,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  }
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
- if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.15,y:1.2,z:a.z+.5},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
+ if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.22,y:a.species==='giraffe'?1.65:1.12,z:a.z},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
  // Home labels disappear with their anchored homes at a distance.
  for(const n of neighbors.filter(v=>(v.id==='hyacinth'||v.id==='theo')&&nearWorldPoint(v.homeX,v.homeZ,26))){const hp=project({x:n.homeX+2.1,y:3.55,z:n.homeZ+4.55},cam,w,h);if(hp){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText(n.name+"'s home",hp.x,hp.y);ctx.fillStyle='#35533e';ctx.fillText(n.name+"'s home",hp.x,hp.y);ctx.restore();}}
  if(nearWorldPoint(18.1,-4.65,26)){const familySign=project({x:18.1,y:3.55,z:-4.65},cam,w,h);if(familySign){ctx.save();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#fffdf4';ctx.strokeText("The Pagibig Family",familySign.x,familySign.y);ctx.fillStyle='#35533e';ctx.fillText("The Pagibig Family",familySign.x,familySign.y);ctx.restore();}}
