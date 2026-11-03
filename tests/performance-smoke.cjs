@@ -387,12 +387,13 @@ const testColumns = new Map([
   ['1,2', [{ x: 1, y: 4, z: 2, type: 'wood' }]]
 ]);
 const getSurfaceHeight = new Function(
-  'blockColumnBlocks', 'keyGround', 'groundDepthAt', 'TILE_BASE_OFFSET', 'TILE_THICKNESS',
+  'blockColumnBlocks', 'keyGround', 'groundDepthAt', 'isPlantBlock', 'TILE_BASE_OFFSET', 'TILE_THICKNESS',
   surfaceSource + '\nreturn surfaceHeightAt;'
 )(
   testColumns,
   testKeyGround,
   (x, z) => testDepths.get(testKeyGround(x, z)) || 0,
+  isPlantBlock,
   0.02,
   0.13
 );
