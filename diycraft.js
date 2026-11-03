@@ -1280,58 +1280,172 @@ function animalAtScreen(px,py){
  for(const a of animalPositions()){const p=project({x:a.x,y:a.species==='giraffe'?.8:.48,z:a.z},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<66&&d<best){best=d;hit=a;}}
  return hit;
 }
-function pushAnimalSprite(queue,cam,w,h,a,tick){
- const groundY=surfaceHeightAt(a.x,a.z),base=project({x:a.x,y:groundY,z:a.z},cam,w,h),unit=project({x:a.x,y:groundY+1,z:a.z},cam,w,h);
- if(!base||!unit)return;
- const scale=Math.max(4.5,Math.min(54,Math.hypot(base.x-unit.x,base.y-unit.y)));
- if(base.x<-100||base.x>w+100||base.y<-160||base.y>h+100)return;
- queue.push({animalSprite:{animal:a,tick,x:base.x,y:base.y,scale},depth:base.d});
+function animalWorldPoint(a,x,y,z,groundY){
+ const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
+ return {x:a.x+x*c+z*s,y:groundY+y,z:a.z-x*s+z*c};
 }
-function drawAnimalSprite(sprite){
- const a=sprite.animal,t=sprite.tick,phase=a.phase||0,sp=a.species,bob=Math.abs(Math.sin(t*5.2+phase))*.018,stride=Math.sin(t*7.6+phase),wag=Math.sin(t*8+phase);
- const body=a.body||({sheep:'#f5f0e6',cat:'#d8a66d',dog:'#c98a4d',cow:'#f5f2e9',horse:'#a65e37',bird:'#75b9df',giraffe:'#edbd59'})[sp]||'#d2a578';
- const accent=a.accent||({sheep:'#786d62',cat:'#e8c48d',dog:'#f5dfbd',cow:'#514b48',horse:'#573a2c',bird:'#f3bd54',giraffe:'#a96b32'})[sp]||'#80634f';
- ctx.save();ctx.translate(sprite.x,sprite.y);ctx.scale(sprite.scale,sprite.scale);ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=.028;
- const oval=(x,y,rx,ry,color,stroke='#5d5146',width=.025)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}};
- const strokePath=(draw,color,width=.10)=>{ctx.beginPath();draw();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();};
- const triangle=(points,color,stroke='#5d5146')=>{ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.025;ctx.stroke();}};
- const leg=(x,index,color='#6f5948',width=.11)=>{const lift=Math.max(0,Math.sin(t*8+phase+index*Math.PI/2))*.045,swing=stride*(index%2===0?1:-1)*.045;strokePath(()=>{ctx.moveTo(x,-.31-bob);ctx.quadraticCurveTo(x+swing,-.17-lift,x+swing,-.035-lift);},color,width);oval(x+swing,-.035-lift,width*.56,.035,color,null);};
- ctx.fillStyle='rgba(39,49,35,.18)';ctx.beginPath();ctx.ellipse(0,-.015,.55,.105,0,0,Math.PI*2);ctx.fill();ctx.translate(0,-bob);
- if(sp==='sheep'){
-  for(const x of [-.30,-.12,.08,.28])leg(x,Math.round((x+.4)*10),accent,.105);
-  oval(0,-.46,.57,.35,'#f7f3e9');for(const [x,y,r] of [[-.40,-.54,.20],[-.25,-.70,.20],[0,-.74,.21],[.26,-.68,.20],[.43,-.51,.19],[-.12,-.43,.22]])oval(x,y,r,r*.90,'#fffaf1','#d9d1c5',.018);
-  oval(.40,-.68,.22,.25,'#77716a');oval(.25,-.70,.11,.07,'#77716a');oval(.57,-.70,.11,.07,'#77716a');oval(.40,-.55,.055,.04,'#d98e91',null);oval(.34,-.73,.025,.032,'#282624',null);oval(.48,-.73,.025,.032,'#282624',null);
- }else if(sp==='cat'){
-  for(const x of [-.24,-.05,.22,.38])leg(x,Math.round((x+.4)*10),body,.075);
-  strokePath(()=>{ctx.moveTo(-.42,-.43);ctx.bezierCurveTo(-.75,-.60,-.72,-.91,-.48,-.95);},body,.10);oval(.02,-.43,.48,.25,body);oval(.43,-.67,.23,.23,body);
-  triangle([[.27,-.78],[.30,-1.02],[.46,-.84]],body);triangle([[.48,-.84],[.66,-1.02],[.64,-.75]],body);triangle([[.32,-.84],[.34,-.94],[.41,-.85]],'#e9a4b6',null);triangle([[.54,-.85],[.62,-.94],[.61,-.80]],'#e9a4b6',null);
-  oval(.35,-.66,.027,.038,'#292622',null);oval(.51,-.66,.027,.038,'#292622',null);triangle([[.40,-.57],[.47,-.57],[.435,-.525]],'#d88991',null);strokePath(()=>{ctx.moveTo(.43,-.53);ctx.lineTo(.43,-.49);ctx.lineTo(.32,-.46);ctx.moveTo(.43,-.49);ctx.lineTo(.54,-.46);},'#5f5148',.018);
- }else if(sp==='dog'){
-  for(const x of [-.26,-.08,.22,.40])leg(x,Math.round((x+.4)*10),accent,.105);
-  strokePath(()=>{ctx.moveTo(-.43,-.45);ctx.quadraticCurveTo(-.68,-.64,-.70-wag*.04,-.84);},body,.105);oval(.02,-.46,.52,.31,body);oval(.43,-.68,.25,.25,body);oval(.58,-.58,.19,.14,accent);
-  oval(.69,-.60,.065,.055,'#302824',null);oval(.39,-.69,.028,.035,'#292622',null);oval(.53,-.68,.028,.035,'#292622',null);oval(.23,-.72,.12,.22,body);oval(.60,-.73,.11,.20,body);
-  strokePath(()=>{ctx.moveTo(.18,-.38);ctx.quadraticCurveTo(.28,-.34,.38,-.38);},'#d85d62',.075);
- }else if(sp==='cow'){
-  for(const x of [-.32,-.12,.22,.42])leg(x,Math.round((x+.4)*10),'#55504a',.12);
-  oval(0,-.48,.62,.37,'#faf8f2');oval(-.28,-.57,.19,.16,accent,null);oval(.20,-.37,.17,.18,accent,null);oval(.43,-.70,.27,.25,'#faf8f2');oval(.43,-.56,.18,.105,'#eaa4a0');
-  oval(.34,-.72,.028,.036,'#292622',null);oval(.53,-.72,.028,.036,'#292622',null);triangle([[.28,-.88],[.23,-1.02],[.36,-.91]],'#eee0bb');triangle([[.53,-.88],[.62,-1.02],[.61,-.89]],'#eee0bb');oval(.24,-.88,.075,.06,'#f0c29f');oval(.63,-.88,.075,.06,'#f0c29f');
- }else if(sp==='horse'){
-  for(const x of [-.30,-.12,.23,.43])leg(x,Math.round((x+.4)*10),'#45352f',.095);oval(-.02,-.46,.57,.29,body);
-  ctx.beginPath();ctx.moveTo(.18,-.59);ctx.quadraticCurveTo(.40,-.91,.48,-1.10);ctx.quadraticCurveTo(.61,-1.18,.68,-1.02);ctx.lineTo(.48,-.53);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle='#5d4034';ctx.lineWidth=.025;ctx.stroke();
-  strokePath(()=>{ctx.moveTo(.28,-.73);ctx.quadraticCurveTo(.42,-.92,.38,-1.11);},accent,.10);oval(.55,-1.08,.19,.18,body);oval(.70,-1.02,.13,.09,'#e1b18c');oval(.60,-1.10,.022,.03,'#292622',null);
-  strokePath(()=>{ctx.moveTo(-.48,-.42);ctx.quadraticCurveTo(-.67,-.60,-.62-wag*.05,-.82);},accent,.12);
- }else if(sp==='bird'){
-  const flap=Math.sin(t*18+phase)*.12;strokePath(()=>{ctx.moveTo(-.08,-.12);ctx.lineTo(-.10,-.015);ctx.moveTo(.10,-.12);ctx.lineTo(.12,-.015);},'#775b3c',.035);
-  oval(0,-.42,.29,.30,body);oval(.18,-.69,.21,.21,body);oval(.04,-.35,.16,.17,'#dcebf0','#a7c7d5',.018);
-  strokePath(()=>{ctx.moveTo(-.15,-.49);ctx.quadraticCurveTo(-.44,-.56-flap,-.30,-.27);},accent,.11);strokePath(()=>{ctx.moveTo(.13,-.50);ctx.quadraticCurveTo(.42,-.56+flap,.30,-.28);},accent,.11);
-  triangle([[.34,-.68],[.56,-.63],[.34,-.58]],'#f2ae42',null);oval(.23,-.73,.025,.03,'#292622',null);
- }else if(sp==='giraffe'){
-  for(const x of [-.30,-.12,.22,.40])leg(x,Math.round((x+.4)*10),'#8a5c32',.085);oval(-.06,-.43,.52,.28,body);
-  for(const [x,y] of [[-.30,-.43],[-.05,-.57],[.19,-.35]])oval(x,y,.09,.10,accent,null);
-  ctx.beginPath();ctx.moveTo(.18,-.55);ctx.quadraticCurveTo(.30,-.83,.42,-1.18);ctx.lineTo(.58,-1.17);ctx.quadraticCurveTo(.55,-.79,.45,-.52);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle='#806039';ctx.lineWidth=.025;ctx.stroke();
-  oval(.53,-1.24,.19,.19,body);oval(.40,-1.39,.035,.11,accent);oval(.63,-1.39,.035,.11,accent);oval(.59,-1.27,.022,.03,'#292622',null);oval(.68,-1.17,.10,.06,'#f0bd68');oval(.28,-.89,.075,.08,accent,null);oval(.38,-.72,.075,.08,accent,null);
+function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alpha=1){
+ // Low-poly smooth ellipsoids give each animal real world depth and let terrain occlude it.
+ const rings=4,segments=8,grid=[];
+ for(let i=0;i<=rings;i++){
+  const lat=-Math.PI/2+Math.PI*i/rings,row=[];
+  for(let j=0;j<=segments;j++){
+   const lon=2*Math.PI*j/segments;
+   row.push(animalWorldPoint(a,cx+rx*Math.cos(lat)*Math.cos(lon),cy+ry*Math.sin(lat),cz+rz*Math.cos(lat)*Math.sin(lon),groundY));
+  }
+  grid.push(row);
  }
- ctx.restore();
+ const light={x:-.38,y:.88,z:-.28};
+ for(let i=0;i<rings;i++)for(let j=0;j<segments;j++){
+  const lat=-Math.PI/2+Math.PI*(i+.5)/rings,lon=2*Math.PI*(j+.5)/segments;
+  let nx=Math.cos(lat)*Math.cos(lon)/Math.max(.001,rx),ny=Math.sin(lat)/Math.max(.001,ry),nz=Math.cos(lat)*Math.sin(lon)/Math.max(.001,rz);
+  const normalLength=Math.hypot(nx,ny,nz)||1;nx/=normalLength;ny/=normalLength;nz/=normalLength;
+  const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
+  const worldNormal={x:nx*c+nz*s,y:ny,z:-nx*s+nz*c};
+  const v0=grid[i][j],v1=grid[i][j+1],v2=grid[i+1][j+1],v3=grid[i+1][j];
+  const center={x:(v0.x+v1.x+v2.x+v3.x)/4,y:(v0.y+v1.y+v2.y+v3.y)/4,z:(v0.z+v1.z+v2.z+v3.z)/4};
+  const toCamera={x:cam.pos.x-center.x,y:cam.pos.y-center.y,z:cam.pos.z-center.z};
+  if(worldNormal.x*toCamera.x+worldNormal.y*toCamera.y+worldNormal.z*toCamera.z<=0)continue;
+  const pts=[v0,v1,v2,v3].map(v=>project(v,cam,w,h));
+  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
+  const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
+  const lit=Math.max(0,worldNormal.x*light.x+worldNormal.y*light.y+worldNormal.z*light.z);
+  const shade=.70+lit*.43;
+  queue.push({pts,depth,color:shadeColor(color,shade),outline:false,alpha:alpha<1?alpha:undefined});
+ }
+}
+function pushAnimalModel(queue,cam,w,h,a,tick){
+ const groundY=surfaceHeightAt(a.x,a.z),sp=a.species,phase=a.phase||0;
+ const stride=a.moving===false?0:Math.sin(tick*6.2+phase)*.035,bob=Math.abs(Math.sin(tick*4.2+phase))*.018;
+ const body=a.body||({sheep:'#f4eee2',cat:'#d6a46f',dog:'#bd8653',cow:'#f3f0e8',horse:'#9e603d',bird:'#77b9df',giraffe:'#e9bd59'})[sp]||'#d2a578';
+ const accent=a.accent||({sheep:'#71645b',cat:'#efd2ac',dog:'#f1d9b9',cow:'#4b4542',horse:'#4d332a',bird:'#f4bd54',giraffe:'#9d6337'})[sp]||'#80634f';
+ const add=(x,y,z,rx,ry,rz,color,alpha=1)=>pushAnimalEllipsoid(queue,cam,w,h,a,groundY,x,y,z,rx,ry,rz,color,alpha);
+ const legColor=sp==='cow'?'#eee9df':sp==='horse'?'#65402f':sp==='giraffe'?'#d9a94d':sp==='bird'?'#b77e42':sp==='cat'?'#bd956d':sp==='dog'?'#926443': '#81766c';
+ const legHeight=sp==='horse'?.28:sp==='giraffe'?.24:sp==='bird'?.105:sp==='sheep'?.115:.19;
+ const legRadius=sp==='horse'?.075:sp==='giraffe'?.068:sp==='bird'?.035:sp==='sheep'?.075:.065;
+ const bodyY=sp==='bird'?.39:sp==='sheep'?.42:sp==='horse'?.52:sp==='giraffe'?.48:.43;
+ const bodyRX=sp==='cow'?.46:sp==='horse'?.40:sp==='giraffe'?.35:sp==='bird'?.23:sp==='sheep'?.42:.34;
+ const bodyRY=sp==='cow'?.34:sp==='horse'?.34:sp==='bird'?.25:sp==='sheep'?.34:.28;
+ const bodyRZ=sp==='cow'?.58:sp==='horse'?.62:sp==='giraffe'?.50:sp==='bird'?.30:sp==='sheep'?.55:.48;
+ // A soft ground shadow anchors the feet instead of making the animal float.
+ add(0,.012,.015,bodyRX*.94,.012,bodyRZ*.82,'#263b2d',.19);
+ // Four separate legs, with a small alternating walk cycle and rounded feet.
+ if(sp!=='bird'){
+  for(const sx of [-1,1])for(const sz of [-1,1]){
+   const step=stride*(sx===sz?1:-1);
+   const x=sx*(bodyRX*.58),z=sz*(bodyRZ*.62)+step;
+   add(x,legHeight+Math.max(0,step)*.30,z,legRadius,legHeight,legRadius*1.05,legColor);
+   add(x,Math.max(.035,legRadius*.46)+Math.max(0,step)*.30,z-.018,legRadius*1.10,.045,legRadius*1.55,sp==='horse'?'#49342c':legColor);
+  }
+ }
+ // Rounded torso, chest and rump.
+ add(0,bodyY+bob,0,bodyRX,bodyRY,bodyRZ,body);
+ if(sp==='sheep'){
+  // A woolly coat made from overlapping soft puffs, not hard cubes.
+  for(const [x,y,z,r] of [[-.28,.66,-.25,.19],[-.10,.75,-.18,.20],[.12,.73,-.18,.20],[.30,.63,-.20,.18],[-.24,.68,.16,.19],[.02,.76,.18,.20],[.25,.67,.16,.18],[0,.78,0,.19]]){
+   add(x,y+bob,z,r,r*.88,r, '#fffaf1');
+  }
+ }else if(sp==='cow'){
+  for(const [x,z,r] of [[-.25,-.23,.13],[.22,.02,.14],[-.18,.31,.10]]){
+   add(x,.62+bob,z,r,.12,r*.78,accent);
+  }
+ }else if(sp==='giraffe'){
+  for(const [x,z,r] of [[-.20,-.24,.075],[.16,-.02,.08],[-.16,.22,.07],[.18,.31,.065]]){
+   add(x,.53+bob,z,r,.085,r*.68,accent);
+  }
+ }
+ // Neck and head proportions are species-specific.
+ if(sp==='horse'){
+  add(0,.88+bob,-.43,.22,.49,.24,body);
+  add(0,1.25+bob,-.58,.22,.27,.25,body);
+  add(0,1.48+bob,-.49,.18,.20,.24,accent);
+  add(0,1.08+bob,-.49,.115,.45,.13,'#49352e');
+  for(const sx of [-1,1]){
+   add(sx*.14,1.49+bob,-.62,.065,.16,.065,body);
+   add(sx*.095,1.35+bob,-.80,.038,.045,.025,'#29231f');
+  }
+  add(0,1.13+bob,-.81,.13,.09,.12,'#e6b28c');
+  add(0,.58+bob,.61,.10,.12,.16,accent);
+ }else if(sp==='giraffe'){
+  add(0,1.05+bob,-.36,.18,.70,.19,body);
+  for(const [x,y,z] of [[-.13,.92,-.40],[.13,1.22,-.39],[-.12,1.48,-.38],[.10,.72,-.38]]){
+   add(x,y+bob,z,.052,.065,.045,accent);
+  }
+  add(0,1.78+bob,-.48,.235,.24,.24,body);
+  for(const sx of [-1,1]){
+   add(sx*.16,1.88+bob,-.47,.085,.10,.09,body);
+   add(sx*.12,2.08+bob,-.47,.045,.13,.045,accent);
+   add(sx*.105,2.18+bob,-.47,.075,.055,.075,body);
+   add(sx*.085,1.81+bob,-.70,.027,.035,.025,'#28231e');
+  }
+  add(0,1.69+bob,-.69,.15,.08,.09,'#e6b45a');
+ }else if(sp==='bird'){
+  add(0,.63+bob,-.20,.19,.19,.20,body);
+  for(const sx of [-1,1])add(sx*.20,.42+bob,0,.16,.095,.23,accent);
+  add(0,.47+bob,-.48,.075,.055,.14,'#edaa35');
+  for(const sx of [-1,1]){
+   add(sx*.075,.70+bob,-.36,.025,.032,.023,'#29231e');
+   add(sx*.068,.713+bob,-.382,.009,.012,.008,'#fffdf3');
+   add(sx*.045,.13,-.015,.018,.095,.018,'#b77e42');
+  }
+  add(0,.33+bob,-.04,.16,.08,.12,'#d9eaf0');
+ }else{
+  const headY=sp==='sheep'?.59:sp==='cow'?.62:.57;
+  const headZ=sp==='sheep'?.- .53:-.49;
+  const headRX=sp==='cow'?.27:sp==='sheep'?.205:.255;
+  const headRY=sp==='cow'?.28:sp==='sheep'?.235:.25;
+  const headRZ=sp==='cow'?.25:sp==='sheep'?.22:.25;
+  const face=sp==='sheep'?'#81756c':sp==='cow'?'#f6f1e9':body;
+  add(0,headY+bob,headZ,headRX,headRY,headRZ,face);
+  if(sp==='cat'){
+   for(const sx of [-1,1]){
+    add(sx*.155,headY+.205+bob,headZ-.015,.095,.17,.075,body);
+    add(sx*.155,headY+.215+bob,headZ-.075,.050,.105,.028,'#e7a6b6');
+   }
+   add(0,.29+bob,-.035,.34,.065,.27,body);
+   add(0,.39+bob,-.73,.135,.085,.10,'#f5e8d5');
+   add(0,.39+bob,-.824,.035,.025,.022,'#d98798');
+  }else if(sp==='dog'){
+   for(const sx of [-1,1]){
+    add(sx*.225,.48+bob,-.46,.105,.20,.13,accent);
+    add(sx*.10,.43+bob,-.71,.12,.095,.11,'#f5e7d5');
+   }
+   add(0,.39+bob,-.80,.17,.10,.12,'#f5e5d0');
+   add(0,.43+bob,-.91,.045,.032,.025,'#34251e');
+   add(-.10,.52+bob,-.70,.07,.055,.065,accent);
+  }else if(sp==='cow'){
+   for(const sx of [-1,1]){
+    add(sx*.18,.84+bob,-.52,.075,.105,.075,'#e9d6ae');
+    add(sx*.18,.96+bob,-.52,.045,.095,.045,'#9b815d');
+   }
+   add(0,.39+bob,-.76,.205,.13,.12,'#e9a6a3');
+   for(const sx of [-1,1])add(sx*.07,.40+bob,-.866,.024,.022,.018,'#765456');
+  }else{
+   // Sheep gets a soft muzzle; dog/cat already have species-specific muzzles.
+   add(0,.43+bob,-.725,.12,.085,.09,'#eee3d7');
+   add(0,.43+bob,-.805,.032,.026,.022,'#7d6c65');
+   for(const sx of [-1,1])add(sx*.15,.71+bob,-.49,.10,.075,.075,'#81756c');
+  }
+  const eyeY=headY+.055+bob,eyeZ=headZ-(headRZ*.83);
+  for(const sx of [-1,1]){
+   add(sx*.095,eyeY,eyeZ-.018,.041,.052,.027,'#fffdf5');
+   add(sx*.095,eyeY,eyeZ-.043,.022,.033,.014,'#29231f');
+   add(sx*.088,eyeY+.014,eyeZ-.056,.008,.011,.006,'#ffffff');
+  }
+ }
+ // Tails are short, rounded and softly animated.
+ if(sp==='cat'||sp==='dog'){
+  const tailLift=.12+Math.sin(tick*5+phase)*.055;
+  add(0,.38+bob,.49,.09,tailLift,.10,body);
+  add(0,.50+bob,.58,.075,.12,.075,body);
+ }else if(sp==='sheep'){
+  add(0,.38+bob,.57,.11,.12,.10,'#fffaf1');
+ }else if(sp==='cow'||sp==='horse'){
+  add(0,.56+bob,.65,.075,.27,.08,accent);
+  add(0,.34+bob,.76,.095,.11,.09,accent);
+ }
+ // A tiny cheek highlight gives the faces a gentle, friendly expression.
+ if(sp!=='bird')for(const sx of [-1,1])add(sx*.17,.43+bob,-.69,.055,.035,.025,sp==='cow'?'#edb2ad':'#f0b0b4',.72);
 }
 
 function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
@@ -1743,7 +1857,7 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  }
  // Rounded, friendly animal characters replace the old cuboid animals.
  const animals=animalPositions(tick).filter(a=>nearWorldPoint(a.x,a.z,26));
- for(const animal of animals)pushAnimalSprite(polys,cam,w,h,animal,tick);
+ for(const animal of animals)pushAnimalModel(polys,cam,w,h,animal,tick);
  drawPlayerBed(polys,cam,w,h,world.player.bed);
  const restPlayer=world.player;
  if(shouldDrawTemporaryRestBed(playerActivity,restPlayer.bed,restPlayer.x,restPlayer.z)){
@@ -1771,7 +1885,6 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
    if(image){ctx.save();ctx.globalAlpha=poly.alpha??.98;paintMappedQuad(image,poly.pts,1);ctx.restore();}
    continue;
   }
-  if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}
    if(poly.faceMark){
    ctx.save();ctx.globalAlpha=poly.alpha??1;
    ctx.beginPath();poly.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
