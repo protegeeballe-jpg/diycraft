@@ -78,7 +78,7 @@ jobs:
           const required = [
             'function getTimePalette',
             'function animalPositions',
-            'function pushAnimalSprite',
+            'function pushAnimalModel',
             'function drawAnimalSprite',
             'if(poly.animalSprite){drawAnimalSprite(poly.animalSprite);continue;}',
             'animals:[]',
