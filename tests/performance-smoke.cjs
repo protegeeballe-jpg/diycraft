@@ -117,6 +117,7 @@ assert(source.includes("const DEBUG_PERFORMANCE=new URLSearchParams(location.sea
   'The on-screen performance monitor must be opt-in through the debug query parameter.');
 assert(source.includes("panel.id='performanceHud'") && source.includes("pointer-events:none"),
   'The diagnostics panel must be a non-interactive overlay that does not intercept game controls.');
+assert(source.includes("const door=block.type==='door',tile=block.type==='tile'") && source.includes('function chunkBoundsVisible(bounds,cam,w,h,margin=16)'), 'Chunk culling must preserve type-aware mesh bounds and conservative viewport tests.');
 assert(source.includes('function renderMeasuredFrame()') && source.includes('function updatePerformanceHud(time)'),
   'The diagnostics must measure actual draw cost and periodically report performance.');
 assert(source.includes("'RAF '+rate(performanceMetrics.rafFrames)") &&
