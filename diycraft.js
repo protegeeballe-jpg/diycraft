@@ -1183,61 +1183,166 @@ function animalPositions(t=performance.now()/1000){
  });
  return [
   {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',x:-2+Math.sin(t*.32)*.55,z:-7+Math.cos(t*.27)*.45},
-  {id:'cat',name:'Mochi',species:'cat',emoji:'🐱',x:3+Math.sin(t*.28)*.5,z:-7+Math.cos(t*.25)*.4,facing:0},
-  {id:'cat_miso',name:'Miso',species:'cat',emoji:'🐈',body:'#b5a69a',accent:'#e6d8c8',...stroll(22,-4.2,1.4,.24)},
-  {id:'cat_tofu',name:'Tofu',species:'cat',emoji:'🐈',body:'#d8b77e',accent:'#f1e2bd',...stroll(19.5,-8.8,4.7,.20)},
-  {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐕',body:'#d6a15f',accent:'#f1d7a8',...stroll(17,-1.9,.2,.30)},
-  {id:'dog_biscuit',name:'Biscuit',species:'dog',emoji:'🐶',body:'#b87b4b',accent:'#efd2a4',...stroll(22,-7.4,2.2,.27)},
-  {id:'dog_pepper',name:'Pepper',species:'dog',emoji:'🐕‍🦺',body:'#eee8dc',accent:'#4c4847',...stroll(14.5,-5.9,3.6,.22)}
+  {id:'cat_mochi',name:'Mochi',species:'cat',emoji:'🐱',x:3+Math.sin(t*.28)*.5,z:-7+Math.cos(t*.25)*.4},
+  {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐶',x:-5+Math.sin(t*.3)*.5,z:-5+Math.cos(t*.3)*.4},
+  {id:'cow_bessie',name:'Bessie',species:'cow',emoji:'🐮',...stroll(8,-2.2,0.5,.2)},
+  {id:'horse_spirit',name:'Spirit',species:'horse',emoji:'🐴',...stroll(-6,-12,2.1,.35)},
+  {id:'bird_chirpy',name:'Chirpy',species:'bird',emoji:'🐦',...stroll(5,-10,4.0,.5)},
+  {id:'giraffe_raffy',name:'Raffy',species:'giraffe',emoji:'🦒',...stroll(14,-14,1.8,.18)}
  ];
 }
 function animalAtScreen(px,py){const cam=cameraState(),w=canvas.clientWidth,h=canvas.clientHeight;let hit=null,best=Infinity;for(const a of animalPositions()){const facing=a.facing||0,p=project({x:a.x+Math.sin(facing)*.30,y:.48,z:a.z+Math.cos(facing)*.30},cam,w,h);if(!p)continue;const d=Math.hypot(px-p.x,py-p.y);if(d<64&&d<best){best=d;hit=a;}}return hit;}
-function drawPetFigure(queue,cam,w,h,a,tick){
- const facing=a.facing||0,c=Math.cos(facing),s=Math.sin(facing);
- const dog=a.species==='dog',body=a.body||'#d6a15f',accent=a.accent||'#f1d7a8';
- const phase=Number.isFinite(a.phase)?a.phase:0;
- const gaitRate=dog?12.5:7.2;
- const stride=Math.sin(tick*gaitRate+phase);
- const bob=a.moving?Math.abs(Math.sin(tick*gaitRate*2+phase))*(dog?.035:.018):Math.sin(tick*1.2+phase)*.01;
- const wag=Math.sin(tick*(dog?15:6.5)+phase);
- const cube=(dx,y,dz,color,sx,sy,sz)=>{
-  const centerX=a.x+dx*c+dz*s,centerZ=a.z-dx*s+dz*c;
-  pushCubeFacing(queue,cam,w,h,centerX-sx/2,y,centerZ-sz/2,color,sx,sy,sz,facing,false);
- };
- if(dog){
-  cube(0,.20+bob,-.02,body,.62,.40,.86);
-  cube(0,.47+bob,.35,body,.43,.43,.42);
-  cube(0,.38+bob,.60,accent,.25,.16,.18);
-  cube(0,.43+bob,.70,'#39332e',.075,.07,.06);
-  for(const dx of [-.13,.13]){
-   cube(dx,.55+bob,.57,'#292622',.055,.07,.035);
-   cube(dx*1.65,.65+bob,.34,accent,.13,.22,.14);
-  }
-  for(const [dx,dz,index] of [[-.21,-.28,0],[.21,-.28,Math.PI],[-.21,.28,Math.PI],[.21,.28,0]]){
-   const step=stride*Math.cos(index),lift=Math.max(0,Math.sin(tick*gaitRate+phase+index))*.075;
-   const legZ=dz+step*.10;
-   cube(dx,.015+bob+lift,legZ,body,.15,.27,.16);
-   cube(dx,.03+bob+lift,legZ+(dz>0?.015:-.015),accent,.155,.06,.17);
-  }
-  // A wagging tail makes the dogs look excited rather than frozen.
-  cube(wag*.13,.40+bob+Math.abs(wag)*.035,-.53,body,.13,.13,.36);
- }else{
-  cube(0,.16+bob,-.03,body,.48,.32,.68);
-  cube(0,.43+bob,.29,body,.39,.39,.36);
-  for(const dx of [-.14,.14]){
-   cube(dx,.68+bob,.34,body,.14,.20,.13);
-   cube(dx,.52+bob,.47,'#302b29',.05,.06,.035);
-  }
-  cube(0,.37+bob,.49,accent,.17,.11,.10);
-  cube(0,.41+bob,.55,'#8a6b68',.055,.04,.04);
-  for(const [dx,dz,index] of [[-.16,-.25,0],[.16,-.25,Math.PI],[ -.16,.22,Math.PI],[.16,.22,0]]){
-   const step=stride*Math.cos(index),lift=Math.max(0,Math.sin(tick*gaitRate+phase+index))*.042;
-   const legZ=dz+step*.055;
-   cube(dx,.015+bob+lift,legZ,body,.12,.22,.13);
-  }
-  // Cats keep their tails higher and swish them more slowly.
-  cube(.28+wag*.10,.25+bob+Math.abs(wag)*.05,-.34,body,.11,.11,.45);
- }
+function drawPetFigure(queue, cam, w, h, a, tick) {
+    const facing = a.facing || 0, c = Math.cos(facing), s = Math.sin(facing);
+    
+    // Determine species from id or properties
+    const species = a.species || (
+        a.id.includes('cat') ? 'cat' : 
+        a.id.includes('dog') ? 'dog' : 
+        a.id.includes('cow') ? 'cow' : 
+        a.id.includes('horse') ? 'horse' : 
+        a.id.includes('bird') ? 'bird' : 
+        a.id.includes('giraffe') ? 'giraffe' : 'sheep'
+    );
+    
+    const body = a.body || (
+        species === 'sheep' ? '#f4f0e4' : 
+        species === 'cat' ? '#e8c48c' : 
+        species === 'dog' ? '#d6a15f' : 
+        species === 'cow' ? '#f4f4f4' : 
+        species === 'horse' ? '#a0522d' : 
+        species === 'bird' ? '#4a90e2' : 
+        species === 'giraffe' ? '#f4a460' : '#d6a15f'
+    );
+    
+    const accent = a.accent || (
+        species === 'sheep' ? '#d7d0c5' : 
+        species === 'cat' ? '#b88754' : 
+        species === 'dog' ? '#f1d7a8' : 
+        species === 'cow' ? '#2d2d2d' : // Cow patches
+        species === 'horse' ? '#5c3a21' : // Mane/tail color
+        species === 'bird' ? '#f5a623' : // Beak color
+        species === 'giraffe' ? '#8b4513' : '#f1d7a8' // Giraffe spots
+    );
+
+    const phase = Number.isFinite(a.phase) ? a.phase : 0;
+    const gaitRate = species === 'bird' ? 18.0 : species === 'dog' ? 12.5 : species === 'horse' ? 14.0 : 7.2;
+    const stride = Math.sin(tick * gaitRate + phase);
+    const bob = a.moving ? Math.abs(Math.sin(tick * gaitRate * 2 + phase)) * (species === 'bird' ? .01 : .03) : Math.sin(tick * 1.2 + phase) * .01;
+    const wag = Math.sin(tick * (species === 'dog' ? 15 : 6.5) + phase);
+
+    const cube = (dx, y, dz, color, sx, sy, sz) => {
+        const centerX = a.x + dx * c + dz * s, centerZ = a.z - dx * s + dz * c;
+        pushCubeFacing(queue, cam, w, h, centerX - sx / 2, y, centerZ - sz / 2, color, sx, sy, sz, facing, false);
+    };
+
+    if (species === 'sheep') {
+        // --- SHEEP ---
+        cube(0, .20 + bob, 0, body, .76, .52, 1.02);
+        cube(0, .32 + bob, .42, accent, .38, .36, .38);
+        cube(-.22, .52 + bob, .40, '#39332e', .09, .14, .08);
+        cube(.22,  .52 + bob, .40, '#39332e', .09, .14, .08);
+        cube(-.11, .42 + bob, .60, '#292622', .06, .06, .04);
+        cube(.11,  .42 + bob, .60, '#292622', .06, .06, .04);
+        for (const [dx, dz, index] of [[-.26, -.34, 0], [.26, -.34, Math.PI], [-.26, .34, Math.PI], [.26, .34, 0]]) {
+            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .05;
+            cube(dx, .015 + bob + lift, dz + step * .08, accent, .16, .26, .16);
+        }
+
+    } else if (species === 'dog') {
+        // --- DOG ---
+        cube(0, .18 + bob, -.02, body, .58, .38, .82);
+        cube(0, .24 + bob, .15, accent, .48, .30, .45);
+        cube(0, .46 + bob, .38, body, .40, .38, .38);
+        cube(0, .38 + bob, .56, accent, .24, .16, .20);
+        cube(0, .44 + bob, .66, '#292622', .08, .07, .06);
+        cube(-.14, .54 + bob, .42, '#292622', .06, .07, .035);
+        cube(.14,  .54 + bob, .42, '#292622', .06, .07, .035);
+        cube(-.24, .52 + bob, .34, accent, .12, .26, .14);
+        cube(.24,  .52 + bob, .34, accent, .12, .26, .14);
+        for (const [dx, dz, index] of [[-.20, -.26, 0], [.20, -.26, Math.PI], [-.20, .26, Math.PI], [.20, .26, 0]]) {
+            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .075;
+            cube(dx, .015 + bob + lift, dz + step * .10, body, .14, .27, .15);
+        }
+        cube(wag * .14, .42 + bob + Math.abs(wag) * .04, -.50, body, .12, .12, .34);
+
+    } else if (species === 'cat') {
+        // --- CAT ---
+        cube(0, .16 + bob, -.03, body, .46, .30, .64);
+        cube(0, .42 + bob, .28, body, .36, .36, .34);
+        cube(-.13, .70 + bob, .30, body, .12, .18, .10);
+        cube(.13,  .70 + bob, .30, body, .12, .18, .10);
+        cube(-.13, .68 + bob, .32, '#e8a4c1', .07, .11, .05);
+        cube(.13,  .68 + bob, .32, '#e8a4c1', .07, .11, .05);
+        cube(-.10, .48 + bob, .46, '#292622', .05, .06, .035);
+        cube(.10,  .48 + bob, .46, '#292622', .05, .06, .035);
+        cube(0,    .40 + bob, .48, accent, .14, .09, .08);
+        for (const [dx, dz, index] of [[-.15, -.22, 0], [.15, -.22, Math.PI], [-.15, .20, Math.PI], [.15, .20, 0]]) {
+            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .042;
+            cube(dx, .015 + bob + lift, dz + step * .055, body, .11, .22, .12);
+        }
+        cube(.26 + wag * .12, .26 + bob + Math.abs(wag) * .06, -.32, body, .10, .10, .42);
+
+    } else if (species === 'cow') {
+        // --- COW (Large body, patches, horns, and gentle snout) ---
+        cube(0, .24 + bob, 0, body, .82, .54, 1.22);
+        cube(-.15, .32 + bob, .2, accent, .32, .26, .32); // Patch
+        cube(.2, .42 + bob, -.3, accent, .28, .24, .28); // Patch
+        cube(0, .54 + bob, .58, body, .44, .40, .40); // Head
+        cube(0, .44 + bob, .76, '#e8a4c1', .26, .16, .18); // Snout
+        cube(-.28, .82 + bob, .54, '#dcdcdc', .08, .18, .08); // Left horn
+        cube(.28,  .82 + bob, .54, '#dcdcdc', .08, .18, .08); // Right horn
+        cube(-.15, .64 + bob, .62, '#292622', .06, .06, .03); // Eye
+        cube(.15,  .64 + bob, .62, '#292622', .06, .06, .03); // Eye
+        for (const [dx, dz, index] of [[-.30, -.42, 0], [.30, -.42, Math.PI], [-.30, .42, Math.PI], [.30, .42, 0]]) {
+            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .06;
+            cube(dx, .02 + bob + lift, dz + step * .1, body, .20, .32, .20);
+        }
+        cube(wag * .1, .38 + bob, -.62, accent, .10, .10, .38); // Tail
+
+    } else if (species === 'horse') {
+        // --- HORSE (Sleek body, sculpted neck, mane, and flowing tail) ---
+        cube(0, .32 + bob, -.05, body, .64, .48, 1.15); // Torso
+        cube(0, .52 + bob, .42, body, .32, .55, .30); // Upright Neck
+        cube(0, .82 + bob, .58, body, .28, .28, .42); // Head & Snout
+        cube(0, .68 + bob, .36, accent, .12, .52, .12); // Mane
+        for (const [dx, dz, index] of [[-.22, -.38, 0], [.22, -.38, Math.PI], [-.22, .38, Math.PI], [.22, .38, 0]]) {
+            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .08;
+            cube(dx, .02 + bob + lift, dz + step * .12, body, .13, .42, .14); // Long legs
+        }
+        cube(0, .26 + bob + Math.abs(wag) * .05, -.64, accent, .12, .45, .28); // Flowing tail
+
+    } else if (species === 'bird') {
+        // --- BIRD (Plump body, tiny feet, and flapping wings) ---
+        const flap = Math.sin(tick * 22 + phase) * .35;
+        cube(0, .35 + bob, 0, body, .32, .28, .36); // Body
+        cube(0, .52 + bob, .20, body, .24, .24, .24); // Head
+        cube(0, .48 + bob, .36, accent, .12, .08, .16); // Beak
+        // Flapping wings
+        cube(-.32 + flap, .42 + bob, 0, accent, .28, .08, .22);
+        cube(.32 - flap,  .42 + bob, 0, accent, .28, .08, .22);
+        cube(-.06, .04 + bob, 0, '#292622', .04, .12, .04);
+        cube(.06,  .04 + bob, 0, '#292622', .04, .12, .04);
+
+    } else if (species === 'giraffe') {
+        // --- GIRAFFE (Towering neck, spots, and small ossicones) ---
+        cube(0, .38 + bob, -.1, body, .68, .50, .95); // Body
+        cube(0, .75 + bob, .38, body, .25, 1.10, .25); // Long neck
+        cube(0, 1.35 + bob, .48, body, .30, .28, .38); // Head
+        cube(-.1, 1.55 + bob, .42, accent, .06, .12, .06); // Left horn
+        cube(.1,  1.55 + bob, .42, accent, .06, .12, .06); // Right horn
+        cube(-.12, 1.25 + bob, .52, '#292622', .05, .05, .03); // Eye
+        cube(.12,  1.25 + bob, .52, '#292622', .05, .05, .03); // Eye
+        // Giraffe spots on body & neck
+        cube(0, .52 + bob, .15, accent, .32, .22, .32);
+        cube(0, .95 + bob, .40, accent, .16, .35, .16);
+        // Slender long legs
+        for (const [dx, dz, index] of [[-.24, -.32, 0], [.24, -.32, Math.PI], [-.24, .32, Math.PI], [.24, .32, 0]]) {
+            const step = stride * Math.cos(index), lift = Math.max(0, Math.sin(tick * gaitRate + phase + index)) * .07;
+            cube(dx, .02 + bob + lift, dz + step * .1, body, .12, .55, .12);
+        }
+    }
+}
 }
 function drawNeighborFigure(queue,cam,w,h,n,bob,tick){
  const facing=n.facing||0,c=Math.cos(facing),s=Math.sin(facing);
