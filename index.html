@@ -232,7 +232,7 @@
       <div class="texture-choice-grid" id="customTextureChoices"></div>
       <h3>2. Choose any color</h3>
       <div class="custom-color-fields">
-        <div class="field">Full color spectrum
+        <div class="field"><span id="customColorCaption">Full color spectrum</span>
           <div class="spectrum-picker" role="group" aria-label="Custom solid color spectrum">
             <div class="spectrum-sv" id="customBlockSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
             <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="customBlockHue" type="range" min="0" max="359" value="270" aria-label="Color hue"></div>
@@ -287,7 +287,7 @@
       <button id="applyTileDesign" class="primary custom-apply">Use this tile design</button>
     </div>
   </div>
-  <div class="menu-shade" id="solidPickerShade"><div class="menu"><div class="menu-head"><h2>🧱 Solid blocks</h2><button data-close>Close ✕</button></div><p class="note">Choose the solid material to build with. Choose Custom to create a full-spectrum colored and textured solid block.</p><div class="menu-grid" id="solidPickerChoices"></div><button id="solidCustomizeBtn" class="soft" style="width:100%;margin-top:10px">🎨 Customize color and texture</button></div></div>
+  <div class="menu-shade" id="solidPickerShade"><div class="menu"><div class="menu-head"><h2>🧱 Solid blocks</h2><button data-close>Close ✕</button></div><p class="note">Choose the solid material to build with. Choose Custom to create a full-spectrum colored and textured solid block.</p><div class="menu-grid" id="solidPickerChoices"></div><button id="flowerColorBtn" class="soft" style="width:100%;margin-top:10px">🌸 Customize Flower Color</button><button id="solidCustomizeBtn" class="soft" style="width:100%;margin-top:8px">🎨 Customize color and texture</button></div></div>
   <div class="menu-shade" id="inventoryShade"><div class="menu"><div class="menu-head"><h2>🪣 Material Bucket & pouches</h2><button data-close>Close ✕</button></div>
     <div class="tabs"><button class="active" data-tab="bucket">Material Bucket</button><button data-tab="materials">Resources · 60</button><button data-tab="crafted">Crafted · 60</button></div><button id="clearBucketBtn" class="soft" style="width:100%;margin:0 0 10px">Empty Material Bucket</button><div class="slots" id="slots"></div><p class="note" id="bucketNote">Recovered blocks stay here and can be selected and reused without being consumed. Bucket capacity: 120 recovered pieces.</p></div></div>
   <div class="menu-shade" id="craftShade"><div class="menu"><div class="menu-head"><h2>🧺 Peaceful crafting</h2><button data-close>Close ✕</button></div><div id="recipes"></div><p class="note">Recipes are for helpful, decorative things only. There are no weapons or harmful tools.</p></div></div>
