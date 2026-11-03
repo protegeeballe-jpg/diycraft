@@ -121,7 +121,7 @@ assert(source.includes('function renderMeasuredFrame()') && source.includes('fun
   'The diagnostics must measure actual draw cost and periodically report performance.');
 assert(source.includes("'RAF '+rate(performanceMetrics.rafFrames)") &&
   source.includes("rate(performanceMetrics.renderFrames)") &&
-  source.includes("'Move  '+average(performanceMetrics.updateMsTotal"),
+  source.includes("'Sim   '+average(performanceMetrics.updateMsTotal"),
   'The diagnostics must distinguish browser frame rate, game draw rate, and simulation update cost.');
 assert(source.includes('function trackPointerHandler(name,handler)') &&
   source.includes("'Input D/U '+eventMetric(inputEventMetrics.down)"),
