@@ -1767,32 +1767,91 @@ function interpolatePlayerState(previous,current,alpha){
   pitch:previous.pitch+(current.pitch-previous.pitch)*t
  };
 }
+const DEBUG_PERFORMANCE=new URLSearchParams(location.search).get('debug')==='1';
+const performanceHud=DEBUG_PERFORMANCE?(()=>{
+ const panel=document.createElement('pre');
+ panel.id='performanceHud';
+ panel.setAttribute('aria-hidden','true');
+ panel.style.cssText='position:fixed;z-index:30;top:max(66px,calc(env(safe-area-inset-top) + 66px));right:8px;margin:0;padding:7px 9px;border:1px solid #ffffff55;border-radius:9px;background:#10251ee8;color:#eaffed;font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;pointer-events:none;user-select:none;-webkit-user-select:none;box-shadow:0 2px 12px #0004';
+ panel.textContent='DIYCraft performance monitor\nCollecting...';
+ document.body.appendChild(panel);
+ return panel;
+})():null;
+const performanceMetrics={windowStart:null,rafFrames:0,renderFrames:0,frameMsTotal:0,frameMsMax:0,renderMsTotal:0,renderMsMax:0,updateMsTotal:0,updateSteps:0,slowFrames:0};
+function resetPerformanceMetrics(windowStart){
+ performanceMetrics.windowStart=windowStart;
+ performanceMetrics.rafFrames=0;performanceMetrics.renderFrames=0;
+ performanceMetrics.frameMsTotal=0;performanceMetrics.frameMsMax=0;
+ performanceMetrics.renderMsTotal=0;performanceMetrics.renderMsMax=0;
+ performanceMetrics.updateMsTotal=0;performanceMetrics.updateSteps=0;performanceMetrics.slowFrames=0;
+}
+function renderMeasuredFrame(){
+ if(!performanceHud){render();return;}
+ const started=performance.now();
+ try{render();}
+ finally{
+  const duration=Math.max(0,performance.now()-started);
+  performanceMetrics.renderFrames++;performanceMetrics.renderMsTotal+=duration;
+  performanceMetrics.renderMsMax=Math.max(performanceMetrics.renderMsMax,duration);
+ }
+}
+function updatePerformanceHud(time){
+ if(!performanceHud)return;
+ if(performanceMetrics.windowStart===null){resetPerformanceMetrics(time);return;}
+ const elapsed=time-performanceMetrics.windowStart;
+ if(elapsed<1000)return;
+ const rate=count=>(count*1000/elapsed).toFixed(1);
+ const average=(total,count)=>count?(total/count).toFixed(1):'—';
+ performanceHud.textContent=[
+  'RAF '+rate(performanceMetrics.rafFrames)+' fps  DRAW '+rate(performanceMetrics.renderFrames)+' fps',
+  'Frame '+average(performanceMetrics.frameMsTotal,performanceMetrics.rafFrames)+' / '+performanceMetrics.frameMsMax.toFixed(1)+' ms',
+  'Draw  '+average(performanceMetrics.renderMsTotal,performanceMetrics.renderFrames)+' / '+performanceMetrics.renderMsMax.toFixed(1)+' ms',
+  'Move  '+average(performanceMetrics.updateMsTotal,performanceMetrics.updateSteps)+' ms/tick',
+  '>50ms frames: '+performanceMetrics.slowFrames
+ ].join('\n');
+ resetPerformanceMetrics(time);
+}
 let previousPlayerRenderState=null,renderAccumulator=0;
 function renderPlayerFrame(alpha){
  const p=world.player,current=capturePlayerRenderState(p);
- if(!previousPlayerRenderState){previousPlayerRenderState=current;render();return;}
+ if(!previousPlayerRenderState){previousPlayerRenderState=current;renderMeasuredFrame();return;}
  const interpolated=interpolatePlayerState(previousPlayerRenderState,current,alpha);
  Object.assign(p,interpolated);
- try{render();}
+ try{renderMeasuredFrame();}
  finally{Object.assign(p,current);}
 }
 function loop(time){
  requestAnimationFrame(loop);
  if(document.hidden){lastTime=0;frameAccumulator=0;renderAccumulator=0;previousPlayerRenderState=null;return;}
- if(!lastTime){lastTime=time;renderAccumulator=0;previousPlayerRenderState=capturePlayerRenderState();render();return;}
+ if(!lastTime){
+  lastTime=time;renderAccumulator=0;previousPlayerRenderState=capturePlayerRenderState();
+  if(performanceHud)resetPerformanceMetrics(time);
+  renderMeasuredFrame();return;
+ }
  const frameElapsedMs=Math.max(0,time-lastTime),elapsed=Math.min(MAX_FRAME_DELTA,frameElapsedMs/1000);lastTime=time;
+ if(performanceHud){
+  performanceMetrics.rafFrames++;performanceMetrics.frameMsTotal+=frameElapsedMs;
+  performanceMetrics.frameMsMax=Math.max(performanceMetrics.frameMsMax,frameElapsedMs);
+  if(frameElapsedMs>50)performanceMetrics.slowFrames++;
+ }
  frameAccumulator=Math.min(frameAccumulator+elapsed,FIXED_UPDATE_STEP*MAX_FIXED_STEPS_PER_FRAME);
  renderAccumulator+=frameElapsedMs;
+ const updateStarted=performanceHud&&frameAccumulator+1e-9>=FIXED_UPDATE_STEP?performance.now():0;
  let steps=0;
  while(frameAccumulator+1e-9>=FIXED_UPDATE_STEP&&steps<MAX_FIXED_STEPS_PER_FRAME){
   previousPlayerRenderState=capturePlayerRenderState();
   move(FIXED_UPDATE_STEP);frameAccumulator-=FIXED_UPDATE_STEP;steps++;
+ }
+ if(performanceHud&&steps){
+  performanceMetrics.updateMsTotal+=performance.now()-updateStarted;
+  performanceMetrics.updateSteps+=steps;
  }
  // Keep movement at 60 Hz while avoiding redundant full-world draws on high-refresh displays.
  if(renderAccumulator>=MIN_RENDER_INTERVAL){
   renderAccumulator%=MIN_RENDER_INTERVAL;
   renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);
  }
+ if(performanceHud)updatePerformanceHud(time);
 }
 function renderSlots(){
  const root=$('slots');root.replaceChildren();
