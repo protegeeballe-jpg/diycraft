@@ -1289,27 +1289,33 @@ function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alp
  const rings=4,segments=8,grid=[];
  for(let i=0;i<=rings;i++){
   const lat=-Math.PI/2+Math.PI*i/rings,row=[];
+  const cosLat=Math.cos(lat),sinLat=Math.sin(lat);
   for(let j=0;j<=segments;j++){
    const lon=2*Math.PI*j/segments;
-   row.push(animalWorldPoint(a,cx+rx*Math.cos(lat)*Math.cos(lon),cy+ry*Math.sin(lat),cz+rz*Math.cos(lat)*Math.sin(lon),groundY));
+   row.push(animalWorldPoint(a,cx+rx*cosLat*Math.cos(lon),cy+ry*sinLat,cz+rz*cosLat*Math.sin(lon),groundY));
   }
   grid.push(row);
  }
- const light={x:-.38,y:.88,z:-.28};
+ // A shared grid vertex belongs to up to four faces. Project it once rather than
+ // repeating the same perspective transform for every face that references it.
+ const projectedGrid=grid.map(row=>row.map(v=>project(v,cam,w,h)));
+ const lightX=-.38,lightY=.88,lightZ=-.28;
+ const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
  for(let i=0;i<rings;i++)for(let j=0;j<segments;j++){
   const lat=-Math.PI/2+Math.PI*(i+.5)/rings,lon=2*Math.PI*(j+.5)/segments;
   let nx=Math.cos(lat)*Math.cos(lon)/Math.max(.001,rx),ny=Math.sin(lat)/Math.max(.001,ry),nz=Math.cos(lat)*Math.sin(lon)/Math.max(.001,rz);
   const normalLength=Math.hypot(nx,ny,nz)||1;nx/=normalLength;ny/=normalLength;nz/=normalLength;
-  const yaw=Number.isFinite(a.facing)?a.facing:0,c=Math.cos(yaw),s=Math.sin(yaw);
-  const worldNormal={x:nx*c-nz*s,y:ny,z:nx*s+nz*c};
+  const worldNormalX=nx*c-nz*s,worldNormalZ=nx*s+nz*c;
   const v0=grid[i][j],v1=grid[i][j+1],v2=grid[i+1][j+1],v3=grid[i+1][j];
-  const center={x:(v0.x+v1.x+v2.x+v3.x)/4,y:(v0.y+v1.y+v2.y+v3.y)/4,z:(v0.z+v1.z+v2.z+v3.z)/4};
-  const toCamera={x:cam.pos.x-center.x,y:cam.pos.y-center.y,z:cam.pos.z-center.z};
-  if(worldNormal.x*toCamera.x+worldNormal.y*toCamera.y+worldNormal.z*toCamera.z<=0)continue;
-  const pts=[v0,v1,v2,v3].map(v=>project(v,cam,w,h));
-  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
-  const depth=pts.reduce((sum,p)=>sum+p.d,0)/pts.length;
-  const lit=Math.max(0,worldNormal.x*light.x+worldNormal.y*light.y+worldNormal.z*light.z);
+  const centerX=(v0.x+v1.x+v2.x+v3.x)*.25,centerY=(v0.y+v1.y+v2.y+v3.y)*.25,centerZ=(v0.z+v1.z+v2.z+v3.z)*.25;
+  const toCameraX=cam.pos.x-centerX,toCameraY=cam.pos.y-centerY,toCameraZ=cam.pos.z-centerZ;
+  if(worldNormalX*toCameraX+ny*toCameraY+worldNormalZ*toCameraZ<=0)continue;
+  const p0=projectedGrid[i][j],p1=projectedGrid[i][j+1],p2=projectedGrid[i+1][j+1],p3=projectedGrid[i+1][j];
+  if(!p0||!p1||!p2||!p3)continue;
+  const pts=[p0,p1,p2,p3];
+  if(!projectedPolygonVisible(pts,w,h,2))continue;
+  const depth=(p0.d+p1.d+p2.d+p3.d)*.25;
+  const lit=Math.max(0,worldNormalX*lightX+ny*lightY+worldNormalZ*lightZ);
   const shade=.70+lit*.43;
   queue.push({pts,depth,color:shadeColor(color,shade),outline:false,alpha:alpha<1?alpha:undefined});
  }
@@ -1638,6 +1644,15 @@ function pushGroundSurface(queue,cam,w,h,color){
  const radius=24,cx=Math.floor(cam.pos.x),cz=Math.floor(cam.pos.z),sy=Math.sin(cam.yaw),cy=Math.cos(cam.yaw),sp=Math.sin(cam.pitch),cp=Math.cos(cam.pitch),focal=Math.min(w,h)*.94,horizontalLimit=(w*.5+30)/focal;
  const minX=Math.max(-WORLD_LIMIT,cx-radius),maxX=Math.min(WORLD_LIMIT-1,cx+radius);
  const minZ=Math.max(-WORLD_LIMIT,cz-radius),maxZ=Math.min(WORLD_LIMIT-1,cz+radius);
+ // Adjacent ground cells share corners. Project each visible lattice point once per frame.
+ // This preserves the exact same floor geometry while avoiding up to four duplicate projections per tile.
+ const projectedRows=Array.from({length:maxX-minX+2},()=>[]);
+ const groundPoint=(x,z)=>{
+  const row=projectedRows[x-minX],index=z-minZ;
+  let point=row[index];
+  if(point===undefined){point=project({x,y:0,z},cam,w,h)||null;row[index]=point;}
+  return point;
+ };
  for(let x=minX;x<=maxX;x++)for(let z=minZ;z<=maxZ;z++){
   const dx=x+.5-cam.pos.x,dz=z+.5-cam.pos.z,forward=dx*sy-dz*cy;
   const depth=forward*cp-cam.pos.y*sp;if(depth<=.12)continue;
@@ -1645,14 +1660,16 @@ function pushGroundSurface(queue,cam,w,h,color){
   const up=-forward*sp-cam.pos.y*cp,screenY=h*.51-up*focal/depth,cellRadius=focal/depth*1.15;
   if(screenY< -cellRadius-24||screenY>h+cellRadius+24)continue;
   if(groundDepthAt(x,z)>0)continue;
-  const vertices=[{x,y:0,z},{x:x+1,y:0,z},{x:x+1,y:0,z:z+1},{x,y:0,z:z+1}],pts=vertices.map(v=>project(v,cam,w,h));
-  if(pts.some(p=>!p)||!projectedPolygonVisible(pts,w,h,2))continue;
-  const left=Math.min(...pts.map(p=>p.x)),right=Math.max(...pts.map(p=>p.x));
-  const top=Math.min(...pts.map(p=>p.y)),bottom=Math.max(...pts.map(p=>p.y));
+  const p0=groundPoint(x,z),p1=groundPoint(x+1,z),p2=groundPoint(x+1,z+1),p3=groundPoint(x,z+1);
+  if(!p0||!p1||!p2||!p3)continue;
+  const pts=[p0,p1,p2,p3];
+  if(!projectedPolygonVisible(pts,w,h,2))continue;
+  const left=Math.min(p0.x,p1.x,p2.x,p3.x),right=Math.max(p0.x,p1.x,p2.x,p3.x);
+  const top=Math.min(p0.y,p1.y,p2.y,p3.y),bottom=Math.max(p0.y,p1.y,p2.y,p3.y);
   if(right< -24||left>w+24||bottom< -24||top>h+24)continue;
   const underground=cam.pos.y<-.15;
   const visibleColor=underground?'#76553d':color;
-  queue.push({pts,depth:pts.reduce((sum,p)=>sum+p.d,0)/pts.length,color:visibleColor,outline:false,material:underground?'dirt':'grass'});
+  queue.push({pts,depth:(p0.d+p1.d+p2.d+p3.d)*.25,color:visibleColor,outline:false,material:underground?'dirt':'grass'});
  }
 }
 function pushExcavationTerrain(queue,cam,w,h){
