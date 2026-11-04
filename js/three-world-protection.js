@@ -45,14 +45,15 @@
   ...FAMILY.map(actor=>Object.freeze(actor))
  ]);
  const RESIDENTS=Object.freeze([
-  {id:'sheep',x:-2,z:-7,phase:.2,rate:.22,rx:.42,rz:.30},
-  {id:'cat_mochi',x:3,z:-7,phase:1.6,rate:.25,rx:.42,rz:.30},
-  {id:'dog_buddy',x:-5,z:-5,phase:2.8,rate:.26,rx:.48,rz:.34},
-  {id:'cow_bessie',x:8,z:-2.2,phase:.5,rate:.18,rx:.52,rz:.36},
-  {id:'horse_spirit',x:-6,z:-12,phase:2.1,rate:.24,rx:.56,rz:.36},
-  {id:'bird_chirpy',x:5,z:-10,phase:4,rate:.42,rx:.34,rz:.24},
-  {id:'giraffe_raffy',x:14,z:-14,phase:1.8,rate:.16,rx:.48,rz:.34}
+  {id:'sheep',name:'Pip the sheep',species:'sheep',emoji:'🐑',x:-2,z:-7,phase:.2,rate:.22,rx:.42,rz:.30},
+  {id:'cat_mochi',name:'Mochi',species:'cat',emoji:'🐱',body:'#d8a66d',accent:'#f4e0c4',x:3,z:-7,phase:1.6,rate:.25,rx:.42,rz:.30},
+  {id:'dog_buddy',name:'Buddy',species:'dog',emoji:'🐶',body:'#c98a4d',accent:'#f5dfbd',x:-5,z:-5,phase:2.8,rate:.26,rx:.48,rz:.34},
+  {id:'cow_bessie',name:'Bessie',species:'cow',emoji:'🐮',body:'#f5f2e9',accent:'#514b48',x:8,z:-2.2,phase:.5,rate:.18,rx:.52,rz:.36},
+  {id:'horse_spirit',name:'Spirit',species:'horse',emoji:'🐴',body:'#a65e37',accent:'#573a2c',x:-6,z:-12,phase:2.1,rate:.24,rx:.56,rz:.36},
+  {id:'bird_chirpy',name:'Chirpy',species:'bird',emoji:'🐦',body:'#75b9df',accent:'#f3bd54',x:5,z:-10,phase:4,rate:.42,rx:.34,rz:.24},
+  {id:'giraffe_raffy',name:'Raffy',species:'giraffe',emoji:'🦒',body:'#edbd59',accent:'#a96b32',x:14,z:-14,phase:1.8,rate:.16,rx:.48,rz:.34}
  ]);
+ const ANIMAL_EMOJI=Object.freeze({sheep:'🐑',cat:'🐱',dog:'🐶',cow:'🐮',horse:'🐴',bird:'🐦',giraffe:'🦒'});
  const finite=value=>typeof value==='number'&&Number.isFinite(value);
  function modeAt(timeSeconds,timeMode='day'){
   if(timeMode==='auto'){
@@ -226,21 +227,48 @@
    const pos=night?SLEEP_SPOTS[actor.id]:routePosition(actor.route,timeSeconds,actor.phase,actor.speed,nav);
    neighbors.push({id:actor.id,x:pos.x,z:pos.z});
   }
-  const animals=RESIDENTS.map(a=>({
-   id:a.id,
-   x:a.x+Math.sin(timeSeconds*a.rate+a.phase)*a.rx,
-   z:a.z+Math.cos(timeSeconds*(a.rate*.82)+a.phase)*a.rz
-  }));
-  const ids=new Set(animals.map(a=>a.id));
-  for(const animal of Array.isArray(world.animals)?world.animals:[]){
-   if(!animal||typeof animal.id!=='string'||ids.has(animal.id)||!finite(animal.x)||!finite(animal.z))continue;
-   animals.push({id:animal.id,x:animal.x,z:animal.z});ids.add(animal.id);
-  }
+  const animals=animalStates(world,timeSeconds).map(animal=>({id:animal.id,x:animal.x,z:animal.z}));
   return Object.freeze({
    timeSeconds,mode,night,
    neighbors:Object.freeze(neighbors.map(a=>Object.freeze({...a}))),
    animals:Object.freeze(animals.map(a=>Object.freeze({...a})))
   });
+ }
+ function animalStates(world={},timeSeconds=0){
+  if(!finite(timeSeconds))throw new TypeError('Animal animation time must be finite seconds.');
+  const stroll=(x,z,phase,rate=.28,rx=.58,rz=.40)=>({
+   x:x+Math.sin(timeSeconds*rate+phase)*rx,
+   z:z+Math.cos(timeSeconds*(rate*.82)+phase)*rz,
+   facing:Math.atan2(rate*Math.cos(timeSeconds*rate+phase)*rx,-rate*.82*Math.sin(timeSeconds*(rate*.82)+phase)*rz),
+   moving:true,phase
+  });
+  const animals=RESIDENTS.map(animal=>({
+   ...animal,...stroll(animal.x,animal.z,animal.phase,animal.rate,animal.rx,animal.rz),resident:true
+  }));
+  const ids=new Set(animals.map(animal=>animal.id));
+  for(const animal of Array.isArray(world.animals)?world.animals:[]){
+   if(!animal||typeof animal.id!=='string'||ids.has(animal.id)||
+      typeof animal.species!=='string'||!finite(animal.x)||!finite(animal.z))continue;
+   animals.push({...animal,emoji:ANIMAL_EMOJI[animal.species]||'🐾',resident:false});
+   ids.add(animal.id);
+  }
+  return Object.freeze(animals.map(animal=>Object.freeze({
+   ...animal,phase:finite(animal.phase)?animal.phase:0,
+   facing:finite(animal.facing)?animal.facing:0
+  })));
+ }
+ function pickAnimalAtScreen(animals,px,py,project){
+  if(!finite(px)||!finite(py))throw new TypeError('Animal pick coordinates must be finite.');
+  if(typeof project!=='function')throw new TypeError('An animal screen projection callback is required.');
+  let best=Infinity,hit=null;
+  for(const animal of Array.isArray(animals)?animals:[]){
+   if(!animal||!finite(animal.x)||!finite(animal.z))continue;
+   const point=project({x:animal.x,y:animal.species==='giraffe'?.8:.48,z:animal.z},animal);
+   if(!point)continue;
+   const distance=Math.hypot(px-point.x,py-point.y);
+   if(distance<66&&distance<best){best=distance;hit=animal;}
+  }
+  return hit;
  }
  function characterStates(world={},timeSeconds=0,geometryRevision=0){
   if(!finite(timeSeconds))throw new TypeError('Character animation time must be finite seconds.');
@@ -280,5 +308,5 @@
   }
   return false;
  }
- return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,modeAt,routePosition,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
+ return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,RESIDENTS,modeAt,routePosition,animalStates,pickAnimalAtScreen,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });
