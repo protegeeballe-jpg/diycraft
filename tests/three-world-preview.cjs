@@ -19,6 +19,12 @@ function extractFreshWorld(){
 }
 (async()=>{
  const world=extractFreshWorld();
+ const species=['sheep','cat','dog','cow','horse','bird','giraffe'];
+ world.animals=Array.from({length:18},(_,index)=>({
+  id:'mobile-pet-'+index,species:species[index%species.length],name:'Pet '+index,
+  x:(index%6)*1.4-3,z:Math.floor(index/6)*1.6-1,
+  facing:index*.13,phase:index*.71
+ }));
  const original=JSON.stringify(world);
  const snapshot=adapter.createSnapshot(world);
  assert.ok(snapshot.blocks.length>0,'The real starter world must have blocks.');
@@ -50,6 +56,11 @@ function extractFreshWorld(){
   assert.equal(state.revision,'128','The repository Three.js r128 build must be used.');
   assert.equal(state.status.source,'diycraft-world-v1');
   assert.equal(state.status.sourceBlocks,world.blocks.length);
+  assert.equal(state.status.snapshotCounts.animals,18,'Every valid saved animal must remain in the adapter snapshot.');
+  assert.equal(state.status.renderedAnimals,12,'Low-end profile must cap only the rendered animal instances.');
+  assert.equal(state.status.animalBatchCount,7,'Animals with matching species and appearance should be batched.');
+  assert.ok(state.status.geometryCount<50,'Instanced animal models must keep geometry allocations bounded.');
+  assert.ok(state.status.drawCalls<=45,'Instanced animals must stay within the starter-world low-end draw-call budget.');
   assert.equal(state.status.renderedBlocks+state.status.renderedPlants+state.status.renderedDoors,world.blocks.length,
    'Every original starter block must be represented by a 3D render object.');
   assert.equal(state.status.sourceUnchanged,true,'Rendering must not alter the original world data.');
