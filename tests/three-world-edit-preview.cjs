@@ -225,6 +225,18 @@ function freshWorld(){
   waterStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getWaterStats());
   assert.equal(waterStats.waterVertices,0);
   assert.equal(waterStats.renderedFish,0);
+  await page.locator('#water-x').fill('15');
+  await page.locator('#water-z').fill('-5');
+  await page.locator('#dig-ground').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.deepEqual(worldState.world.excavations.find(cell=>cell.x===15&&cell.z===-5),{x:15,z:-5,depth:1});
+  assert.equal(worldState.world.bucket.filter(item=>item.type==='dirt').length,1,'Digging one layer recovers one dirt block into the Material Bucket.');
+  assert.deepEqual(worldState.world.materials.find(item=>item&&item.id==='dirt'),{id:'dirt',count:1,label:''},'Digging adds one dirt to the materials pouch.');
+  await page.locator('#dig-ground').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.deepEqual(worldState.world.excavations.find(cell=>cell.x===15&&cell.z===-5),{x:15,z:-5,depth:2});
+  assert.equal(worldState.world.bucket.filter(item=>item.type==='dirt').length,2);
+  assert.deepEqual(worldState.world.materials.find(item=>item&&item.id==='dirt'),{id:'dirt',count:2,label:''});
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.sourceUnchanged,true,'Sandbox operations must not mutate the renderer snapshot.');
   assert.equal(state.storageKeys,0,'Sandbox must not access browser storage.');
