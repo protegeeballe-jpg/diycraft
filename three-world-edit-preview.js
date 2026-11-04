@@ -34,7 +34,7 @@ function mat(block){
  return materials.get(color,kind,{glass:block.type==='glass',roughness:block.type==='glass'?.25:.94});
 }
 function clearGroup(){
- while(group.children.length){const child=group.children.pop();group.remove(child);}
+ while(group.children.length)group.remove(group.children[group.children.length-1]);
  meshByKey.clear();
 }
 function renderSandbox(state){
@@ -68,7 +68,8 @@ function renderSandbox(state){
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
   ' · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,
-  sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size};
+  sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size,
+  pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;}};
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
@@ -95,14 +96,14 @@ document.getElementById('remove').addEventListener('click',()=>{if(selected)rend
 document.getElementById('door').addEventListener('click',()=>{try{renderSandbox(sandbox.toggleDoor(selected));}catch(e){status.textContent=e.message;}});
 document.getElementById('apply-pattern').addEventListener('click',()=>{try{renderSandbox(sandbox.setTilePattern(selected,document.getElementById('pattern').value));}catch(e){status.textContent=e.message;}});
 let pointerDown=null;
-canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId};canvas.setPointerCapture(event.pointerId);});
+canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId,moved:false};canvas.setPointerCapture(event.pointerId);});
 canvas.addEventListener('pointermove',event=>{
  if(!pointerDown)return;const dx=event.clientX-pointerDown.x,dy=event.clientY-pointerDown.y;
- pointerDown.x=event.clientX;pointerDown.y=event.clientY;orbit.theta-=dx*.005;orbit.phi+=dy*.004;cameraUpdate();
+ if(Math.abs(dx)+Math.abs(dy)>3)pointerDown.moved=true;pointerDown.x=event.clientX;pointerDown.y=event.clientY;orbit.theta-=dx*.005;orbit.phi+=dy*.004;cameraUpdate();
 });
 canvas.addEventListener('pointerup',event=>{
  if(!pointerDown)return;const dx=event.clientX-pointerDown.x,dy=event.clientY-pointerDown.y;
- if(Math.abs(dx)+Math.abs(dy)<7)clickAt(event.clientX,event.clientY);pointerDown=null;
+ if(!pointerDown.moved&&Math.abs(dx)+Math.abs(dy)<7)clickAt(event.clientX,event.clientY);pointerDown=null;
 });
 canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
 canvas.addEventListener('wheel',event=>{event.preventDefault();orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
