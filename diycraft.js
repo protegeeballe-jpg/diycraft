@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext(
 // Practically unbounded horizontal world; nearby ground is drawn around the player each frame.
 const WORLD_LIMIT=1000000000,MAX_BLOCKS=18000,MAX_BUCKET_ITEMS=120,STORE_KEY='diycraft_peaceful_voxel_v1';
 const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000;
-const SAVE_GZIP_PREFIX='DIYCraft:gzip:v1:',SAVE_DEBOUNCE_MS=450,MAX_BACKUP_FILE_BYTES=24*1024*1024;
+const SAVE_GZIP_PREFIX='DIYCraft:gzip:v1:',SAVE_DEBOUNCE_MS=450,MAX_BACKUP_FILE_BYTES=24*1024*1024,MAX_UNCOMPRESSED_SAVE_BYTES=32*1024*1024;
 async function gzipBytes(text){
  if(typeof CompressionStream!=='function'||typeof DecompressionStream!=='function')return null;
  try{
@@ -13,8 +13,23 @@ async function gzipBytes(text){
 }
 async function gunzipBytes(bytes){
  if(typeof DecompressionStream!=='function')throw new Error('This browser cannot decompress a DIYCraft backup.');
- const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
- return await new Response(stream).text();
+ const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+ const chunks=[];let total=0;
+ try{
+  while(true){
+   const {done,value}=await reader.read();
+   if(done)break;
+   total+=value.byteLength;
+   if(total>MAX_UNCOMPRESSED_SAVE_BYTES){
+    try{await reader.cancel();}catch(e){}
+    throw new Error('Compressed backup expands beyond the safe memory limit.');
+   }
+   chunks.push(value);
+  }
+ }finally{reader.releaseLock();}
+ const output=new Uint8Array(total);let offset=0;
+ for(const chunk of chunks){output.set(chunk,offset);offset+=chunk.byteLength;}
+ return new TextDecoder().decode(output);
 }
 function bytesToBase64(bytes){
  let binary='';
