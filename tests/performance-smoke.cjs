@@ -432,6 +432,13 @@ check(source.includes("useGzip?'.diycraft.gz':'.json'") &&
   source.includes('async function restoreBackup(file)'),
   'Compressed gzip backups and existing JSON backups must both be restorable.');
 
+
+check(source.includes("typeof CompressionStream!=='function'||typeof DecompressionStream!=='function'") &&
+  source.includes('MAX_BACKUP_FILE_BYTES=24*1024*1024') &&
+  source.includes('file.size>MAX_BACKUP_FILE_BYTES') &&
+  source.includes('/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/'),
+  'Compression must require matching encode/decode support, backup imports must be size-limited, and saved artwork must be PNG data only.');
+
 const colorPagesStart=source.indexOf('const COLOR_PAGES=[');
 const colorPagesEnd=source.indexOf('\nlet coloringNeighbor',colorPagesStart);
 assert(colorPagesStart>=0&&colorPagesEnd>colorPagesStart,'Built-in coloring pages must remain a distinct, locally defined asset collection.');
