@@ -92,7 +92,7 @@ function addBeside(){
  const base=selectedBlock();let x=base?base.x+1:0,y=base?base.y:0,z=base?base.z:0;
  if(base&&lastPlacement&&lastPlacement.key===base.key){x=base.x+lastPlacement.step[0];y=base.y+lastPlacement.step[1];z=base.z+lastPlacement.step[2];}
  const state=sandbox.getState(),occupied=new Set(state.world.blocks.map(b=>b.x+','+b.y+','+b.z));
- let attempts=0;while(occupied.has(x+','+y+','+z)&&attempts++<100){x++;if(x>1000){x=0;z++;}}
+ if(!base){let attempts=0;while(occupied.has(x+','+y+','+z)&&attempts++<100){x++;if(x>1000){x=0;z++;}}}
  const type=document.getElementById('block-type').value,color=document.getElementById('color').value;
  const input={type,x,y,z};
  if(type==='custom')input.color=color;
