@@ -455,13 +455,69 @@ function renderSandbox(state){
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
-  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getState:()=>sandbox.getState()};
+  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getState:()=>sandbox.getState()};
  updatePlayerDiagnostics();
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
 }
 function choose(key){renderSandbox(sandbox.select(key));}
+function projectAnimalPick(point){
+ const projected=new THREE.Vector3(point.x,point.y,point.z).project(camera);
+ if(projected.z< -1||projected.z>1)return null;
+ return {x:(projected.x+1)*innerWidth/2,y:(1-projected.y)*innerHeight/2};
+}
+function animalAtScreen(x,y){
+ const animals=sandbox?sandbox.animalStates(performance.now()/1000):[];
+ return protection.pickAnimalAtScreen(animals,x,y,projectAnimalPick);
+}
+function animalScreenPoint(id){
+ const actor=sandbox?.animalStates(performance.now()/1000).find(item=>item.id===id);
+ if(!actor)return null;
+ const point=projectAnimalPick({x:actor.x,y:actor.species==='giraffe'?.8:.48,z:actor.z});
+ return point?{...point,visible:point.x>=0&&point.x<=innerWidth&&point.y>=0&&point.y<=innerHeight}:null;
+}
+function openAnimalCare(animal){
+ animalCareSelection={id:animal.id,name:animal.name||(animal.id==='sheep'?'Pip the sheep':'Mochi'),emoji:animal.emoji||'🐾',species:animal.species};
+ const count=sandbox.getState().world.animalCare?.[animal.id]||0;
+ document.getElementById('animal-care-title').textContent=animalCareSelection.emoji+' Care for '+animalCareSelection.name;
+ document.getElementById('animal-care-note').textContent=animalCareSelection.name+' enjoys gentle care. Care activities together: '+count;
+ document.getElementById('animal-care-feedback').textContent=animalCareSelection.name+' is happy to see you.';
+ animalCareShade.hidden=false;
+}
+function closeAnimalCare(){
+ animalCareShade.hidden=true;animalCareSelection=null;animalCareFlashUntil=0;animalCareFlash.hidden=true;
+}
+function careForSelectedAnimal(action){
+ if(!animalCareSelection)return;
+ const info={
+  snack:{emoji:'🍎',message:'A tasty snack. '+animalCareSelection.name+' is happily nibbling!'},
+  water:{emoji:'💧',message:'Fresh water. '+animalCareSelection.name+' has had a lovely drink!'},
+  brush:{emoji:'✨',message:'A gentle brush. '+animalCareSelection.name+' looks extra fluffy!'},
+  play:{emoji:'💚',message:'A little playtime. '+animalCareSelection.name+' is happily playing!'}
+ }[action];
+ if(!info)return;
+ try{
+  sandbox.careForAnimal(animalCareSelection.id,action);
+  const count=sandbox.getState().world.animalCare?.[animalCareSelection.id]||0;
+  document.getElementById('animal-care-feedback').textContent=info.message;
+  document.getElementById('animal-care-note').textContent=animalCareSelection.name+' has enjoyed '+count+' caring moments with you.';
+  status.textContent=info.message;
+  animalCareFlashEmoji=info.emoji;animalCareFlashUntil=performance.now()+1900;
+ }catch(error){document.getElementById('animal-care-feedback').textContent=error.message;}
+}
+function updateAnimalCareFlash(now){
+ if(!animalCareSelection||now>=animalCareFlashUntil){animalCareFlash.hidden=true;return;}
+ const actor=animalStatesCache.find(animal=>animal.id===animalCareSelection.id);
+ if(!actor){animalCareFlash.hidden=true;return;}
+ const point=projectAnimalPick({
+  x:actor.x+.22,y:actor.y+(actor.species==='giraffe'?1.65:1.12),z:actor.z
+ });
+ if(!point){animalCareFlash.hidden=true;return;}
+ animalCareFlash.textContent=animalCareFlashEmoji;
+ animalCareFlash.style.left=point.x+'px';animalCareFlash.style.top=point.y+'px';
+ animalCareFlash.hidden=false;
+}
 function projectNeighborPick(actor){
  const facing=actor.facing||0;
  const point=new THREE.Vector3(actor.x+Math.sin(facing)*.38,1.18,actor.z+Math.cos(facing)*.38).project(camera);
@@ -589,6 +645,8 @@ function neighborColorPoint(event){
  return {x:(event.clientX-rect.left)*neighborColorCanvas.width/rect.width,y:(event.clientY-rect.top)*neighborColorCanvas.height/rect.height};
 }
 function clickAt(x,y){
+ const animal=animalAtScreen(x,y);
+ if(animal){lastPlacement=null;openAnimalCare(animal);return;}
  const neighbor=neighborAtScreen(x,y);
  if(neighbor){lastPlacement=null;openNeighborColoring(neighbor.name);return;}
  pointer.x=(x/innerWidth)*2-1;pointer.y=-(y/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);
@@ -714,7 +772,15 @@ neighborColorCanvas.addEventListener('pointermove',event=>{
 });
 ['pointerup','pointercancel','lostpointercapture'].forEach(type=>neighborColorCanvas.addEventListener(type,()=>{neighborColorDrawing=false;neighborColorLast=null;}));
 neighborColorShade.addEventListener('pointerdown',event=>{if(event.target===neighborColorShade)closeNeighborColoring();});
-window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!neighborColorShade.hidden)closeNeighborColoring();});
+document.getElementById('animal-care-close').addEventListener('click',closeAnimalCare);
+animalCareShade.addEventListener('pointerdown',event=>{if(event.target===animalCareShade)closeAnimalCare();});
+animalCareShade.querySelectorAll('[data-animal-care]').forEach(button=>button.addEventListener('click',()=>careForSelectedAnimal(button.dataset.animalCare)));
+window.addEventListener('keydown',event=>{if(event.key==='Escape'){if(!neighborColorShade.hidden)closeNeighborColoring();if(!animalCareShade.hidden)closeAnimalCare();}});
+function focusAnimalForTest(id){
+ const actor=sandbox?.animalStates(performance.now()/1000).find(item=>item.id===id);
+ if(!actor)return false;
+ playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,.55,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateAnimalInstances(performance.now());return true;
+}
 function neighborScreenPoint(id){
  const actor=sandbox?.characterStates(performance.now()/1000).find(item=>item.id===id);
  if(!actor||actor.sleeping)return null;
@@ -752,7 +818,7 @@ function animate(now){
   });
   updatePlayerCamera();updatePlayerDiagnostics();
  }else lastPlayerPhysicsTime=now;
- updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);updateNeighborModels(now);
+ updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);updateAnimalCareFlash(now);updateNeighborModels(now);
  for(const item of animatedPlants){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;
   else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;
