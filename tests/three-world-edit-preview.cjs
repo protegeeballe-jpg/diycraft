@@ -23,6 +23,7 @@ function freshWorld(){
   {id:'protection-dog-1',species:'dog',name:'Guard Buddy',x:45.5,z:50.5,facing:0,phase:.2,body:'#c89b6d',accent:'#d0b6a0'},
   {id:'protection-dog-2',species:'dog',name:'Guard Buddy Two',x:55.5,z:60.5,facing:0,phase:.4,body:'#c89b6d',accent:'#d0b6a0'}
  ];
+ world.animalCare={...world.animalCare,sheep:4,'pet-cat-1':999};
  const before=JSON.stringify(world),snapshot=adapter.createSnapshot(world);
  assert.equal(snapshot.counts.blocks,world.blocks.length);
  await fs.promises.mkdir('preview-three',{recursive:true});
@@ -41,13 +42,19 @@ function freshWorld(){
   assert.equal(state.blockCount,world.blocks.length);
   assert.equal(state.sourceUnchanged,true);
   assert.equal(state.storageKeys,0);
-  assert.equal(state.animalCount,7,'The adapter and renderer must retain every valid saved animal.');
-  assert.equal(state.renderedAnimalCount,7,'All test animals fit within the low-end visible-animal cap.');
-  assert.equal(state.animalBatchCount,4,'Animals with identical species and colours should share one instanced mesh batch.');
+  assert.equal(state.animalCount,7,'The adapter must retain all seven valid saved animals.');
+  assert.equal(state.residentAnimalCount,7,'All seven original roaming residents must exist even in a fresh world.');
+  assert.equal(state.totalAnimalCount,14,'Seven default residents and seven saved animals must coexist without duplicate identities.');
+  assert.equal(state.renderedAnimalCount,12,'The low-end animal cap must prioritize all seven residents and the five nearest saved animals.');
+  assert.ok(state.animalBatchCount>=7&&state.animalBatchCount<=11,'Identical species and colours must share instanced geometry batches.');
   let animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
-  assert.equal(animalStats.animals.length,7);
-  assert.equal(animalStats.rendered,7);
-  assert.equal(animalStats.batches,4);
+  assert.equal(animalStats.animals.length,7,'Saved animal records must remain intact.');
+  assert.equal(animalStats.residents.length,7,'Every built-in roaming animal must be available for rendering and picking.');
+  assert.equal(animalStats.all.length,14,'The complete animal state must merge residents and saved records.');
+  assert.equal(animalStats.rendered,12);
+  assert.equal(animalStats.batches,state.animalBatchCount);
+  assert.ok(animalStats.residents.every(animal=>Number.isFinite(animal.x)&&Number.isFinite(animal.z)&&animal.moving),
+   'All seven default animals must preserve their original moving world positions.');
   const neighborStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborStats());
   assert.equal(neighborStats.total,7,'All seven original neighborhood characters must have 3D models.');
   assert.deepEqual(neighborStats.actors.map(actor=>actor.id),['hyacinth','theo','dad','mom','lia','maya','nico']);
@@ -59,6 +66,48 @@ function freshWorld(){
   assert.ok(neighborStats.actors.every(actor=>typeof actor.shirt==='string'&&actor.shirt.startsWith('#')));
   assert.ok(neighborStats.rendered>0&&neighborStats.rendered<=7,'Camera-distance culling must render nearby residents without removing their models.');
   const initialAnimalY=animalStats.firstY;
+
+  // Animal selection must precede neighbor and block selection, matching Canvas 2D.
+  const selectedBeforeAnimalTap=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState().selectedKey);
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.focusAnimalForTest('sheep')),true,
+   'The original Pip resident must be focusable even when the save contains no sheep record.');
+  const sheepPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalScreenPoint('sheep'));
+  assert.ok(sheepPoint&&sheepPoint.visible,'The default sheep must project to a tappable phone-screen position.');
+  await page.mouse.click(sheepPoint.x,sheepPoint.y);
+  await page.waitForFunction(()=>!document.getElementById('animal-care').hidden,null,{timeout:5000});
+  assert.match(await page.locator('#animal-care-title').innerText(),/Care for Pip the sheep/);
+  assert.match(await page.locator('#animal-care-note').innerText(),/Care activities together: 4/);
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState().selectedKey),selectedBeforeAnimalTap,
+   'Tapping an animal must not accidentally select or edit a block.');
+  await page.locator('[data-animal-care="snack"]').click();
+  let careStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats());
+  assert.equal(careStats.count,5);
+  assert.match(await page.locator('#animal-care-feedback').innerText(),/Pip the sheep is happily nibbling/);
+  await page.locator('[data-animal-care="water"]').click();
+  careStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats());
+  assert.equal(careStats.count,6);
+  assert.match(await page.locator('#animal-care-feedback').innerText(),/Pip the sheep has had a lovely drink/);
+  await page.locator('#animal-care-close').click();
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats().open),false);
+
+  // Saved animals use the same care-only interaction; the original 999 cap is preserved.
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.focusAnimalForTest('pet-cat-1')),true);
+  const savedCatPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalScreenPoint('pet-cat-1'));
+  assert.ok(savedCatPoint&&savedCatPoint.visible,'A saved animal must remain individually tappable.');
+  await page.mouse.click(savedCatPoint.x,savedCatPoint.y);
+  await page.waitForFunction(()=>!document.getElementById('animal-care').hidden,null,{timeout:5000});
+  assert.match(await page.locator('#animal-care-title').innerText(),/Care for Mittens/);
+  assert.match(await page.locator('#animal-care-note').innerText(),/Care activities together: 999/);
+  await page.locator('[data-animal-care="play"]').click();
+  careStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats());
+  assert.equal(careStats.count,999,'The saved animal-care counter must retain the production maximum.');
+  assert.match(await page.locator('#animal-care-feedback').innerText(),/Mittens is happily playing/);
+  await page.locator('#animal-care-close').click();
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState().world.animalCare.sheep),6);
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState().world.animalCare['pet-cat-1']),999);
+  state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
+  assert.equal(state.sourceUnchanged,true,'Animal care must mutate only the isolated clone.');
+  assert.equal(state.storageKeys,0,'Animal care must never read/write localStorage.');
   let protectionState;
   const protectionContext=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getProtectionContext());
   assert.equal(protectionContext.neighbors.length,7,'Protection must include both individual neighbors and all five family members.');
