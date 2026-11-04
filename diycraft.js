@@ -781,36 +781,46 @@ function painterlySeed(value){
 function drawPainterlySurfaceFinish(c,seed=0,strength=1){
  let state=(seed>>>0)||1;
  const next=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+ const intensity=Math.max(.65,Math.min(1.25,Number(strength)||1));
  c.save();
  c.globalCompositeOperation='source-over';
- // Soft, irregular watercolor blooms keep the underlying selected hue visible.
+ c.globalAlpha=intensity;
+ // Broader, overlapping watercolor blooms leave recognizable pigment variation
+ // while keeping the selected base hue and the original 3D shading intact.
  const washes=[
-  ['rgba(255,248,226,.20)','rgba(255,248,226,0)'],
-  ['rgba(127,179,176,.13)','rgba(127,179,176,0)'],
-  ['rgba(224,161,162,.10)','rgba(224,161,162,0)'],
-  ['rgba(191,177,215,.09)','rgba(191,177,215,0)']
+  ['rgba(255,242,210,.34)','rgba(255,242,210,0)'],
+  ['rgba(116,173,170,.25)','rgba(116,173,170,0)'],
+  ['rgba(225,145,157,.23)','rgba(225,145,157,0)'],
+  ['rgba(174,151,205,.22)','rgba(174,151,205,0)'],
+  ['rgba(235,205,143,.20)','rgba(235,205,143,0)']
  ];
- for(let i=0;i<5;i++){
-  const x=next()*96,y=next()*96,rx=11+next()*20,ry=7+next()*15,angle=next()*Math.PI;
+ for(let i=0;i<7;i++){
+  const x=next()*96,y=next()*96,rx=13+next()*22,ry=9+next()*17,angle=next()*Math.PI;
   const colors=washes[i%washes.length],wash=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.12);
   wash.addColorStop(0,colors[0]);wash.addColorStop(.58,colors[0]);wash.addColorStop(1,colors[1]);
   c.fillStyle=wash;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,Math.PI*2);c.fill();
-  c.strokeStyle='rgba(110,132,119,.055)';c.lineWidth=.75;
+  c.strokeStyle='rgba(104,91,78,.17)';c.lineWidth=1.05;
   c.beginPath();c.ellipse(x+rx*.05,y-ry*.04,rx*.82,ry*.78,angle,0,Math.PI*2);c.stroke();
  }
- // Short, slightly varied strokes imitate layered colored-pencil pressure.
+ // Visible but fine colored-pencil marks: layered short strokes and cross-hatching.
  c.lineCap='round';c.lineJoin='round';
- for(let i=0;i<26;i++){
-  const x=next()*108-6,y=next()*108-6,len=5+next()*13,drift=(next()-.5)*4;
-  c.strokeStyle=i%4===0?'rgba(255,250,235,.34)':'rgba(48,62,54,.17)';
-  c.lineWidth=.55+next()*.55;
+ for(let i=0;i<44;i++){
+  const x=next()*108-6,y=next()*108-6,len=6+next()*14,drift=(next()-.5)*5;
+  c.strokeStyle=i%4===0?'rgba(255,250,235,.48)':'rgba(48,62,54,.24)';
+  c.lineWidth=1.6+next()*1.1;
   c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+len*.48,y+drift-1,x+len,y+drift);c.stroke();
  }
- // Tiny warm/cool flecks create a quiet watercolor-paper tooth.
- for(let i=0;i<54;i++){
+ for(let i=0;i<20;i++){
+  const x=next()*108-6,y=next()*108-6,len=4+next()*8,drift=(next()-.5)*3;
+  c.strokeStyle=i%3===0?'rgba(255,247,225,.40)':'rgba(65,78,67,.20)';
+  c.lineWidth=.9+next()*.7;
+  c.beginPath();c.moveTo(x,y);c.lineTo(x+drift+len*.35,y+len*.55);c.stroke();
+ }
+ // Paper tooth is gently visible at normal play size, not just when zoomed in.
+ for(let i=0;i<90;i++){
   const x=next()*96,y=next()*96;
-  c.fillStyle=i%3===0?'rgba(255,250,233,.25)':'rgba(63,69,60,.12)';
-  c.beginPath();c.arc(x,y,.22+next()*.42,0,Math.PI*2);c.fill();
+  c.fillStyle=i%3===0?'rgba(255,250,233,.34)':'rgba(63,69,60,.18)';
+  c.beginPath();c.arc(x,y,.28+next()*.48,0,Math.PI*2);c.fill();
  }
  c.restore();
 }
@@ -819,13 +829,13 @@ const painterlyCanvasPattern=(()=>{
   const paper=document.createElement('canvas');paper.width=paper.height=192;
   const paperContext=paper.getContext('2d');
   if(!paperContext)return null;
-  drawPainterlySurfaceFinish(paperContext,painterlySeed('DIYCraft watercolor colored-pencil paper'),1.05);
+  paperContext.scale(2,2);drawPainterlySurfaceFinish(paperContext,painterlySeed('DIYCraft watercolor colored-pencil paper'),1.05);
   return ctx.createPattern(paper,'repeat');
  }catch(error){return null;}
 })();
 function paintPainterlyCanvasOverlay(width,height){
  if(!painterlyCanvasPattern)return;
- ctx.save();ctx.globalAlpha=.46;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
+ ctx.save();ctx.globalAlpha=.66;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
 }
 
 const DEFAULT_FLOWER_PETAL_COLOR='#e9a4c1';
