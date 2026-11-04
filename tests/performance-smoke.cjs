@@ -6,6 +6,28 @@ const fs = require('node:fs');
 const source = fs.readFileSync('diycraft.js', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const iconSvg = fs.readFileSync('diycraft-icon.svg', 'utf8');
+
+// Painterly art is a rendering-only layer. Keep the original game systems,
+// saved color values and existing animation entry points in the regression suite.
+const painterlyRequirements = [
+  ['cached watercolor/pencil texture generator', /function drawPainterlySurfaceFinish\\(/],
+  ['single cached whole-scene paper pattern', /const painterlyCanvasPattern=\\(\\(\\)=>/],
+  ['whole-scene finish is applied during rendering', /paintPainterlyCanvasOverlay\\(w,h\\)/],
+  ['ordinary material textures receive the finish', /drawPainterlySurfaceFinish\\(c,painterlySeed\\(id\\),\\.82\\)/],
+  ['directional material textures receive the finish', /drawPainterlySurfaceFinish\\(c,painterlySeed\\(id\\),\\.82\\)/],
+  ['tile patterns receive the finish', /painterlySeed\\('tile-'\\+design\\.id\\)/],
+  ['existing tile color picker remains active', /tileSpectrumPicker=bindSpectrumPicker\\('tile','tileColor',setDraftTileColor\\)/],
+  ['existing tile hex color handling remains active', /function setDraftTileColor\\(color\\)/],
+  ['existing custom block color picker remains active', /customBlockSpectrumPicker=bindSpectrumPicker\\('customBlock','customBlockColor',setDraftCustomColor\\)/],
+  ['existing moving-water renderer remains present', /function paintWaterFace\\(poly,time\\)/],
+  ['existing swaying-plant renderer remains present', /function drawWindSwayingPlant\\(/],
+  ['existing 3D animal renderer remains present', /function pushAnimalModel\\(/]
+];
+for (const [label, pattern] of painterlyRequirements) {
+  assert.match(source, pattern, `The watercolor/pencil theme must preserve ${label}.`);
+}
+assert.match(source, /function paintPainterlyCanvasOverlay\\(width,height\\)[\\s\\S]*?ctx\\.fillRect\\(0,0,width,height\\)/,
+  'The global painterly finish must use its prebuilt canvas pattern, not per-frame image filters.');
 const helperStart = source.indexOf('function renderChunkKey');
 const helperEnd = source.indexOf('function rebuildFishRenderChunks', helperStart);
 assert(helperStart >= 0 && helperEnd > helperStart, 'Chunk-cache helpers must remain available in the engine source.');
