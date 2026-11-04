@@ -123,4 +123,54 @@ test('rejects invalid input snapshot and keeps snapshots detached from internal 
  assert.throws(()=>first.world.blocks.pop(),TypeError);
  assert.equal(edit.getState().world.blocks.length,3);
 });
+test('plants remain pass-through while closed doors block and open doors release movement',()=>{
+ const edit=sandbox.create(fixture());
+ const flower=edit.addBlock({type:'flower',x:20,y:0,z:20}).world.blocks.at(-1);
+ const grass=edit.addBlock({type:'tall_grass',x:21,y:0,z:20}).world.blocks.at(-1);
+ const stone=edit.addBlock({type:'stone',x:22,y:0,z:20}).world.blocks.at(-1);
+ const door=edit.addBlock({type:'door',x:23,y:0,z:20}).world.blocks.at(-1);
+ assert.equal(edit.isMovementSolidAt(flower.x,flower.y,flower.z),false);
+ assert.equal(edit.isMovementSolidAt(grass.x,grass.y,grass.z),false);
+ assert.equal(edit.isMovementSolidAt(stone.x,stone.y,stone.z),true);
+ assert.equal(edit.isMovementSolidAt(door.x,door.y,door.z),true);
+ edit.toggleDoor(door.key);
+ assert.equal(edit.isMovementSolidAt(door.x,door.y,door.z),false);
+ assert.equal(edit.isMovementSolidAt(23,1,20),false,'The door upper clearance remains non-blocking when open.');
+});
+test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
+ const edit=sandbox.create(fixture());
+ assert.throws(()=>edit.addFish(8,8),/Add water/);
+ const first=edit.addWaterLayer(8,8);
+ assert.deepEqual(first.world.water.find(cell=>cell.x===8&&cell.z===8),{x:8,z:8,level:1,depth:2});
+ edit.addFish(8,8);edit.addFish(8,8);edit.addFish(8,8);
+ assert.equal(edit.getState().world.fish.length,3);
+ assert.throws(()=>edit.addFish(8,8),/three fish/);
+ const second=edit.addWaterLayer(8,8);
+ assert.equal(second.world.water[0].level,2);
+ assert.throws(()=>edit.addWaterLayer(8,8),/full to the rim/);
+ const collectedTop=edit.collectWaterLayer(8,8);
+ assert.equal(collectedTop.world.water[0].level,1);
+ assert.equal(collectedTop.world.fish.length,3,'Fish remain while the cell still contains water.');
+ const collectedLast=edit.collectWaterLayer(8,8);
+ assert.equal(collectedLast.world.water.length,0);
+ assert.equal(collectedLast.world.fish.length,0,'Production removes fish when the last water layer is collected.');
+ assert.deepEqual(collectedLast.world.bucket.slice(-2),[{type:'water'},{type:'water'}]);
+});
+test('water collection respects Material Bucket capacity and leaves full-bucket state unchanged',()=>{
+ const world=fixture();world.water=[{x:8,z:8,level:1,depth:2}];
+ world.bucket=Array.from({length:120},()=>({type:'stone'}));
+ const edit=sandbox.create(world),before=edit.getState();
+ assert.throws(()=>edit.collectWaterLayer(8,8),/Material Bucket is full/);
+ const after=edit.getState();
+ assert.deepEqual(after.world.water,before.world.water);
+ assert.equal(after.world.bucket.length,120);
+ assert.equal(after.revision,before.revision);
+});
+test('water operations reject undug and invalid cells without mutation',()=>{
+ const edit=sandbox.create(fixture()),before=edit.getState();
+ assert.throws(()=>edit.addWaterLayer(7,7),/Dig a pool cell/);
+ assert.throws(()=>edit.addWaterLayer(1.25,8),/coordinates/);
+ assert.throws(()=>edit.collectWaterLayer(8,8),/no water layer/);
+ assert.equal(edit.getState().revision,before.revision);
+});
 console.log('Three.js editing sandbox tests complete.');
