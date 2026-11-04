@@ -38,7 +38,11 @@ function mat(block){
  return materials.get(color,kind,{glass:block.type==='glass',roughness:block.type==='glass'?.25:.94});
 }
 function clearGroup(){
- while(group.children.length){const child=group.children[group.children.length-1];if(child.userData.selectionOutline){child.geometry.dispose();child.material.dispose();}group.remove(child);}
+ while(group.children.length){const child=group.children[group.children.length-1];
+  if(child.userData.selectionOutline){child.geometry.dispose();child.material.dispose();}
+  else if(typeof child.traverse==='function')child.traverse(object=>{if(object.geometry&&object.geometry.userData&&object.geometry.userData.sandboxOwned)object.geometry.dispose();});
+  group.remove(child);
+ }
  meshByKey.clear();
 }
 function displayedDoorAngle(block,now=performance.now()){
@@ -125,7 +129,8 @@ function makePlantGeometry(block){
 }
 function addPlant(block){
  const root=new THREE.Group();root.position.set(block.x+.5,block.y,block.z+.5);root.userData.blockKey=block.key;
- const mesh=new THREE.Mesh(makePlantGeometry(block),plantSurfaceMaterial);
+ const plantGeometry=makePlantGeometry(block);plantGeometry.userData.sandboxOwned=true;
+ const mesh=new THREE.Mesh(plantGeometry,plantSurfaceMaterial);
  mesh.userData.blockKey=block.key;mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
  root.add(mesh);group.add(root);
  animatedPlants.push({object:root,kind:block.type,phase:block.x*.71+block.z*.53});
