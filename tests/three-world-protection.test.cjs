@@ -72,6 +72,24 @@ test('builds seven default moving neighbors and seven resident animals',()=>{
  assert.notDeepEqual(atZero.neighbors,later.neighbors,'Neighbor protection positions must advance with time.');
  assert.notDeepEqual(atZero.animals,later.animals,'Resident animal protection positions must advance with time.');
 });
+test('matches the production getTimePalette() day, sunset, night, and auto cycle exactly',()=>{
+ const fnStart=source.indexOf('function getTimePalette(tick){');
+ const fnEnd=source.indexOf('\n}',fnStart)+2;
+ if(fnStart<0||fnEnd<=fnStart)throw new Error('Could not extract production getTimePalette().');
+ const paletteFunction=source.slice(fnStart,fnEnd);
+ const palette={day:{},sunset:{},night:{}};
+ const times=[-0.1,0,.1,98.9,99,122.39,122.4,179.9,180,180.1,279,302.4,360];
+ for(const timeMode of ['day','sunset','night','auto',undefined,'']){
+  const getProduction=new Function('world','TIME_PALETTES',paletteFunction+'\nreturn getTimePalette;')({timeMode},palette);
+  for(const tick of times){
+   assert.equal(
+    protection.modeAt(tick,timeMode),
+    getProduction(tick).mode,
+    'Time mode '+String(timeMode)+' at '+tick+' seconds'
+   );
+  }
+ }
+});
 test('uses night sleep spots and the same automatic day/sunset/night thresholds',()=>{
  const world={timeMode:'night',animals:[]},night=protection.actorContext(world,2);
  assert.equal(night.mode,'night');assert.equal(night.night,true);
