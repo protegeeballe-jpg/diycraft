@@ -15,9 +15,12 @@ on:
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
       - js/three-door-motion.js
+      - js/three-performance-profile.js
+      - js/three-plant-geometry.js
       - three-world-edit-preview.html
       - three-world-edit-preview.js
       - tests/three-world-edit-preview.cjs
+      - tests/three-performance-profile.test.cjs
       - .github/workflows/three-world-preview.yml
   pull_request:
     paths:
