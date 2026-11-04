@@ -4,9 +4,9 @@
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
 const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
-const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels;
+const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels,coloring=window.DIYCraftThreeNeighborColoring;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
@@ -37,7 +37,12 @@ fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVerte
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null;
 let waterMesh=null,fishMeshes=[],renderedFishCount=0,lastWaterAnimationAt=-Infinity;
-let playerPhysicsState=null,playerModelRoot=null,playerPlayMode=false,playerCameraMode='third',playerCameraPose=null,lastPlayerPhysicsTime=0;\nconst neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
+let playerPhysicsState=null,playerModelRoot=null,playerPlayMode=false,playerCameraMode='third',playerCameraPose=null,lastPlayerPhysicsTime=0;
+let neighborColorName='',neighborColorPage=null,neighborColorTool='fill',neighborColorUndo=[],neighborColorDrawing=false,neighborColorLast=null,neighborColorTimer=null,neighborColorHideTimer=null,neighborColorStep=0;
+const neighborColorShade=document.getElementById('neighbor-coloring');
+const neighborColorCanvas=document.getElementById('neighbor-color-canvas');
+const neighborColorCtx=neighborColorCanvas.getContext('2d',{willReadFrequently:true});
+\nconst neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
 let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
 const touchControls=document.getElementById('player-controls'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
@@ -439,14 +444,142 @@ function renderSandbox(state){
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
-  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),neighborCount:neighborModels.size,renderedNeighborCount,getNeighborStats:(timeSeconds)=>{const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},getState:()=>sandbox.getState()};
+  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),neighborCount:neighborModels.size,renderedNeighborCount,getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},getState:()=>sandbox.getState()};
  updatePlayerDiagnostics();
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
 }
 function choose(key){renderSandbox(sandbox.select(key));}
+function projectNeighborPick(actor){
+ const facing=actor.facing||0;
+ const point=new THREE.Vector3(actor.x+Math.sin(facing)*.38,1.18,actor.z+Math.cos(facing)*.38).project(camera);
+ if(point.z< -1||point.z>1)return null;
+ return {x:(point.x+1)*innerWidth/2,y:(1-point.y)*innerHeight/2};
+}
+function neighborAtScreen(x,y){
+ const actors=sandbox?sandbox.characterStates(performance.now()/1000):[];
+ let best=Infinity,hit=null;
+ for(const actor of actors){
+  if(actor.sleeping)continue;
+  const point=projectNeighborPick(actor);if(!point)continue;
+  const distance=Math.hypot(x-point.x,y-point.y);
+  if(distance<66&&distance<best){best=distance;hit=actor;}
+ }
+ return hit;
+}
+function stopNeighborColoring(){
+ if(neighborColorTimer!==null){clearTimeout(neighborColorTimer);neighborColorTimer=null;}
+ if(neighborColorHideTimer!==null){clearTimeout(neighborColorHideTimer);neighborColorHideTimer=null;}
+ const cursor=document.getElementById('neighbor-color-cursor');if(cursor)cursor.classList.remove('active');
+ neighborColorDrawing=false;neighborColorLast=null;
+}
+function openNeighborColoring(name){
+ stopNeighborColoring();neighborColorName=String(name||'hyacinth');
+ document.getElementById('neighbor-color-note').textContent=neighborColorName+' is sitting beside you for a quiet coloring activity. Choose a picture to share. No talking is needed.';
+ document.getElementById('neighbor-color-neighbor-title').textContent=neighborColorName+' is ready to color with you';
+ document.getElementById('neighbor-color-status').textContent='Pick a picture. You will see their brush and colors appear on the shared page.';
+ document.getElementById('neighbor-color-progress-fill').style.width='0%';
+ const root=document.getElementById('neighbor-color-templates');root.replaceChildren();
+ for(const page of coloring.PAGES){
+  const button=document.createElement('button');button.type='button';button.className='neighbor-color-template';button.dataset.colorPage=page.id;
+  const image=document.createElement('img');image.alt='Uncolored '+page.name+' line drawing';image.src=coloring.svgData(page.svg);
+  const label=document.createElement('span');label.textContent=page.name;
+  button.append(image,label);button.addEventListener('click',()=>loadNeighborColorPage(page));root.append(button);
+ }
+ document.getElementById('neighbor-color-work').hidden=true;
+ root.hidden=false;neighborColorShade.hidden=false;
+}
+function closeNeighborColoring(){
+ stopNeighborColoring();neighborColorShade.hidden=true;neighborColorPage=null;neighborColorUndo=[];
+ neighborColorCtx.clearRect(0,0,neighborColorCanvas.width,neighborColorCanvas.height);
+}
+function drawNeighborColorPage(page){
+ return new Promise((resolve,reject)=>{
+  const image=new Image();
+  image.onload=()=>{
+   neighborColorCtx.fillStyle='#fffdf8';neighborColorCtx.fillRect(0,0,neighborColorCanvas.width,neighborColorCanvas.height);
+   const scale=Math.min(neighborColorCanvas.width/image.width,neighborColorCanvas.height/image.height);
+   const width=image.width*scale,height=image.height*scale;
+   neighborColorCtx.drawImage(image,(neighborColorCanvas.width-width)/2,(neighborColorCanvas.height-height)/2,width,height);
+   resolve();
+  };
+  image.onerror=reject;image.src=coloring.svgData(page.svg);
+ });
+}
+function pushNeighborColorUndo(){
+ try{
+  neighborColorUndo.push(neighborColorCtx.getImageData(0,0,neighborColorCanvas.width,neighborColorCanvas.height));
+  if(neighborColorUndo.length>coloring.MAX_UNDO)neighborColorUndo.shift();
+ }catch(error){status.textContent='Undo is unavailable for this picture.';}
+}
+function fillNeighborColorRegion(x,y,chosenColor,onlyWhite=false){
+ const image=neighborColorCtx.getImageData(0,0,neighborColorCanvas.width,neighborColorCanvas.height);
+ const result=coloring.fillPixels(neighborColorCanvas.width,neighborColorCanvas.height,image.data,x,y,chosenColor,onlyWhite);
+ if(result.count){
+  pushNeighborColorUndo();image.data.set(result.data);neighborColorCtx.putImageData(image,0,0);
+ }
+ return result.count;
+}
+function showNeighborColorBrush(x,y,color){
+ const cursor=document.getElementById('neighbor-color-cursor');
+ const rect=neighborColorCanvas.getBoundingClientRect(),wrap=neighborColorCanvas.parentElement.getBoundingClientRect();
+ cursor.style.left=(rect.left-wrap.left+x/neighborColorCanvas.width*rect.width)+'px';
+ cursor.style.top=(rect.top-wrap.top+y/neighborColorCanvas.height*rect.height)+'px';
+ cursor.style.background=color;cursor.classList.add('active');
+ if(neighborColorHideTimer!==null)clearTimeout(neighborColorHideTimer);
+}
+function startNeighborColoring(){
+ stopNeighborColoring();
+ const actions=coloring.NEIGHBOR_COLOR_PLANS[neighborColorPage?.id]||[];
+ neighborColorStep=0;
+ document.getElementById('neighbor-color-neighbor-title').textContent=neighborColorName+' is coloring with you';
+ document.getElementById('neighbor-color-status').textContent='Watch their brush move and add colors to your shared picture.';
+ document.getElementById('neighbor-color-progress-fill').style.width='0%';
+ if(!actions.length){
+  document.getElementById('neighbor-color-status').textContent=neighborColorName+' is here beside you. You can color together.';
+  return;
+ }
+ const next=()=>{
+  if(!neighborColorPage||neighborColorStep>=actions.length){
+   document.getElementById('neighbor-color-neighbor-title').textContent=neighborColorName+' finished their colors';
+   document.getElementById('neighbor-color-status').textContent='Your shared picture is ready for more colors from you.';
+   document.getElementById('neighbor-color-progress-fill').style.width='100%';
+   document.getElementById('neighbor-color-cursor').classList.remove('active');neighborColorTimer=null;return;
+  }
+  const action=actions[neighborColorStep];showNeighborColorBrush(action.x,action.y,action.color);
+  document.getElementById('neighbor-color-status').textContent=neighborColorName+' is coloring '+action.label+'…';
+  neighborColorTimer=setTimeout(()=>{
+   neighborColorTimer=null;
+   const count=fillNeighborColorRegion(action.x,action.y,action.color,true);
+   neighborColorStep++;
+   document.getElementById('neighbor-color-progress-fill').style.width=Math.round(neighborColorStep/actions.length*100)+'%';
+   document.getElementById('neighbor-color-status').textContent=count?neighborColorName+' added color to '+action.label+'.':'Your area already has color, so '+neighborColorName+' is choosing another spot.';
+   neighborColorHideTimer=setTimeout(()=>document.getElementById('neighbor-color-cursor').classList.remove('active'),350);
+   neighborColorTimer=setTimeout(next,850);
+  },650);
+ };
+ neighborColorTimer=setTimeout(next,900);
+}
+async function loadNeighborColorPage(page){
+ stopNeighborColoring();
+ try{
+  await drawNeighborColorPage(page);neighborColorPage=page;neighborColorUndo=[];neighborColorTool='fill';
+  document.getElementById('neighbor-color-page-title').textContent=page.name+' · coloring together with '+neighborColorName;
+  document.getElementById('neighbor-color-templates').hidden=true;
+  document.getElementById('neighbor-color-work').hidden=false;
+  document.getElementById('neighbor-color-fill').classList.add('primary');
+  document.getElementById('neighbor-color-brush-tool').classList.remove('primary');
+  startNeighborColoring();
+ }catch(error){status.textContent='This coloring picture could not be opened.';}
+}
+function neighborColorPoint(event){
+ const rect=neighborColorCanvas.getBoundingClientRect();
+ return {x:(event.clientX-rect.left)*neighborColorCanvas.width/rect.width,y:(event.clientY-rect.top)*neighborColorCanvas.height/rect.height};
+}
 function clickAt(x,y){
+ const neighbor=neighborAtScreen(x,y);
+ if(neighbor){lastPlacement=null;openNeighborColoring(neighbor.name);return;}
  pointer.x=(x/innerWidth)*2-1;pointer.y=-(y/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);
  const hits=raycaster.intersectObjects(group.children,true).filter(hit=>!hit.object.userData.selectionOutline&&raycastKeys.resolve([hit]));
  const key=raycastKeys.resolve(hits),hit=hits.find(item=>raycastKeys.resolve([item])===key);
@@ -519,6 +652,64 @@ document.getElementById('dig-ground').addEventListener('click',()=>{
  try{const cell=waterCellInput();renderSandbox(sandbox.excavateGround(cell.x,cell.z,currentProtectionContext()));}
  catch(error){status.textContent=error.message;}
 });
+document.getElementById('neighbor-color-close').addEventListener('click',closeNeighborColoring);
+document.getElementById('neighbor-color-back').addEventListener('click',()=>{
+ stopNeighborColoring();neighborColorPage=null;neighborColorUndo=[];
+ document.getElementById('neighbor-color-work').hidden=true;document.getElementById('neighbor-color-templates').hidden=false;
+});
+document.getElementById('neighbor-color-fill').addEventListener('click',()=>{
+ neighborColorTool='fill';document.getElementById('neighbor-color-fill').classList.add('primary');
+ document.getElementById('neighbor-color-brush-tool').classList.remove('primary');
+});
+document.getElementById('neighbor-color-brush-tool').addEventListener('click',()=>{
+ neighborColorTool='brush';document.getElementById('neighbor-color-brush-tool').classList.add('primary');
+ document.getElementById('neighbor-color-fill').classList.remove('primary');
+});
+document.getElementById('neighbor-color-undo').addEventListener('click',()=>{
+ const previous=neighborColorUndo.pop();
+ if(previous)neighborColorCtx.putImageData(previous,0,0);
+ else document.getElementById('neighbor-color-status').textContent='There is nothing to undo yet.';
+});
+document.getElementById('neighbor-color-reset').addEventListener('click',()=>{
+ if(neighborColorPage){
+  stopNeighborColoring();neighborColorUndo=[];
+  drawNeighborColorPage(neighborColorPage).then(()=>{
+   startNeighborColoring();document.getElementById('neighbor-color-status').textContent='Fresh shared coloring page ready.';
+  }).catch(()=>{document.getElementById('neighbor-color-status').textContent='This coloring picture could not be reset.';});
+ }
+});
+document.getElementById('neighbor-color-save').addEventListener('click',()=>{
+ if(!neighborColorPage)return;
+ try{
+  const data=neighborColorCanvas.toDataURL('image/png');
+  renderSandbox(sandbox.saveArtwork(neighborColorPage.name,data,neighborColorName));
+  closeNeighborColoring();status.textContent='Your shared coloring picture has been saved in the sandbox gallery and crafted pouch.';
+ }catch(error){document.getElementById('neighbor-color-status').textContent=error.message;}
+});
+neighborColorCanvas.addEventListener('pointerdown',event=>{
+ if(!neighborColorPage)return;
+ const point=neighborColorPoint(event),color=document.getElementById('neighbor-color-color').value;
+ if(neighborColorTool==='fill'){fillNeighborColorRegion(point.x,point.y,color,false);return;}
+ pushNeighborColorUndo();neighborColorDrawing=true;neighborColorLast=point;neighborColorCanvas.setPointerCapture(event.pointerId);
+});
+neighborColorCanvas.addEventListener('pointermove',event=>{
+ if(!neighborColorDrawing||!neighborColorLast)return;
+ const point=neighborColorPoint(event);
+ neighborColorCtx.strokeStyle=document.getElementById('neighbor-color-color').value;
+ neighborColorCtx.lineWidth=Number(document.getElementById('neighbor-color-brush').value);
+ neighborColorCtx.lineCap='round';neighborColorCtx.lineJoin='round';
+ neighborColorCtx.beginPath();neighborColorCtx.moveTo(neighborColorLast.x,neighborColorLast.y);
+ neighborColorCtx.lineTo(point.x,point.y);neighborColorCtx.stroke();neighborColorLast=point;
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(type=>neighborColorCanvas.addEventListener(type,()=>{neighborColorDrawing=false;neighborColorLast=null;}));
+neighborColorShade.addEventListener('pointerdown',event=>{if(event.target===neighborColorShade)closeNeighborColoring();});
+window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!neighborColorShade.hidden)closeNeighborColoring();});
+function neighborScreenPoint(id){
+ const actor=sandbox?.characterStates(performance.now()/1000).find(item=>item.id===id);
+ if(!actor||actor.sleeping)return null;
+ const point=projectNeighborPick(actor);
+ return point?{...point,visible:point.x>=0&&point.x<=innerWidth&&point.y>=0&&point.y<=innerHeight}:null;
+}
 let pointerDown=null;
 canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId,moved:false};canvas.setPointerCapture(event.pointerId);});
 canvas.addEventListener('pointermove',event=>{
