@@ -56,13 +56,13 @@ function runProductionMove(state,controls,environment,dt){
  const run=new Function(
   'world','isStationaryRestActivity','playerActivity','moveX','moveZ','vertical','keys','flying',
   'WORLD_LIMIT','MAX_DIG_DEPTH','nudgePlayerOutOfBlocks','groundDepthAt','PLAYER_GRAVITY',
-  'playerCollisionAt','playerGrounded','jumpVelocity','surfaceHeightAt','save','saved','dt',
-  productionMoveSource+
+  'playerCollisionAt','playerGrounded','jumpVelocity','surfaceHeightAt','dt',
+  'let saved=false; const save=()=>{saved=true;};\n'+productionMoveSource+
   '\nmove(dt); return {player:world.player, jumpVelocity, playerGrounded, flying, playerActivity, controls:{moveX,moveZ,vertical,keys},saveRequested:saved};'
  );
  return run(world,isStationaryRestActivity,playerActivity,moveX,moveZ,vertical,keys,flying,
   1000000000,1000000000,nudgePlayerOutOfBlocks,groundDepthAt,14.5,playerCollisionAt,
-  playerGrounded,jumpVelocity,surfaceHeightAt,save,false,dt);
+  playerGrounded,jumpVelocity,surfaceHeightAt,dt);
 }
 function runProductionJump(state){
  let playerActivity=state.playerActivity||'',flying=!!state.flying;
@@ -101,7 +101,7 @@ test('ports keyboard and touch movement direction, normalization and yaw transfo
 });
 test('resolves X and Z independently so movement slides along solid walls',()=>{
  const {environment}=createEnvironment();
- environment.playerCollisionAt=(x,z)=>x>=1.8;
+ environment.playerCollisionAt=(x,z)=>x>=1.73;
  const state={player:{x:1.7,y:0,z:0,yaw:Math.PI/4},jumpVelocity:0,playerGrounded:true,flying:false,playerActivity:''};
  const controls={moveX:0,moveZ:1,vertical:0,keys:{}};
  const expected=runProductionMove(state,controls,environment,1/60);
@@ -172,9 +172,10 @@ test('jump helper matches production acceptance and rejection conditions',()=>{
   {playerActivity:'transformer',flying:false,playerGrounded:true,jumpVelocity:0,expected:false}
  ];
  for(const item of cases){
-  const production=runProductionJump(item),actual=physics.jump(item);
+  const {expected:accepted,...state}=item;
+  const production=runProductionJump(state),actual=physics.jump(state);
   assert.deepEqual(actual.state,production);
-  assert.equal(actual.accepted,item.expected);
+  assert.equal(actual.accepted,accepted);
   if(actual.accepted){assert.equal(actual.state.jumpVelocity,6.4);assert.equal(actual.state.playerGrounded,false);}
  }
 });
