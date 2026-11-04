@@ -88,7 +88,7 @@ function renderSandbox(state){
  if(state.selectedKey&&meshByKey.has(state.selectedKey)){
   const selectedMesh=meshByKey.get(state.selectedKey);
   const edges=new THREE.LineSegments(new THREE.EdgesGeometry(selectedMesh.geometry),new THREE.LineBasicMaterial({color:0x4b6550,transparent:true,opacity:.9}));
-  edges.position.copy(selectedMesh.position);edges.rotation.copy(selectedMesh.rotation);edges.scale.setScalar(1.035);edges.userData.selectionOutline=true;group.add(edges);
+  edges.position.copy(selectedMesh.position);edges.rotation.copy(selectedMesh.rotation);edges.scale.setScalar(1.035);edges.userData.selectionOutline=true;edges.userData.blockKey=state.selectedKey;group.add(edges);
  }
  selected=state.selectedKey;
  const selectedBlock=state.world.blocks.find(b=>b.key===selected);
