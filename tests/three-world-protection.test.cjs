@@ -258,11 +258,11 @@ function productionCurrentNeighbors(world,timeSeconds){
  const palette={
   day:{},sunset:{},night:{}
  };
+ const originalNavigation=productionNavigation(world);
  const getNeighbors=new Function(
   'world','NEIGHBOR_ROUTES','FAMILY_ROUTES','NEIGHBOR_SLEEP_SPOTS','TIME_PALETTES','neighborOnRoute',
   familySource+'\n'+currentSource+'\n'+paletteSource+'\nreturn currentNeighbors;'
- )(world,productionRoutes,productionFamilyRoutes,productionSleepSpots,palette,
-  (route,tick,phase,speed=1.05)=>productionNavigation(world).neighborOnRoute(route,tick,phase,speed));
+ )(world,productionRoutes,productionFamilyRoutes,productionSleepSpots,palette,originalNavigation.neighborOnRoute);
  return getNeighbors(timeSeconds,undefined);
 }
 test('matches all seven original visible neighbor character states, appearances, and sleep schedules',()=>{
