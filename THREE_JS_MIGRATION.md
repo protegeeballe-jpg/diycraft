@@ -46,7 +46,9 @@
 - `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups.
 - Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, tile patterns, immutable state and nearest-hit selection.
 - CI runs the adapter, editing-sandbox and raycast tests independently.
-- Remaining before Stage 2 completion: connect a dedicated browser sandbox UI to raycasting and preview geometry, then compare equivalent action fixtures with the Canvas 2D engine. Do not connect production controls or storage.
+- `three-world-edit-preview.html` and `three-world-edit-preview.js` provide a separate interactive browser sandbox with real 3D raycast selection, adjacent block placement, removal, door open/close, and tile-pattern changes. It loads the CI-generated production starter-world fixture and uses the painterly material library.
+- Browser regression coverage in `tests/three-world-edit-preview.cjs` verifies real projected selection, add/remove, door operation, tile-pattern changes, unchanged source data, and zero browser-storage keys.
+- Remaining before Stage 2 completion: compare equivalent action fixtures with the Canvas 2D engine and verify broader block-placement semantics, including face-adjacent placement and special block behavior. Do not connect production controls or storage.
 
 ### Stage 3 — Player, physics and animation
 - Port camera modes, movement, collision, flying, jumping, swimming, water-level behavior, plant sway, water motion, animals and NPC navigation in isolated increments.
