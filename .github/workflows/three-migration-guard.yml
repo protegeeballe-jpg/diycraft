@@ -14,6 +14,7 @@ on:
       - js/three-plant-geometry.js
       - js/three-player-physics.js
       - js/three-player-camera.js
+      - js/three-neighbor-model.js
       - js/three-world-protection.js
       - tests/three-door-motion.test.cjs
       - tests/three-door-model.test.cjs
