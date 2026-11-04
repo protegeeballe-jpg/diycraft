@@ -40,10 +40,13 @@
 - Screenshot artifact: `diycraft-three-actual-starter-world` (retained for 7 days by CI).
 
 ### Stage 2 — Editing parity in a sandbox
-- Add raycast selection, block placement/removal, door operation and tile placement against a cloned/in-memory test world.
-- Reuse the current UI and color-picker values where practical.
-- Test edits against the Canvas 2D engine using the same action fixtures.
-- Do not write the sandbox world to production storage.
+**Status: In progress — isolated data actions and selection resolver complete; browser interaction not yet connected**
+- `js/three-world-edit-sandbox.js` clones the immutable renderer snapshot into private in-memory state and exposes selection, validated block placement/removal, door toggling and tile-pattern changes.
+- Each operation returns a detached, deeply frozen state snapshot. The original renderer snapshot is checked for unchanged content; no storage APIs or production-world references are used.
+- `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups.
+- Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, tile patterns, immutable state and nearest-hit selection.
+- CI runs the adapter, editing-sandbox and raycast tests independently.
+- Remaining before Stage 2 completion: connect a dedicated browser sandbox UI to raycasting and preview geometry, then compare equivalent action fixtures with the Canvas 2D engine. Do not connect production controls or storage.
 
 ### Stage 3 — Player, physics and animation
 - Port camera modes, movement, collision, flying, jumping, swimming, water-level behavior, plant sway, water motion, animals and NPC navigation in isolated increments.
