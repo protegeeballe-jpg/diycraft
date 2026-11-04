@@ -13,7 +13,9 @@ function fixture(){
    {key:'block-1',type:'door',x:1,y:0,z:0,color:'#a97545',style:'garden',orientation:'ew',swing:-1,open:false},
    {key:'block-2',type:'tile',x:2,y:0,z:0,color:'#C5A98A',tilePattern:'spiral'}
   ],
-  player:{x:0,y:0,z:4},counts:{blocks:3}
+  player:{x:0,y:0,z:4,yaw:1.4},customBlock:{color:'#aa83d8',texture:'custom'},
+  doorDesign:{color:'#a97545',style:'garden'},tileDesign:{color:'#c5a98a',pattern:'spiral'},
+  solidStyles:{stone:{color:'#334455',texture:'brick'}},excavations:[{x:8,z:8,depth:2}],counts:{blocks:3}
  };
 }
 test('clones snapshot and exposes immutable state without mutating source',()=>{
@@ -73,6 +75,28 @@ test('changes only supported tile patterns on tile blocks',()=>{
  assert.throws(()=>edit.setTilePattern('block-2','unknown'),/Unsupported/);
  assert.throws(()=>edit.setTilePattern('block-0','waves'),/tile/);
 });
+
+test('matches saved style defaults and player-facing door orientation',()=>{
+ const edit=sandbox.create(fixture());
+ const stone=edit.addBlock({type:'stone',x:4,y:0,z:0}).world.blocks.at(-1);
+ assert.equal(stone.color,'#334455');
+ assert.equal(stone.texture,'brick');
+ const tile=edit.addBlock({type:'tile',x:5,y:0,z:0}).world.blocks.at(-1);
+ assert.equal(tile.color,'#c5a98a');
+ assert.equal(tile.tilePattern,'spiral');
+ const door=edit.addBlock({type:'door',x:6,y:0,z:0}).world.blocks.at(-1);
+ assert.equal(door.style,'garden');
+ assert.equal(door.orientation,'ew');
+});
+test('enforces two-cell door clearance and excavation depth bounds',()=>{
+ const edit=sandbox.create(fixture());
+ assert.throws(()=>edit.addBlock({type:'stone',x:1,y:1,z:0}),/occupied/);
+ assert.throws(()=>edit.addBlock({type:'door',x:4,y:64,z:0}),/two clear/);
+ assert.throws(()=>edit.addBlock({type:'stone',x:9,y:-1,z:9}),/coordinates/);
+ const dug=edit.addBlock({type:'stone',x:8,y:-2,z:8});
+ assert.equal(dug.world.blocks.at(-1).y,-2);
+});
+
 test('rejects invalid input snapshot and keeps snapshots detached from internal state',()=>{
  assert.throws(()=>sandbox.create(null),TypeError);
  const edit=sandbox.create(fixture()),first=edit.getState();
