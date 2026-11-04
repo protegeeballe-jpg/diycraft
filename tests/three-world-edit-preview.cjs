@@ -333,6 +333,50 @@ function freshWorld(){
   assert.deepEqual(worldState.world.excavations.find(cell=>cell.x===101&&cell.z===100),{x:101,z:100,depth:2});
   assert.equal(worldState.world.bucket.filter(item=>item.type==='dirt').length,2);
   assert.deepEqual(worldState.world.materials.find(item=>item&&item.id==='dirt'),{id:'dirt',count:2,label:''});
+
+  // Tap a real projected resident in the phone browser. The same hit test used by
+  // ordinary canvas interaction must open coloring before block raycasting.
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.focusNeighborForTest('lia')),true);
+  const liaPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborScreenPoint('lia'));
+  assert.ok(liaPoint&&liaPoint.visible,'The focused resident should be inside the mobile viewport.');
+  await page.mouse.click(liaPoint.x,liaPoint.y);
+  await page.waitForFunction(()=>!document.getElementById('neighbor-coloring').hidden,null,{timeout:5000});
+  assert.match(await page.locator('#neighbor-color-note').innerText(),/Lia is sitting beside you/);
+  assert.equal(await page.locator('#neighbor-color-templates [data-color-page]').count(),6,'All six original coloring sheets must be available.');
+  await page.locator('[data-color-page="flower"]').click();
+  await page.waitForFunction(()=>parseFloat(document.getElementById('neighbor-color-progress-fill').style.width)>0,null,{timeout:8000});
+  let flowerPixel=await page.evaluate(()=>{
+   const data=document.getElementById('neighbor-color-canvas').getContext('2d').getImageData(320,112,1,1).data;
+   return Array.from(data);
+  });
+  assert.deepEqual(flowerPixel,[244,182,203,255],'The resident must reproduce their original first flower-petal color.');
+  await page.locator('#neighbor-color-brush-tool').click();
+  await page.locator('#neighbor-color-color').fill('#4c8d59');
+  const colorCanvasBox=await page.locator('#neighbor-color-canvas').boundingBox();
+  const brushStart={x:colorCanvasBox.x+colorCanvasBox.width*(60/640),y:colorCanvasBox.y+colorCanvasBox.height*(42/460)};
+  const brushEnd={x:colorCanvasBox.x+colorCanvasBox.width*(125/640),y:brushStart.y};
+  await page.mouse.move(brushStart.x,brushStart.y);await page.mouse.down();
+  await page.mouse.move(brushEnd.x,brushEnd.y,{steps:5});await page.mouse.up();
+  let brushPixel=await page.evaluate(()=>{
+   const data=document.getElementById('neighbor-color-canvas').getContext('2d').getImageData(90,42,1,1).data;
+   return Array.from(data);
+  });
+  assert.deepEqual(brushPixel,[76,141,89,255],'The freehand brush must paint the selected player color.');
+  await page.locator('#neighbor-color-undo').click();
+  brushPixel=await page.evaluate(()=>{
+   const data=document.getElementById('neighbor-color-canvas').getContext('2d').getImageData(90,42,1,1).data;
+   return Array.from(data);
+  });
+  assert.deepEqual(brushPixel,[255,253,248,255],'Undo must restore the exact uncolored paper pixel.');
+  await page.locator('#neighbor-color-save').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.artworks.length,1,'Saving the shared picture must add one gallery artwork.');
+  assert.equal(worldState.world.artworks[0].name,'Big happy flower with Lia');
+  assert.match(worldState.world.artworks[0].data,/^data:image\\/png;base64,/);
+  assert.ok(worldState.world.crafted.some(item=>item&&item.id==='picture'&&item.label==='Big happy flower with Lia'),
+   'Saving the gallery picture must also add the original crafted-pouch picture item.');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborColoringStats().open),false,
+   'Saving should close the shared coloring panel.');
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.sourceUnchanged,true,'Sandbox operations must not mutate the renderer snapshot.');
   assert.equal(state.storageKeys,0,'Sandbox must not access browser storage.');
