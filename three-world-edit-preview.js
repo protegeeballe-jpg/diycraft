@@ -102,7 +102,7 @@ function addBeside(){
  renderSandbox(sandbox.addBlock(input));
 }
 document.getElementById('add').addEventListener('click',()=>{try{addBeside();}catch(e){status.textContent=e.message;}});
-document.getElementById('remove').addEventListener('click',()=>{if(selected)renderSandbox(sandbox.remove(selected));});
+document.getElementById('remove').addEventListener('click',()=>{if(selected){try{renderSandbox(sandbox.remove(selected));}catch(error){status.textContent=error.message;}}});
 document.getElementById('door').addEventListener('click',()=>{try{renderSandbox(sandbox.toggleDoor(selected));}catch(e){status.textContent=e.message;}});
 document.getElementById('apply-pattern').addEventListener('click',()=>{try{renderSandbox(sandbox.setTilePattern(selected,document.getElementById('pattern').value));}catch(e){status.textContent=e.message;}});
 let pointerDown=null;
