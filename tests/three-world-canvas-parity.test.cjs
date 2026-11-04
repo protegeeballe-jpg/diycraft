@@ -58,6 +58,23 @@ function productionRemovalHarness(world){
  return {remove};
 }
 
+function productionCollisionHarness(world){
+ const blockLookup=new Map(),depths=new Map((world.excavations||[]).map(([x,z,depth])=>[keyGround(x,z),depth]));
+ for(const block of world.blocks){
+  blockLookup.set(keyBlock(block.x,block.y,block.z),block);
+  if(block.type==='door')blockLookup.set(keyBlock(block.x,block.y+1,block.z),block);
+ }
+ const start=source.indexOf('const GROUND_BASE_Y=-MAX_DIG_DEPTH;');
+ const end=source.indexOf('\nfunction nudgePlayerOutOfBlocks',start);
+ if(start<0||end<0)throw new Error('Could not extract production player-collision helpers.');
+ return new Function('MAX_DIG_DEPTH','keyBlock','blockLookup','isPlantBlock','groundDepthAt',
+  source.slice(start,end)+'\nreturn playerCollisionAt;'
+ )(
+  1000000000,keyBlock,blockLookup,block=>!!block&&(block.type==='flower'||block.type==='tall_grass'),
+  (x,z)=>depths.get(keyGround(x,z))||0
+ );
+}
+
 function comparable(block){
  const out={type:block.type,x:block.x,y:block.y,z:block.z};
  for(const key of ['color','texture','tilePattern','style','orientation','swing','open'])if(block[key]!==undefined)out[key]=block[key];
@@ -129,6 +146,38 @@ test('matches full Material Bucket protection without deleting the block',()=>{
  assert.equal(sandbox.getState().world.blocks.length,1);
 });
 
+test('matches exact Canvas 2D player capsule collisions for solids, tiles, plants and doors',()=>{
+ const world=freshWorld();
+ world.excavations=[[80,80,2]];
+ world.blocks=[
+  {x:70,y:0,z:70,type:'stone'},
+  {x:71,y:0,z:70,type:'tile',color:'#c5a98a'},
+  {x:72,y:0,z:70,type:'flower'},
+  {x:73,y:0,z:70,type:'tall_grass'},
+  {x:74,y:0,z:70,type:'door',color:'#a97545',orientation:'ew',swing:-1,open:false}
+ ];
+ const production=productionCollisionHarness(world);
+ const edit=sandboxApi.create(adapter.createSnapshot(world));
+ const cases=[
+  [.5,.5,0],[69.77,70.5,0],[69.78,70.5,0],
+  [71.5,70.5,0],[71.5,70.5,-.2],[71.5,70.5,.16],
+  [72.5,70.5,0],[73.5,70.5,0],
+  [74.5,70.5,0],[74.5,70.5,1],
+  [80.5,80.5,-2.5],[80.5,80.5,-1.9],
+  [79.77,80.5,-2.5],[79.78,80.5,-2.5]
+ ];
+ for(const [x,z,y] of cases){
+  assert.equal(edit.playerCollisionAt(x,z,y),production(x,z,y),
+   'Three.js sandbox collision must match Canvas 2D at '+[x,z,y].join(','));
+ }
+ const door=world.blocks.find(block=>block.type==='door'),sandboxDoor=edit.getState().world.blocks.find(block=>block.type==='door');
+ assert.ok(door&&sandboxDoor);
+ edit.toggleDoor(sandboxDoor.key);door.open=true;
+ for(const [x,z,y] of [[74.5,70.5,0],[74.5,70.5,1]]){
+  assert.equal(edit.playerCollisionAt(x,z,y),production(x,z,y),
+   'Open-door collision must match Canvas 2D at '+[x,z,y].join(','));
+ }
+});
 test('matches duplicate-cell rejection',()=>{
  const world=freshWorld(),production=productionHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
  const b=world.blocks[0];
