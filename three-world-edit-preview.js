@@ -3,9 +3,9 @@
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
-const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry;
+const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
@@ -21,7 +21,7 @@ const materials=painterly.create(THREE,renderer,performanceProfile);
 const floorMat=new THREE.MeshStandardMaterial({color:0x789767,roughness:1});
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const group=new THREE.Group();scene.add(group);
-const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(.82,1.9,.14);
+const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
 const animatedPlants=[];
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -164,13 +164,16 @@ function renderSandbox(state){
   blockByKey.set(block.key,block);
   if(block.type==='flower'||block.type==='tall_grass'){addPlant(block);return;}
   if(block.type==='door'){
-   const mesh=new THREE.Mesh(doorGeometry,mat(block));
-   mesh.position.set(block.x+.5,block.y+.95,block.z+.5);
-   const base=block.orientation==='ew'?-Math.PI/2:0,swing=block.swing===-1?-1:1;
-   mesh.userData.baseDoorAngle=base;mesh.userData.doorSwing=swing;mesh.userData.blockKey=block.key;
-   mesh.rotation.y=base+swing*displayedDoorAngle(block,now);
-   mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
-   group.add(mesh);meshByKey.set(block.key,mesh);return;
+   const layout=doorModels.create(block),root=new THREE.Group();
+   root.position.set(layout.pivot.x,layout.pivot.y,layout.pivot.z);
+   root.rotation.y=layout.angle(displayedDoorAngle(block,now));
+   root.userData.baseDoorAngle=layout.baseAngle;root.userData.doorSwing=layout.swing;root.userData.blockKey=block.key;
+   const panelMaterial=materials.get(layout.color,layout.textureKind,{roughness:.88});
+   const panel=new THREE.Mesh(doorGeometry,panelMaterial);
+   panel.position.set(layout.localCenter.x,layout.localCenter.y,layout.localCenter.z);
+   panel.userData.blockKey=block.key;
+   panel.castShadow=performanceProfile.shadows;panel.receiveShadow=performanceProfile.shadows;
+   root.add(panel);group.add(root);meshByKey.set(block.key,root);return;
   }
   const isTile=block.type==='tile',geometry=isTile?tileGeometry:boxGeometry,material=mat(block);
   const chunkX=Math.floor(block.x/16),chunkZ=Math.floor(block.z/16);
@@ -199,9 +202,12 @@ function renderSandbox(state){
   if(block){
    const outlineGeometry=new THREE.EdgesGeometry(block.type==='door'?doorGeometry:(block.type==='tile'?tileGeometry:boxGeometry));
    const edges=new THREE.LineSegments(outlineGeometry,new THREE.LineBasicMaterial({color:0x4b6550,transparent:true,opacity:.9}));
-   edges.position.set(block.x+.5,block.y+(block.type==='door'?.95:(block.type==='tile'?.065:.5)),block.z+.5);
-   const door=block.type==='door';
-   if(door){const mesh=meshByKey.get(block.key);if(mesh)edges.rotation.copy(mesh.rotation);}
+   if(block.type==='door'){
+    const layout=doorModels.create(block),mesh=meshByKey.get(block.key);
+    outlineGeometry.translate(layout.localCenter.x,layout.localCenter.y,layout.localCenter.z);
+    edges.position.set(layout.pivot.x,layout.pivot.y,layout.pivot.z);
+    if(mesh)edges.rotation.copy(mesh.rotation);
+   }else edges.position.set(block.x+.5,block.y+(block.type==='tile'?.065:.5),block.z+.5);
    edges.scale.setScalar(1.035);edges.userData.selectionOutline=true;edges.userData.blockKey=state.selectedKey;group.add(edges);
   }
  }
@@ -234,6 +240,7 @@ function renderSandbox(state){
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   pickBlock:(key)=>{const block=blockByKey.get(key);if(!block)return false;const p=new THREE.Vector3(block.x+.5,block.y+.5,block.z+.5).project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
+  getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image;return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
@@ -264,7 +271,7 @@ function addBeside(){
  if(type==='custom')input.color=color;
  if(type==='custom')input.texture='custom';
  if(type==='tile')input.tilePattern=document.getElementById('pattern').value;
- if(type==='door'){input.style='classic';input.orientation='ns';}
+ if(type==='door'){input.style=document.getElementById('door-style').value;input.orientation='ns';}
  renderSandbox(sandbox.addBlock(input));
 }
 document.getElementById('add').addEventListener('click',()=>{try{addBeside();}catch(e){status.textContent=e.message;}});
