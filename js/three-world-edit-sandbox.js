@@ -261,6 +261,21 @@
    }
    return false;
   }
+  function nudgePlayerOutOfBlocks(player){
+   if(!object(player)||![player.x,player.y,player.z].every(Number.isFinite))
+    throw new TypeError('A finite player position is required.');
+   const result={...player,moved:false,saveRequested:false};
+   if(!playerCollisionAt(player.x,player.z,player.y))return result;
+   for(let radius=.3;radius<=1.8;radius+=.15){
+    for(let i=0;i<24;i++){
+     const angle=i*Math.PI/12,x=player.x+Math.cos(angle)*radius,z=player.z+Math.sin(angle)*radius;
+     if(!playerCollisionAt(x,z,player.y)){
+      result.x=x;result.z=z;result.moved=true;result.saveRequested=true;return result;
+     }
+    }
+   }
+   return result;
+  }
   function groundDepthAt(x,z){
    if(!Number.isFinite(x)||!Number.isFinite(z))return 0;
    return depthByCell.get(Math.floor(x)+','+Math.floor(z))||0;
@@ -296,7 +311,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
