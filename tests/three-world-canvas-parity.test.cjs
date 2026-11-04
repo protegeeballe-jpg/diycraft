@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const adapter=require('../js/three-world-adapter.js');
+globalThis.DIYCraftThreeWorldProtection=require('../js/three-world-protection.js');
 const sandboxApi=require('../js/three-world-edit-sandbox.js');
 const source=fs.readFileSync('diycraft.js','utf8');
 function freshWorld(){
