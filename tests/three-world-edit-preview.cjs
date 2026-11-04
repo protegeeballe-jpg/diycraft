@@ -22,6 +22,7 @@ function freshWorld(){
  try{
   const context=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
   const page=await context.newPage(),errors=[];
+  await page.addInitScript(()=>{try{Object.defineProperty(navigator,'deviceMemory',{configurable:true,value:2});Object.defineProperty(navigator,'hardwareConcurrency',{configurable:true,value:4});}catch(_){}});
   page.on('pageerror',e=>errors.push(e.stack||e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto('http://127.0.0.1:4176/three-world-edit-preview.html',{waitUntil:'networkidle',timeout:60000});
@@ -30,7 +31,18 @@ function freshWorld(){
   assert.equal(state.blockCount,world.blocks.length);
   assert.equal(state.sourceUnchanged,true);
   assert.equal(state.storageKeys,0);
-  assert.equal(state.renderedMeshes,world.blocks.length);
+  assert.equal(state.renderedBlocks,world.blocks.length,'Every source block must remain represented after batching.');
+  assert.ok(state.instanceBatches>0&&state.instanceBatches<=12,'Solid blocks should be consolidated into a small number of instanced batches.');
+  assert.ok(state.renderedMeshes<60,'The scene should use far fewer render objects than world blocks.');
+  assert.equal(state.performanceProfile.tier,'low','The browser test must exercise the budget-device profile.');
+  assert.equal(state.performanceProfile.maxPixelRatio,1);
+  assert.equal(state.performanceProfile.antialias,false);
+  assert.equal(state.performanceProfile.shadows,false);
+  await page.waitForTimeout(650);
+  state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
+  assert.ok(state.drawCalls>0&&state.drawCalls<=45,'The initial world must stay within a conservative draw-call budget on a low-end profile.');
+  assert.ok(state.geometryCount<100,'The preview must not allocate an excessive number of GPU geometries.');
+  assert.ok(state.textureCount<40,'Painterly material textures must remain cached and bounded.');
   const keys=snapshot.blocks.map(b=>b.key);
   let selected=false;
   for(const key of keys){
