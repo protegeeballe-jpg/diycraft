@@ -32,6 +32,7 @@
  const OUTFIT_STYLES=new Set(['hoodie','sweater','overalls','dress','tee']);
  const ACCESSORIES=new Set(['none','bow','flower','glasses','cap']);
  const ANIMALS=new Set(['sheep','cat','dog','cow','horse','bird','giraffe']);
+ const INVENTORY_ITEMS=new Set(['seed','apple','bread','milk','wood','stone','grass','dirt','leaves','brick','glass','flower','tall_grass','sand','snow','tile','custom','paintbrush','wateringcan','flowerpot','bench','picture','picnic']);
  function isObject(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
  function finite(value){return typeof value==='number'&&Number.isFinite(value);}
  function integer(value){return Number.isInteger(value);}
@@ -169,6 +170,21 @@
   }
   return out;
  }
+ function normalizeInventory(source){
+  const out=Array.from({length:60},()=>null);
+  if(!Array.isArray(source))return out;
+  for(let i=0;i<Math.min(source.length,60);i++){
+   const item=source[i];
+   if(!isObject(item)||!INVENTORY_ITEMS.has(item.id))continue;
+   const numeric=Number(item.count);
+   out[i]={
+    id:item.id,
+    count:clamp(Number.isFinite(numeric)&&numeric?numeric:1,1,99),
+    label:typeof item.label==='string'?item.label.slice(0,28):''
+   };
+  }
+  return out;
+ }
  function normalizeAnimals(source){
   const out=[];
   if(!Array.isArray(source))return out;
@@ -221,6 +237,7 @@
   const fish=normalizeFish(world.fish,water);
   const animals=normalizeAnimals(world.animals);
   const bucket=normalizeBucket(world.bucket);
+  const materials=normalizeInventory(world.materials),crafted=normalizeInventory(world.crafted);
   return freezeDeep({
    source:'diycraft-world-v1',
    version:integer(world.version)?world.version:1,
@@ -228,7 +245,7 @@
    timeMode:TIME_MODES.has(world.timeMode)?world.timeMode:'day',
    player:normalizePlayer(world.player),
    customBlock,doorDesign,tileDesign,solidStyles,styledSolidTypes,
-   blocks,excavations,water,fish,animals,bucket,
+   blocks,excavations,water,fish,animals,bucket,materials,crafted,
    counts:{
     blocks:blocks.length,excavations:excavations.length,
     water:water.length,fish:fish.length,animals:animals.length,bucket:bucket.length
