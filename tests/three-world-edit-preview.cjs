@@ -14,6 +14,13 @@ function freshWorld(){
 }
 (async()=>{
  const world=freshWorld();world.excavations.push([14,-5,2]);
+ world.animals=[
+  {id:'pet-cat-1',species:'cat',name:'Mittens',x:1.5,z:1.5,facing:.2,phase:.4,body:'#c5c0b6',accent:'#d0b6a0'},
+  {id:'pet-cat-2',species:'cat',name:'Buttons',x:2.5,z:1.5,facing:-.4,phase:1.3,body:'#c5c0b6',accent:'#d0b6a0'},
+  {id:'pet-dog-1',species:'dog',name:'Buddy',x:3.5,z:1.5,facing:1.1,phase:2.1,body:'#c89b6d',accent:'#d0b6a0'},
+  {id:'pet-bird-1',species:'bird',name:'Sunny',x:4.5,z:1.5,facing:0,phase:.9,body:'#e8c96d',accent:'#d0b6a0'},
+  {id:'pet-giraffe-1',species:'giraffe',name:'Tallulah',x:5.5,z:1.5,facing:-.8,phase:1.7,body:'#d9ad55',accent:'#9a643d'}
+ ];
  const before=JSON.stringify(world),snapshot=adapter.createSnapshot(world);
  assert.equal(snapshot.counts.blocks,world.blocks.length);
  await fs.promises.mkdir('preview-three',{recursive:true});
@@ -32,6 +39,17 @@ function freshWorld(){
   assert.equal(state.blockCount,world.blocks.length);
   assert.equal(state.sourceUnchanged,true);
   assert.equal(state.storageKeys,0);
+  assert.equal(state.animalCount,5,'The adapter and renderer must retain every valid saved animal.');
+  assert.equal(state.renderedAnimalCount,5,'All test animals fit within the low-end visible-animal cap.');
+  assert.equal(state.animalBatchCount,4,'Animals with identical species and colours should share one instanced mesh batch.');
+  let animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
+  assert.equal(animalStats.animals.length,5);
+  assert.equal(animalStats.rendered,5);
+  assert.equal(animalStats.batches,4);
+  const initialAnimalY=animalStats.firstY;
+  await page.waitForTimeout(350);
+  animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
+  assert.ok(Math.abs(animalStats.firstY-initialAnimalY)>.0001,'Animals must retain their idle bobbing animation.');
   assert.equal(state.renderedBlocks,world.blocks.length,'Every source block must remain represented after batching.');
   assert.ok(state.instanceBatches>0&&state.instanceBatches<=60,'Solid blocks should be consolidated into a small number of instanced batches.');
   assert.ok(state.renderedMeshes<60,'The scene should use far fewer render objects than world blocks.');
