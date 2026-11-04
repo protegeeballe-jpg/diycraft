@@ -49,6 +49,7 @@
     if(Number.isFinite(nudged.x))player.x=nudged.x;
     if(Number.isFinite(nudged.y))player.y=nudged.y;
     if(Number.isFinite(nudged.z))player.z=nudged.z;
+    if(nudged.saveRequested)save();
    }
   }
   const groundDepth=typeof environment.groundDepthAt==='function'?finite(environment.groundDepthAt(player.x,player.z)):0;
