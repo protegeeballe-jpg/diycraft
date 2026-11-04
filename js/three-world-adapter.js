@@ -149,16 +149,15 @@
   return out;
  }
  function normalizeAnimals(source){
-  const out=[],used=new Set();
+  const out=[];
   if(!Array.isArray(source))return out;
   for(let i=0;i<Math.min(source.length,MAX_ANIMALS);i++){
    const animal=source[i];
    if(!isObject(animal)||!ANIMALS.has(animal.species)||!finite(animal.x)||!finite(animal.z)||
       Math.abs(animal.x)>WORLD_LIMIT||Math.abs(animal.z)>WORLD_LIMIT)continue;
-   const rawId=String(animal.id||'saved_animal_'+i).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40)||('saved_animal_'+i);
-   let id=rawId,suffix=1;
-   while(used.has(id)){id=rawId+'-'+suffix++;if(id.length>48)id=id.slice(0,48);}
-   used.add(id);
+   // Keep the saved animal ID exactly as the validated game supplied it.
+   // The renderer uses a separate array-position key for internal object identity.
+   const id=String(animal.id||'saved_animal_'+i).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40)||('saved_animal_'+i);
    out.push({
     key:'animal-'+out.length,id,species:animal.species,
     name:safeName(animal.name,animal.species,24),
