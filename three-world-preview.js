@@ -270,7 +270,6 @@ function animate(now){
  for(const item of animated){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(elapsed*1.25+item.phase)*.075;
   else if(item.kind==='grass')item.object.rotation.z=Math.sin(elapsed*1.8+item.phase)*.11;
-  }
  }
  updateAnimalBatches();
  if(waterMesh&&now-lastWaterUpdate>=1000/performanceProfile.waterAnimationFps){
