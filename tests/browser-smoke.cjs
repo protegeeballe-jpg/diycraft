@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('node:fs');
+const zlib = require('node:zlib');
+
 const { chromium } = require('playwright');
 const { spawn } = require('node:child_process');
 
@@ -15,6 +18,54 @@ async function verifyGame(page, label) {
     : 'https://protegeeballe-jpg.github.io/diycraft/?browser-smoke=1',
     { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForTimeout(1000);
+
+  if (label === 'local') {
+    const initial = await page.evaluate(async () => {
+      const key = 'diycraft_peaceful_voxel_v1';
+      const prefix = 'DIYCraft:gzip:v1:';
+      const stored = localStorage.getItem(key);
+      if (!stored || !stored.startsWith(prefix)) return { format: 'not-compressed' };
+      const binary = atob(stored.slice(prefix.length));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      return { format: 'gzip', raw, world: JSON.parse(raw) };
+    });
+    if (initial.format !== 'gzip' || !Array.isArray(initial.world.blocks)) {
+      throw new Error('local: new autosaves were not stored as valid compressed worlds.');
+    }
+    const originalBlockCount = initial.world.blocks.length;
+    await page.evaluate(raw => localStorage.setItem('diycraft_peaceful_voxel_v1', raw), JSON.stringify(initial.world));
+    await page.reload({ waitUntil: 'networkidle', timeout: 60000 });
+    await page.waitForTimeout(900);
+    const migrated = await page.evaluate(async () => {
+      const prefix = 'DIYCraft:gzip:v1:';
+      const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
+      if (!stored || !stored.startsWith(prefix)) return null;
+      const binary = atob(stored.slice(prefix.length));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      return JSON.parse(raw);
+    });
+    if (!migrated || migrated.blocks.length !== originalBlockCount) {
+      throw new Error('local: an existing JSON world did not migrate safely to compressed storage.');
+    }
+  }
+
+  const [backupDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#menuBtn').click().then(() => page.locator('#backupBtn').click())
+  ]);
+  const backupPath = await backupDownload.path();
+  if (!backupPath) throw new Error(label + ': backup download did not produce a file.');
+  const backupBytes = fs.readFileSync(backupPath);
+  const backupJson = backupDownload.suggestedFilename().endsWith('.gz')
+    ? zlib.gunzipSync(backupBytes).toString('utf8')
+    : backupBytes.toString('utf8');
+  const backupWorld = JSON.parse(backupJson);
+  if (!Array.isArray(backupWorld.blocks)) throw new Error(label + ': backup file did not contain a valid world.');
+  await page.locator('#menuShade [data-close]').first().click();
 
   const canvas = page.locator('#game');
   if (!(await canvas.count())) throw new Error(label + ': main game canvas is missing.');
