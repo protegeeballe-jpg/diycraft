@@ -129,6 +129,7 @@ test('reuses Material Bucket appearance data exactly like Canvas 2D without cons
    'Recovered bucket item appearance must match production for '+type+'.');
   assert.equal(JSON.stringify(added.world.bucket),bucketBefore,'Selecting and using a bucket item must not consume it.');
   assert.deepEqual(added.selectedBucketItem,item,'The selected recovered item remains available for reuse.');
+  assert.equal(production.add(x+1,0,z,type,false),true,'Production must also accept a second reuse of '+type+'.');
   const second=sandbox.addBlock({type,x:x+1,y:0,z});
   assert.deepEqual(comparable(second.world.blocks.at(-1)),comparable(world.blocks.at(-1)),
    'The same recovered item can be reused repeatedly for '+type+'.');
