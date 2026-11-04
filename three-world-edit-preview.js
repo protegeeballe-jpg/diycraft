@@ -5,8 +5,9 @@ const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
 const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
 const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels,coloring=window.DIYCraftThreeNeighborColoring,protection=window.DIYCraftThreeWorldProtection;
+const timeVisuals=window.DIYCraftThreeWorldTime;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen||!timeVisuals)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
@@ -15,11 +16,61 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:performanceProfile.anti
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));renderer.setSize(innerWidth,innerHeight,false);
 renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
 renderer.shadowMap.enabled=performanceProfile.shadows;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-scene.add(new THREE.HemisphereLight(0xfff7e9,0x788b70,.86));
+const hemisphere=new THREE.HemisphereLight(0xfff7e9,0x788b70,.86);scene.add(hemisphere);
 const sun=new THREE.DirectionalLight(0xfff0d5,1.05);sun.position.set(-14,23,16);sun.castShadow=performanceProfile.shadows;sun.shadow.mapSize.set(performanceProfile.shadows?1024:1,performanceProfile.shadows?1024:1);scene.add(sun);
 const fill=new THREE.DirectionalLight(0xc5d9e8,.24);fill.position.set(12,9,-15);scene.add(fill);
 const materials=painterly.create(THREE,renderer,performanceProfile);
 const floorMat=new THREE.MeshStandardMaterial({color:0x789767,roughness:1});
+const skyGeometry=new THREE.SphereGeometry(120,24,16);
+const skyMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,fog:false,depthWrite:false});
+const skyDome=new THREE.Mesh(skyGeometry,skyMaterial);skyDome.frustumCulled=false;skyDome.renderOrder=-1000;scene.add(skyDome);
+const starPositions=[];
+for(let i=0;i<44;i++){
+ const azimuth=-Math.PI+(i*2.399963229728653)%(Math.PI*2),altitude=.18+((i*37)%76)/100,horizontal=Math.cos(altitude);
+ starPositions.push(Math.sin(azimuth)*horizontal*105,Math.sin(altitude)*105,-Math.cos(azimuth)*horizontal*105);
+}
+const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute('position',new THREE.Float32BufferAttribute(starPositions,3));
+const starMaterial=new THREE.PointsMaterial({color:0xfffbe0,size:1.1,sizeAttenuation:false,transparent:true,opacity:.86,depthWrite:false});
+const starField=new THREE.Points(starGeometry,starMaterial);starField.visible=false;starField.renderOrder=1;
+const celestialGroup=new THREE.Group();celestialGroup.add(starField);
+const celestialDisc=new THREE.Mesh(new THREE.SphereGeometry(2.35,12,8),new THREE.MeshBasicMaterial({color:0xfff2bc,fog:false,depthWrite:false}));
+celestialDisc.renderOrder=1;celestialGroup.add(celestialDisc);scene.add(celestialGroup);
+let requestedTimeMode='day',activeVisualMode=null;
+function setSkyGradient(colors){
+ const top=new THREE.Color(colors[0]),middle=new THREE.Color(colors[1]),horizon=new THREE.Color(colors[2]);
+ const positions=skyGeometry.attributes.position,values=new Float32Array(positions.count*3),color=new THREE.Color();
+ for(let i=0;i<positions.count;i++){
+  const height=Math.max(-1,Math.min(1,positions.getY(i)/120));
+  if(height>=0)color.copy(middle).lerp(top,height);
+  else color.copy(horizon).lerp(middle,height+1);
+  values[i*3]=color.r;values[i*3+1]=color.g;values[i*3+2]=color.b;
+ }
+ skyGeometry.setAttribute('color',new THREE.Float32BufferAttribute(values,3));
+ skyGeometry.attributes.color.needsUpdate=true;
+}
+function skyDirection(azimuth,altitude){
+ const horizontal=Math.cos(altitude);
+ return new THREE.Vector3(Math.sin(azimuth)*horizontal,Math.sin(altitude),-Math.cos(azimuth)*horizontal);
+}
+function applyWorldTime(seconds){
+ const palette=timeVisuals.getPalette(requestedTimeMode,seconds);
+ if(palette.mode===activeVisualMode)return;
+ activeVisualMode=palette.mode;
+ scene.background.set(palette.sky[0]);scene.fog.color.set(palette.sky[2]);
+ hemisphere.color.set(palette.sky[0]);hemisphere.groundColor.set(palette.ground);
+ hemisphere.intensity=palette.mode==='night'?.43:palette.mode==='sunset'?.68:.86;
+ sun.color.set(palette.mode==='night'?'#b8c6df':palette.sun);
+ sun.intensity=palette.mode==='night'?.055:palette.mode==='sunset'?.68:1.05;
+ sun.position.set(-14,palette.mode==='sunset'?7:23,16);
+ fill.color.set(palette.mode==='night'?'#9eafd4':'#c5d9e8');
+ fill.intensity=palette.mode==='night'?.28:palette.mode==='sunset'?.18:.24;
+ floorMat.color.set(palette.ground);
+ setSkyGradient(palette.sky);
+ const night=palette.mode==='night',direction=night?skyDirection(-.48,.29):palette.mode==='sunset'?skyDirection(.98,.12):skyDirection(.42,.29);
+ starField.visible=night;celestialDisc.material.color.set(night?'#f6f0ce':palette.sun);
+ celestialDisc.position.copy(direction.multiplyScalar(105));
+ return palette;
+}
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const group=new THREE.Group();scene.add(group);
 const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
@@ -366,6 +417,9 @@ function updateAnimalInstances(now){
 }
 function renderSandbox(state){
  const now=performance.now();syncDoorMotions(state,now);
+ requestedTimeMode=['day','sunset','night','auto'].includes(state.world.timeMode)?state.world.timeMode:'day';
+ document.getElementById('time-mode').value=requestedTimeMode;
+ applyWorldTime(now*.001);
  clearGroup();blockByKey.clear();animatedPlants.length=0;waterMesh=null;fishMeshes=[];renderedFishCount=0;lastWaterAnimationAt=-Infinity;
  const batches=new Map();
  state.world.blocks.forEach(block=>{
@@ -446,6 +500,10 @@ function renderSandbox(state){
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:renderObjects,renderObjects,instanceBatches,
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps},
   waterCount,fishCount,renderedFishCount,animalCount,residentAnimalCount,totalAnimalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
+  visualTimeMode:activeVisualMode,
+  getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count}),
+  setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
+  releaseVisualTimeTest:()=>{applyWorldTime(performance.now()/1000);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
   playerMode:playerPlayMode,cameraMode:playerCameraMode,
   getPlayerState:()=>playerPhysicsState?{player:{...playerPhysicsState.player},jumpVelocity:playerPhysicsState.jumpVelocity,playerGrounded:playerPhysicsState.playerGrounded,flying:playerPhysicsState.flying,playerActivity:playerPhysicsState.playerActivity}:null,
   getPlayerCamera:()=>playerCameraPose?{pos:{...playerCameraPose.pos},yaw:playerCameraPose.yaw,pitch:playerCameraPose.pitch}:null,
@@ -671,6 +729,18 @@ function addBeside(){
  renderSandbox(sandbox.addBlock(input));
 }
 document.getElementById('add').addEventListener('click',()=>{try{addBeside();}catch(e){status.textContent=e.message;}});
+document.getElementById('time-mode').addEventListener('change',event=>{
+ try{
+  const next=sandbox.setTimeMode(event.target.value);
+  requestedTimeMode=next.world.timeMode;
+  applyWorldTime(performance.now()/1000);
+  updateNeighborModels(performance.now());
+  status.textContent=requestedTimeMode==='auto'?'Automatic day and night cycle enabled.':requestedTimeMode.charAt(0).toUpperCase()+requestedTimeMode.slice(1)+' selected.';
+ }catch(error){
+  event.target.value=requestedTimeMode;
+  status.textContent=error.message;
+ }
+});
 document.getElementById('bucket-item').addEventListener('change',event=>{
  try{
   const value=event.target.value;
@@ -813,6 +883,7 @@ function animate(now){
   });
   updatePlayerCamera();updatePlayerDiagnostics();
  }else lastPlayerPhysicsTime=now;
+ applyWorldTime(now*.001);skyDome.position.copy(camera.position);celestialGroup.position.copy(camera.position);
  updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);updateAnimalCareFlash(now);updateNeighborModels(now);
  for(const item of animatedPlants){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;

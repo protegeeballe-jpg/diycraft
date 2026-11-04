@@ -79,6 +79,9 @@
 - Remaining: continue full world-rendering and UI/input parity checks, then verify movement and frame stability on representative low-cost Android devices. NPC tap selection now has an explicit source-parity helper/test, while the mobile browser flow continues to verify real resident taps and coloring. Swimming should not be invented unless the production game gains that mechanic through a separate, deliberate design change. Keep every addition isolated and test-driven.
 
 ### Stage 4 — UI, inventory and persistence parity
+- The isolated editing preview now renders the original day/sunset/night palettes and auto-cycle boundaries using a single vertex-colored sky dome, one celestial mesh, and one 44-point star mesh. Palette changes reuse existing geometry/materials; no new watercolor texture is generated for a time transition. A time selector changes only the sandbox clone and never persists to browser storage.
+- The world-time palette helper preserves the exact original Canvas 2D sky, ground and sun colors/overlays. Automated tests compare static colors and auto-cycle thresholds; browser checks cover the selector, actual light/sky updates, night stars, and automatic transition states.
+
 - Reuse or adapt the existing UI; preserve all 20 tile designs, all color pickers, bucket, crafting, animal care, art gallery, world time, backup and restore.
 - Keep the same world serialization schema and gzip prefix.
 - Test round-trips: old save -> load -> render -> edit -> save -> reload -> compare fields.
@@ -122,3 +125,5 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - Neighbor selection now routes through `pickNeighborAtScreen()` in `js/three-world-protection.js`. A dedicated parity test executes the actual Canvas 2D `neighborAtScreen()` implementation and compares screen probes, closest-hit selection, strict 66-pixel edge behavior, sleeping residents, and projection misses.
 - Production storage, save schema, gzip encoding, backup/restore, offline behavior, and the Canvas 2D rollback path are not modified by this checkpoint.
 - Commit scope: `test: align animal batching and verify NPC tap selection parity`. This commit is confined to the `three-js-migration` branch.
+
+- Follow-up for Stage 4: port the original 20-pattern tile, color-picker, inventory/crafting, art studio, character studio, backup/restore and save interactions in the same isolated, test-first manner. This time-of-day increment intentionally does not connect production persistence or modify the world schema.

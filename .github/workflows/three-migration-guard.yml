@@ -17,6 +17,7 @@ on:
       - js/three-neighbor-model.js
       - js/three-neighbor-coloring.js
       - js/three-world-protection.js
+      - js/three-world-time.js
       - tests/three-door-motion.test.cjs
       - tests/three-door-model.test.cjs
       - tests/three-performance-profile.test.cjs
@@ -26,6 +27,7 @@ on:
       - tests/three-neighbor-coloring.test.cjs
       - tests/three-neighbor-selection.test.cjs
       - tests/three-world-protection.test.cjs
+      - tests/three-world-time.test.cjs
       - tests/three-world-adapter.test.cjs
       - js/three-world-protection.js
       - tests/three-world-edit-sandbox.test.cjs
@@ -72,6 +74,8 @@ jobs:
         run: node tests/three-neighbor-model.test.cjs
       - name: Run cooperative neighbor coloring tests
         run: node tests/three-neighbor-coloring.test.cjs
+      - name: Run original world-time palette tests
+        run: node tests/three-world-time.test.cjs
       - name: Run NPC tap-selection parity tests
         run: node tests/three-neighbor-selection.test.cjs
       - name: Run neighbor and animal protection parity tests

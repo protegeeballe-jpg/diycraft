@@ -23,6 +23,7 @@ on:
       - js/three-player-model.js
       - js/three-neighbor-model.js
       - js/three-world-protection.js
+      - js/three-world-time.js
       - js/three-animal-geometry.js
       - three-world-edit-preview.html
       - three-world-edit-preview.js

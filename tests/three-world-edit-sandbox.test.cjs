@@ -27,6 +27,21 @@ test('clones snapshot and exposes immutable state without mutating source',()=>{
  assert.ok(Object.isFrozen(state.world.blocks));
  assert.equal(state.sourceUnchanged,true);
 });
+test('changes only the isolated sandbox time mode and rejects invalid values atomically',()=>{
+ const source=fixture(),before=JSON.stringify(source),edit=sandbox.create(source);
+ const initial=edit.getState();
+ for(const [index,mode] of ['day','sunset','night','auto'].entries()){
+  const next=edit.setTimeMode(mode);
+  assert.equal(next.world.timeMode,mode);
+  assert.ok(Object.isFrozen(next));
+  assert.equal(next.revision,initial.revision+index+1);
+ }
+ const after=edit.getState();
+ assert.throws(()=>edit.setTimeMode('midnight'),/Choose day/);
+ assert.equal(edit.getState().revision,after.revision);
+ assert.equal(JSON.stringify(source),before,'Time-mode changes must not mutate the original snapshot.');
+ assert.equal(after.sourceUnchanged,true);
+});
 test('selects only existing block keys',()=>{
  const edit=sandbox.create(fixture());
  assert.equal(edit.select('block-1').selectedKey,'block-1');

@@ -38,6 +38,39 @@ function freshWorld(){
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto('http://127.0.0.1:4176/three-world-edit-preview.html',{waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>5,null,{timeout:30000});
+  // Time-of-day selector and painterly sky preserve the original world palette.
+  const initialTimeMode=await page.locator('#time-mode').inputValue();
+  assert.ok(['day','sunset','night','auto'].includes(initialTimeMode),'The preview must expose the saved world time mode.');
+  await page.locator('#time-mode').selectOption('day');
+  let timeStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats());
+  assert.equal(timeStats.requestedMode,'day');
+  assert.equal(timeStats.mode,'day');
+  assert.deepEqual(timeStats.skyColors,['#8fc6e2','#d8e9d2','#b3d39a']);
+  assert.equal(timeStats.starsVisible,false);
+  assert.equal(timeStats.starCount,44);
+  assert.ok(timeStats.skyVertexCount>100,'The sky gradient must be a reusable vertex-colored dome.');
+  await page.locator('#time-mode').selectOption('sunset');
+  timeStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats());
+  assert.equal(timeStats.mode,'sunset');
+  assert.deepEqual(timeStats.skyColors,['#a66e82','#e7a07e','#d7a77f']);
+  await page.locator('#time-mode').selectOption('night');
+  timeStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats());
+  assert.equal(timeStats.mode,'night');
+  assert.equal(timeStats.starsVisible,true,'Night must enable the single batched star field.');
+  assert.deepEqual(timeStats.skyColors,['#14213d','#263858','#52606e']);
+  await page.locator('#time-mode').selectOption('auto');
+  const automaticModes=await page.evaluate(()=>{
+   const api=window.__DIYCRAFT_THREE_EDIT__;
+   const modes=[0,100,140].map(seconds=>api.setVisualTimeAtForTest(seconds).mode);
+   api.releaseVisualTimeTest();
+   return modes;
+  });
+  assert.deepEqual(automaticModes,['day','sunset','night'],'Automatic transitions must keep the original 180-second cycle boundaries.');
+  const timeWorld=await page.evaluate(()=>({mode:window.__DIYCRAFT_THREE_EDIT__.getState().world.timeMode,
+   sourceUnchanged:window.__DIYCRAFT_THREE_EDIT__.sourceUnchanged,storageKeys:window.__DIYCRAFT_THREE_EDIT__.storageKeys}));
+  assert.equal(timeWorld.mode,'auto');
+  assert.equal(timeWorld.sourceUnchanged,true,'Time changes must remain isolated from the original snapshot.');
+  assert.equal(timeWorld.storageKeys,0,'Time changes must not write browser storage.');
   let state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.blockCount,world.blocks.length);
   assert.equal(state.sourceUnchanged,true);
