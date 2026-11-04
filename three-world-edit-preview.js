@@ -3,9 +3,9 @@
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
-const raycastKeys=window.DIYCraftThreeRaycast;
+const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'low-power'});
@@ -21,7 +21,7 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotati
 const group=new THREE.Group();scene.add(group);
 const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(.82,1.9,.14);
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map();
+let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),doorMotions=new Map();
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
  orbit.phi=Math.max(.2,Math.min(1.3,orbit.phi));
@@ -37,14 +37,46 @@ function clearGroup(){
  while(group.children.length){const child=group.children[group.children.length-1];if(child.userData.selectionOutline){child.geometry.dispose();child.material.dispose();}group.remove(child);}
  meshByKey.clear();
 }
+function displayedDoorAngle(block,now=performance.now()){
+ const motion=doorMotions.get(block.key);
+ return motion?doorMotion.angleAt(motion,now):(block.open?doorMotion.OPEN_ANGLE:0);
+}
+function syncDoorMotions(state,now=performance.now()){
+ const active=new Set();
+ for(const block of state.world.blocks){
+  if(block.type!=='door')continue;
+  active.add(block.key);
+  const targetAngle=block.open?doorMotion.OPEN_ANGLE:0,previous=doorMotions.get(block.key);
+  if(previous&&Math.abs(previous.to-targetAngle)<1e-7)continue;
+  const mesh=meshByKey.get(block.key),base=block.orientation==='ew'?-Math.PI/2:0,swing=block.swing===-1?-1:1;
+  const current=previous?doorMotion.angleAt(previous,now):(mesh?(mesh.rotation.y-base)/swing:targetAngle);
+  if(Math.abs(current-targetAngle)>1e-5)doorMotions.set(block.key,doorMotion.create(current,targetAngle,now));
+  else doorMotions.delete(block.key);
+ }
+ for(const key of doorMotions.keys())if(!active.has(key))doorMotions.delete(key);
+}
+function updateDoorAnimations(now=performance.now()){
+ for(const [key,motion] of doorMotions){
+  const mesh=meshByKey.get(key);
+  if(mesh){
+   const angle=doorMotion.angleAt(motion,now);
+   mesh.rotation.y=mesh.userData.baseDoorAngle+mesh.userData.doorSwing*angle;
+   for(const child of group.children){
+    if(child.userData.selectionOutline&&child.userData.blockKey===key)child.rotation.copy(mesh.rotation);
+   }
+  }
+  if(now>=motion.start+motion.duration)doorMotions.delete(key);
+ }
+}
 function renderSandbox(state){
+ const now=performance.now();syncDoorMotions(state,now);
  clearGroup();
  state.world.blocks.forEach(block=>{
   const isTile=block.type==='tile',isDoor=block.type==='door';
   const geometry=isTile?tileGeometry:(isDoor?doorGeometry:boxGeometry);
   const mesh=new THREE.Mesh(geometry,mat(block));
   mesh.position.set(block.x+.5,block.y+(isTile?.065:(isDoor?.95:.5)),block.z+.5);
-  if(isDoor){mesh.rotation.y=block.orientation==='ew'?-Math.PI/2:0;if(block.open)mesh.rotation.y+=(block.swing===-1?-1:1)*1.28;}
+  if(isDoor){const base=block.orientation==='ew'?-Math.PI/2:0,swing=block.swing===-1?-1:1;mesh.userData.baseDoorAngle=base;mesh.userData.doorSwing=swing;mesh.rotation.y=base+swing*displayedDoorAngle(block,now);}
   mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.blockKey=block.key;mesh.userData.blockType=block.type;
   group.add(mesh);meshByKey.set(block.key,mesh);
   if(block.type==='flower'||block.type==='tall_grass'){
@@ -69,7 +101,7 @@ function renderSandbox(state){
   ' · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size,lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
-  pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},getState:()=>sandbox.getState()};
+  pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},getDoorAngle:(key)=>{const block=sandbox.getState().world.blocks.find(item=>item.key===key&&item.type==='door');return block?displayedDoorAngle(block):null;},getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
@@ -119,7 +151,7 @@ canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
 canvas.addEventListener('wheel',event=>{event.preventDefault();orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));});
 let frame=0;
-function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__)window.__DIYCRAFT_THREE_EDIT__.frames=frame;}
+function animate(){requestAnimationFrame(animate);updateDoorAnimations(performance.now());renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__)window.__DIYCRAFT_THREE_EDIT__.frames=frame;}
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
