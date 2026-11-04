@@ -12,6 +12,7 @@
  const HEX=/^#[0-9a-f]{6}$/i;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const SOLID_TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow']);
+ const TEXTURES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom']);
  const PATTERNS=new Set(['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral']);
  function object(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
  function coord(value){return Number.isInteger(value)&&Math.abs(value)<=MAX_COORD;}
@@ -59,7 +60,7 @@
     const color=input.color===undefined?custom.color:input.color;
     if(typeof color!=='string'||!HEX.test(color))throw new TypeError('Custom blocks require a valid six-digit color.');
     block.color=color;
-    block.texture=typeof input.texture==='string'?input.texture:(typeof custom.texture==='string'?custom.texture:'custom');
+    block.texture=TEXTURES.has(input.texture)?input.texture:(TEXTURES.has(custom.texture)?custom.texture:'custom');
    }else if(input.type==='tile'){
     const design=object(world.tileDesign)?world.tileDesign:{};
     block.color=input.color===undefined?(design.color||'#c5a98a'):(HEX.test(input.color||'')?input.color:'#c5a98a');
@@ -73,7 +74,7 @@
     block.swing=input.swing===-1?-1:1;block.open=false;
    }else if(SOLID_TYPES.has(input.type)){
     const style=object(world.solidStyles)?world.solidStyles[input.type]:null;
-    if(style){block.color=typeof input.color==='string'&&HEX.test(input.color)?input.color:(style.color||undefined);block.texture=typeof input.texture==='string'?input.texture:(style.texture||input.type);}
+    if(style){block.color=typeof input.color==='string'&&HEX.test(input.color)?input.color:(style.color||undefined);block.texture=TEXTURES.has(input.texture)?input.texture:(TEXTURES.has(style.texture)?style.texture:input.type);}
     else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
    }else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
    world.blocks.push(block);occupied.set(position,block.key);
