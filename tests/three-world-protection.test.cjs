@@ -98,3 +98,138 @@ test('rejects invalid coordinates and invalid protection clocks',()=>{
  assert.throws(()=>protection.actorContext({},Infinity),/finite seconds/);
 });
 console.log('Three.js world protection tests complete.');
+
+
+// Production-versus-Three.js obstacle-aware neighbor navigation parity.
+const NAV_START=source.indexOf('const NAV_CELL_SCALE=');
+const NAV_END=source.indexOf('\nfunction neighborOnRoute(',NAV_START);
+const ROUTE_FN_START=source.indexOf('function neighborOnRoute(');
+const ROUTE_FN_END=source.indexOf('\nconst FAMILY_ROUTES=',ROUTE_FN_START);
+if(NAV_START<0||NAV_END<=NAV_START||ROUTE_FN_START<0||ROUTE_FN_END<=ROUTE_FN_START)
+ throw new Error('Could not extract the original Canvas 2D neighbor navigation implementation.');
+const productionNavigationSource=source.slice(NAV_START,NAV_END);
+const productionNeighborOnRouteSource=source.slice(ROUTE_FN_START,ROUTE_FN_END);
+function sourceConstant(name){
+ const token='const '+name+'=';
+ const index=source.indexOf(token);
+ if(index<0)throw new Error('Could not locate production '+name+'.');
+ const start=index+token.length;
+ const stack=[];
+ let quote=null,escaped=false;
+ for(let i=start;i<source.length;i++){
+  const ch=source[i];
+  if(quote){
+   if(escaped){escaped=false;continue;}
+   if(ch==='\\'){escaped=true;continue;}
+   if(ch===quote)quote=null;
+   continue;
+  }
+  if(ch==="'"||ch==='"'||ch==='\x60'){quote=ch;continue;}
+  if(ch==='{'||ch==='['||ch==='(')stack.push(ch);
+  else if(ch==='}'||ch===']'||ch===')')stack.pop();
+  else if(ch===';'&&stack.length===0)return new Function('return ('+source.slice(start,i)+');')();
+ }
+ throw new Error('Could not parse production '+name+'.');
+}
+function routeGeometry(routes){
+ return Object.fromEntries(Object.entries(routes).map(([id,route])=>[
+  id,route.map(point=>({x:point.x,z:point.z,pause:point.pause}))
+ ]));
+}
+const productionRoutes=sourceConstant('NEIGHBOR_ROUTES');
+const productionFamilyRoutes=sourceConstant('FAMILY_ROUTES');
+const productionSleepSpots=sourceConstant('NEIGHBOR_SLEEP_SPOTS');
+function productionNavigation(world,revision=1){
+ const groundDepths=new Map((world.excavations||[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
+ const create=new Function(
+  'world','groundDepths','WORLD_LIMIT','isPlantBlock',
+  'let worldGeometryRevision='+revision+',neighborObstacleCache=null,neighborPathCache=new Map();\n'+
+  productionNavigationSource+'\n'+productionNeighborOnRouteSource+
+  '\nreturn {buildNeighborObstacleSet,findNeighborPath,neighborPathLength,getNeighborRouteSegments,neighborOnRoute};'
+ );
+ return create(world,groundDepths,1000000000,block=>!!block&&(block.type==='flower'||block.type==='tall_grass'));
+}
+function obstacleWorld(){
+ const blocks=[];
+ for(let z=-3;z<=3;z++)blocks.push({x:0,y:0,z,type:'stone'});
+ blocks.push(
+  {x:6,y:0,z:0,type:'door',open:false},
+  {x:7,y:0,z:0,type:'door',open:true},
+  {x:8,y:0,z:0,type:'flower'},
+  {x:9,y:0,z:0,type:'tall_grass'},
+  {x:10,y:0,z:0,type:'tile'},
+  {x:11,y:3,z:0,type:'stone'},
+  {x:12,y:-1,z:0,type:'stone'},
+  {x:13,y:2,z:0,type:'dirt'},
+  {x:14,y:0,z:0,type:'custom',color:'#aa83d8'}
+ );
+ return {blocks,excavations:[{x:3,z:-1,depth:2},{x:4,z:-1,depth:1}]};
+}
+function comparePath(actual,expected,label){
+ assert.deepEqual(actual,expected,label);
+ assert.ok(actual.length>=1,label+' must always return at least a safe/stuck point.');
+ for(const point of actual){
+  assert.ok(Number.isFinite(point.x)&&Number.isFinite(point.z),label+' must contain finite coordinates.');
+ }
+}
+test('keeps every neighbor and family waypoint, pause, and sleep coordinate aligned with Canvas 2D',()=>{
+ assert.deepEqual(routeGeometry(protection.NEIGHBOR_ROUTES),routeGeometry(productionRoutes));
+ assert.deepEqual(routeGeometry(protection.FAMILY_ROUTES),routeGeometry(productionFamilyRoutes));
+ for(const id of Object.keys(productionSleepSpots)){
+  assert.deepEqual(
+   {x:protection.SLEEP_SPOTS?.[id]?.x??protection.actorContext({timeMode:'night'},0).neighbors.find(a=>a.id===id)?.x,
+    z:protection.SLEEP_SPOTS?.[id]?.z??protection.actorContext({timeMode:'night'},0).neighbors.find(a=>a.id===id)?.z},
+   {x:productionSleepSpots[id].x,z:productionSleepSpots[id].z},
+   'Night protection position must match for '+id
+  );
+ }
+});
+test('matches the Canvas 2D half-block obstacle raster for solids, doors, plants, tiles, height, and excavations',()=>{
+ const world=obstacleWorld(),production=productionNavigation(world),three=protection.createNavigationState(world,1);
+ assert.deepEqual(
+  [...three.cells].sort(),
+  [...production.buildNeighborObstacleSet()].sort(),
+  'The Three.js obstacle cells must exactly match Canvas 2D.'
+ );
+});
+test('matches exact production routes for direct, obstructed, blocked-start, blocked-goal, and excavated paths',()=>{
+ const world=obstacleWorld(),production=productionNavigation(world),three=protection.createNavigationState(world,1);
+ const cases=[
+  [{x:-4,z:6},{x:4,z:6},'clear direct route'],
+  [{x:-3,z:0},{x:3,z:0},'route around a continuous wall'],
+  [{x:6.5,z:.5},{x:9.5,z:.5},'closed door with open-door and pass-through objects nearby'],
+  [{x:.5,z:.5},{x:4.5,z:.5},'blocked starting cell'],
+  [{x:-4,z:-1},{x:3.5,z:-.5},'excavated ground obstacle'],
+  [{x:14.5,z:.5},{x:16.5,z:.5},'custom block obstacle']
+ ];
+ for(const [start,end,label] of cases){
+  comparePath(
+   protection.findNeighborPath(start,end,three),
+   production.findNeighborPath(start,end),
+   label
+  );
+ }
+});
+test('matches production eased route positions and travel timing for all seven actors over time',()=>{
+ const world=obstacleWorld(),production=productionNavigation(world),three=protection.createNavigationState(world,1);
+ const times=[0,.25,2.8,3.1,5.75,11,19.25,37.5,81.2,123.45];
+ for(const actor of protection.ROUTE_ACTORS){
+  for(const tick of times){
+   const expected=production.neighborOnRoute(actor.route,tick,actor.phase,actor.speed);
+   const actual=protection.routePosition(actor.route,tick,actor.phase,actor.speed,three);
+   const pick=point=>({x:point.x,z:point.z,facing:point.facing,moving:point.moving,walk:point.walk});
+   assert.deepEqual(pick(actual),pick(expected),actor.id+' at '+tick+' seconds');
+  }
+ }
+});
+test('rebuilds its obstacle grid and paths only when the sandbox world revision advances',()=>{
+ const world={blocks:[],excavations:[]};
+ const first=protection.createNavigationState(world,0);
+ assert.equal(first.cells.has('1,1'),false);
+ world.blocks.push({key:'new-wall',type:'stone',x:0,y:0,z:0});
+ const staleRevision=protection.createNavigationState(world,0);
+ assert.equal(staleRevision,first,'A revision-stable world should reuse the cached navigation state.');
+ const changed=protection.createNavigationState(world,1);
+ assert.notEqual(changed,first,'A changed world revision must rebuild navigation state.');
+ assert.equal(changed.cells.has('1,1'),true,'New geometry must be present in the refreshed obstacle grid.');
+});
