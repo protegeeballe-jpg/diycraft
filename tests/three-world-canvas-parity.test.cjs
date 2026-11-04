@@ -41,6 +41,36 @@ function productionHarness(world,selectedBucketItem=null,selectedType='grass'){
  return {add:fn,lookup:blockLookup};
 }
 
+function productionGroundDigHarness(world){
+ const groundDepths=new Map((world.excavations||[]).map(([x,z,depth])=>[keyGround(x,z),depth]));
+ const waterCells=new Set((world.waterCells||[]).map(([x,z])=>keyGround(x,z)));
+ const canStoreStart=source.indexOf('function canStoreItem('),canStoreEnd=source.indexOf('\nfunction blockDropItem',canStoreStart);
+ const addItemStart=source.indexOf('function addItem('),addItemEnd=source.indexOf('\nfunction addBucketItem',addItemStart);
+ const bucketStart=source.indexOf('function addBucketItem('),bucketEnd=source.indexOf('\nfunction consumeItem',bucketStart);
+ const digStart=source.indexOf('function digAtScreen('),digEnd=source.indexOf('\nfunction fillAtScreen',digStart);
+ if(canStoreStart<0||addItemStart<0||bucketStart<0||digStart<0||digEnd<0)throw new Error('Could not extract production ground-dig helpers.');
+ const canStore=new Function('world','return ('+source.slice(canStoreStart,canStoreEnd).trim()+');')(world);
+ const addItem=new Function('world','return ('+source.slice(addItemStart,addItemEnd).trim()+');')(world);
+ const addBucketItem=new Function('MAX_BUCKET_ITEMS','world','SOLID_STYLE_TYPES','BLOCKS',
+  'return ('+source.slice(bucketStart,bucketEnd).trim()+');')(120,world,SOLID_STYLE_TYPES,PRODUCTION_BLOCKS);
+ const syncExcavations=()=>{world.excavations=Array.from(groundDepths,([key,depth])=>{const [x,z]=key.split(',').map(Number);return [x,z,depth];});};
+ const syncWaterLife=()=>{world.waterCells=Array.from(waterCells,key=>key.split(',').map(Number));};
+ return new Function(
+  'canvas','rayHitAtScreen','isProtectedDigCell','collectWaterLayer','canStoreItem','blockDropItem','removeBlock',
+  'addItem','save','render','showStatus','world','selected','groundDepthAt','keyGround','waterCells',
+  'groundDepths','MAX_DIG_DEPTH','GROUND_DIG_LIMIT','addBucketItem','MAX_BLOCKS','MAX_BUCKET_ITEMS',
+  'addRenderChunkItem','excavationRenderChunks','syncExcavations','invalidateNeighborNavigation',
+  'syncWaterLife','waterLevels','removeRenderChunkItem','waterRenderChunks','fishSpots','rebuildFishRenderChunks',
+  'MAX_DIG_DEPTH','GROUND_DIG_LIMIT','ITEM_META',
+  'return ('+source.slice(digStart,digEnd).trim()+');'
+ )(
+  {clientWidth:100,clientHeight:100},()=>null,()=>false,()=>false,canStore,()=> 'dirt',()=>false,
+  addItem,()=>{},()=>{},()=>{},world,'grass',(x,z)=>groundDepths.get(keyGround(x,z))||0,keyGround,
+  waterCells,groundDepths,1000000000,12000,addBucketItem,18000,120,
+  ()=>{},new Map(),syncExcavations,()=>{},syncWaterLife,new Map(),()=>{},new Map(),[],()=>{},
+  1000000000,12000,{}
+ );
+}
 function productionFillHarness(world,selectedType='grass',selectedBucketItem=null){
  const depthMap=new Map((world.excavations||[]).map(([x,z,depth])=>[keyGround(x,z),depth]));
  const groundDepths=new Map(depthMap),waterLevels=new Map();
@@ -166,6 +196,20 @@ test('reuses Material Bucket appearance data exactly like Canvas 2D without cons
   assert.deepEqual(comparable(second.world.blocks.at(-1)),comparable(world.blocks.at(-1)),
    'The same recovered item can be reused repeatedly for '+type+'.');
   assert.equal(JSON.stringify(second.world.bucket),sandboxBucketBefore);
+ }
+});
+test('matches Canvas 2D ground digging, including each dirt Bucket item and materials reward',()=>{
+ const world=freshWorld();world.excavations=[];world.waterCells=[];world.waterLevels=[];world.fish=[];
+ world.bucket=[];world.materials=Array.from({length:60},()=>null);
+ const production=productionGroundDigHarness(world),snapshot=adapter.createSnapshot(world),sandbox=sandboxApi.create(snapshot);
+ for(let depth=1;depth<=2;depth++){
+  production(50,50,{ground:true,x:80,z:80});
+  const state=sandbox.excavateGround(80,80);
+  assert.deepEqual(world.excavations, state.world.excavations.map(cell=>[cell.x,cell.z,cell.depth]));
+  assert.deepEqual(world.bucket,state.world.bucket,'Recovered dirt appearance must match production.');
+  assert.deepEqual(world.materials,state.world.materials,'Dirt resource stacks must match production.');
+  assert.equal(state.world.excavations.find(cell=>cell.x===80&&cell.z===80).depth,depth);
+  assert.equal(state.world.materials.find(item=>item&&item.id==='dirt').count,depth);
  }
 });
 test('matches Canvas 2D hole filling, including removal of water and fish from the filled cell',()=>{
