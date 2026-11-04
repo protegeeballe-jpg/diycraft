@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline'; manifest-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; manifest-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#9bc7d8">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" type="image/svg+xml" href="../diycraft-icon.svg">
@@ -198,9 +198,9 @@
       </div><button id="useCustomColor" class="soft">Use this color for new blocks</button>
       <div class="menu-grid">
         <button id="menuInventory">🪣 Material Bucket & pouches</button><button id="craftBtn">🧺 Crafting settings</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Artwork with a neighbor</button><button id="characterBtn">🧑 Profile & appearance</button><button id="doorDesignBtn">🚪 Door design</button><button id="tileDesignBtn">▦ Slab / tile design</button><button id="fishModeToggle">🐟 Fish placement: Off</button><button id="controlsBtn">Hide movement controls</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
-        <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn" title="Return to the neighborhood if you get lost">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
+        <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json,.gz,.diycraft.gz"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn" title="Return to the neighborhood if you get lost">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
       </div>
-      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note" id="offlineReadyNote">Offline setup is starting. Connect this device once and keep the game open until the local copy is ready.</p><p class="note">Your world saves on this device. Use Backup world to move it to another device, and keep periodic backups in case browser storage is cleared.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers.</p>
+      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note" id="offlineReadyNote">Offline setup is starting. Connect this device once and keep the game open until the local copy is ready.</p><p class="note">Your world saves on this device. Use Backup world to move it to another device, and keep periodic backups in case browser storage is cleared.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers. Built-in coloring pages and textures are original local artwork made from visible vector shapes; no third-party images or hidden text are loaded.</p>
     </div>
   </div>
   <div class="menu-shade" id="activityShade">
