@@ -37,29 +37,29 @@ const { chromium } = require('playwright');
       const world = JSON.parse(raw);
       // Create a temporary sample scene in this browser session only.
       // The GitHub branch and the live game are never modified by this fixture.
-      world.player = { ...world.player, x: 0, y: 0, z: 8, yaw: 0, pitch: -0.07 };
-      world.blocks = world.blocks.filter(b => !(b.x >= -3 && b.x <= 3 && b.z >= -2 && b.z <= 4));
+      world.player = { ...world.player, x: 0, y: 0, z: 11, yaw: 0, pitch: -0.28 };
+      world.blocks = world.blocks.filter(b => !(b.x >= -3 && b.x <= 3 && b.z >= 5 && b.z <= 9));
       const addTile = (x, z, color, tilePattern) => world.blocks.push({
         x, y: 0, z, type: 'tile', color, tilePattern
       });
-      addTile(-2, 1, '#e8a4b8', 'floral');
-      addTile(-1, 1, '#f3cf85', 'checker');
-      addTile(0, 1, '#9bc7b0', 'waves');
-      addTile(1, 1, '#9db8df', 'diamond');
-      addTile(2, 1, '#c3a5d7', 'floral');
-      addTile(-2, 2, '#f0c8a1', 'brick');
-      addTile(-1, 2, '#b5d59a', 'dots');
-      addTile(0, 2, '#e7b3c9', 'floral');
-      addTile(1, 2, '#9bc7b0', 'hexagon');
-      addTile(2, 2, '#f0d58f', 'checker');
+      addTile(-2, 7, '#e8a4b8', 'floral');
+      addTile(-1, 7, '#f3cf85', 'checker');
+      addTile(0, 7, '#9bc7b0', 'waves');
+      addTile(1, 7, '#9db8df', 'diamond');
+      addTile(2, 7, '#c3a5d7', 'floral');
+      addTile(-2, 8, '#f0c8a1', 'brick');
+      addTile(-1, 8, '#b5d59a', 'dots');
+      addTile(0, 8, '#e7b3c9', 'floral');
+      addTile(1, 8, '#9bc7b0', 'hexagon');
+      addTile(2, 8, '#f0d58f', 'checker');
 
       for (const [x, z, color] of [
-        [-3, 0, '#e8a4b8'], [-3, 2, '#f0c875'], [3, 0, '#9ebbe3'],
-        [3, 2, '#c4a2d7'], [-4, -1, '#e8a4b8'], [4, -1, '#f0c875']
+        [-3, 6, '#e8a4b8'], [-3, 8, '#f0c875'], [3, 6, '#9ebbe3'],
+        [3, 8, '#c4a2d7'], [-4, 5, '#e8a4b8'], [4, 5, '#f0c875']
       ]) {
         world.blocks.push({ x, y: 0, z, type: 'flower', color });
       }
-      for (const [x, z] of [[-4, 1], [-4, 2], [4, 1], [4, 2], [-3, 3], [3, 3]]) {
+      for (const [x, z] of [[-4, 6], [-4, 7], [4, 6], [4, 7], [-3, 9], [3, 9]]) {
         world.blocks.push({ x, y: 0, z, type: 'tall_grass' });
       }
 
@@ -86,8 +86,10 @@ const { chromium } = require('playwright');
     await page.reload({ waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 15000 });
     await page.waitForTimeout(900);
-    await page.locator('#viewBtn').click();
     await page.waitForTimeout(1800);
+    await page.screenshot({ path: 'preview/painterly-world-detail.png' });
+    await page.locator('#viewBtn').click();
+    await page.waitForTimeout(1200);
 
     const canvas = page.locator('#game');
     const state = await canvas.evaluate(el => {
