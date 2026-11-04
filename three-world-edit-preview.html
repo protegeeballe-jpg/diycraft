@@ -53,6 +53,19 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .neighbor-color-tools button,.neighbor-color-actions button{padding:8px 10px}
 .neighbor-color-actions{justify-content:space-between;margin-top:8px}
 .neighbor-color-help{font-size:11px;line-height:1.45;color:#718075;margin:9px 0 0}
+/* Gentle animal-care interaction */
+#animal-care[hidden],#animal-care-flash[hidden]{display:none!important}
+.animal-care-shade{position:fixed;z-index:22;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.animal-care-panel{width:min(420px,100%);padding:17px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:18px;box-shadow:0 16px 50px #263c3250}
+.animal-care-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.animal-care-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.animal-care-note{font-size:12px;line-height:1.5;color:#718075;margin:12px 0}
+.animal-care-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.animal-care-grid button{min-height:58px;padding:9px;font-size:13px;font-weight:700}
+.animal-care-feedback{padding:12px;border-radius:12px;background:#eaf4e6;color:#31543c;font-size:13px;font-weight:750;min-height:44px}
+.animal-care-help{font-size:11px;line-height:1.45;color:#718075;margin:10px 0 0}
+#animal-care-flash{position:fixed;z-index:5;pointer-events:none;transform:translate(-50%,-100%);font:30px/1 Arial,sans-serif;filter:drop-shadow(0 2px 4px #263c3266)}
+@media(max-width:600px){.animal-care-shade{padding:8px}.animal-care-panel{padding:13px;border-radius:15px}.animal-care-head h2{font-size:17px}.animal-care-grid button{font-size:12px;padding:8px 5px}}
 @media(max-width:600px){
  .neighbor-color-shade{padding:7px}
  .neighbor-color-panel{max-height:96vh;padding:11px;border-radius:14px}
@@ -120,6 +133,21 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
   </div>
  </div>
 </section>
+<section id="animal-care" class="animal-care-shade" hidden aria-label="Gentle animal care">
+ <div class="animal-care-panel" role="dialog" aria-modal="true" aria-labelledby="animal-care-title">
+  <div class="animal-care-head"><h2 id="animal-care-title">🐾 Animal care</h2><button id="animal-care-close" type="button">Close ✕</button></div>
+  <p id="animal-care-note" class="animal-care-note">Choose a gentle way to care for your animal friend.</p>
+  <div class="animal-care-grid">
+   <button type="button" data-animal-care="snack">🍎 Offer a snack</button>
+   <button type="button" data-animal-care="water">💧 Fresh water</button>
+   <button type="button" data-animal-care="brush">🪮 Gentle brushing</button>
+   <button type="button" data-animal-care="play">🧶 Play together</button>
+  </div>
+  <p id="animal-care-feedback" class="animal-care-feedback" aria-live="polite">Your animal friend is happy to see you.</p>
+  <p class="animal-care-help">No animal can be hurt, attacked, or removed. These are care-only activities. Care counts stay in this experimental sandbox copy.</p>
+ </div>
+</section>
+<div id="animal-care-flash" hidden aria-hidden="true"></div>
 <script src="./js/three.js"></script><script src="./js/three-performance-profile.js"></script><script src="./js/three-world-adapter.js"></script><script src="./js/three-door-model.js"></script>
 <script src="./js/three-painterly-materials.js"></script><script src="./js/three-plant-geometry.js"></script><script src="./js/three-animal-geometry.js"></script><script src="./js/three-world-protection.js"></script><script src="./js/three-world-edit-sandbox.js"></script>
 <script src="./js/three-world-raycast.js"></script><script src="./js/three-door-motion.js"></script><script src="./js/three-player-physics.js"></script><script src="./js/three-player-camera.js"></script><script src="./js/three-player-model.js"></script><script src="./js/three-neighbor-model.js"></script><script src="./js/three-neighbor-coloring.js"></script><script src="./three-world-edit-preview.js"></script>
