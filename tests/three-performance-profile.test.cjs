@@ -8,7 +8,7 @@ function test(name,fn){
 test('selects conservative profile for budget phones and data-saver mode',()=>{
  const low=profiles.select({mobile:true,hardwareConcurrency:4,deviceMemory:2,maxTextureSize:4096});
  assert.equal(low.tier,'low');assert.equal(low.maxPixelRatio,1);assert.equal(low.antialias,false);
- assert.equal(low.shadows,false);assert.equal(low.fpsCap,30);assert.equal(low.textureSize,128);assert.equal(low.maxVisibleFish,48);
+ assert.equal(low.shadows,false);assert.equal(low.fpsCap,30);assert.equal(low.textureSize,128);assert.equal(low.maxVisibleFish,48);assert.equal(low.waterAnimationFps,15);
  assert.equal(profiles.select({saveData:true}).tier,'low');
  assert.equal(profiles.select({maxTextureSize:2048}).tier,'low');
 });
