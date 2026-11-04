@@ -59,7 +59,7 @@ function productionFillHarness(world,selectedType='grass',selectedBucketItem=nul
    'let fishSpots=initialFishSpots;',
    'const fill=('+source.slice(start,end).trim()+');',
    'return {run:(...args)=>fill(...args),getFishSpots:()=>fishSpots};'
-  ].join('\\n')
+  ].join('\n')
  )(
   {clientWidth:100,clientHeight:100},()=>null,(x,z)=>groundDepths.get(keyGround(x,z))||0,keyGround,
   world,selectedType,18000,()=>{},add,groundDepths,new Map(),()=>{},waterLevels,waterCells,new Map(),
