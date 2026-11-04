@@ -133,6 +133,7 @@ test('plants remain pass-through while closed doors block and open doors release
  assert.equal(edit.isMovementSolidAt(grass.x,grass.y,grass.z),false);
  assert.equal(edit.isMovementSolidAt(stone.x,stone.y,stone.z),true);
  assert.equal(edit.isMovementSolidAt(door.x,door.y,door.z),true);
+ assert.equal(edit.isMovementSolidAt(door.x,door.y+1,door.z),true,'Closed doors occupy both vertical collision cells.');
  edit.toggleDoor(door.key);
  assert.equal(edit.isMovementSolidAt(door.x,door.y,door.z),false);
  assert.equal(edit.isMovementSolidAt(23,1,20),false,'The door upper clearance remains non-blocking when open.');
