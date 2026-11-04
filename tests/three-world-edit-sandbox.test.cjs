@@ -203,6 +203,52 @@ test('Material Bucket items can be selected, reused with exact appearance and re
  const cleared=edit.clearBucketSelection();
  assert.equal(cleared.selectedBucketItem,null);
 });
+test('fills an excavation atomically and clears its water and fish without recovering them',()=>{
+ const world=fixture();
+ world.water=[{x:8,z:8,level:2,depth:2}];
+ world.fish=[{key:'fish-1',x:8,z:8},{key:'fish-2',x:8,z:8}];
+ world.bucket=[{type:'water'},{type:'water'}];
+ const edit=sandbox.create(world),bucketBefore=JSON.stringify(world.bucket);
+ const filled=edit.fillExcavation(8,8,{type:'stone'});
+ const blocks=filled.world.blocks.filter(block=>block.x===8&&block.z===8).sort((a,b)=>a.y-b.y);
+ assert.deepEqual(blocks.map(block=>block.y),[-2,-1]);
+ assert.ok(blocks.every(block=>block.type==='stone'));
+ assert.equal(filled.world.excavations.some(cell=>cell.x===8&&cell.z===8),false);
+ assert.equal(filled.world.water.some(cell=>cell.x===8&&cell.z===8),false);
+ assert.equal(filled.world.fish.some(fish=>fish.x===8&&fish.z===8),false);
+ assert.equal(JSON.stringify(filled.world.bucket),bucketBefore,'Filling a hole clears water/fish without adding or removing bucket items.');
+ assert.equal(filled.selectedKey,blocks[1].key);
+ assert.equal(filled.revision,1);
+ assert.equal(edit.playerCollisionAt(8.5,8.5,-1.5),true,'The filled excavation becomes solid block terrain again.');
+});
+test('reuses a selected bucket appearance for every layer of a filled excavation',()=>{
+ const world=fixture();world.bucket=[{type:'stone',color:'#345678',texture:'brick'}];
+ const edit=sandbox.create(world);edit.selectBucketItem(0);
+ const filled=edit.fillExcavation(8,8,{type:'stone'});
+ const blocks=filled.world.blocks.filter(block=>block.x===8&&block.z===8);
+ assert.equal(blocks.length,2);
+ assert.ok(blocks.every(block=>block.color==='#345678'&&block.texture==='brick'));
+ assert.equal(filled.world.bucket.length,1,'The selected bucket item remains reusable after filling the hole.');
+ assert.deepEqual(filled.selectedBucketItem,{type:'stone',color:'#345678',texture:'brick'});
+});
+test('rejects invalid, non-dug, door, blocked and over-capacity excavation fills without partial mutation',()=>{
+ const edit=sandbox.create(fixture()),before=edit.getState();
+ assert.throws(()=>edit.fillExcavation(7,7,{type:'stone'}),/already at its original level/);
+ assert.throws(()=>edit.fillExcavation(8,8,{type:'door'}),/Choose a solid building block/);
+ assert.throws(()=>edit.fillExcavation(8,8,{type:'water'}),/supported building block/);
+ assert.throws(()=>edit.fillExcavation(1.5,8,{type:'stone'}),/whole-number/);
+ assert.equal(edit.getState().revision,before.revision);
+ assert.equal(edit.getState().world.blocks.length,before.world.blocks.length);
+ const obstructed=fixture();obstructed.blocks.push({key:'block-in-hole',type:'stone',x:8,y:-1,z:8});
+ const blockedEdit=sandbox.create(obstructed),blockedBefore=blockedEdit.getState();
+ assert.throws(()=>blockedEdit.fillExcavation(8,8,{type:'dirt'}),/already occupying/);
+ assert.equal(blockedEdit.getState().world.blocks.length,blockedBefore.world.blocks.length);
+ assert.deepEqual(blockedEdit.getState().world.excavations,blockedBefore.world.excavations);
+ const full=fixture();full.blocks=Array.from({length:18000},(_,index)=>({key:'full-'+index,type:'stone',x:index,y:0,z:100}));
+ const fullEdit=sandbox.create(full),fullBefore=fullEdit.getState();
+ assert.throws(()=>fullEdit.fillExcavation(8,8,{type:'stone'}),/Not enough building space/);
+ assert.equal(fullEdit.getState().revision,fullBefore.revision);
+});
 test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
  const edit=sandbox.create(fixture());
  assert.throws(()=>edit.addFish(8,8),/Add water/);
