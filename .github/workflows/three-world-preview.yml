@@ -15,6 +15,7 @@ on:
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
       - js/three-door-motion.js
+      - js/three-door-model.js
       - js/three-performance-profile.js
       - js/three-plant-geometry.js
       - three-world-edit-preview.html
