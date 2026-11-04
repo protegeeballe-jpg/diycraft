@@ -52,7 +52,7 @@ function freshWorld(){
   assert.equal(neighborStats.total,7,'All seven original neighborhood characters must have 3D models.');
   assert.deepEqual(neighborStats.actors.map(actor=>actor.id),['hyacinth','theo','dad','mom','lia','maya','nico']);
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.neighborCount),7,'Each original resident must receive exactly one reusable 3D model.');
-  assert.ok(neighborStats.actors.every(actor=>actor.position&&Math.abs(actor.position.x-(actor.x+.5))<1e-9&&Math.abs(actor.position.z-(actor.z+.5))<1e-9),
+  assert.ok(neighborStats.actors.every(actor=>actor.position&&Math.abs(actor.position.x-actor.x)<1e-9&&Math.abs(actor.position.z-actor.z)<1e-9),
    'The rendered model roots must follow their obstacle-aware world-space route coordinates.');
   assert.deepEqual(neighborStats.actors.map(actor=>actor.hairStyle),['bob','pigtails','short','long','pigtails','bob','curly']);
   assert.deepEqual(neighborStats.actors.map(actor=>actor.outfitStyle),['hoodie','overalls','tee','dress','dress','overalls','hoodie']);
