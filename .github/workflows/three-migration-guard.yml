@@ -7,8 +7,10 @@ on:
     paths:
       - js/three-world-adapter.js
       - js/three-world-edit-sandbox.js
+      - js/three-world-raycast.js
       - tests/three-world-adapter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
+      - tests/three-world-raycast.test.cjs
       - THREE_JS_MIGRATION.md
       - .github/workflows/three-migration-guard.yml
   pull_request:
@@ -34,3 +36,5 @@ jobs:
         run: node tests/three-world-adapter.test.cjs
       - name: Run isolated editing sandbox regression tests
         run: node tests/three-world-edit-sandbox.test.cjs
+      - name: Run raycast selection resolver tests
+        run: node tests/three-world-raycast.test.cjs
