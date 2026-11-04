@@ -30,7 +30,7 @@ fishGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
  0,0,0,-.08,0,-.075,.10,0,-.055,.18,0,0,.10,0,.055,-.08,0,.075,
  -.16,0,0,-.30,0,-.09,-.30,0,.09
 ],3));
-fishGeometry.setIndex([0,1,2,0,2,3,0,3,4,0,4,5,6,7,8]);fishGeometry.computeVertexNormals();
+fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVertexNormals();
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map();
 let waterMesh=null,fishMeshes=[],renderedFishCount=0;
