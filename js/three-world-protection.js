@@ -255,5 +255,5 @@
   }
   return false;
  }
- return Object.freeze({HOMES,modeAt,routePosition,actorContext,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
+ return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,modeAt,routePosition,actorContext,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });
