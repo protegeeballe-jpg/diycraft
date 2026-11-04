@@ -2,6 +2,8 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const protection=require('../js/three-world-protection.js');
+globalThis.DIYCraftThreeWorldProtection=protection;
+const sandbox=require('../js/three-world-edit-sandbox.js');
 const source=fs.readFileSync('diycraft.js','utf8');
 const start=source.indexOf('function isProtectedDigCell(x,z){');
 const end=source.indexOf('\nfunction canStoreItem',start);
@@ -173,7 +175,7 @@ function comparePath(actual,expected,label){
  }
 }
 test('keeps every neighbor and family waypoint, pause, and sleep coordinate aligned with Canvas 2D',()=>{
- assert.deepEqual(routeGeometry(protection.NEIGHBOR_ROUTES),routeGeometry(productionRoutes));
+ assert.deepEqual(routeGeometry(protection.NEIGHBOR_ROUTES),routeGeometry({hyacinth:productionRoutes.hyacinth,theo:productionRoutes.theo}));
  assert.deepEqual(routeGeometry(protection.FAMILY_ROUTES),routeGeometry(productionFamilyRoutes));
  for(const id of Object.keys(productionSleepSpots)){
   assert.deepEqual(
@@ -197,7 +199,8 @@ test('matches exact production routes for direct, obstructed, blocked-start, blo
  const cases=[
   [{x:-4,z:6},{x:4,z:6},'clear direct route'],
   [{x:-3,z:0},{x:3,z:0},'route around a continuous wall'],
-  [{x:6.5,z:.5},{x:9.5,z:.5},'closed door with open-door and pass-through objects nearby'],
+  [{x:6.5,z:.5},{x:9.5,z:.5},'blocked start with an open door and pass-through objects nearby'],
+  [{x:4.5,z:.5},{x:6.5,z:.5},'blocked goal at a closed door'],
   [{x:.5,z:.5},{x:4.5,z:.5},'blocked starting cell'],
   [{x:-4,z:-1},{x:3.5,z:-.5},'excavated ground obstacle'],
   [{x:14.5,z:.5},{x:16.5,z:.5},'custom block obstacle']
@@ -222,14 +225,30 @@ test('matches production eased route positions and travel timing for all seven a
   }
  }
 });
-test('rebuilds its obstacle grid and paths only when the sandbox world revision advances',()=>{
- const world={blocks:[],excavations:[]};
+test('rebuilds its obstacle grid and path cache only when the sandbox world revision advances',()=>{
+ const world={blocks:[],excavations:[]},start={x:-2,z:0},end={x:2,z:0};
  const first=protection.createNavigationState(world,0);
+ const originalPath=protection.findNeighborPath(start,end,first);
  assert.equal(first.cells.has('1,1'),false);
  world.blocks.push({key:'new-wall',type:'stone',x:0,y:0,z:0});
  const staleRevision=protection.createNavigationState(world,0);
  assert.equal(staleRevision,first,'A revision-stable world should reuse the cached navigation state.');
+ assert.deepEqual(protection.findNeighborPath(start,end,staleRevision),originalPath,'A caller must advance the revision when geometry changes.');
  const changed=protection.createNavigationState(world,1);
  assert.notEqual(changed,first,'A changed world revision must rebuild navigation state.');
  assert.equal(changed.cells.has('1,1'),true,'New geometry must be present in the refreshed obstacle grid.');
+ assert.notDeepEqual(protection.findNeighborPath(start,end,changed),originalPath,'A new obstacle must produce a newly calculated route.');
+});
+test('updates NPC protection predictions after sandbox placement and removal without replacing the world',()=>{
+ const edit=sandbox.create({blocks:[],excavations:[],animals:[],timeMode:'day',player:{x:0,y:0,z:0,yaw:0}});
+ const before=edit.protectionContext(3.1).neighbors.find(actor=>actor.id==='hyacinth');
+ const placed=edit.addBlock({type:'stone',x:-6,y:0,z:-8});
+ assert.equal(placed.revision,1);
+ const detoured=edit.protectionContext(3.1).neighbors.find(actor=>actor.id==='hyacinth');
+ assert.notDeepEqual(detoured,before,'A placed obstacle must immediately change the predicted route.');
+ const removed=edit.remove(placed.selectedKey);
+ assert.equal(removed.revision,2);
+ const restored=edit.protectionContext(3.1).neighbors.find(actor=>actor.id==='hyacinth');
+ assert.deepEqual(restored,before,'Removing the obstacle must restore the original route prediction.');
+ assert.equal(removed.sourceUnchanged,true);
 });
