@@ -3,9 +3,9 @@ const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext(
 // Practically unbounded horizontal world; nearby ground is drawn around the player each frame.
 const WORLD_LIMIT=1000000000,MAX_BLOCKS=18000,MAX_BUCKET_ITEMS=120,STORE_KEY='diycraft_peaceful_voxel_v1';
 const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000;
-const SAVE_GZIP_PREFIX='DIYCraft:gzip:v1:',SAVE_DEBOUNCE_MS=450;
+const SAVE_GZIP_PREFIX='DIYCraft:gzip:v1:',SAVE_DEBOUNCE_MS=450,MAX_BACKUP_FILE_BYTES=24*1024*1024;
 async function gzipBytes(text){
- if(typeof CompressionStream!=='function')return null;
+ if(typeof CompressionStream!=='function'||typeof DecompressionStream!=='function')return null;
  try{
   const stream=new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
@@ -228,7 +228,7 @@ function validWorld(d){
    return saved;
   });
  }
- if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&a.data.startsWith('data:image/png;base64,')&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
+ if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(a.data)&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
  if(d.animalCare&&typeof d.animalCare==='object'){for(const [id,count] of Object.entries(d.animalCare).slice(0,200)){if(/^[a-zA-Z0-9_-]{1,40}$/.test(id))w.animalCare[id]=Math.max(0,Math.min(999,Number(count)||0));}}
  return w;
 }
@@ -2757,6 +2757,7 @@ $('applyTileDesign').addEventListener('click',()=>{
 function renderRecipes(){const root=$('recipes');root.replaceChildren();RECIPES.forEach(r=>{const card=document.createElement('div');card.className='recipe';const title=document.createElement('strong');title.textContent=r.icon+' '+r.name;const desc=document.createElement('p');desc.textContent=r.desc+' Materials: '+Object.entries(r.cost).map(([k,v])=>(ITEM_META[k]?.name||k)+' ×'+v).join(', ');const btn=document.createElement('button');btn.textContent='Craft';btn.addEventListener('click',()=>{const ok=Object.entries(r.cost).every(([id,n])=>world.materials.reduce((s,v)=>s+(v&&v.id===id?v.count:0),0)>=n);if(!ok){showStatus('Collect the listed materials first.');return;}if(!world.crafted.some(v=>!v)&&!world.crafted.some(v=>v&&v.id===r.id&&v.count<99)){showStatus('Your crafted pouch is full.');return;}for(const [id,n] of Object.entries(r.cost)){let left=n;for(const slot of world.materials){if(slot&&slot.id===id){const take=Math.min(left,slot.count);slot.count-=take;left-=take;if(slot.count===0)world.materials[world.materials.indexOf(slot)]=null;if(!left)break;}}}if(!addItem(r.id,'crafted')){showStatus('Your crafted pouch is full.');return;}save();renderSlots();showStatus(r.name+' crafted.');});card.append(title,desc,btn);root.append(card);});}
 async function downloadBackup(){
  try{
+  if(storageReadFailed){showStatus('The existing saved data is protected. Restore a valid backup before exporting this temporary world.');return;}
   save();
   const snapshot=JSON.stringify(world),compressed=await gzipBytes(snapshot);
   const useGzip=!!compressed&&compressed.length<new Blob([snapshot]).size;
@@ -2768,6 +2769,7 @@ async function downloadBackup(){
  }catch(e){showStatus('The backup could not be prepared. Your current world remains open.');}
 }
 async function restoreBackup(file){if(!file)return;try{
+  if(file.size>MAX_BACKUP_FILE_BYTES)throw new Error('Backup file exceeds the safe import size limit.');
   const bytes=new Uint8Array(await file.arrayBuffer());
   const raw=bytes.length>2&&bytes[0]===0x1f&&bytes[1]===0x8b?await gunzipBytes(bytes):new TextDecoder().decode(bytes);
   const parsed=JSON.parse(raw),restored=validWorld(parsed);
@@ -3034,6 +3036,6 @@ function prepareOfflinePlay(){
 
 // Keep one local autosave. No gameplay networking, analytics, third-party scripts or multiplayer.
 makeTexturePatterns();makeTileTexturePatterns();rebuildLookup();$('worldName').value=world.name;$('timeOfDay').value=world.timeMode||'day';$('customColor').value=world.customBlock.color;globalBlockSpectrumPicker?.setColor(world.customBlock.color);draftCustomColor=world.customBlock.color;draftCustomTexture=world.customBlock.texture;renderCustomTextureChoices();renderCustomColorSwatches();renderCustomPreview();world.materials[0]=world.materials[0]||{id:'seed',count:12};world.materials[1]=world.materials[1]||{id:'wood',count:12};world.materials[2]=world.materials[2]||{id:'stone',count:6};world.materials[3]=world.materials[3]||{id:'apple',count:4};world.materials[4]=world.materials[4]||{id:'bread',count:3};world.materials[5]=world.materials[5]||{id:'milk',count:2};renderHotbar();clearArt();save();
-window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{lastTime=0;frameAccumulator=0;if(document.visibilityState==='hidden')flushSaveSync();});window.addEventListener('pagehide',flushSaveSync);window.addEventListener('beforeunload',flushSaveSync);setInterval(()=>{if(saveRevision>savedRevision&&!saveTimer&&!saveInFlight)void persistLatestWorld();},12000);requestAnimationFrame(loop);prepareOfflinePlay();
+window.addEventListener('resize',render);document.addEventListener('visibilitychange',()=>{lastTime=0;frameAccumulator=0;if(document.visibilityState==='hidden')flushSaveSync();else save();});window.addEventListener('pagehide',flushSaveSync);window.addEventListener('beforeunload',flushSaveSync);setInterval(()=>{if(saveRevision>savedRevision&&!saveTimer&&!saveInFlight)void persistLatestWorld();},12000);requestAnimationFrame(loop);prepareOfflinePlay();
 })();
 
