@@ -195,6 +195,15 @@
   }
   return out;
  }
+ function normalizeAnimalCare(source){
+  const out={sheep:0,cat_mochi:0,dog_buddy:0,cow_bessie:0,horse_spirit:0,bird_chirpy:0,giraffe_raffy:0};
+  if(!isObject(source))return out;
+  for(const [id,count] of Object.entries(source).slice(0,200)){
+   if(!/^[a-zA-Z0-9_-]{1,40}$/.test(id))continue;
+   out[id]=Math.max(0,Math.min(999,Number(count)||0));
+  }
+  return out;
+ }
  function normalizeAnimals(source){
   const out=[];
   if(!Array.isArray(source))return out;
@@ -255,7 +264,7 @@
    timeMode:TIME_MODES.has(world.timeMode)?world.timeMode:'day',
    player:normalizePlayer(world.player),
    customBlock,doorDesign,tileDesign,solidStyles,styledSolidTypes,
-   blocks,excavations,water,fish,animals,bucket,materials,crafted,artworks,
+   blocks,excavations,water,fish,animals,animalCare:normalizeAnimalCare(world.animalCare),bucket,materials,crafted,artworks,
    counts:{
     blocks:blocks.length,excavations:excavations.length,
     water:water.length,fish:fish.length,animals:animals.length,bucket:bucket.length,artworks:artworks.length
