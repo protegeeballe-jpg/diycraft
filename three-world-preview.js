@@ -3,11 +3,11 @@
 (function(){
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
-const painterly=window.DIYCraftPainterlyMaterials;
+const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile;
 const canvas=document.getElementById('three-world');
 const status=document.getElementById('counts');
 const errorPanel=document.getElementById('error');
-if(!THREE||!adapter||!painterly)throw new Error('A required local DIYCraft Three.js migration module did not load.');
+if(!THREE||!adapter||!painterly||!performanceProfiles)throw new Error('A required local DIYCraft Three.js migration module did not load.');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xf2ead9);
 scene.fog=new THREE.Fog(0xf2ead9,34,78);
@@ -24,25 +24,27 @@ function positionCamera(){
  camera.lookAt(target);
 }
 positionCamera();
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
+const performanceProfile=performanceProfiles.select(deviceSignals),frameGate=performanceProfiles.createFrameGate(performanceProfile.fpsCap);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:performanceProfile.antialias,alpha:false,powerPreference:'low-power'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,performanceProfile.maxPixelRatio));
 renderer.setSize(window.innerWidth,window.innerHeight,false);
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=.96;
-renderer.shadowMap.enabled=true;
+renderer.shadowMap.enabled=performanceProfile.shadows;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.setClearColor(0xf2ead9,1);
 scene.add(new THREE.HemisphereLight(0xfff7e9,0x788b70,.78));
 const sun=new THREE.DirectionalLight(0xfff0d5,1.05);
-sun.position.set(-14,23,16);sun.castShadow=true;
-sun.shadow.mapSize.set(1536,1536);
+sun.position.set(-14,23,16);sun.castShadow=performanceProfile.shadows;
+sun.shadow.mapSize.set(performanceProfile.shadows?1536:1,performanceProfile.shadows?1536:1);
 sun.shadow.camera.left=-25;sun.shadow.camera.right=25;
 sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;
 sun.shadow.bias=-.00025;scene.add(sun);
 const fill=new THREE.DirectionalLight(0xc5d9e8,.24);
 fill.position.set(12,9,-15);scene.add(fill);
-const palette=painterly.create(THREE,renderer);
+const palette=painterly.create(THREE,renderer,performanceProfile);
 const sharedGeometry={
  cube:new THREE.BoxGeometry(1,1,1),
  tile:new THREE.BoxGeometry(1,.13,1),
@@ -259,7 +261,7 @@ function buildWorld(snapshot,originalJson){
   geometryCount:renderer.info.memory.geometries,
   instanceGroups:blockInstances.size,
   sourceUnchanged:JSON.stringify(originalJson)===JSON.stringify(window.__DIYCRAFT_ORIGINAL_WORLD__),
-  frames:0,drawCalls:0
+  frames:0,drawCalls:0,performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize}
  };
  return {water,player};
 }
@@ -282,11 +284,12 @@ canvas.addEventListener('wheel',event=>{
 window.addEventListener('resize',()=>{
  camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
  renderer.setSize(window.innerWidth,window.innerHeight,false);
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,performanceProfile.maxPixelRatio));
 });
 let waterMesh=null,last=performance.now(),elapsed=0;
 function animate(now){
  requestAnimationFrame(animate);
+ if(!frameGate.shouldRender(now))return;
  const dt=Math.min(.05,(now-last)/1000||0);last=now;elapsed+=dt;
  for(const item of animated){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(elapsed*1.25+item.phase)*.075;
@@ -326,7 +329,7 @@ async function start(){
   status.textContent=
    snapshot.name+' · '+snapshot.counts.blocks+' blocks · '+renderedPlants+
    ' plants · '+snapshot.counts.animals+' animals · '+palette.materialCount+
-   ' painterly materials';
+   ' painterly materials · '+performanceProfile.tier+' quality';
   requestAnimationFrame(animate);
  }catch(error){
   errorPanel.style.display='block';
