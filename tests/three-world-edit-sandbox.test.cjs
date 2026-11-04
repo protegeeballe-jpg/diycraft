@@ -207,12 +207,12 @@ test('excavates ground one layer at a time and recovers dirt into both inventori
  const world=fixture();world.materials=Array.from({length:60},()=>null);
  const edit=sandbox.create(world);
  const first=edit.excavateGround(10,10);
- assert.deepEqual(first.world.excavations.find(cell=>cell[0]===10&&cell[1]===10),[10,10,1]);
+ assert.deepEqual(first.world.excavations.find(cell=>cell.x===10&&cell.z===10),{x:10,z:10,depth:1});
  assert.deepEqual(first.world.bucket[0],{type:'dirt',color:'#9a7049',texture:'dirt'});
  assert.deepEqual(first.world.materials[0],{id:'dirt',count:1,label:''});
  assert.equal(first.revision,1);
  const second=edit.excavateGround(10,10);
- assert.deepEqual(second.world.excavations.find(cell=>cell[0]===10&&cell[1]===10),[10,10,2]);
+ assert.deepEqual(second.world.excavations.find(cell=>cell.x===10&&cell.z===10),{x:10,z:10,depth:2});
  assert.equal(second.world.bucket.length,2);
  assert.deepEqual(second.world.materials[0],{id:'dirt',count:2,label:''});
  assert.equal(second.revision,2);
