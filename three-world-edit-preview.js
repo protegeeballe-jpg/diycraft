@@ -548,7 +548,8 @@ async function start(){
  playerPhysicsEnvironment={
   groundDepthAt:(x,z)=>sandbox.groundDepthAt(x,z),
   surfaceHeightAt:(x,z,y)=>sandbox.surfaceHeightAt(x,z,y),
-  playerCollisionAt:(x,z,y)=>sandbox.playerCollisionAt(x,z,y)
+  playerCollisionAt:(x,z,y)=>sandbox.playerCollisionAt(x,z,y),
+  nudgePlayer:player=>sandbox.nudgePlayerOutOfBlocks(player)
  };
  playerModelRoot=playerModelFactory.create(THREE,materials,playerPhysicsState.player,performanceProfile.shadows);
  scene.add(playerModelRoot);updatePlayerModel();syncPlayerButtons();
