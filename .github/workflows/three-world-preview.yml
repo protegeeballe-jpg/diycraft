@@ -21,6 +21,7 @@ on:
       - js/three-player-physics.js
       - js/three-player-camera.js
       - js/three-player-model.js
+      - js/three-neighbor-model.js
       - js/three-world-protection.js
       - js/three-animal-geometry.js
       - three-world-edit-preview.html
