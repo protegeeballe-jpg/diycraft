@@ -55,9 +55,11 @@ function productionFillHarness(world,selectedType='grass',selectedBucketItem=nul
   'addBlock','groundDepths','excavationRenderChunks','removeRenderChunkItem','waterLevels','waterCells',
   'waterRenderChunks','rebuildFishRenderChunks','syncExcavations','syncWaterLife',
   'invalidateNeighborNavigation','save','render','blockMap','initialFishSpots',
-  'let fishSpots=initialFishSpots;\\n'+
-  'const fill=('+source.slice(start,end).trim()+');\\n'+
-  'return {run:(...args)=>fill(...args),getFishSpots:()=>fishSpots};'
+  [
+   'let fishSpots=initialFishSpots;',
+   'const fill=('+source.slice(start,end).trim()+');',
+   'return {run:(...args)=>fill(...args),getFishSpots:()=>fishSpots};'
+  ].join('\\n')
  )(
   {clientWidth:100,clientHeight:100},()=>null,(x,z)=>groundDepths.get(keyGround(x,z))||0,keyGround,
   world,selectedType,18000,()=>{},add,groundDepths,new Map(),()=>{},waterLevels,waterCells,new Map(),
