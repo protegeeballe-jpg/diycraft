@@ -11,10 +11,12 @@ const iconSvg = fs.readFileSync('diycraft-icon.svg', 'utf8');
  // saved color values and existing animation entry points in the regression suite.
 const painterlyRequirements = [
   ['cached watercolor/pencil texture generator', 'function drawPainterlySurfaceFinish('],
+  ['more visible colored-pencil shading strokes', 'for(let i=0;i<58;i++)'],
+  ['fine hand-pencil detail strokes', 'for(let i=0;i<24;i++)'],
   ['single cached whole-scene paper pattern', 'const painterlyCanvasPattern=(()=>{'],
   ['whole-scene finish is applied during rendering', 'paintPainterlyCanvasOverlay(w,h);'],
-  ['material textures receive the finish', 'drawPainterlySurfaceFinish(c,painterlySeed(id),.82)'],
-  ['tile patterns receive the finish', "drawPainterlySurfaceFinish(c,painterlySeed('tile-'+design.id),.68)"],
+  ['material textures receive the finish', 'drawPainterlySurfaceFinish(c,painterlySeed(id),.98)'],
+  ['tile patterns receive the finish', "drawPainterlySurfaceFinish(c,painterlySeed('tile-'+design.id),.90)"],
   ['existing tile color picker remains active', "tileSpectrumPicker=bindSpectrumPicker('tile','tileColor',setDraftTileColor)"],
   ['existing tile hex color handling remains active', 'function setDraftTileColor(color)'],
   ['existing custom block color picker remains active', "customBlockSpectrumPicker=bindSpectrumPicker('customBlock','customBlockColor',setDraftCustomColor)"],
@@ -26,7 +28,7 @@ for (const [label, snippet] of painterlyRequirements) {
   assert(source.includes(snippet), `The watercolor/pencil theme must preserve ${label}.`);
 }
 assert(source.includes('function paintPainterlyCanvasOverlay(width,height)') &&
-       source.includes('ctx.globalAlpha=.82;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height)'),
+       source.includes('ctx.globalAlpha=.90;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height)'),
   'The painterly finish must use its prebuilt canvas pattern, not per-frame image filters.');
 const helperStart = source.indexOf('function renderChunkKey');
 const helperEnd = source.indexOf('function rebuildFishRenderChunks', helperStart);
