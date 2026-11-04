@@ -1,0 +1,32 @@
+name: DIYCraft Three.js migration guard
+
+on:
+  push:
+    branches:
+      - three-js-migration
+    paths:
+      - js/three-world-adapter.js
+      - tests/three-world-adapter.test.cjs
+      - THREE_JS_MIGRATION.md
+      - .github/workflows/three-migration-guard.yml
+  pull_request:
+    paths:
+      - js/three-world-adapter.js
+      - tests/three-world-adapter.test.cjs
+      - THREE_JS_MIGRATION.md
+      - .github/workflows/three-migration-guard.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run read-only world adapter regression tests
+        run: node tests/three-world-adapter.test.cjs
