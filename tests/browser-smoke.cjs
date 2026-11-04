@@ -20,7 +20,41 @@ async function verifyGame(page, label) {
   await page.waitForTimeout(1000);
 
   if (label === 'local') {
-    const initial = await page.evaluate(async () => {
+    const initial = await page.evaluate
+async function verifyOfflinePlay(browser) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.stack || error.message));
+  try {
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 60000 });
+    await page.waitForFunction(() => document.getElementById('game')?.width > 100, { timeout: 15000 });
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 20000 });
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      if (!registration.active || registration.active.state !== 'activated') {
+        throw new Error('The DIYCraft offline worker did not activate.');
+      }
+    });
+    await context.setOffline(true);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.waitForFunction(() => document.getElementById('game')?.width > 100, { timeout: 10000 });
+    const state = await page.locator('#game').evaluate(canvas => ({
+      width: canvas.width,
+      height: canvas.height,
+      ready: !!canvas.getContext('2d')
+    }));
+    if (state.width < 100 || state.height < 100 || !state.ready) {
+      throw new Error('DIYCraft did not reopen from its offline cache: ' + JSON.stringify(state));
+    }
+    if (errors.length) throw new Error('Offline browser runtime errors:\n' + errors.join('\n\n'));
+    console.log('local offline reopen test passed. Canvas: ' + JSON.stringify(state));
+  } finally {
+    await context.close();
+  }
+}
+
+(async () => {
       const key = 'diycraft_peaceful_voxel_v1';
       const prefix = 'DIYCraft:gzip:v1:';
       const stored = localStorage.getItem(key);
@@ -65,6 +99,15 @@ async function verifyGame(page, label) {
     : backupBytes.toString('utf8');
   const backupWorld = JSON.parse(backupJson);
   if (!Array.isArray(backupWorld.blocks)) throw new Error(label + ': backup file did not contain a valid world.');
+
+  if (label === 'local') {
+    await page.setInputFiles('#restoreInput', {
+      name: backupDownload.suggestedFilename(),
+      mimeType: 'application/gzip',
+      buffer: backupBytes
+    });
+    await page.waitForFunction(() => document.getElementById('status')?.textContent === 'World backup restored.', { timeout: 10000 });
+  }
   await page.locator('#menuShade [data-close]').first().click();
 
   const canvas = page.locator('#game');
@@ -137,6 +180,7 @@ async function verifyGame(page, label) {
   try {
     const context = await browser.newContext({ serviceWorkers: 'block' });
     await verifyGame(await context.newPage(), 'local');
+    await verifyOfflinePlay(browser);
     await verifyGame(await context.newPage(), 'live');
   } finally {
     await browser.close();
