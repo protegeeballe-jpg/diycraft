@@ -13,10 +13,12 @@ on:
       - js/three-performance-profile.js
       - js/three-plant-geometry.js
       - js/three-player-physics.js
+      - js/three-player-camera.js
       - tests/three-door-motion.test.cjs
       - tests/three-door-model.test.cjs
       - tests/three-performance-profile.test.cjs
       - tests/three-player-physics.test.cjs
+      - tests/three-player-camera.test.cjs
       - tests/three-world-adapter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-world-raycast.test.cjs
@@ -56,5 +58,7 @@ jobs:
         run: node tests/three-performance-profile.test.cjs
       - name: Run deterministic player physics parity tests
         run: node tests/three-player-physics.test.cjs
+      - name: Run first-person and third-person camera parity tests
+        run: node tests/three-player-camera.test.cjs
       - name: Compare Canvas 2D and Three.js placement behavior
         run: node tests/three-world-canvas-parity.test.cjs
