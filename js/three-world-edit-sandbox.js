@@ -149,6 +149,29 @@
    if(index<0)return false;
    slots[index]={id,count:1,label};return true;
   }
+  function animalStates(timeSeconds){
+   if(!protectionApi||typeof protectionApi.animalStates!=='function')return [];
+   return protectionApi.animalStates(world,timeSeconds);
+  }
+  function careForAnimal(animalId,action){
+   const actions={
+    snack:{emoji:'🍎',message:'A tasty snack. '},
+    water:{emoji:'💧',message:'Fresh water. '},
+    brush:{emoji:'✨',message:'A gentle brush. '},
+    play:{emoji:'💚',message:'A little playtime. '}
+   };
+   if(typeof animalId!=='string'||!/^[a-zA-Z0-9_-]{1,40}$/.test(animalId))
+    throw new TypeError('Choose a valid animal friend.');
+   const info=actions[action];
+   if(!info)throw new TypeError('Choose a supported animal-care activity.');
+   if(!animalStates(0).some(animal=>animal.id===animalId))
+    throw new Error('That animal is not available in this world.');
+   if(!object(world.animalCare))world.animalCare={};
+   const current=Math.max(0,Math.min(999,Number(world.animalCare[animalId])||0));
+   world.animalCare[animalId]=Math.min(999,current+1);
+   revision++;
+   return state();
+  }
   function saveArtwork(name,data,neighborName=''){
    if(!Array.isArray(world.artworks))world.artworks=[];
    if(world.artworks.length>=20)throw new RangeError('Gallery is full. Export a backup first.');
@@ -337,7 +360,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,animalStates,careForAnimal,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
