@@ -60,6 +60,55 @@
    }
    c.restore();
   }
+  if(kind.startsWith('door-')){
+   const style=kind.slice(5),sx=size/256;
+   const px=x=>x/.84*size,py=y=>(1.96-y)/1.96*size;
+   const rect=(x,y,w,h,fill)=>{
+    const left=px(x),right=px(x+w),top=py(y+h),bottom=py(y);
+    c.fillStyle=fill;c.fillRect(left,top,right-left,bottom-top);
+   };
+   const line=(x1,y1,x2,y2,color,width)=>{
+    c.strokeStyle=color;c.lineWidth=Math.max(.8,width*sx);c.beginPath();c.moveTo(px(x1),py(y1));c.lineTo(px(x2),py(y2));c.stroke();
+   };
+   const panel=(x,y,w,h)=>{
+    rect(x,y,w,h,'rgba(75,48,31,.78)');
+    rect(x+.035,y+.035,w-.07,h-.07,'rgba(219,170,112,.64)');
+    rect(x+.055,y+.055,w-.11,h-.11,'rgba(137,84,48,.35)');
+   };
+   c.save();c.lineJoin='round';c.lineCap='round';
+   // Two inset panels are mirrored on both sides of the physical door by the box UVs.
+   if(style==='window'){
+    panel(.15,.18,.54,.58);
+    rect(.15,1.10,.54,.56,'rgba(91,59,39,.94)');
+    rect(.18,1.14,.48,.48,'rgba(134,195,210,.94)');
+    // Gentle watercolor reflections across the upper glass pane.
+    const glass= c.createLinearGradient(px(.18),py(1.62),px(.66),py(1.14));
+    glass.addColorStop(0,'rgba(241,250,239,.44)');glass.addColorStop(.48,'rgba(158,219,227,.08)');glass.addColorStop(1,'rgba(89,156,183,.35)');
+    rect(.18,1.14,.48,.48,glass);
+    line(.405,1.14,.405,1.62,'rgba(246,235,205,.95)',.045);
+    line(.18,1.38,.66,1.38,'rgba(246,235,205,.95)',.045);
+    line(.18,1.10,.66,1.10,'rgba(91,59,39,.95)',.035);
+    line(.18,1.66,.66,1.66,'rgba(91,59,39,.95)',.035);
+   }else{
+    panel(.13,.18,.58,.66);
+    panel(.13,1.08,.58,.66);
+    if(style==='garden'){
+     const cx=.43,cy=1.43,petal='#e78baa',light='#f2c4d5';
+     for(let i=0;i<8;i++){
+      const a=i*Math.PI/4,x=cx+Math.cos(a)*.095,y=cy+Math.sin(a)*.095;
+      c.fillStyle=i%2?light:petal;c.beginPath();c.ellipse(px(x),py(y),size*.034,size*.018,-a,0,Math.PI*2);c.fill();
+     }
+     c.fillStyle='#f3d36c';c.beginPath();c.arc(px(cx),py(cy),size*.017,0,Math.PI*2);c.fill();
+     c.strokeStyle='rgba(255,243,213,.85)';c.lineWidth=Math.max(.65,sx*.9);
+     c.beginPath();c.arc(px(cx),py(cy),size*.09,0,Math.PI*2);c.stroke();
+    }
+   }
+   // A small brass handle and two hinge accents remain legible on each style.
+   c.fillStyle='rgba(239,199,104,.96)';c.beginPath();c.arc(px(.70),py(.88),Math.max(1.8,size*.012),0,Math.PI*2);c.fill();
+   c.fillStyle='rgba(255,235,172,.66)';c.beginPath();c.arc(px(.695),py(.89),Math.max(1,size*.004),0,Math.PI*2);c.fill();
+   for(const y of [.28,1.55])rect(.018,y,.034,.12,'rgba(83,56,39,.74)');
+   c.restore();
+  }
   // Visible colored-pencil hatching with varying stroke length, pressure and direction.
   c.lineCap='round';c.lineJoin='round';
   const pencilCount=Math.max(180,Math.round((kind==='paper'?1050:840)*pencilScale));
