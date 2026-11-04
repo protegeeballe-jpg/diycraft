@@ -1,7 +1,7 @@
 /* Dynamic DIYCraft neighbor/animal digging protection.
-   Home rectangles and proximity thresholds match Canvas 2D. Route positions are
-   predicted along the authored waypoint legs; full obstacle-aware NPC path
-   parity remains part of the later NPC-navigation increment. */
+   Home rectangles, proximity thresholds, active route schedules, and obstacle-
+   aware path timing follow Canvas 2D. Navigation is rebuilt from each isolated
+   sandbox world revision; no production world or storage is touched. */
 (function(root,factory){
  'use strict';
  const api=factory();
