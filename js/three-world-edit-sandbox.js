@@ -28,6 +28,11 @@
   if(!object(snapshot)||!Array.isArray(snapshot.blocks))throw new TypeError('A Three.js world snapshot is required.');
   const sourceBefore=JSON.stringify(snapshot);
   const world=clone(snapshot);
+  for(const target of ['materials','crafted']){
+   const slots=Array.isArray(world[target])?world[target].slice(0,MAX_INVENTORY_SLOTS):[];
+   while(slots.length<MAX_INVENTORY_SLOTS)slots.push(null);
+   world[target]=slots;
+  }
   let revision=0,selectedKey=null,selectedBucketItem=null,selectedBucketItemIndex=null,nextId=world.blocks.length;
   const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
   world.blocks.forEach(block=>{
