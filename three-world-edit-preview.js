@@ -257,6 +257,15 @@ document.getElementById('add').addEventListener('click',()=>{try{addBeside();}ca
 document.getElementById('remove').addEventListener('click',()=>{if(selected){try{renderSandbox(sandbox.remove(selected));}catch(error){status.textContent=error.message;}}});
 document.getElementById('door').addEventListener('click',()=>{try{renderSandbox(sandbox.toggleDoor(selected));}catch(e){status.textContent=e.message;}});
 document.getElementById('apply-pattern').addEventListener('click',()=>{try{renderSandbox(sandbox.setTilePattern(selected,document.getElementById('pattern').value));}catch(e){status.textContent=e.message;}});
+function waterCellInput(){
+ const xValue=document.getElementById('water-x').value.trim(),zValue=document.getElementById('water-z').value.trim();
+ const x=Number(xValue),z=Number(zValue);
+ if(!xValue||!zValue||!Number.isInteger(x)||!Number.isInteger(z))throw new TypeError('Enter whole-number X and Z coordinates for the pool.');
+ return {x,z};
+}
+document.getElementById('water-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
+document.getElementById('water-collect').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.collectWaterLayer(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
+document.getElementById('fish-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addFish(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
 let pointerDown=null;
 canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId,moved:false};canvas.setPointerCapture(event.pointerId);});
 canvas.addEventListener('pointermove',event=>{
@@ -271,7 +280,7 @@ canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
 canvas.addEventListener('wheel',event=>{event.preventDefault();orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));});
 let frame=0;
-function animate(now){requestAnimationFrame(animate);if(!frameGate.shouldRender(now))return;updateDoorAnimations(now);for(const item of animatedPlants){if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;}renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__){window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;}}
+function animate(now){requestAnimationFrame(animate);if(!frameGate.shouldRender(now))return;updateDoorAnimations(now);updateWaterAndFish(now);for(const item of animatedPlants){if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;}renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__){window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;}}
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
