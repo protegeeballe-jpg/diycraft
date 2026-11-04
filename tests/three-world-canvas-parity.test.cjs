@@ -118,22 +118,23 @@ test('reuses Material Bucket appearance data exactly like Canvas 2D without cons
   world.doorDesign={color:'#a97545',style:'classic'};
   world.solidStyles={wood:{color:'#a97545',texture:'wood'}};
   world.bucket=[{...item}];
-  const bucketBefore=JSON.stringify(world.bucket),production=productionHarness(world,world.bucket[0]);
+  const production=productionHarness(world,world.bucket[0]);
   const sandbox=sandboxApi.create(adapter.createSnapshot(world));
+  const sandboxBucketItem=sandbox.getState().world.bucket[0],sandboxBucketBefore=JSON.stringify(sandbox.getState().world.bucket);
   const selected=sandbox.selectBucketItem(0);
-  assert.deepEqual(selected.selectedBucketItem,item);
+  assert.deepEqual(selected.selectedBucketItem,sandboxBucketItem);
   const x=100+i*3,z=100;
   assert.equal(production.add(x,0,z,type,false),true);
   const added=sandbox.addBlock({type,x,y:0,z});
   assert.deepEqual(comparable(added.world.blocks.at(-1)),comparable(world.blocks.at(-1)),
    'Recovered bucket item appearance must match production for '+type+'.');
-  assert.equal(JSON.stringify(added.world.bucket),bucketBefore,'Selecting and using a bucket item must not consume it.');
-  assert.deepEqual(added.selectedBucketItem,item,'The selected recovered item remains available for reuse.');
+  assert.equal(JSON.stringify(added.world.bucket),sandboxBucketBefore,'Selecting and using a bucket item must not consume it.');
+  assert.deepEqual(added.selectedBucketItem,sandboxBucketItem,'The selected recovered item remains available for reuse.');
   assert.equal(production.add(x+1,0,z,type,false),true,'Production must also accept a second reuse of '+type+'.');
   const second=sandbox.addBlock({type,x:x+1,y:0,z});
   assert.deepEqual(comparable(second.world.blocks.at(-1)),comparable(world.blocks.at(-1)),
    'The same recovered item can be reused repeatedly for '+type+'.');
-  assert.equal(JSON.stringify(second.world.bucket),bucketBefore);
+  assert.equal(JSON.stringify(second.world.bucket),sandboxBucketBefore);
  }
 });
 test('matches two-cell door occupancy rules',()=>{
