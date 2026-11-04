@@ -138,6 +138,38 @@ test('plants remain pass-through while closed doors block and open doors release
  assert.equal(edit.isMovementSolidAt(door.x,door.y,door.z),false);
  assert.equal(edit.isMovementSolidAt(23,1,20),false,'The door upper clearance remains non-blocking when open.');
 });
+test('player capsule collision matches tile step-height, body-height and radius rules',()=>{
+ const edit=sandbox.create(fixture());
+ assert.equal(edit.playerCollisionAt(.5,.5,0),true,'A player standing inside a full solid block must collide.');
+ assert.equal(edit.playerCollisionAt(-.23,.5,0),false,'Exact tangency at the player radius is not penetration.');
+ assert.equal(edit.playerCollisionAt(-.22,.5,0),true,'A sub-radius overlap with a solid block must collide.');
+ assert.equal(edit.playerCollisionAt(2.5,.5,0),false,'A decorative tile below the 0.18 step allowance must not block walking.');
+ assert.equal(edit.playerCollisionAt(2.5,.5,-.2),true,'A tile slab above the player step allowance must collide.');
+ assert.equal(edit.playerCollisionAt(2.5,.5,.16),false,'The player body must clear a tile when feet are above its top.');
+ assert.throws(()=>edit.playerCollisionAt(NaN,0,0),/finite/);
+});
+test('player capsule collision treats plants as pass-through and doors as closed/open two-cell obstacles',()=>{
+ const world=fixture();
+ world.blocks.push(
+  {key:'block-plant',type:'flower',x:3,y:0,z:0},
+  {key:'block-grass',type:'tall_grass',x:4,y:0,z:0}
+ );
+ const edit=sandbox.create(world);
+ assert.equal(edit.playerCollisionAt(3.5,.5,0),false);
+ assert.equal(edit.playerCollisionAt(4.5,.5,0),false);
+ assert.equal(edit.playerCollisionAt(1.5,.5,0),true,'Closed door lower half must block.');
+ assert.equal(edit.playerCollisionAt(1.5,.5,1),true,'Closed door upper half must block the player capsule.');
+ edit.toggleDoor('block-1');
+ assert.equal(edit.playerCollisionAt(1.5,.5,0),false,'Opening a door releases lower collision.');
+ assert.equal(edit.playerCollisionAt(1.5,.5,1),false,'Opening a door releases upper collision.');
+});
+test('player capsule collision respects the excavated terrain floor and its radius',()=>{
+ const edit=sandbox.create(fixture());
+ assert.equal(edit.playerCollisionAt(8.5,8.5,-2.5),true,'The player must not pass below the dug pool floor.');
+ assert.equal(edit.playerCollisionAt(8.5,8.5,-1.9),false,'The player may occupy the excavation above its floor.');
+ assert.equal(edit.playerCollisionAt(7.77,8.5,-2.5),false,'Exact-radius distance beyond the excavation edge does not overlap.');
+ assert.equal(edit.playerCollisionAt(7.78,8.5,-2.5),true,'The player capsule cannot clip through the edge of the excavation floor.');
+});
 test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
  const edit=sandbox.create(fixture());
  assert.throws(()=>edit.addFish(8,8),/Add water/);
