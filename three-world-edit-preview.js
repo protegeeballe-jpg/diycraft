@@ -26,7 +26,7 @@ const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometr
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
 const animatedPlants=[],animalSurfaceMaterial=materials.get('#ffffff','paper');
 animalSurfaceMaterial.vertexColors=true;animalSurfaceMaterial.needsUpdate=true;
-let animalBatches=[],renderedAnimalCount=0,animalStatesCache=[],animalCareSelection=null,animalCareFlashUntil=0,animalCareFlashEmoji='💚';
+let animalBatches=[],renderedAnimalCount=0,animalStatesCache=[],animalCareSelection=null,animalCareFlashUntil=0,animalCareFlashEmoji='💚',animalCareFlashAnimalId=null;
 const residentAnimalIds=new Set(protection.RESIDENTS.map(animal=>animal.id));
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const fishGeometry=new THREE.BufferGeometry();
@@ -486,7 +486,7 @@ function openAnimalCare(animal){
  animalCareShade.hidden=false;
 }
 function closeAnimalCare(){
- animalCareShade.hidden=true;animalCareSelection=null;animalCareFlashUntil=0;animalCareFlash.hidden=true;
+ animalCareShade.hidden=true;animalCareSelection=null;
 }
 function careForSelectedAnimal(action){
  if(!animalCareSelection)return;
@@ -503,12 +503,14 @@ function careForSelectedAnimal(action){
   document.getElementById('animal-care-feedback').textContent=info.message;
   document.getElementById('animal-care-note').textContent=animalCareSelection.name+' has enjoyed '+count+' caring moments with you.';
   status.textContent=info.message;
-  animalCareFlashEmoji=info.emoji;animalCareFlashUntil=performance.now()+1900;
+  animalCareFlashEmoji=info.emoji;animalCareFlashAnimalId=animalCareSelection.id;animalCareFlashUntil=performance.now()+1900;
  }catch(error){document.getElementById('animal-care-feedback').textContent=error.message;}
 }
 function updateAnimalCareFlash(now){
- if(!animalCareSelection||now>=animalCareFlashUntil){animalCareFlash.hidden=true;return;}
- const actor=animalStatesCache.find(animal=>animal.id===animalCareSelection.id);
+ if(!animalCareFlashAnimalId||now>=animalCareFlashUntil){
+  animalCareFlash.hidden=true;animalCareFlashAnimalId=null;return;
+ }
+ const actor=animalStatesCache.find(animal=>animal.id===animalCareFlashAnimalId);
  if(!actor){animalCareFlash.hidden=true;return;}
  const point=projectAnimalPick({
   x:actor.x+.22,y:actor.y+(actor.species==='giraffe'?1.65:1.12),z:actor.z
