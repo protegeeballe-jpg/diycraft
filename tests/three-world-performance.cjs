@@ -63,6 +63,35 @@ function freshWorld(){
    textureCount:state.world.textureCount,profile:state.world.performanceProfile,
    canvas:state.canvas,storageKeys:state.storageKeys
   }));
+  const editPage=await context.newPage();
+  editPage.on('pageerror',e=>errors.push(e.stack||e.message));
+  editPage.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  await editPage.goto('http://127.0.0.1:4177/three-world-edit-preview.html',{waitUntil:'networkidle',timeout:60000});
+  await editPage.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>3,null,{timeout:30000});
+  await editPage.waitForTimeout(500);
+  const editState=await editPage.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
+  assert.equal(editState.performanceProfile.tier,'low');
+  assert.equal(editState.blockCount,world.blocks.length);
+  assert.equal(editState.renderedBlocks,world.blocks.length,'The editable renderer must retain every large-world block.');
+  assert.ok(editState.instanceBatches>0&&editState.instanceBatches<120,
+   'The editable renderer must batch large worlds by spatial chunk and material.');
+  assert.ok(editState.renderObjects<160,'The editable renderer must not create one render object per block.');
+  assert.ok(editState.drawCalls>0&&editState.drawCalls<=110,
+   'The editable sandbox must stay within its low-end draw-call budget.');
+  assert.ok(editState.geometryCount<100,'The editable sandbox must keep GPU geometry counts bounded.');
+  assert.ok(editState.textureCount<50,'The editable sandbox must reuse and bound painterly textures.');
+  assert.ok(editState.canvasSize.width<=390&&editState.canvasSize.height<=844,
+   'The editable renderer must clamp its output canvas to the phone viewport at 3x device scale.');
+  assert.equal(editState.storageKeys,0,'The editable sandbox must never write browser storage.');
+  assert.equal(editState.sourceUnchanged,true,'The editable sandbox must leave its source snapshot unchanged.');
+  if(errors.length)throw new Error('Low-end mobile stress-test browser errors:\n'+errors.join('\n\n'));
+  console.log('Low-end mobile editable-world stress test passed: '+JSON.stringify({
+   sourceBlocks:editState.blockCount,instanceBatches:editState.instanceBatches,
+   renderObjects:editState.renderObjects,drawCalls:editState.drawCalls,
+   geometryCount:editState.geometryCount,textureCount:editState.textureCount,
+   canvas:editState.canvasSize,profile:editState.performanceProfile,
+   storageKeys:editState.storageKeys,sourceUnchanged:editState.sourceUnchanged
+  }));
   await context.close();
  }finally{await browser.close();server.kill('SIGTERM');}
 })().catch(error=>{console.error(error);process.exitCode=1;});
