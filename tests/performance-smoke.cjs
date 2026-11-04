@@ -446,6 +446,13 @@ check(iconTags.length>=5&&iconTags.every(tag=>['svg','rect','circle','path'].inc
   !['<text','<metadata','<desc','<script','<foreignobject','<image','<use','<filter','<mask'].some(tag=>iconSvg.toLowerCase().includes(tag)),
   'The application icon must remain simple local vector artwork without embedded text, metadata, scripts or linked images.');
 
+
+check(source.includes('MAX_UNCOMPRESSED_SAVE_BYTES=32*1024*1024') &&
+  source.includes('const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream(\'gzip\')).getReader()') &&
+  source.includes('if(total>MAX_UNCOMPRESSED_SAVE_BYTES)') &&
+  source.includes('Compressed backup expands beyond the safe memory limit.'),
+  'Gzip restore must stream data and stop decompression before an oversized archive exhausts a mobile device memory budget.');
+
 const colorPagesStart=source.indexOf('const COLOR_PAGES=[');
 const colorPagesEnd=source.indexOf('\nlet coloringNeighbor',colorPagesStart);
 assert(colorPagesStart>=0&&colorPagesEnd>colorPagesStart,'Built-in coloring pages must remain a distinct, locally defined asset collection.');
