@@ -235,7 +235,7 @@ function buildWorld(snapshot,originalJson){
   geometryCount:renderer.info.memory.geometries,
   instanceGroups:blockInstances.size,
   sourceUnchanged:JSON.stringify(originalJson)===JSON.stringify(window.__DIYCRAFT_ORIGINAL_WORLD__),
-  frames:0,drawCalls:0,performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize}
+  frames:0,drawCalls:0,performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,waterAnimationFps:performanceProfile.waterAnimationFps}
  };
  return {water,player};
 }
@@ -260,7 +260,7 @@ window.addEventListener('resize',()=>{
  renderer.setSize(window.innerWidth,window.innerHeight,false);
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,performanceProfile.maxPixelRatio));
 });
-let waterMesh=null,last=performance.now(),elapsed=0;
+let waterMesh=null,last=performance.now(),elapsed=0,lastWaterUpdate=-Infinity;
 function animate(now){
  requestAnimationFrame(animate);
  if(!frameGate.shouldRender(now))return;
@@ -273,13 +273,14 @@ function animate(now){
    item.object.rotation.z=Math.sin(elapsed*1.1+item.phase)*.018;
   }
  }
- if(waterMesh){
+ if(waterMesh&&now-lastWaterUpdate>=1000/performanceProfile.waterAnimationFps){
+  lastWaterUpdate=now;
   const position=waterMesh.geometry.attributes.position,base=waterMesh.userData.baseHeights;
   for(let i=0;i<position.count;i++){
    const x=position.getX(i),z=position.getZ(i);
    position.setY(i,base[i]+Math.sin(x*1.4+elapsed*1.4)*.045+Math.cos(z*1.6+elapsed)*.03);
   }
-  position.needsUpdate=true;waterMesh.geometry.computeVertexNormals();
+  position.needsUpdate=true;
  }
  renderer.render(scene,camera);
  if(window.__DIYCRAFT_THREE_WORLD__){
