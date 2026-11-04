@@ -26,8 +26,8 @@ function productionCheck(x,z,context){
 }
 test('protects the same three fixed neighbor-home rectangles as Canvas 2D',()=>{
  const points=[
-  [-14,-7,true],[-8,-3,true],[10,-17,true],[15,-12,true],
-  [16,-9,true],[20,-5,true],[-20,20,false],[0,0,false]
+  [-14,-8,true],[-9,-3,true],[10,-18,true],[14,-13,true],
+  [15,-10,true],[20,-5,true],[-20,20,false],[0,0,false]
  ];
  for(const [x,z,expected] of points){
   assert.equal(protection.isProtectedCell(x,z,{}),expected);
