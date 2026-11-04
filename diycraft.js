@@ -822,30 +822,27 @@ function drawPainterlyPaperPattern(c,seed=0){
  const next=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
  const size=192;
  c.save();c.globalCompositeOperation='source-over';
- // Very light, cloud-soft watercolor blooms spread across the complete paper tile.
- const pigments=[
-  'rgba(255,244,221,.12)','rgba(132,180,173,.10)',
-  'rgba(225,157,165,.095)','rgba(184,164,207,.09)'
- ];
- for(let i=0;i<12;i++){
-  const x=next()*size,y=next()*size,rx=10+next()*18,ry=7+next()*13,angle=next()*Math.PI;
-  const wash=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.35);
-  wash.addColorStop(0,pigments[i%pigments.length]);wash.addColorStop(.65,pigments[i%pigments.length]);wash.addColorStop(1,'rgba(255,255,255,0)');
-  c.fillStyle=wash;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,Math.PI*2);c.fill();
+ // Fine paper fibers and hand-drawn pencil grain; watercolor blooms are kept
+ // inside the cached object/material textures to avoid a repeating screen motif.
+ c.lineCap='round';c.lineJoin='round';
+ for(let i=0;i<220;i++){
+  const x=next()*size,y=next()*size,len=2.5+next()*9,angle=(next()-.5)*Math.PI;
+  const x2=x+Math.cos(angle)*len,y2=y+Math.sin(angle)*len*.36;
+  c.strokeStyle=i%6===0?'rgba(255,250,236,.25)':'rgba(54,68,60,.16)';
+  c.lineWidth=.55+next()*.48;
+  c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke();
  }
- // Fine, irregular pencil strokes provide the paper's hand-worked character.
- c.lineCap='round';
- for(let i=0;i<145;i++){
-  const x=next()*size,y=next()*size,len=4+next()*12,dy=(next()-.5)*2.2;
-  c.strokeStyle=i%5===0?'rgba(255,250,236,.30)':'rgba(54,68,60,.19)';
-  c.lineWidth=.78+next()*.5;
-  c.beginPath();c.moveTo(x,y);c.lineTo(x+len,y+dy);c.stroke();
+ for(let i=0;i<42;i++){
+  const x=next()*size,y=next()*size,len=3+next()*7,angle=(next()-.5)*Math.PI*.7;
+  c.strokeStyle=i%4===0?'rgba(255,248,230,.22)':'rgba(67,75,64,.12)';
+  c.lineWidth=.35+next()*.38;
+  c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(angle)*len,y+Math.sin(angle)*len);c.stroke();
  }
- // Sparse paper tooth; small enough to stay gentle at the game's normal zoom.
- for(let i=0;i<260;i++){
+ // Sparse warm and cool specks mimic natural paper tooth without forming motifs.
+ for(let i=0;i<220;i++){
   const x=next()*size,y=next()*size;
-  c.fillStyle=i%3===0?'rgba(255,250,236,.22)':'rgba(54,68,60,.125)';
-  c.beginPath();c.arc(x,y,.16+next()*.34,0,Math.PI*2);c.fill();
+  c.fillStyle=i%3===0?'rgba(255,250,236,.20)':'rgba(54,68,60,.10)';
+  c.beginPath();c.arc(x,y,.13+next()*.30,0,Math.PI*2);c.fill();
  }
  c.restore();
 }
