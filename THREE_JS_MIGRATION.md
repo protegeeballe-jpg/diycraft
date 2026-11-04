@@ -20,17 +20,24 @@
 
 ## Migration stages
 
-### Stage 0 — Read-only data boundary (this branch)
-- Establish a pure adapter that maps validated saved-world fields to renderer snapshots.
-- Cover blocks, custom colors/textures, doors, 20 tile patterns, player appearance/pose, excavations, layered water, fish and animals.
-- Keep the source object unchanged and make the resulting snapshot immutable.
-- Run unit tests for malformed data, legacy water saves, limits and exact color preservation.
+### Stage 0 — Read-only data boundary
+<status>COMPLETED</status>
+- Pure adapter maps validated saved-world fields to immutable renderer snapshots.
+- Covers blocks, custom colors/textures, doors, 20 tile patterns, player appearance/pose, excavations, layered water, fish and animals.
+- Source data is not mutated; there is no DOM, storage, or Three.js dependency in the adapter.
+- Regression tests cover malformed data, legacy water saves, limits, duplicate animal IDs and exact color preservation.
+- CI validation passed: https://github.com/protegeeballe-jpg/diycraft/actions/runs/41766918674
 
 ### Stage 1 — Render the real starter world
-- Feed the adapter output into a Three.js scene in a separate preview route.
-- Render block coordinates and types using reusable painterly materials.
-- Render the player spawn, starter buildings, plants, pond columns and animals from the actual world data.
-- Compare scene counts and positions to the source snapshot. No game input or save writes.
+<status>COMPLETED</status>
+- Added shared procedural watercolor and colored-pencil texture materials in `js/three-painterly-materials.js`.
+- Added an isolated read-only preview route at `three-world-preview.html`.
+- The CI test extracts the actual production `freshWorld()` function from `diycraft.js`, generates the starter-world fixture, adapts it, and renders it with the bundled local Three.js r128 library.
+- The latest starter scene contains 232 source blocks, including 17 animated flower plants, with the player drawn at the saved spawn coordinates and painterly materials reused across geometry groups.
+- Solid voxel blocks are batched with `InstancedMesh`; the preview never reads or writes browser storage.
+- Automated browser checks assert that every source block is represented, the original world object remains unchanged, the WebGL render loop advances, and painterly materials and instanced groups are present.
+- CI validation passed: https://github.com/protegeeballe-jpg/diycraft/actions/runs/41767639398
+- Screenshot artifact: `diycraft-three-actual-starter-world` (retained for 7 days by CI).
 
 ### Stage 2 — Editing parity in a sandbox
 - Add raycast selection, block placement/removal, door operation and tile placement against a cloned/in-memory test world.
