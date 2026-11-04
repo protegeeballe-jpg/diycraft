@@ -63,6 +63,18 @@ test('retains selected colors and style data without recoloring saved values',()
  assert.equal(s.solidStyles.grass.color,'#70B85A');
  assert.equal(s.player.shirt,'#123456');
 });
+
+test('preserves bounded Material Bucket items and normalizes recovered doors',()=>{
+ const s=adapter.createSnapshot(validWorld);
+ assert.equal(s.bucket.length,4);
+ assert.deepEqual(s.bucket[0],{type:'wood',color:'#a97545',texture:'wood'});
+ assert.deepEqual(s.bucket[1],{type:'tile',color:'#c5a98a',tilePattern:'spiral'});
+ assert.deepEqual(s.bucket[2],{type:'door',color:'#a97545',style:'garden',orientation:'ew',open:false,swing:-1});
+ assert.deepEqual(s.bucket[3],{type:'water'});
+ const many=adapter.createSnapshot({bucket:Array.from({length:140},()=>({type:'stone'}))});
+ assert.equal(many.bucket.length,120);
+});
+
 test('normalizes layered water and limits fish to three per wet cell',()=>{
  const s=adapter.createSnapshot(validWorld);
  assert.deepEqual(s.water,[
