@@ -187,7 +187,7 @@ function freshWorld(){
   assert.equal(await page.evaluate(c=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(c.x,c.z),neighborCell),true,'Current neighbor positions must be protected.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(45,50)),true,'A saved animal within 0.7 blocks must be protected.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(100,100)),false,'An unrelated remote cell remains editable.');
-  const protectedRevision=state.revision;
+  const protectedRevision=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState().revision);
   await page.locator('#water-x').fill('-14');await page.locator('#water-z').fill('-8');
   await page.locator('#dig-ground').click();
   protectionState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
