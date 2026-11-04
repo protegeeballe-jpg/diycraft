@@ -165,7 +165,8 @@ test('player capsule collision treats plants as pass-through and doors as closed
  assert.equal(edit.playerCollisionAt(1.5,.5,1),false,'Opening a door releases upper collision.');
 });
 test('player capsule collision respects the excavated terrain floor and its radius',()=>{
- const edit=sandbox.create(fixture());
+ const world=fixture();world.excavations.push({x:80,z:80,depth:2});
+ const edit=sandbox.create(world);
  assert.equal(edit.playerCollisionAt(8.5,8.5,-2.5),true,'The player must not pass below the dug pool floor.');
  assert.equal(edit.playerCollisionAt(8.5,8.5,-1.9),false,'The player may occupy the excavation above its floor.');
  assert.equal(edit.playerCollisionAt(80.23,80.5,-.5),false,'Exact-radius tangency at the far excavation edge does not overlap adjacent terrain.');
