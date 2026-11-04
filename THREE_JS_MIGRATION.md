@@ -35,6 +35,8 @@
 - The CI test extracts the actual production `freshWorld()` function from `diycraft.js`, generates the starter-world fixture, adapts it, and renders it with the bundled local Three.js r128 library.
 - The latest starter scene contains 232 source blocks, including 17 animated flower plants, with the player drawn at the saved spawn coordinates and painterly materials reused across geometry groups.
 - Solid voxel blocks are batched with `InstancedMesh`; the preview never reads or writes browser storage.
+- `js/three-performance-profile.js` selects conservative, balanced or high rendering settings from device signals. The low-end profile caps rendering at 30 FPS, clamps pixel ratio to 1, disables multisample antialiasing and realtime shadows, and reduces procedural texture resolution/detail without removing painterly materials.
+- `js/three-plant-geometry.js` builds flowers and tall grass as one vertex-colored, painterly mesh per plant. This keeps the full plant count and sway motion while reducing draw submissions.
 - Automated browser checks assert that every source block is represented, the original world object remains unchanged, the WebGL render loop advances, and painterly materials and instanced groups are present.
 - CI validation passed: https://github.com/protegeeballe-jpg/diycraft/actions/runs/41767639398
 - Screenshot artifact: `diycraft-three-actual-starter-world` (retained for 7 days by CI).
@@ -45,6 +47,7 @@
 - Water edits follow the production rules: only excavated cells can be filled, each cell is capped at its recorded depth, collection recovers a water item into the Material Bucket, and collecting the final layer removes fish in that cell. A wet cell accepts up to three fish.
 - Plant/door movement parity is covered at the block level: flowers and tall grass remain pass-through; a closed door occupies both vertical collision cells; an open door releases both.
 - Each operation returns a detached, deeply frozen state snapshot. The original renderer snapshot is checked for unchanged content; no storage APIs or production-world references are used.
+- Compatible solids and tiles are grouped by material and 16×16 world chunk into `InstancedMesh` batches. This allows the renderer to cull distant chunks as units instead of submitting one draw object per block. Animated plants remain individually addressable one-mesh objects; doors remain separate so their hinges can animate.
 - `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups. Browser placement uses the clicked face normal and rejects occupied cells.
 - `js/three-door-motion.js` provides a pure smoothstep animation helper using the production 260 ms duration and 1.32-radian open angle. It supports continuous reversal while the door is moving; the browser preview animates the door leaf and its selection outline together.
 - Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, plant pass-through, two-cell door occupancy, water depth/stacking/collection, fish limits, Material Bucket protection, immutable state and nearest-hit selection. The door helper has deterministic endpoint, midpoint and reversal tests.
@@ -68,6 +71,10 @@
 - Test offline reload with the local Three.js and adapter assets cached by the service worker.
 
 ### Stage 5 — Performance, visual QA and controlled cutover
+- Use the capability-based profiles in `js/three-performance-profile.js`: low-end devices use a 30 FPS render cap, 1× pixel ratio, no realtime shadows or antialiasing, 128 px painterly textures and reduced procedural stroke count; balanced devices use 45 FPS / 1.2× / 192 px; higher-capability devices use up to 60 FPS / 1.5× / 256 px.
+- Compatible solid meshes are grouped by 16×16 world chunk and material, while plants use one vertex-colored painterly mesh each. Chunk-level frustum culling, cached materials and bounded texture anisotropy are part of the performance baseline.
+- Browser CI exercises both the real starter world and a synthetic 2,032-block world in a 390×844 mobile viewport at 3× device scale factor, with low-end hardware signals. It checks representation coverage, draw calls, geometry and texture counts, storage isolation and actual canvas pixel dimensions after the 1× cap.
+- The 232-block starter-world CI sample on the low-end profile measured 34 draw calls, 26 geometries and 12 cached textures. This is a software-WebGL CI measurement, not a physical-phone FPS guarantee; representative low-cost Android devices must still be part of the final cutover QA.
 - Measure frame time, memory, draw calls, geometry and texture counts on desktop and mobile.
 - Use instancing/merged chunk meshes and frustum/occlusion culling where they preserve visible details.
 - Verify no new console errors, lost save data, changed color values, broken controls or missing offline assets.
