@@ -24,6 +24,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <div class="sub">Experimental copy of the real starter world · watercolor + colored pencil</div>
 <div class="toolbar">
 <select id="bucket-item" aria-label="Choose a recovered Material Bucket item"><option value="">Bucket: none selected</option></select>
+<select id="door-style" aria-label="Door style"><option value="classic">Classic door</option><option value="window">Window door</option><option value="garden">Garden door</option></select>
 <select id="block-type" aria-label="Block type"><option value="water">Water</option><option value="grass">Grass</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select>
 <input id="color" type="color" value="#70b85a" aria-label="Custom block color">
 <button id="add">Place on face</button><button id="remove" disabled>Remove</button>
@@ -36,7 +37,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <div id="status">Loading the isolated starter-world copy…</div>
 </section>
 <div id="safety">Sandbox only · No save, localStorage, or live-game changes<br>Drag to orbit · Scroll to zoom · Click to select</div>
-<script src="./js/three.js"></script><script src="./js/three-performance-profile.js"></script><script src="./js/three-world-adapter.js"></script>
+<script src="./js/three.js"></script><script src="./js/three-performance-profile.js"></script><script src="./js/three-world-adapter.js"></script><script src="./js/three-door-model.js"></script>
 <script src="./js/three-painterly-materials.js"></script><script src="./js/three-plant-geometry.js"></script><script src="./js/three-world-edit-sandbox.js"></script>
 <script src="./js/three-world-raycast.js"></script><script src="./js/three-door-motion.js"></script><script src="./three-world-edit-preview.js"></script>
 </body></html>
