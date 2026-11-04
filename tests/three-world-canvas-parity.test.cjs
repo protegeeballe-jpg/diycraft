@@ -1,0 +1,85 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const adapter=require('../js/three-world-adapter.js');
+const sandboxApi=require('../js/three-world-edit-sandbox.js');
+const source=fs.readFileSync('diycraft.js','utf8');
+function freshWorld(){
+ const start=source.indexOf('function freshWorld(){');
+ const marker='\n}\n\nfunction validHex';
+ const end=source.indexOf(marker,start);
+ if(start<0||end<0)throw new Error('Could not locate production freshWorld().');
+ return new Function('emptySlots','return ('+source.slice(start,end+2)+');')(()=>Array.from({length:60},()=>null))();
+}
+const SOLID_STYLE_TYPES=['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow'];
+const CUSTOM_TEXTURES=['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom'].map(id=>({id}));
+const TILE_DESIGNS=['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral'].map(id=>({id}));
+function keyBlock(x,y,z){return x+','+y+','+z;}
+function keyGround(x,z){return Math.floor(x)+','+Math.floor(z);}
+function productionHarness(world){
+ const blockLookup=new Map(),blockColumnBlocks=new Map(),blockRenderChunks=new Map();
+ const depth=new Map((world.excavations||[]).map(v=>[keyGround(v[0],v[1]),v[2]]));
+ for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door')blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}
+ const start=source.indexOf('function addBlock('),end=source.indexOf('\nfunction removeBlock',start);
+ if(start<0||end<0)throw new Error('Could not extract production addBlock().');
+ const fn=new Function(
+  'MAX_DIG_DEPTH','WORLD_LIMIT','groundDepthAt','keyBlock','blockLookup','selected','MAX_BLOCKS','world','showStatus','validHex',
+  'CUSTOM_TEXTURES','SOLID_STYLE_TYPES','TILE_DESIGNS','selectedBucketItem','keyGround','blockColumnBlocks',
+  'addRenderChunkItem','blockRenderChunks','invalidateBlockChunkMeshesAt','invalidateNeighborNavigation','save',
+  'return ('+source.slice(start,end).trim()+');'
+ )(
+  1000000000,1000000000,(x,z)=>depth.get(keyGround(x,z))||0,keyBlock,blockLookup,'grass',18000,world,
+  ()=>{},(value,fallback)=>/^#[0-9a-f]{6}$/i.test(value||'')?value:fallback,
+  CUSTOM_TEXTURES,SOLID_STYLE_TYPES,TILE_DESIGNS,null,keyGround,blockColumnBlocks,
+  ()=>{},blockRenderChunks,()=>{},()=>{},()=>{}
+ );
+ return {add:fn,lookup:blockLookup};
+}
+function comparable(block){
+ const out={type:block.type,x:block.x,y:block.y,z:block.z};
+ for(const key of ['color','texture','tilePattern','style','orientation','swing','open'])if(block[key]!==undefined)out[key]=block[key];
+ return out;
+}
+function test(name,fn){
+ try{fn();console.log('PASS '+name);}
+ catch(error){console.error('FAIL '+name+'\n'+(error.stack||error));process.exitCode=1;}
+}
+function pair(type,x,y,z){
+ const world=freshWorld();
+ world.customBlock={color:'#a17bd4',texture:'brick'};
+ world.doorDesign={color:'#a97545',style:'window'};
+ world.tileDesign={color:'#c5a98a',pattern:'spiral'};
+ world.solidStyles={stone:{color:'#345678',texture:'brick'},flower:{color:'#e89ac4',texture:'flower'}};
+ const production=productionHarness(world),renderSnapshot=adapter.createSnapshot(world),sandbox=sandboxApi.create(renderSnapshot);
+ assert.equal(production.add(x,y,z,type,false),true,'Production addBlock should accept fixture placement.');
+ sandbox.addBlock({type,x,y,z});
+ const productionBlock=world.blocks.at(-1),sandboxBlock=sandbox.getState().world.blocks.at(-1);
+ assert.deepEqual(comparable(sandboxBlock),comparable(productionBlock),'Three.js and Canvas 2D block settings must match.');
+}
+test('matches Canvas 2D appearance defaults for custom, tile, door and styled solids',()=>{
+ pair('custom',50,0,50);pair('tile',51,0,50);pair('door',52,0,50);pair('stone',53,0,50);pair('flower',54,0,50);
+});
+test('matches two-cell door occupancy rules',()=>{
+ const world=freshWorld(),production=productionHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
+ assert.equal(production.add(60,0,60,'door',false),true);
+ sandbox.addBlock({type:'door',x:60,y:0,z:60});
+ assert.equal(production.add(60,1,60,'stone',false),false);
+ assert.throws(()=>sandbox.addBlock({type:'stone',x:60,y:1,z:60}),/occupied/);
+});
+test('matches excavation depth and world-height placement limits',()=>{
+ const world=freshWorld();world.excavations=[[61,60,2]];
+ const production=productionHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
+ assert.equal(production.add(61,-2,60,'stone',false),true);
+ sandbox.addBlock({type:'stone',x:61,y:-2,z:60});
+ assert.equal(production.add(62,-1,60,'stone',false),false);
+ assert.throws(()=>sandbox.addBlock({type:'stone',x:62,y:-1,z:60}),/coordinates/);
+ assert.equal(production.add(63,64,60,'door',false),false);
+ assert.throws(()=>sandbox.addBlock({type:'door',x:63,y:64,z:60}),/two clear/);
+});
+test('matches duplicate-cell rejection',()=>{
+ const world=freshWorld(),production=productionHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
+ const b=world.blocks[0];
+ assert.equal(production.add(b.x,b.y,b.z,'stone',false),false);
+ assert.throws(()=>sandbox.addBlock({type:'stone',x:b.x,y:b.y,z:b.z}),/occupied/);
+});
+console.log('Canvas 2D / Three.js placement parity tests complete.');
