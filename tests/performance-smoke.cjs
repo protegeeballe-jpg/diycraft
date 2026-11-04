@@ -5,6 +5,7 @@ const fs = require('node:fs');
 
 const source = fs.readFileSync('diycraft.js', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
+const iconSvg = fs.readFileSync('diycraft-icon.svg', 'utf8');
 const helperStart = source.indexOf('function renderChunkKey');
 const helperEnd = source.indexOf('function rebuildFishRenderChunks', helperStart);
 assert(helperStart >= 0 && helperEnd > helperStart, 'Chunk-cache helpers must remain available in the engine source.');
@@ -438,6 +439,12 @@ check(source.includes("typeof CompressionStream!=='function'||typeof Decompressi
   source.includes('file.size>MAX_BACKUP_FILE_BYTES') &&
   source.includes('/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/'),
   'Compression must require matching encode/decode support, backup imports must be size-limited, and saved artwork must be PNG data only.');
+
+
+const iconTags=[...iconSvg.matchAll(/<([a-zA-Z][a-zA-Z0-9:-]*)\b/g)].map(match=>match[1].toLowerCase());
+check(iconTags.length>=5&&iconTags.every(tag=>['svg','rect','circle','path'].includes(tag)) &&
+  !['<text','<metadata','<desc','<script','<foreignobject','<image','<use','<filter','<mask'].some(tag=>iconSvg.toLowerCase().includes(tag)),
+  'The application icon must remain simple local vector artwork without embedded text, metadata, scripts or linked images.');
 
 const colorPagesStart=source.indexOf('const COLOR_PAGES=[');
 const colorPagesEnd=source.indexOf('\nlet coloringNeighbor',colorPagesStart);
