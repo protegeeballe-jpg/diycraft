@@ -311,3 +311,79 @@ test('updates NPC protection predictions after sandbox placement and removal wit
  assert.deepEqual(restored,before,'Removing the obstacle must restore the original route prediction.');
  assert.equal(removed.sourceUnchanged,true);
 });
+
+
+test('matches production animalPositions for all seven residents and saved animals at multiple times',()=>{
+ const start=source.indexOf('function animalPositions(t=performance.now()/1000){');
+ const end=source.indexOf('\nfunction animalAtScreen(',start);
+ if(start<0||end<=start)throw new Error('Could not extract production animalPositions().');
+ const productionSource=source.slice(start,end);
+ const world={
+  animals:[
+   {id:'saved-cat',species:'cat',name:'Saved Mochi',x:24.5,z:-18.25,facing:.7,phase:1.2,body:'#c5b9a6',accent:'#eee1d2'},
+   {id:'saved-dog',species:'dog',name:'Saved Buddy',x:31.5,z:-4.5,facing:-.4,phase:2.1},
+   {id:'sheep',species:'cat',name:'Duplicate resident',x:90,z:90}
+  ]
+ };
+ const times=[0,.1,2.8,19.25,80.5,179.9];
+ for(const timeSeconds of times){
+  const getProduction=new Function('world','performance',productionSource+'\nreturn animalPositions;')(
+   world,{now:()=>timeSeconds*1000}
+  );
+  assert.deepEqual(
+   protection.animalStates(world,timeSeconds),
+   getProduction(),
+   'Animal positions, facing, names, appearance and saved IDs must match at '+timeSeconds+' seconds.'
+  );
+ }
+});
+test('matches the production nearest-animal screen hit test and strict 66-pixel radius',()=>{
+ const start=source.indexOf('function animalAtScreen(px,py){');
+ const end=source.indexOf('\nfunction animalWorldPoint(',start);
+ if(start<0||end<=start)throw new Error('Could not extract production animalAtScreen().');
+ const original=source.slice(start,end);
+ const world={animals:[
+  {id:'near-one',species:'cat',name:'Near One',x:2,z:3,facing:0,phase:0},
+  {id:'near-two',species:'dog',name:'Near Two',x:3,z:3,facing:0,phase:0},
+  {id:'giraffe',species:'giraffe',name:'Raffy',x:9,z:9,facing:0,phase:0}
+ ]};
+ const timeSeconds=4,animals=protection.animalStates(world,timeSeconds);
+ const getProduction=new Function('world','performance',source.slice(
+  source.indexOf('function animalPositions(t=performance.now()/1000){'),
+  source.indexOf('\nfunction animalAtScreen(',source.indexOf('function animalPositions(t=performance.now()/1000){'))
+ )+'\nreturn animalPositions;')(world,{now:()=>timeSeconds*1000});
+ const productionAnimals=getProduction();
+ const projector=point=>({x:point.x*30,y:point.z*25+point.y*10});
+ const productionPick=new Function(
+  'cameraState','canvas','project','animalPositions',
+  original+'\nreturn animalAtScreen;'
+ )(()=>({}),{clientWidth:390,clientHeight:844},projector,()=>productionAnimals);
+ const probes=[
+  {x:projector({x:animals[0].x,y:.48,z:animals[0].z}).x+12,y:projector({x:animals[0].x,y:.48,z:animals[0].z}).y-8},
+  {x:projector({x:animals[1].x,y:.48,z:animals[1].z}).x,y:projector({x:animals[1].x,y:.48,z:animals[1].z}).y},
+  {x:projector({x:animals[2].x,y:.8,z:animals[2].z}).x,y:projector({x:animals[2].x,y:.8,z:animals[2].z}).y},
+  {x:projector({x:animals[0].x,y:.48,z:animals[0].z}).x+66,y:projector({x:animals[0].x,y:.48,z:animals[0].z}).y}
+ ];
+ for(const point of probes){
+  assert.deepEqual(
+   protection.pickAnimalAtScreen(animals,point.x,point.y,projector),
+   productionPick(point.x,point.y),
+   'The Three.js hit test must preserve the production closest-animal and 66-pixel rules.'
+  );
+ }
+});
+test('uses giraffe head-height picking and ignores animals behind the camera',()=>{
+ const animals=[
+  {id:'behind',species:'dog',x:0,z:0},
+  {id:'raffy',species:'giraffe',x:4,z:4}
+ ];
+ const projected=[];
+ const selected=protection.pickAnimalAtScreen(animals,40,48,point=>{
+  projected.push(point);
+  return point.x===0?null:{x:point.x*10,y:point.z*10+point.y*10};
+ });
+ assert.equal(selected.id,'raffy');
+ assert.deepEqual(projected,[
+  {x:0,y:.48,z:0},{x:4,y:.8,z:4}
+ ]);
+});
