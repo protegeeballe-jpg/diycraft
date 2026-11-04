@@ -445,7 +445,7 @@ function addBeside(){
  const state=sandbox.getState(),occupied=new Set(state.world.blocks.map(b=>b.x+','+b.y+','+b.z));
  if(!base){let attempts=0;while(occupied.has(x+','+y+','+z)&&attempts++<100){x++;if(x>1000){x=0;z++;}}}
  const type=document.getElementById('block-type').value,color=document.getElementById('color').value;
- if(type==='water'){const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z));return;}
+ if(type==='water'){const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z,currentProtectionContext()));return;}
  const input={type,x,y,z};
  if(type==='custom')input.color=color;
  if(type==='custom')input.texture='custom';
