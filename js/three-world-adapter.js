@@ -112,6 +112,10 @@
   }
   return result;
  }
+ function explicitStyleTypes(source){
+  if(!isObject(source))return [];
+  return SOLID_TYPES.filter(type=>isObject(source[type]));
+ }
  function normalizeExcavations(source){
   const seen=new Set(),out=[];
   if(!Array.isArray(source))return out;
@@ -205,6 +209,7 @@
    texture:TEXTURES.has(customSource.texture)?customSource.texture:'custom'
   };
   const solidStyles=normalizeStyles(world.solidStyles);
+  const styledSolidTypes=explicitStyleTypes(world.solidStyles);
   const sourceBlocks=Array.isArray(world.blocks)?world.blocks:[];
   const blocks=[];
   for(let i=0;i<Math.min(sourceBlocks.length,MAX_BLOCKS);i++){
@@ -222,7 +227,7 @@
    name:safeName(world.name,'My Peaceful World',30),
    timeMode:TIME_MODES.has(world.timeMode)?world.timeMode:'day',
    player:normalizePlayer(world.player),
-   customBlock,doorDesign,tileDesign,solidStyles,
+   customBlock,doorDesign,tileDesign,solidStyles,styledSolidTypes,
    blocks,excavations,water,fish,animals,bucket,
    counts:{
     blocks:blocks.length,excavations:excavations.length,
