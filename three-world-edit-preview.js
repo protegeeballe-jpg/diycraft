@@ -413,6 +413,7 @@ function renderSandbox(state){
   playerMode:playerPlayMode,cameraMode:playerCameraMode,
   getPlayerState:()=>playerPhysicsState?{player:{...playerPhysicsState.player},jumpVelocity:playerPhysicsState.jumpVelocity,playerGrounded:playerPhysicsState.playerGrounded,flying:playerPhysicsState.flying,playerActivity:playerPhysicsState.playerActivity}:null,
   getPlayerCamera:()=>playerCameraPose?{pos:{...playerCameraPose.pos},yaw:playerCameraPose.yaw,pitch:playerCameraPose.pitch}:null,
+  getProtectionContext:()=>currentProtectionContext(),isProtectedDigCell:(x,z)=>isProtectedTarget(x,z),
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   pickBlock:(key)=>{const block=blockByKey.get(key);if(!block)return false;const p=new THREE.Vector3(block.x+.5,block.y+.5,block.z+.5).project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
@@ -467,17 +468,23 @@ document.getElementById('block-type').addEventListener('change',event=>{
  const selectedItem=sandbox.getState().selectedBucketItem;
  if(selectedItem&&selectedItem.type!==event.target.value)renderSandbox(sandbox.clearBucketSelection());
 });
-document.getElementById('remove').addEventListener('click',()=>{if(selected){try{renderSandbox(sandbox.remove(selected));}catch(error){status.textContent=error.message;}}});
+document.getElementById('remove').addEventListener('click',()=>{if(selected){try{renderSandbox(sandbox.remove(selected,currentProtectionContext()));}catch(error){status.textContent=error.message;}}});
 document.getElementById('door').addEventListener('click',()=>{try{renderSandbox(sandbox.toggleDoor(selected));}catch(e){status.textContent=e.message;}});
 document.getElementById('apply-pattern').addEventListener('click',()=>{try{renderSandbox(sandbox.setTilePattern(selected,document.getElementById('pattern').value));}catch(e){status.textContent=e.message;}});
+function currentProtectionContext(){
+ return sandbox?sandbox.protectionContext(performance.now()/1000):{neighbors:[],animals:[]};
+}
+function isProtectedTarget(x,z){
+ return sandbox.isProtectedDigCell(x,z,currentProtectionContext());
+}
 function waterCellInput(){
  const xValue=document.getElementById('water-x').value.trim(),zValue=document.getElementById('water-z').value.trim();
  const x=Number(xValue),z=Number(zValue);
  if(!xValue||!zValue||!Number.isInteger(x)||!Number.isInteger(z))throw new TypeError('Enter whole-number X and Z coordinates for the pool.');
  return {x,z};
 }
-document.getElementById('water-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
-document.getElementById('water-collect').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.collectWaterLayer(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
+document.getElementById('water-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z,currentProtectionContext()));}catch(e){status.textContent=e.message;}});
+document.getElementById('water-collect').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.collectWaterLayer(cell.x,cell.z,currentProtectionContext()));}catch(e){status.textContent=e.message;}});
 document.getElementById('fish-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addFish(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
 document.getElementById('fill-hole').addEventListener('click',()=>{
  try{
@@ -489,7 +496,7 @@ document.getElementById('fill-hole').addEventListener('click',()=>{
  }catch(error){status.textContent=error.message;}
 });
 document.getElementById('dig-ground').addEventListener('click',()=>{
- try{const cell=waterCellInput();renderSandbox(sandbox.excavateGround(cell.x,cell.z));}
+ try{const cell=waterCellInput();renderSandbox(sandbox.excavateGround(cell.x,cell.z,currentProtectionContext()));}
  catch(error){status.textContent=error.message;}
 });
 let pointerDown=null;
