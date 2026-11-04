@@ -9,9 +9,11 @@ on:
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
       - js/three-door-motion.js
+      - js/three-door-model.js
       - js/three-performance-profile.js
       - js/three-plant-geometry.js
       - tests/three-door-motion.test.cjs
+      - tests/three-door-model.test.cjs
       - tests/three-performance-profile.test.cjs
       - tests/three-world-adapter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
@@ -46,6 +48,8 @@ jobs:
         run: node tests/three-world-raycast.test.cjs
       - name: Run door animation timing and reversal tests
         run: node tests/three-door-motion.test.cjs
+      - name: Run production-aligned door geometry model tests
+        run: node tests/three-door-model.test.cjs
       - name: Run mobile performance profile tests
         run: node tests/three-performance-profile.test.cjs
       - name: Compare Canvas 2D and Three.js placement behavior
