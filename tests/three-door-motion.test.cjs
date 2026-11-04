@@ -8,7 +8,7 @@ function test(name,fn){
 test('matches production 260 ms smoothstep door opening endpoints and midpoint',()=>{
  const open=motion.create(0,motion.OPEN_ANGLE,1000);
  assert.equal(motion.angleAt(open,1000),0);
- assert.equal(motion.angleAt(open,1120),motion.OPEN_ANGLE*.5);
+ assert.equal(motion.angleAt(open,1130),motion.OPEN_ANGLE*.5);
  assert.equal(motion.angleAt(open,1260),motion.OPEN_ANGLE);
  assert.equal(motion.angleAt(open,1500),motion.OPEN_ANGLE);
 });
