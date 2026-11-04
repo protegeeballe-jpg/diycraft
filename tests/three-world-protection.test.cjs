@@ -177,10 +177,11 @@ function comparePath(actual,expected,label){
 test('keeps every neighbor and family waypoint, pause, and sleep coordinate aligned with Canvas 2D',()=>{
  assert.deepEqual(routeGeometry(protection.NEIGHBOR_ROUTES),routeGeometry({hyacinth:productionRoutes.hyacinth,theo:productionRoutes.theo}));
  assert.deepEqual(routeGeometry(protection.FAMILY_ROUTES),routeGeometry(productionFamilyRoutes));
+ const nightPositions=protection.actorContext({timeMode:'night'},0).neighbors;
  for(const id of Object.keys(productionSleepSpots)){
+  const predicted=nightPositions.find(actor=>actor.id===id);
   assert.deepEqual(
-   {x:protection.SLEEP_SPOTS?.[id]?.x??protection.actorContext({timeMode:'night'},0).neighbors.find(a=>a.id===id)?.x,
-    z:protection.SLEEP_SPOTS?.[id]?.z??protection.actorContext({timeMode:'night'},0).neighbors.find(a=>a.id===id)?.z},
+   predicted&&{x:predicted.x,z:predicted.z},
    {x:productionSleepSpots[id].x,z:productionSleepSpots[id].z},
    'Night protection position must match for '+id
   );
