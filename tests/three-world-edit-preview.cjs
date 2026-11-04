@@ -126,6 +126,7 @@ function freshWorld(){
   assert.ok(Math.abs(waterStats.surfaceY-initialWaterY)>0.0001,'Water surface vertices must continue to move.');
   const fishAngleDelta=Math.atan2(Math.sin(waterStats.fishAngle-initialFishAngle),Math.cos(waterStats.fishAngle-initialFishAngle));
   assert.ok(Math.abs(fishAngleDelta)>.02,'Fish instances must continue swimming in the water.');
+  await page.screenshot({path:'preview-three/three-water-fish-sandbox.png'});
   await page.locator('#fish-add').click();
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.equal(worldState.world.fish.length,3,'A fourth fish in the same water cell must be rejected.');
