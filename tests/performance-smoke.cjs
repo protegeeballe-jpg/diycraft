@@ -453,6 +453,10 @@ check(source.includes('MAX_UNCOMPRESSED_SAVE_BYTES=32*1024*1024') &&
   source.includes('Compressed backup expands beyond the safe memory limit.'),
   'Gzip restore must stream data and stop decompression before an oversized archive exhausts a mobile device memory budget.');
 
+
+check(source.includes('if(!chunkBoundsVisible({minX:a.x-.85,maxX:a.x+.85,minY:groundY,maxY:groundY+2.5,minZ:a.z-.85,maxZ:a.z+.85},cam,w,h,16))return;'),
+  'Animal meshes must be culled using conservative full-body bounds before detailed geometry is built, without changing visible mesh quality.');
+
 const colorPagesStart=source.indexOf('const COLOR_PAGES=[');
 const colorPagesEnd=source.indexOf('\nlet coloringNeighbor',colorPagesStart);
 assert(colorPagesStart>=0&&colorPagesEnd>colorPagesStart,'Built-in coloring pages must remain a distinct, locally defined asset collection.');
