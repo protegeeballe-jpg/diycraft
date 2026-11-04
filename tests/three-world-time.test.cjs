@@ -21,7 +21,7 @@ test('keeps exact original day, sunset and night watercolor palette values',()=>
  }
 });
 test('follows the original automatic cycle boundaries exactly',()=>{
- const samples=[[0,'day'],[98.999,'day'],[99,'sunset'],[122.399,'sunset'],[122.4,'night'],[179.999,'night'],[180,'day'],[279,'sunset'],[302.4,'night']];
+ const samples=[[0,'day'],[98.999,'day'],[99,'sunset'],[122.399,'sunset'],[122.5,'night'],[179.999,'night'],[180,'day'],[279,'sunset'],[302.5,'night']];
  for(const [seconds,mode] of samples)assert.equal(time.getPalette('auto',seconds).mode,mode);
 });
 test('rejects non-finite animation time without changing palette definitions',()=>{

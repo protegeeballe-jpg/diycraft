@@ -571,7 +571,7 @@ function updateAnimalCareFlash(now){
  const actor=animalStatesCache.find(animal=>animal.id===animalCareFlashAnimalId);
  if(!actor){animalCareFlash.hidden=true;return;}
  const point=projectAnimalPick({
-  x:actor.x+.22,y:actor.y+(actor.species==='giraffe'?1.65:1.12),z:actor.z
+  x:actor.x+.22,y:actor.species==='giraffe'?1.65:1.12,z:actor.z
  });
  if(!point){animalCareFlash.hidden=true;return;}
  animalCareFlash.textContent=animalCareFlashEmoji;

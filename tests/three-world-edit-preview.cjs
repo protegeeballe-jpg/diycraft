@@ -120,11 +120,13 @@ function freshWorld(){
   careStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats());
   assert.equal(careStats.count,6);
   assert.match(await page.locator('#animal-care-feedback').innerText(),/Pip the sheep has had a lovely drink/);
+  await page.waitForFunction(()=>!document.getElementById('animal-care-flash').hidden,null,{timeout:1200});
+  assert.equal(await page.locator('#animal-care-flash').innerText(),'💧',
+   'The original 1.9-second care emoji must appear at the original species-specific head height.');
   await page.locator('#animal-care-close').click();
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats().open),false);
-  await page.waitForFunction(()=>!document.getElementById('animal-care-flash').hidden,null,{timeout:3000});
-  assert.equal(await page.locator('#animal-care-flash').innerText(),'💧',
-   'The original 1.9-second care emoji must remain visible after closing the modal.');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats().flash),true,
+   'The care emoji must remain visible immediately after closing the modal.');
 
   // Saved animals use the same care-only interaction; the original 999 cap is preserved.
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.focusAnimalForTest('pet-cat-1')),true);
