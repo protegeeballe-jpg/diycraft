@@ -8,7 +8,7 @@
  if(root)root.DIYCraftThreeEditSandbox=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
- const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64;
+ const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_BUCKET_ITEMS=120;
  const HEX=/^#[0-9a-f]{6}$/i;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const SOLID_TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow']);
@@ -85,7 +85,16 @@
   function remove(key){
    const index=world.blocks.findIndex(block=>block.key===key);
    if(index<0)return state();
-   const block=world.blocks[index];
+   const block=world.blocks[index],bucket=Array.isArray(world.bucket)?world.bucket:(world.bucket=[]);
+   if(bucket.length>=MAX_BUCKET_ITEMS)throw new RangeError('Your Material Bucket is full. Use or clear recovered blocks first.');
+   const item={type:block.type};
+   for(const field of ['color','texture','tilePattern','style','orientation','swing'])
+    if(block[field]!==undefined)item[field]=block[field];
+   if(SOLID_TYPES.has(block.type)){
+    if(!item.color)item.color=block.color||'#9a9a9a';
+    if(!item.texture)item.texture=block.type;
+   }
+   bucket.push(item);
    world.blocks.splice(index,1);
    occupied.delete(cellKey(block.x,block.y,block.z));
    if(block.type==='door')occupied.delete(cellKey(block.x,block.y+1,block.z));
@@ -108,5 +117,5 @@
   }
   return Object.freeze({select,addBlock,remove,toggleDoor,setTilePattern,getState:state});
  }
- return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS})});
+ return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
