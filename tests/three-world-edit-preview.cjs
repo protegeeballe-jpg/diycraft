@@ -170,14 +170,14 @@ function freshWorld(){
   await page.locator('#block-type').selectOption('stone');
   await page.locator('#add').click();
   let worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
-  assert.equal(worldState.world.blocks.length,world.blocks.length+1);
+  assert.equal(worldState.world.blocks.length,world.blocks.length+2,'The earlier protection scenario also fills one cleared pool cell.');
   const addedStone=worldState.world.blocks.at(-1);
   assert.equal(addedStone.type,'stone');
   const faceDistance=Math.abs(addedStone.x-selectedBlockBefore.x)+Math.abs(addedStone.y-selectedBlockBefore.y)+Math.abs(addedStone.z-selectedBlockBefore.z);
   assert.equal(faceDistance,1,'New blocks must be placed in the cell adjacent to the clicked 3D face.');
   await page.locator('#remove').click();
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
-  assert.equal(worldState.world.blocks.length,world.blocks.length);
+  assert.equal(worldState.world.blocks.length,world.blocks.length+1,'Removing the test block must retain the protection-fixture fill.');
   assert.equal(worldState.world.blocks.some(b=>b.key===addedStone.key),false);
   assert.equal(worldState.world.bucket.length,1,'Removing a block must recover it into the sandbox Material Bucket.');
   assert.equal(worldState.world.bucket[0].type,'stone');
