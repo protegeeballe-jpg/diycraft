@@ -56,6 +56,8 @@ function freshWorld(){
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.equal(worldState.world.blocks.length,world.blocks.length);
   assert.equal(worldState.world.blocks.some(b=>b.key===addedStone.key),false);
+  assert.equal(worldState.world.bucket.length,1,'Removing a block must recover it into the sandbox Material Bucket.');
+  assert.equal(worldState.world.bucket[0].type,'stone');
   await page.locator('#block-type').selectOption('door');
   await page.locator('#add').click();
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
