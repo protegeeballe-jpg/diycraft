@@ -4,8 +4,9 @@
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
 const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
+const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
@@ -36,8 +37,12 @@ fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVerte
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map();
 let waterMesh=null,fishMeshes=[],renderedFishCount=0,lastWaterAnimationAt=-Infinity;
+let playerPhysicsState=null,playerModelRoot=null,playerPlayMode=false,playerCameraMode='third',playerCameraPose=null,lastPlayerPhysicsTime=0;
+let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
+const touchControls=document.getElementById('player-controls'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
+ if(playerPlayMode&&playerPhysicsState){updatePlayerCamera();return;}
  orbit.phi=Math.max(.2,Math.min(1.3,orbit.phi));
  camera.position.set(target.x+orbit.radius*Math.sin(orbit.phi)*Math.sin(orbit.theta),target.y+orbit.radius*Math.cos(orbit.phi),target.z+orbit.radius*Math.sin(orbit.phi)*Math.cos(orbit.theta));
  camera.lookAt(target);
