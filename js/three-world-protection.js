@@ -32,15 +32,15 @@
   dad:{x:17,z:-7.9},mom:{x:19.1,z:-7.9},lia:{x:17,z:-6.2},maya:{x:19.1,z:-6.2},nico:{x:18.1,z:-8.35}
  });
  const FAMILY=Object.freeze([
-  {id:'dad',route:FAMILY_ROUTES.dad,speed:1.12,phase:1.5},
-  {id:'mom',route:FAMILY_ROUTES.mom,speed:.92,phase:8.2},
-  {id:'lia',route:FAMILY_ROUTES.lia,speed:1.42,phase:3.4},
-  {id:'maya',route:FAMILY_ROUTES.maya,speed:1.30,phase:12.7},
-  {id:'nico',route:FAMILY_ROUTES.nico,speed:1.68,phase:5.9}
+  {id:'dad',name:'Miguel',route:FAMILY_ROUTES.dad,speed:1.12,pace:7.2,phase:1.5,scale:1.10,shirt:'#477b9a',hair:'#392b24',skin:'#c9916d',pants:'#40516c',shoes:'#493b35',eyes:'#302820',hairStyle:'short',outfitStyle:'tee',accessory:'none',homeX:16,homeZ:-9},
+  {id:'mom',name:'Ana',route:FAMILY_ROUTES.mom,speed:.92,pace:6.8,phase:8.2,scale:1.02,shirt:'#bd7896',hair:'#493127',skin:'#edc19e',pants:'#557c65',shoes:'#88516c',eyes:'#302820',hairStyle:'long',outfitStyle:'dress',accessory:'flower',accessoryColor:'#f2c768',homeX:16,homeZ:-9},
+  {id:'lia',name:'Lia',route:FAMILY_ROUTES.lia,speed:1.42,pace:10.2,phase:3.4,scale:.78,shirt:'#e58eaa',hair:'#57372b',skin:'#f0c9a9',pants:'#83a86c',shoes:'#c75e7c',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'dress',accessory:'bow',accessoryColor:'#f4c4d5',homeX:16,homeZ:-9},
+  {id:'maya',name:'Maya',route:FAMILY_ROUTES.maya,speed:1.30,pace:9.6,phase:12.7,scale:.75,shirt:'#e6bb58',hair:'#3f3028',skin:'#e8b995',pants:'#5593a0',shoes:'#b87845',eyes:'#302820',hairStyle:'bob',outfitStyle:'overalls',accessory:'flower',accessoryColor:'#f28cae',homeX:16,homeZ:-9},
+  {id:'nico',name:'Nico',route:FAMILY_ROUTES.nico,speed:1.68,pace:11.4,phase:5.9,scale:.82,shirt:'#6d9b70',hair:'#382921',skin:'#dba77f',pants:'#526d8c',shoes:'#5d4b3e',eyes:'#302820',hairStyle:'curly',outfitStyle:'hoodie',accessory:'none',homeX:16,homeZ:-9}
  ]);
  const ROUTE_ACTORS=Object.freeze([
-  Object.freeze({id:'hyacinth',route:NEIGHBOR_ROUTES.hyacinth,phase:0,speed:1.05}),
-  Object.freeze({id:'theo',route:NEIGHBOR_ROUTES.theo,phase:11,speed:1.05}),
+  Object.freeze({id:'hyacinth',name:'hyacinth',route:NEIGHBOR_ROUTES.hyacinth,phase:0,speed:1.05,pace:8,scale:1,shirt:'#d94b3d',hair:'#493127',skin:'#f0c7a3',pants:'#287b8a',shoes:'#bd4540',eyes:'#302820',hairStyle:'bob',outfitStyle:'hoodie',accessory:'none',homeX:-13,homeZ:-7}),
+  Object.freeze({id:'theo',name:'Theo',route:NEIGHBOR_ROUTES.theo,phase:11,speed:1.05,pace:8,scale:1,shirt:'#48a78b',hair:'#efbd43',skin:'#dfab83',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',accessoryColor:'#ec83ba',homeX:10,homeZ:-17}),
   ...FAMILY.map(actor=>Object.freeze(actor))
  ]);
  const RESIDENTS=Object.freeze([
@@ -197,7 +197,7 @@
   for(const segment of segments){
    const path=segment.path,first=path[0]||segment.point,second=path[1]||segment.next;
    const initialFacing=Math.atan2(second.x-first.x,second.z-first.z);
-   if(time<segment.pause)return {x:first.x,z:first.z,facing:initialFacing,moving:false,walk:0};
+   if(time<segment.pause)return {...segment.point,x:first.x,z:first.z,facing:initialFacing,moving:false,walk:0};
    time-=segment.pause;
    if(time<segment.travel&&segment.length>.001){
     const raw=Math.max(0,Math.min(1,time/segment.travel)),progress=raw*raw*(3-2*raw);
@@ -241,6 +241,26 @@
    animals:Object.freeze(animals.map(a=>Object.freeze({...a})))
   });
  }
+ function characterStates(world={},timeSeconds=0,geometryRevision=0){
+  if(!finite(timeSeconds))throw new TypeError('Character animation time must be finite seconds.');
+  const mode=modeAt(timeSeconds,world.timeMode),night=mode==='night';
+  const nav=night?null:createNavigationState(world,geometryRevision);
+  return Object.freeze(ROUTE_ACTORS.map(actor=>{
+   const pose=night
+    ?{...SLEEP_SPOTS[actor.id],sleeping:true,moving:false,walk:0}
+    :routePosition(actor.route,timeSeconds,actor.phase,actor.speed,nav);
+   return Object.freeze({
+    ...actor,...pose,
+    id:actor.id,name:actor.name,
+    x:pose.x,z:pose.z,
+    phase:actor.phase,pace:actor.pace,
+    sleeping:night,
+    moving:night?false:!!pose.moving,
+    walk:night?0:finite(pose.walk)?pose.walk:0,
+    y:0
+   });
+  }));
+ }
  function isProtectedCell(x,z,context={}){
   if(!finite(x)||!finite(z))throw new TypeError('Protection cell coordinates must be finite.');
   const cx=Math.floor(x)+.5,cz=Math.floor(z)+.5;
@@ -255,5 +275,5 @@
   }
   return false;
  }
- return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,modeAt,routePosition,actorContext,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
+ return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,modeAt,routePosition,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });
