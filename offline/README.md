@@ -34,7 +34,7 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 ## Saving
 - The game autosaves locally when browser storage is available.
 - Main and /offline/ pages share the same browser origin and local world save.
-- Use **Backup world** to export a JSON backup and **Restore backup** to restore it on this or another device.
+- Use **Backup world** to export a losslessly compressed `.diycraft.gz` backup when the browser supports it; otherwise it exports JSON. **Restore backup** accepts compressed backups and older JSON backups.
 - Keep backups in a parent-controlled folder. Browser storage may be cleared by device settings or browser cleanup; export periodic backups.
 
 Creative mode is intentionally generous, with a technical block limit to protect device performance.
