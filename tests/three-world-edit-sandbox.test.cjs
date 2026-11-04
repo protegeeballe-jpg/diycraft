@@ -76,7 +76,7 @@ test('changes only supported tile patterns on tile blocks',()=>{
 test('rejects invalid input snapshot and keeps snapshots detached from internal state',()=>{
  assert.throws(()=>sandbox.create(null),TypeError);
  const edit=sandbox.create(fixture()),first=edit.getState();
- first.world.blocks.pop();
+ assert.throws(()=>first.world.blocks.pop(),TypeError);
  assert.equal(edit.getState().world.blocks.length,3);
 });
 console.log('Three.js editing sandbox tests complete.');
