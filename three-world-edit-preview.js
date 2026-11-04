@@ -19,7 +19,7 @@ const materials=painterly.create(THREE,renderer);
 const floorMat=new THREE.MeshStandardMaterial({color:0x789767,roughness:1});
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const group=new THREE.Group();scene.add(group);
-const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1);
+const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(.82,1.9,.14);
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,meshByKey=new Map();
 let target=new THREE.Vector3(0,1,0),orbit={radius:29,theta:.62,phi:.88};
@@ -34,14 +34,14 @@ function mat(block){
  return materials.get(color,kind,{glass:block.type==='glass',roughness:block.type==='glass'?.25:.94});
 }
 function clearGroup(){
- while(group.children.length)group.remove(group.children[group.children.length-1]);
+ while(group.children.length){const child=group.children[group.children.length-1];if(child.userData.selectionOutline){child.geometry.dispose();child.material.dispose();}group.remove(child);}
  meshByKey.clear();
 }
 function renderSandbox(state){
  clearGroup();
  state.world.blocks.forEach(block=>{
   const isTile=block.type==='tile',isDoor=block.type==='door';
-  const geometry=isTile?tileGeometry:(isDoor?new THREE.BoxGeometry(.82,1.9,.14):boxGeometry);
+  const geometry=isTile?tileGeometry:(isDoor?doorGeometry:boxGeometry);
   const mesh=new THREE.Mesh(geometry,mat(block));
   mesh.position.set(block.x+.5,block.y+(isTile?.065:(isDoor?.95:.5)),block.z+.5);
   if(isDoor){mesh.rotation.y=block.orientation==='ew'?-Math.PI/2:0;if(block.open)mesh.rotation.y+=(block.swing===-1?-1:1)*1.28;}
@@ -69,7 +69,7 @@ function renderSandbox(state){
   ' · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size,
-  pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;}};
+  pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
