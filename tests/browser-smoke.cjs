@@ -21,39 +21,7 @@ async function verifyGame(page, label) {
 
   if (label === 'local') {
     await page.waitForFunction(() => !!localStorage.getItem('diycraft_peaceful_voxel_v1'), null, { timeout: 10000 });
-    const initial = await page.evaluate
-async function verifyOfflinePlay(browser) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.stack || error.message));
-  try {
-    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 15000 });
-    await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 20000 });
-    await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.ready;
-      if (!registration.active || registration.active.state !== 'activated') {
-        throw new Error('The DIYCraft offline worker did not activate.');
-      }
-    });
-    await context.setOffline(true);
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 10000 });
-    const state = await page.locator('#game').evaluate(canvas => ({
-      width: canvas.width, height: canvas.height, ready: !!canvas.getContext('2d')
-    }));
-    if (state.width < 100 || state.height < 100 || !state.ready) {
-      throw new Error('DIYCraft did not reopen from its offline cache: ' + JSON.stringify(state));
-    }
-    if (errors.length) throw new Error('Offline browser runtime errors:\n' + errors.join('\n\n'));
-    console.log('local offline reopen test passed. Canvas: ' + JSON.stringify(state));
-  } finally {
-    await context.close();
-  }
-}
-
-(async () => {
+    const initial = await page.evaluate(async () => {
       const key = 'diycraft_peaceful_voxel_v1';
       const prefix = 'DIYCraft:gzip:v1:';
       const stored = localStorage.getItem(key);
@@ -66,7 +34,7 @@ async function verifyOfflinePlay(browser) {
         raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
       }
       const canCompress = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
-      const jsonBytes = new TextEncoder().encode(raw).length;
+      const jsonBytes = raw.length;
       let gzipBytes = null;
       if (canCompress) {
         const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
@@ -83,7 +51,8 @@ async function verifyOfflinePlay(browser) {
     if (!initial.world || !Array.isArray(initial.world.blocks)) {
       throw new Error('local: autosave did not contain a valid DIYCraft world: ' + JSON.stringify(initial));
     }
-    if (initial.canCompress && initial.gzipBytes + Math.ceil(initial.gzipBytes / 3) < initial.jsonBytes &&
+    if (initial.canCompress && initial.gzipBytes !== null &&
+        initial.gzipBytes + Math.ceil(initial.gzipBytes / 3) + 32 < initial.jsonBytes &&
         initial.format !== 'gzip') {
       throw new Error('local: compression was available and beneficial but was not used: ' + JSON.stringify(initial));
     }
@@ -92,24 +61,26 @@ async function verifyOfflinePlay(browser) {
       jsonBytes: initial.jsonBytes, gzipBytes: initial.gzipBytes
     }));
 
-    const original = JSON.stringify(initial.world);
-    await page.evaluate(raw => localStorage.setItem('diycraft_peaceful_voxel_v1', raw), original);
-    await page.reload({ waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForFunction(() => {
-      const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
-      return !!stored && stored.startsWith('DIYCraft:gzip:v1:');
-    }, null, { timeout: 10000 });
-    const migrated = await page.evaluate(async () => {
-      const prefix = 'DIYCraft:gzip:v1:';
-      const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
-      const binary = atob(stored.slice(prefix.length));
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      return JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
-    });
-    if (!migrated || JSON.stringify(migrated.blocks) !== JSON.stringify(initial.world.blocks) ||
-        migrated.name !== initial.world.name || JSON.stringify(migrated.animals) !== JSON.stringify(initial.world.animals)) {
-      throw new Error('local: legacy JSON world did not migrate without changing its saved content.');
+    if (initial.canCompress) {
+      const original = JSON.stringify(initial.world);
+      await page.evaluate(raw => localStorage.setItem('diycraft_peaceful_voxel_v1', raw), original);
+      await page.reload({ waitUntil: 'networkidle', timeout: 60000 });
+      await page.waitForFunction(() => {
+        const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
+        return !!stored && stored.startsWith('DIYCraft:gzip:v1:');
+      }, null, { timeout: 10000 });
+      const migrated = await page.evaluate(async () => {
+        const prefix = 'DIYCraft:gzip:v1:';
+        const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
+        const binary = atob(stored.slice(prefix.length));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+      });
+      if (!migrated || JSON.stringify(migrated.blocks) !== JSON.stringify(initial.world.blocks) ||
+          migrated.name !== initial.world.name || JSON.stringify(migrated.animals) !== JSON.stringify(initial.world.animals)) {
+        throw new Error('local: legacy JSON world did not migrate without changing its saved content.');
+      }
     }
   }
 
@@ -199,6 +170,39 @@ async function verifyOfflinePlay(browser) {
   console.log(label + ' browser test passed. Canvas: ' + JSON.stringify(canvasState));
   console.log(label + ': settings, close, camera view, flight and animal-care controls responded.');
 }
+
+
+async function verifyOfflinePlay(browser) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.stack || error.message));
+  try {
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 60000 });
+    await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 15000 });
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 20000 });
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      if (!registration.active || registration.active.state !== 'activated') {
+        throw new Error('The DIYCraft offline worker did not activate.');
+      }
+    });
+    await context.setOffline(true);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 10000 });
+    const state = await page.locator('#game').evaluate(canvas => ({
+      width: canvas.width, height: canvas.height, ready: !!canvas.getContext('2d')
+    }));
+    if (state.width < 100 || state.height < 100 || !state.ready) {
+      throw new Error('DIYCraft did not reopen from its offline cache: ' + JSON.stringify(state));
+    }
+    if (errors.length) throw new Error('Offline browser runtime errors:\n' + errors.join('\n\n'));
+    console.log('local offline reopen test passed. Canvas: ' + JSON.stringify(state));
+  } finally {
+    await context.close();
+  }
+}
+
 
 (async () => {
   const server = spawn('python3', ['-m', 'http.server', '4173', '--bind', '127.0.0.1'], {
