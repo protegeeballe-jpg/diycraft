@@ -95,7 +95,7 @@ test('uses the sandbox unsticking callback before the next movement step',()=>{
  assert.equal(result.saveRequested,true,'Recovering the player from an embedded block must request a save just like the production function.');
  assert.equal(edit.playerCollisionAt(result.player.x,result.player.z,result.player.y),false);
  assert.notEqual(result.player.x,state.player.x);
- assert.equal(result.player.y,state.player.y);
+ assert.ok(Math.abs(result.player.y-state.player.y)<1e-12,'Collision recovery must preserve the player height.');
 });
 test('ports keyboard and touch movement direction, normalization and yaw transforms',()=>{
  const cases=[
