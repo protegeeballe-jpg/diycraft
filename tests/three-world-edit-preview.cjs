@@ -101,6 +101,19 @@ function freshWorld(){
   assert.equal(doorVisual.textureKind,'door-window');
   assert.equal(doorVisual.hasPainterlyMap,true,'Window door must use its own watercolor/pencil material map.');
   assert.ok(doorVisual.textureWidth>=64&&doorVisual.textureHeight>=64);
+  assert.ok(doorVisual.styleSample.b>doorVisual.styleSample.r,'The window inset must retain its blue watercolor glass color.');
+  const styleSamples=await page.evaluate(()=>{
+   const api=window.DIYCraftPainterlyMaterials;
+   const sample=(style,x,y)=>{
+    const canvas=api.generateCanvas('#a97545',123,'door-'+style,{textureSize:128,pencilScale:.72}),ctx=canvas.getContext('2d');
+    const px=Math.round(x/.84*canvas.width),py=Math.round((1.96-y)/1.96*canvas.height),p=ctx.getImageData(px,py,1,1).data;
+    return {style,r:p[0],g:p[1],b:p[2],width:canvas.width,height:canvas.height};
+   };
+   return {window:sample('window',.42,1.38),garden:sample('garden',.43,1.43),classic:sample('classic',.43,1.43)};
+  });
+  assert.ok(styleSamples.window.b>styleSamples.window.r,'Window style must contain blue glass.');
+  assert.ok(styleSamples.garden.r>styleSamples.garden.g&&styleSamples.garden.g>styleSamples.garden.b,'Garden style must contain its warm yellow flower centre.');
+  assert.ok(styleSamples.classic.width===128&&styleSamples.classic.height===128,'Classic style must retain the same low-end painterly texture dimensions.');
   assert.equal(doorVisual.pivot.x,door.x+.08);
   assert.equal(doorVisual.pivot.z,door.z+.5);
   await page.locator('#door').click();
