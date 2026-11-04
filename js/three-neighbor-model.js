@@ -184,7 +184,7 @@
   root.rotation.y=finite(pose.facing);
   root.visible=!pose.sleeping;
   const limbs=root.userData.limbs;
-  limbs.leftArm.position.y=.82+bob;limbs.rightArm.position.y=.82+bob;
+  limbs.leftArm.position.y=.82;limbs.rightArm.position.y=.82;
   limbs.leftArm.rotation.x=armSwing;limbs.rightArm.rotation.x=-armSwing;
   limbs.leftLeg.position.y=.49+leftLift;limbs.rightLeg.position.y=.49+rightLift;
   limbs.leftLeg.rotation.x=legSwing;limbs.rightLeg.rotation.x=-legSwing;
