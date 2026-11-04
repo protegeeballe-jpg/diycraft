@@ -397,7 +397,7 @@ function freshWorld(){
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.equal(worldState.world.artworks.length,1,'Saving the shared picture must add one gallery artwork.');
   assert.equal(worldState.world.artworks[0].name,'Big happy flower with Lia');
-  assert.match(worldState.world.artworks[0].data,/^data:image\\/png;base64,/);
+  assert.match(worldState.world.artworks[0].data,/^data:image\/png;base64,/);
   assert.ok(worldState.world.crafted.some(item=>item&&item.id==='picture'&&item.label==='Big happy flower with Lia'),
    'Saving the gallery picture must also add the original crafted-pouch picture item.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborColoringStats().open),false,
