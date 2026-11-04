@@ -12,6 +12,11 @@ on:
       - three-world-preview.html
       - three-world-preview.js
       - tests/three-world-preview.cjs
+      - js/three-world-edit-sandbox.js
+      - js/three-world-raycast.js
+      - three-world-edit-preview.html
+      - three-world-edit-preview.js
+      - tests/three-world-edit-preview.cjs
       - .github/workflows/three-world-preview.yml
   pull_request:
     paths:
@@ -43,6 +48,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Render and test the real production starter world
         run: node tests/three-world-preview.cjs
+      - name: Run interactive editing sandbox browser tests
+        run: node tests/three-world-edit-preview.cjs
       - name: Upload real starter-world 3D preview
         uses: actions/upload-artifact@v4
         with:
