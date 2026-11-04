@@ -48,6 +48,16 @@ function freshWorld(){
   assert.equal(animalStats.animals.length,7);
   assert.equal(animalStats.rendered,7);
   assert.equal(animalStats.batches,4);
+  const neighborStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborStats());
+  assert.equal(neighborStats.total,7,'All seven original neighborhood characters must have 3D models.');
+  assert.deepEqual(neighborStats.actors.map(actor=>actor.id),['hyacinth','theo','dad','mom','lia','maya','nico']);
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.neighborCount),7,'Each original resident must receive exactly one reusable 3D model.');
+  assert.ok(neighborStats.actors.every(actor=>actor.position&&Math.abs(actor.position.x-(actor.x+.5))<1e-9&&Math.abs(actor.position.z-(actor.z+.5))<1e-9),
+   'The rendered model roots must follow their obstacle-aware world-space route coordinates.');
+  assert.deepEqual(neighborStats.actors.map(actor=>actor.hairStyle),['bob','pigtails','short','long','pigtails','bob','curly']);
+  assert.deepEqual(neighborStats.actors.map(actor=>actor.outfitStyle),['hoodie','overalls','tee','dress','dress','overalls','hoodie']);
+  assert.ok(neighborStats.actors.every(actor=>typeof actor.shirt==='string'&&actor.shirt.startsWith('#')));
+  assert.ok(neighborStats.rendered>0&&neighborStats.rendered<=7,'Camera-distance culling must render nearby residents without removing their models.');
   const initialAnimalY=animalStats.firstY;
   let protectionState;
   const protectionContext=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getProtectionContext());
