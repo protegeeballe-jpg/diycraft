@@ -152,7 +152,7 @@ test('keeps sleep and bed stationary and clears input and jump velocity',()=>{
   );
   assert.equal(result.player.z,0);
   assert.equal(result.jumpVelocity,0);
-  assert.deepEqual(result.controls,{moveX:0,moveZ:0,vertical:0,keys:{w:false,Shift:false,' ':false}});
+  assert.deepEqual(result.controls,{moveX:0,moveZ:0,vertical:0,keys:{}});
  }
 });
 test('clamps world coordinates before collision checks',()=>{
