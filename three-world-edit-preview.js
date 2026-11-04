@@ -3,9 +3,9 @@
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
-const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel;
+const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
@@ -23,7 +23,9 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotati
 const group=new THREE.Group();scene.add(group);
 const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
-const animatedPlants=[];
+const animatedPlants=[],animalSurfaceMaterial=materials.get('#ffffff','paper');
+animalSurfaceMaterial.vertexColors=true;animalSurfaceMaterial.needsUpdate=true;
+let animalBatches=[],renderedAnimalCount=0;
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const fishGeometry=new THREE.BufferGeometry();
 fishGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
@@ -52,6 +54,7 @@ function clearGroup(){
   group.remove(child);
  }
  meshByKey.clear();
+ animalBatches=[];renderedAnimalCount=0;
 }
 function displayedDoorAngle(block,now=performance.now()){
  const motion=doorMotions.get(block.key);
@@ -156,6 +159,53 @@ function updateWaterAndFish(now){
   });
  }
 }
+function buildAnimalBatches(animals){
+ const all=Array.isArray(animals)?animals:[];
+ const visible=all.slice().sort((a,b)=>{
+  const da=(a.x-target.x)*(a.x-target.x)+(a.z-target.z)*(a.z-target.z);
+  const db=(b.x-target.x)*(b.x-target.x)+(b.z-target.z)*(b.z-target.z);
+  return da-db;
+ }).slice(0,performanceProfile.maxVisibleAnimals);
+ const byAppearance=new Map();
+ visible.forEach(animal=>{
+  const body=animal.body||animalGeometryFactory.defaults[animal.species]||'#e9dfca';
+  const accent=animal.accent||'#d0b6a0';
+  const key=[animal.species,body,accent].join('|');
+  let entry=byAppearance.get(key);
+  if(!entry){
+   const geometry=animalGeometryFactory.create(THREE,{...animal,body,accent});
+   geometry.userData.sandboxOwned=true;
+   entry={geometry,animals:[]};byAppearance.set(key,entry);
+  }
+  entry.animals.push(animal);
+ });
+ const dummy=new THREE.Object3D();animalBatches=[];
+ byAppearance.forEach(entry=>{
+  const mesh=new THREE.InstancedMesh(entry.geometry,animalSurfaceMaterial,entry.animals.length);
+  mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
+  mesh.userData.animalInstances=true;
+  entry.animals.forEach((animal,index)=>{
+   dummy.position.set(animal.x,.04,animal.z);dummy.rotation.set(0,animal.facing||0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+   mesh.setMatrixAt(index,dummy.matrix);
+  });
+  mesh.instanceMatrix.needsUpdate=true;group.add(mesh);
+  animalBatches.push({mesh,animals:entry.animals});
+ });
+ renderedAnimalCount=visible.length;
+}
+function updateAnimalInstances(now){
+ if(!animalBatches.length)return;
+ const time=now*.001,dummy=new THREE.Object3D();
+ animalBatches.forEach(batch=>{
+  batch.animals.forEach((animal,index)=>{
+   const phase=(Number.isFinite(animal.phase)?animal.phase:0);
+   dummy.position.set(animal.x,.04+Math.sin(time*2.2+phase)*.03,animal.z);
+   dummy.rotation.set(0,animal.facing||0,Math.sin(time*1.1+phase)*.018);
+   dummy.scale.set(1,1,1);dummy.updateMatrix();batch.mesh.setMatrixAt(index,dummy.matrix);
+  });
+  batch.mesh.instanceMatrix.needsUpdate=true;
+ });
+}
 function renderSandbox(state){
  const now=performance.now();syncDoorMotions(state,now);
  clearGroup();blockByKey.clear();animatedPlants.length=0;waterMesh=null;fishMeshes=[];renderedFishCount=0;lastWaterAnimationAt=-Infinity;
@@ -197,6 +247,7 @@ function renderSandbox(state){
  });
  waterMesh=buildWaterSurface(state.world.water||[]);
  buildFishInstances(state);
+ buildAnimalBatches(state.world.animals||[]);
  if(state.selectedKey){
   const block=blockByKey.get(state.selectedKey);
   if(block){
@@ -229,19 +280,20 @@ function renderSandbox(state){
  document.getElementById('door').disabled=!selectedBlock||selectedBlock.type!=='door';
  document.getElementById('apply-pattern').disabled=!selectedBlock||selectedBlock.type!=='tile';
  document.getElementById('pattern').value=selectedBlock&&selectedBlock.type==='tile'?selectedBlock.tilePattern||'grid':'grid';
- const renderObjects=group.children.length,instanceBatches=batches.size,waterCount=(state.world.water||[]).length,fishCount=(state.world.fish||[]).length;
+ const renderObjects=group.children.length,instanceBatches=batches.size,waterCount=(state.world.water||[]).length,fishCount=(state.world.fish||[]).length,animalCount=(state.world.animals||[]).length;
  status.textContent=state.world.name+' · '+state.world.blocks.length+' blocks · '+instanceBatches+' instanced batches · '+renderObjects+' render objects · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
-  ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
+  ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · Animals: '+animalCount+' ('+renderedAnimalCount+' shown) · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:renderObjects,renderObjects,instanceBatches,
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,waterAnimationFps:performanceProfile.waterAnimationFps},
-  waterCount,fishCount,renderedFishCount,canvasSize:{width:canvas.width,height:canvas.height},
+  waterCount,fishCount,renderedFishCount,animalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   pickBlock:(key)=>{const block=blockByKey.get(key);if(!block)return false;const p=new THREE.Vector3(block.x+.5,block.y+.5,block.z+.5).project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
-  getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},getState:()=>sandbox.getState()};
+  getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
+  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
@@ -315,7 +367,7 @@ canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
 canvas.addEventListener('wheel',event=>{event.preventDefault();orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));});
 let frame=0;
-function animate(now){requestAnimationFrame(animate);if(!frameGate.shouldRender(now))return;updateDoorAnimations(now);updateWaterAndFish(now);for(const item of animatedPlants){if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;}renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__){window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;}}
+function animate(now){requestAnimationFrame(animate);if(!frameGate.shouldRender(now))return;updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);for(const item of animatedPlants){if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;}renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__){window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;}}
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
