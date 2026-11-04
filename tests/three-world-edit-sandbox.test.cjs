@@ -238,7 +238,7 @@ test('digging an existing water surface collects a layer instead of excavating i
 test('excavation prechecks depth, ground-cell count, materials capacity and bucket capacity',()=>{
  const invalid= sandbox.create(fixture()),before=invalid.getState();
  assert.throws(()=>invalid.excavateGround(1.5,2),/whole-number/);
- const deepWorld=fixture();deepWorld.excavations=[[30,30,1000000000]];
+ const deepWorld=fixture();deepWorld.excavations=[{x:30,z:30,depth:1000000000}];
  const deep=sandbox.create(deepWorld),deepBefore=deep.getState();
  assert.throws(()=>deep.excavateGround(30,30),/safe digging depth/);
  assert.equal(deep.getState().revision,deepBefore.revision);
