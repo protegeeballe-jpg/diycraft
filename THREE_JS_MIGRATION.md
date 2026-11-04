@@ -41,9 +41,9 @@
 
 ### Stage 2 — Editing parity in a sandbox
 **Status: In progress — isolated data actions and selection resolver complete; browser interaction not yet connected**
-- `js/three-world-edit-sandbox.js` clones the immutable renderer snapshot into private in-memory state and exposes selection, validated block placement/removal, door toggling and tile-pattern changes.
+- `js/three-world-edit-sandbox.js` clones the immutable renderer snapshot into private in-memory state and exposes selection, validated block placement/removal, door toggling and tile-pattern changes. Removal recovers the original block appearance into a bounded 120-item Material Bucket and refuses deletion when the bucket is full.
 - Each operation returns a detached, deeply frozen state snapshot. The original renderer snapshot is checked for unchanged content; no storage APIs or production-world references are used.
-- `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups.
+- `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups. Browser placement uses the clicked face normal and rejects occupied cells.
 - Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, tile patterns, immutable state and nearest-hit selection.
 - CI runs the adapter, editing-sandbox and raycast tests independently.
 - `three-world-edit-preview.html` and `three-world-edit-preview.js` provide a separate interactive browser sandbox with real 3D raycast selection, face-normal block placement, removal, door open/close, and tile-pattern changes. Occupied face targets are rejected rather than silently shifted. It loads the CI-generated production starter-world fixture and uses the painterly material library.
