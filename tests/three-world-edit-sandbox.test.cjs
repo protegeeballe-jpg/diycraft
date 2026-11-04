@@ -321,6 +321,35 @@ test('rejects invalid, non-dug, door, blocked and over-capacity excavation fills
  assert.throws(()=>fullEdit.fillExcavation(8,8,{type:'stone'}),/Not enough building space/);
  assert.equal(fullEdit.getState().revision,fullBefore.revision);
 });
+test('blocks digging and removal inside protected homes and near live neighbors or animals',()=>{
+ const world=fixture();
+ world.blocks.push({key:'protected-block',type:'stone',x:30,y:0,z:30});
+ const edit=sandbox.create(world);
+ const neighborContext={neighbors:[{id:'nearby',x:30.5,z:30.5}],animals:[]};
+ const animalContext={neighbors:[],animals:[{id:'pet',x:32.5,z:32.5}]};
+ assert.equal(edit.isProtectedDigCell(-14,-7,{}),true,'The fixed Hyacinth home rectangle must remain protected.');
+ assert.throws(()=>edit.excavateGround(-14,-7,{}),/protected/);
+ assert.equal(edit.isProtectedDigCell(30,30,neighborContext),true);
+ assert.throws(()=>edit.excavateGround(30,30,neighborContext),/protected/);
+ assert.throws(()=>edit.remove('protected-block',neighborContext),/protected/);
+ assert.equal(edit.isProtectedDigCell(32,32,animalContext),true);
+ assert.throws(()=>edit.excavateGround(32,32,animalContext),/protected/);
+ assert.equal(edit.getState().world.excavations.length,1,'Blocked digging must not change excavations.');
+ assert.equal(edit.getState().world.blocks.some(b=>b.key==='protected-block'),true,'Blocked removal must preserve the block.');
+ assert.equal(edit.getState().world.bucket.length,0,'Blocked removal must not recover an item.');
+});
+test('protects water filling and collection but preserves the original unprotected hole-fill rule',()=>{
+ const world=fixture();
+ world.excavations.push({x:30,z:30,depth:2},{x:31,z:30,depth:2},{x:-14,z:-7,depth:1});
+ world.water=[{x:30,z:30,level:1,depth:2}];
+ const edit=sandbox.create(world),nearAnimal={neighbors:[],animals:[{id:'pet',x:30.5,z:30.5}]};
+ assert.throws(()=>edit.addWaterLayer(30,30,nearAnimal),/protected/);
+ assert.throws(()=>edit.collectWaterLayer(30,30,nearAnimal),/protected/);
+ const filled=edit.fillExcavation(-14,-7,{type:'stone'});
+ assert.equal(filled.world.excavations.some(cell=>cell.x===-14&&cell.z===-7),false,
+  'Canvas 2D fillAtScreen does not use the dig protection guard, so sandbox fill behavior stays unchanged.');
+ assert.equal(filled.world.blocks.some(block=>block.x===-14&&block.z===-7),true);
+});
 test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
  const edit=sandbox.create(fixture());
  assert.throws(()=>edit.addFish(8,8),/Add water/);
