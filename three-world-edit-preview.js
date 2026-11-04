@@ -4,9 +4,9 @@
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
 const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
-const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels,coloring=window.DIYCraftThreeNeighborColoring;
+const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels,coloring=window.DIYCraftThreeNeighborColoring,protection=window.DIYCraftThreeWorldProtection;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
@@ -26,7 +26,8 @@ const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometr
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
 const animatedPlants=[],animalSurfaceMaterial=materials.get('#ffffff','paper');
 animalSurfaceMaterial.vertexColors=true;animalSurfaceMaterial.needsUpdate=true;
-let animalBatches=[],renderedAnimalCount=0;
+let animalBatches=[],renderedAnimalCount=0,animalStatesCache=[],animalCareSelection=null,animalCareFlashUntil=0,animalCareFlashEmoji='💚';
+const residentAnimalIds=new Set(protection.RESIDENTS.map(animal=>animal.id));
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const fishGeometry=new THREE.BufferGeometry();
 fishGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
@@ -40,6 +41,7 @@ let waterMesh=null,fishMeshes=[],renderedFishCount=0,lastWaterAnimationAt=-Infin
 let playerPhysicsState=null,playerModelRoot=null,playerPlayMode=false,playerCameraMode='third',playerCameraPose=null,lastPlayerPhysicsTime=0;
 let neighborColorName='',neighborColorPage=null,neighborColorTool='fill',neighborColorUndo=[],neighborColorDrawing=false,neighborColorLast=null,neighborColorTimer=null,neighborColorHideTimer=null,neighborColorStep=0;
 const neighborColorShade=document.getElementById('neighbor-coloring');
+const animalCareShade=document.getElementById('animal-care'),animalCareFlash=document.getElementById('animal-care-flash');
 const neighborColorCanvas=document.getElementById('neighbor-color-canvas');
 const neighborColorCtx=neighborColorCanvas.getContext('2d',{willReadFrequently:true});
 
@@ -202,7 +204,7 @@ function clearGroup(){
   group.remove(child);
  }
  meshByKey.clear();
- animalBatches=[];renderedAnimalCount=0;
+ animalBatches=[];renderedAnimalCount=0;animalStatesCache=[];
 }
 function displayedDoorAngle(block,now=performance.now()){
  const motion=doorMotions.get(block.key);
@@ -309,11 +311,17 @@ function updateWaterAndFish(now){
 }
 function buildAnimalBatches(animals){
  const all=Array.isArray(animals)?animals:[];
- const visible=all.slice().sort((a,b)=>{
+ animalStatesCache=all;
+ const residents=all.filter(animal=>residentAnimalIds.has(animal.id));
+ const saved=all.filter(animal=>!residentAnimalIds.has(animal.id)).sort((a,b)=>{
   const da=(a.x-target.x)*(a.x-target.x)+(a.z-target.z)*(a.z-target.z);
   const db=(b.x-target.x)*(b.x-target.x)+(b.z-target.z)*(b.z-target.z);
   return da-db;
- }).slice(0,performanceProfile.maxVisibleAnimals);
+ });
+ // Keep the seven familiar residents visible on low-end devices; use the
+ // remaining instance budget for the nearest saved animals.
+ const capacity=Math.max(0,performanceProfile.maxVisibleAnimals);
+ const visible=[...residents.slice(0,capacity),...saved.slice(0,Math.max(0,capacity-residents.length))];
  const byAppearance=new Map();
  visible.forEach(animal=>{
   const body=animal.body||animalGeometryFactory.defaults[animal.species]||'#e9dfca';
@@ -342,11 +350,13 @@ function buildAnimalBatches(animals){
  renderedAnimalCount=visible.length;
 }
 function updateAnimalInstances(now){
- if(!animalBatches.length)return;
  const time=now*.001,dummy=new THREE.Object3D();
+ const current=sandbox?sandbox.animalStates(time):animalStatesCache;
+ animalStatesCache=current;
+ const byId=new Map(current.map(animal=>[animal.id,animal]));
  animalBatches.forEach(batch=>{
-  batch.animals.forEach((animal,index)=>{
-   const phase=(Number.isFinite(animal.phase)?animal.phase:0);
+  batch.animals.forEach((original,index)=>{
+   const animal=byId.get(original.id)||original,phase=Number.isFinite(animal.phase)?animal.phase:0;
    dummy.position.set(animal.x,.04+Math.sin(time*2.2+phase)*.03,animal.z);
    dummy.rotation.set(0,animal.facing||0,Math.sin(time*1.1+phase)*.018);
    dummy.scale.set(1,1,1);dummy.updateMatrix();batch.mesh.setMatrixAt(index,dummy.matrix);
@@ -395,7 +405,7 @@ function renderSandbox(state){
  });
  waterMesh=buildWaterSurface(state.world.water||[]);
  buildFishInstances(state);
- buildAnimalBatches(state.world.animals||[]);
+ buildAnimalBatches(sandbox.animalStates(now/1000));
  if(state.selectedKey){
   const block=blockByKey.get(state.selectedKey);
   if(block){
@@ -428,14 +438,14 @@ function renderSandbox(state){
  document.getElementById('door').disabled=!selectedBlock||selectedBlock.type!=='door';
  document.getElementById('apply-pattern').disabled=!selectedBlock||selectedBlock.type!=='tile';
  document.getElementById('pattern').value=selectedBlock&&selectedBlock.type==='tile'?selectedBlock.tilePattern||'grid':'grid';
- const renderObjects=group.children.length,instanceBatches=batches.size,waterCount=(state.world.water||[]).length,fishCount=(state.world.fish||[]).length,animalCount=(state.world.animals||[]).length;
+ const renderObjects=group.children.length,instanceBatches=batches.size,waterCount=(state.world.water||[]).length,fishCount=(state.world.fish||[]).length,animalCount=(state.world.animals||[]).length,residentAnimalCount=protection.RESIDENTS.length,totalAnimalCount=animalStatesCache.length;
  status.textContent=state.world.name+' · '+state.world.blocks.length+' blocks · '+instanceBatches+' instanced batches · '+renderObjects+' render objects · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
-  ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · Animals: '+animalCount+' ('+renderedAnimalCount+' shown) · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
+  ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · Animals: '+totalAnimalCount+' ('+residentAnimalCount+' residents, '+animalCount+' saved; '+renderedAnimalCount+' shown) · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:renderObjects,renderObjects,instanceBatches,
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps},
-  waterCount,fishCount,renderedFishCount,animalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
+  waterCount,fishCount,renderedFishCount,animalCount,residentAnimalCount,totalAnimalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
   playerMode:playerPlayMode,cameraMode:playerCameraMode,
   getPlayerState:()=>playerPhysicsState?{player:{...playerPhysicsState.player},jumpVelocity:playerPhysicsState.jumpVelocity,playerGrounded:playerPhysicsState.playerGrounded,flying:playerPhysicsState.flying,playerActivity:playerPhysicsState.playerActivity}:null,
   getPlayerCamera:()=>playerCameraPose?{pos:{...playerCameraPose.pos},yaw:playerCameraPose.yaw,pitch:playerCameraPose.pitch}:null,
@@ -445,7 +455,7 @@ function renderSandbox(state){
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
-  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getState:()=>sandbox.getState()};
+  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getState:()=>sandbox.getState()};
  updatePlayerDiagnostics();
 }
 function selectedBlock(){
