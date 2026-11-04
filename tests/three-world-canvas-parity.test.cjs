@@ -141,6 +141,17 @@ function productionCollisionHarness(world){
  );
 }
 
+function productionNudgeHarness(world,playerCollisionAt){
+ const start=source.indexOf('function nudgePlayerOutOfBlocks(){');
+ const end=source.indexOf('\nfunction jump()',start);
+ if(start<0||end<0)throw new Error('Could not extract production nudgePlayerOutOfBlocks().');
+ const execute=new Function('world','playerCollisionAt','showStatus',
+  'let saved=false;const save=()=>{saved=true;};'+source.slice(start,end)+
+  '\nnudgePlayerOutOfBlocks();return {player:{...world.player},saveRequested:saved};'
+ );
+ return execute(world,playerCollisionAt,()=>{});
+}
+
 function comparable(block){
  const out={type:block.type,x:block.x,y:block.y,z:block.z};
  for(const key of ['color','texture','tilePattern','style','orientation','swing','open'])if(block[key]!==undefined)out[key]=block[key];
@@ -319,6 +330,26 @@ test('matches exact Canvas 2D player capsule collisions for solids, tiles, plant
   assert.equal(edit.playerCollisionAt(x,z,y),production(x,z,y),
    'Open-door collision must match Canvas 2D at '+[x,z,y].join(','));
  }
+});
+test('matches Canvas 2D player recovery when starting inside a block',()=>{
+ const world=freshWorld();
+ world.blocks=[{x:0,y:0,z:0,type:'stone'}];
+ const productionCollision=productionCollisionHarness(world);
+ const edit=sandboxApi.create(adapter.createSnapshot(world));
+ const before={x:.5,y:0,z:.5,yaw:.2,pitch:-.1};
+ world.player={...before};
+ const expected=productionNudgeHarness(world,productionCollision);
+ const actual=edit.nudgePlayerOutOfBlocks(before);
+ assert.deepEqual({x:actual.x,y:actual.y,z:actual.z},{x:expected.player.x,y:expected.player.y,z:expected.player.z});
+ assert.equal(actual.moved,true);
+ assert.equal(actual.saveRequested,expected.saveRequested);
+ assert.equal(edit.playerCollisionAt(actual.x,actual.z,actual.y),false);
+ const safe={x:8,y:0,z:8,yaw:0,pitch:0};world.player={...safe};
+ const expectedSafe=productionNudgeHarness(world,productionCollision);
+ const actualSafe=edit.nudgePlayerOutOfBlocks(safe);
+ assert.deepEqual({x:actualSafe.x,y:actualSafe.y,z:actualSafe.z},{x:expectedSafe.player.x,y:expectedSafe.player.y,z:expectedSafe.player.z});
+ assert.equal(actualSafe.moved,false);
+ assert.equal(actualSafe.saveRequested,expectedSafe.saveRequested);
 });
 test('matches Canvas 2D default Material Bucket colors for newly placed solids',()=>{
  const world=freshWorld(),production=productionHarness(world);
