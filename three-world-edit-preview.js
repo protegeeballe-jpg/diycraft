@@ -7,7 +7,7 @@ const raycastKeys=window.DIYCraftThreeRaycast;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
 if(!THREE||!adapter||!painterly||!editing||!raycastKeys)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
-const camera=new THREE.PerspectiveCamera(42,1,.1,130);
+const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'low-power'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight,false);
 renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
@@ -22,7 +22,7 @@ const group=new THREE.Group();scene.add(group);
 const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(.82,1.9,.14);
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,meshByKey=new Map();
-let target=new THREE.Vector3(0,1,0),orbit={radius:29,theta:.62,phi:.88};
+let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
  orbit.phi=Math.max(.2,Math.min(1.3,orbit.phi));
  camera.position.set(target.x+orbit.radius*Math.sin(orbit.phi)*Math.sin(orbit.theta),target.y+orbit.radius*Math.cos(orbit.phi),target.z+orbit.radius*Math.sin(orbit.phi)*Math.cos(orbit.theta));
@@ -85,7 +85,8 @@ function addBeside(){
  const state=sandbox.getState(),occupied=new Set(state.world.blocks.map(b=>b.x+','+b.y+','+b.z));
  let attempts=0;while(occupied.has(x+','+y+','+z)&&attempts++<100){x++;if(x>1000){x=0;z++;}}
  const type=document.getElementById('block-type').value,color=document.getElementById('color').value;
- const input={type,x,y,z,color};
+ const input={type,x,y,z};
+ if(type==='custom')input.color=color;
  if(type==='custom')input.texture='custom';
  if(type==='tile')input.tilePattern=document.getElementById('pattern').value;
  if(type==='door'){input.style='classic';input.orientation='ns';}
