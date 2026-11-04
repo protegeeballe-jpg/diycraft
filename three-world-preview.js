@@ -3,11 +3,11 @@
 (function(){
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
-const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry;
+const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel;
 const canvas=document.getElementById('three-world');
 const status=document.getElementById('counts');
 const errorPanel=document.getElementById('error');
-if(!THREE||!adapter||!painterly||!performanceProfiles||!plantGeometryFactory)throw new Error('A required local DIYCraft Three.js migration module did not load.');
+if(!THREE||!adapter||!painterly||!performanceProfiles||!plantGeometryFactory||!doorModels)throw new Error('A required local DIYCraft Three.js migration module did not load.');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xf2ead9);
 scene.fog=new THREE.Fog(0xf2ead9,34,78);
@@ -121,25 +121,13 @@ function makePlant(block){
  renderedPlants++;
 }
 function makeDoor(block){
- const root=new THREE.Group();
- root.position.set(block.x+.08,block.y,block.z+.08);
- scene.add(root);
- const leaf=new THREE.Group();root.add(leaf);
- const wood=material(block.color||defaultColors.door,'wood');
- const trim=material('#6f5039','wood');
- const glass=material('#a9dce8','glass',{glass:true});
- const panel=box(leaf,.42,.98,0,.84,1.96,.12,wood);
- panel.castShadow=true;
- for(const y of [.31,1.22]){
-  box(leaf,.42,y,.068,.56,.54,.018,trim);
- }
- if(block.style==='window'){
-  box(leaf,.42,1.43,.075,.44,.42,.018,glass);
- }
- box(leaf,.70,.87,.09,.07,.13,.055,material('#e6bd62','flower'));
- if(block.orientation==='ew')leaf.rotation.y=-Math.PI/2;
- if(block.open)leaf.rotation.y+=(block.swing===-1?-1:1)*1.28;
- renderedDoors++;
+ const layout=doorModels.create(block),root=new THREE.Group();
+ root.position.set(layout.pivot.x,layout.pivot.y,layout.pivot.z);
+ root.rotation.y=layout.angle(block.open?1.32:0);
+ const panel=box(root,layout.localCenter.x,layout.localCenter.y,layout.localCenter.z,
+  layout.width,layout.height,layout.thickness,material(layout.color,layout.textureKind));
+ panel.castShadow=performanceProfile.shadows;panel.receiveShadow=performanceProfile.shadows;
+ scene.add(root);renderedDoors++;
  return root;
 }
 function makePlayer(player){
