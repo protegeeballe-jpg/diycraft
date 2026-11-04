@@ -413,4 +413,44 @@ check(getSurfaceHeight(1, 2, 0) === 0 && getSurfaceHeight(1, 2) === 5,
 check(getSurfaceHeight(3, 4, -100) === -3,
   'A player who falls below unexcavated terrain must recover to that column’s ground surface.');
 
+
+check(source.startsWith('(async()=>') && source.includes('let world=await load()') &&
+  source.includes('async function decodeSavedWorld(value)'),
+  'Compressed saves must be decoded before the game creates or mutates the world.');
+check(source.includes("const SAVE_GZIP_PREFIX='DIYCraft:gzip:v1:'") &&
+  source.includes('async function encodeSavedWorld(json)') &&
+  source.includes('async function gunzipBytes(bytes)'),
+  'World persistence must use a versioned, lossless gzip codec with a plain-JSON fallback.');
+check(source.includes('SAVE_DEBOUNCE_MS=450') &&
+  source.includes('async function persistLatestWorld()') &&
+  source.includes('if(revision!==saveRevision)return;') &&
+  source.includes('function flushSaveSync()'),
+  'Autosaves must be debounced, ordered, and flushed synchronously when the page is hidden or closed.');
+check(source.includes("useGzip?'.diycraft.gz':'.json'") &&
+  source.includes("bytes[0]===0x1f&&bytes[1]===0x8b") &&
+  source.includes('async function restoreBackup(file)'),
+  'Compressed gzip backups and existing JSON backups must both be restorable.');
+const colorPagesStart=source.indexOf('const COLOR_PAGES=[');
+const colorPagesEnd=source.indexOf('\\nlet coloringNeighbor',colorPagesStart);
+assert(colorPagesStart>=0&&colorPagesEnd>colorPagesStart,'Built-in coloring pages must remain a distinct, locally defined asset collection.');
+const colorPagesSource=source.slice(colorPagesStart,colorPagesEnd);
+const svgTags=[...colorPagesSource.matchAll(/<\\/?([a-zA-Z][\\w:-]*)\\b[^>]*>/g)].map(match=>match[1].toLowerCase());
+const allowedSvgTags=new Set(['svg','rect','circle','path','g','ellipse']);
+check(svgTags.length>=25&&svgTags.every(tag=>allowedSvgTags.has(tag)) &&
+  !/<\\s*(?:text|metadata|desc|script|foreignObject|image|use|filter|mask)\\b/i.test(colorPagesSource) &&
+  !/\\son[a-z]+\\s*=|(?:href|xlink:href)\\s*=|opacity\\s*=\\s*["']0|display\\s*=\\s*["']none/i.test(colorPagesSource),
+  'Built-in coloring art must remain visible, original vector shapes without embedded text, scripts, hidden nodes or linked content.');
+const htmlScripts=[...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+const htmlResourceAttrs=[...html.matchAll(/\\b(?:src|href)\\s*=\\s*["']([^"']+)["']/gi)].map(match=>match[1]);
+const csp=(html.match(/Content-Security-Policy["']?\\s+content=["']([^"']+)["']/i)||[])[1]||'';
+check(htmlScripts.length===1&&htmlScripts[0][1].trim()===''&&
+  htmlScripts[0][0].includes('src="./diycraft.js"')&&
+  csp.includes("default-src 'none'")&&csp.includes("script-src 'self'")&&!csp.includes("script-src 'unsafe-inline'")&&
+  htmlResourceAttrs.every(url=>!/^https?:\\/\\//i.test(url))&&
+  !/<\\s*(?:iframe|object|embed)\\b/i.test(html),
+  'The game shell must load only its local engine, block inline scripts, and contain no remote image, frame or embedded content.');
+check(html.includes('no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content') &&
+  html.includes('no third-party images or hidden text are loaded'),
+  'The child-safety disclosure must explicitly exclude chat, external content, third-party images and hidden text.');
+
 console.log('DIYCraft performance smoke tests passed: ' + passed + ' checks.');
