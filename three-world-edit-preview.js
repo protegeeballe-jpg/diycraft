@@ -33,7 +33,7 @@ fishGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
 fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVertexNormals();
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map();
-let waterMesh=null,fishMeshes=[],renderedFishCount=0;
+let waterMesh=null,fishMeshes=[],renderedFishCount=0,lastWaterAnimationAt=-Infinity;
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
  orbit.phi=Math.max(.2,Math.min(1.3,orbit.phi));
@@ -133,7 +133,8 @@ function buildFishInstances(state){
 }
 function updateWaterAndFish(now){
  const elapsed=now*.001;
- if(waterMesh){
+ if(waterMesh&&now-lastWaterAnimationAt>=1000/performanceProfile.waterAnimationFps){
+  lastWaterAnimationAt=now;
   const position=waterMesh.geometry.attributes.position,base=waterMesh.userData.baseHeights,coords=waterMesh.userData.waveCoords;
   for(let i=0;i<position.count;i++){
    const x=coords[i*2],z=coords[i*2+1];
@@ -157,7 +158,7 @@ function updateWaterAndFish(now){
 }
 function renderSandbox(state){
  const now=performance.now();syncDoorMotions(state,now);
- clearGroup();blockByKey.clear();animatedPlants.length=0;waterMesh=null;fishMeshes=[];renderedFishCount=0;
+ clearGroup();blockByKey.clear();animatedPlants.length=0;waterMesh=null;fishMeshes=[];renderedFishCount=0;lastWaterAnimationAt=-Infinity;
  const batches=new Map();
  state.world.blocks.forEach(block=>{
   blockByKey.set(block.key,block);
@@ -216,7 +217,7 @@ function renderSandbox(state){
   ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:renderObjects,renderObjects,instanceBatches,
-  performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish},
+  performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,waterAnimationFps:performanceProfile.waterAnimationFps},
   waterCount,fishCount,renderedFishCount,
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   pickBlock:(key)=>{const block=blockByKey.get(key);if(!block)return false;const p=new THREE.Vector3(block.x+.5,block.y+.5,block.z+.5).project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},
