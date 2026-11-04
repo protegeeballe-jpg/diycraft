@@ -50,21 +50,24 @@ function productionFillHarness(world,selectedType='grass',selectedBucketItem=nul
  const {add}=productionHarness(world,selectedBucketItem,selectedType);
  const start=source.indexOf('function fillAtScreen('),end=source.indexOf('\nfunction waterAtScreen',start);
  if(start<0||end<0)throw new Error('Could not extract production fillAtScreen().');
- const fill=new Function(
+ const buildFill=new Function(
   'canvas','rayHitAtScreen','groundDepthAt','keyGround','world','selected','MAX_BLOCKS','showStatus',
   'addBlock','groundDepths','excavationRenderChunks','removeRenderChunkItem','waterLevels','waterCells',
-  'waterRenderChunks','fishSpots','rebuildFishRenderChunks','syncExcavations','syncWaterLife',
-  'invalidateNeighborNavigation','save','render','blockMap',
-  'return ('+source.slice(start,end).trim()+');'
+  'waterRenderChunks','rebuildFishRenderChunks','syncExcavations','syncWaterLife',
+  'invalidateNeighborNavigation','save','render','blockMap','initialFishSpots',
+  'let fishSpots=initialFishSpots;\\n'+
+  'const fill=('+source.slice(start,end).trim()+');\\n'+
+  'return {run:(...args)=>fill(...args),getFishSpots:()=>fishSpots};'
  )(
   {clientWidth:100,clientHeight:100},()=>null,(x,z)=>groundDepths.get(keyGround(x,z))||0,keyGround,
   world,selectedType,18000,()=>{},add,groundDepths,new Map(),()=>{},waterLevels,waterCells,new Map(),
-  fishSpots,()=>{},
+  ()=>{},
   ()=>{world.excavations=Array.from(groundDepths,([key,depth])=>{const [x,z]=key.split(',').map(Number);return [x,z,depth];});},
   ()=>{world.waterCells=Array.from(waterCells,key=>key.split(',').map(Number));world.waterLevels=Array.from(waterLevels,([key,level])=>[...key.split(',').map(Number),level]);world.fish=fishSpots.map(f=>[f.x,f.z]);},
-  ()=>{},()=>{},()=>{},new Map([['stone',{name:'Stone'}],['dirt',{name:'Dirt'}],['tile',{name:'Tile'}],['custom',{name:'Custom'}]])
+  ()=>{},()=>{},()=>{},new Map([['stone',{name:'Stone'}],['dirt',{name:'Dirt'}],['tile',{name:'Tile'}],['custom',{name:'Custom'}]]),
+  fishSpots
  );
- return fill;
+ return buildFill;
 }
 
 function productionRemovalHarness(world){
@@ -169,7 +172,7 @@ test('matches Canvas 2D hole filling, including removal of water and fish from t
  world.waterCells=[[80,80]];world.waterLevels=[[80,80,2]];world.fish=[[80,80]];
  world.bucket=[];
  const production=productionFillHarness(world,'stone'),sandbox=sandboxApi.create(adapter.createSnapshot(world));
- production(50,50,{ground:true,x:80,z:80});
+ production.run(50,50,{ground:true,x:80,z:80});
  const filled=sandbox.fillExcavation(80,80,{type:'stone'});
  const productionBlocks=world.blocks.filter(block=>block.x===80&&block.z===80).map(comparable).sort((a,b)=>a.y-b.y);
  const sandboxBlocks=filled.world.blocks.filter(block=>block.x===80&&block.z===80).map(comparable).sort((a,b)=>a.y-b.y);
@@ -185,7 +188,7 @@ test('matches Canvas 2D fill appearance when reusing a Material Bucket item',()=
  world.bucket=[{type:'stone',color:'#123456',texture:'brick'}];
  const item=world.bucket[0],production=productionFillHarness(world,'stone',item);
  const sandbox=sandboxApi.create(adapter.createSnapshot(world));sandbox.selectBucketItem(0);
- production(50,50,{ground:true,x:81,z:81});
+ production.run(50,50,{ground:true,x:81,z:81});
  const filled=sandbox.fillExcavation(81,81,{type:'stone'});
  const productionBlocks=world.blocks.filter(block=>block.x===81&&block.z===81).map(comparable).sort((a,b)=>a.y-b.y);
  const sandboxBlocks=filled.world.blocks.filter(block=>block.x===81&&block.z===81).map(comparable).sort((a,b)=>a.y-b.y);
