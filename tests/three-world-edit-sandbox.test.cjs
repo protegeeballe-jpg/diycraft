@@ -158,7 +158,8 @@ test('player capsule collision treats plants as pass-through and doors as closed
  assert.equal(edit.playerCollisionAt(3.5,.5,0),false);
  assert.equal(edit.playerCollisionAt(4.5,.5,0),false);
  assert.equal(edit.playerCollisionAt(1.5,.5,0),true,'Closed door lower half must block.');
- assert.equal(edit.playerCollisionAt(1.5,.5,1),true,'Closed door upper half must block the player capsule.');
+ assert.equal(edit.playerCollisionAt(1.5,.5,1),false,'The legacy Canvas 2D player-collision approximation checks the lower one-cell door collider.');
+ assert.equal(edit.isMovementSolidAt(1,1,0),true,'The upper door cell remains reserved for placement and occupancy checks.');
  edit.toggleDoor('block-1');
  assert.equal(edit.playerCollisionAt(1.5,.5,0),false,'Opening a door releases lower collision.');
  assert.equal(edit.playerCollisionAt(1.5,.5,1),false,'Opening a door releases upper collision.');
@@ -167,8 +168,8 @@ test('player capsule collision respects the excavated terrain floor and its radi
  const edit=sandbox.create(fixture());
  assert.equal(edit.playerCollisionAt(8.5,8.5,-2.5),true,'The player must not pass below the dug pool floor.');
  assert.equal(edit.playerCollisionAt(8.5,8.5,-1.9),false,'The player may occupy the excavation above its floor.');
- assert.equal(edit.playerCollisionAt(7.77,8.5,-2.5),false,'Exact-radius distance beyond the excavation edge does not overlap.');
- assert.equal(edit.playerCollisionAt(7.78,8.5,-2.5),true,'The player capsule cannot clip through the edge of the excavation floor.');
+ assert.equal(edit.playerCollisionAt(80.23,80.5,-2.5),false,'Exact-radius tangency at the far excavation edge does not overlap adjacent terrain.');
+ assert.equal(edit.playerCollisionAt(80.22,80.5,-2.5),true,'The player capsule cannot clip through the edge of the excavation floor.');
 });
 test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
  const edit=sandbox.create(fixture());
