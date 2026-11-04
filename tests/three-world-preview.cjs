@@ -35,6 +35,7 @@ function extractFreshWorld(){
  try{
   const context=await browser.newContext({viewport:{width:1600,height:1000},deviceScaleFactor:1,serviceWorkers:'block'});
   const page=await context.newPage(),errors=[];
+  await page.addInitScript(()=>{try{Object.defineProperty(navigator,'deviceMemory',{configurable:true,value:2});Object.defineProperty(navigator,'hardwareConcurrency',{configurable:true,value:4});}catch(_){}});
   page.on('pageerror',error=>errors.push(error.stack||error.message));
   page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   await page.goto('http://127.0.0.1:4175/three-world-preview.html',{waitUntil:'networkidle',timeout:60000});
@@ -55,6 +56,9 @@ function extractFreshWorld(){
   assert.ok(state.status.instanceGroups>0,'Solid blocks should use instanced meshes.');
   assert.ok(state.status.materialCount>=3,'Painterly materials must be generated and reused.');
   assert.ok(state.status.drawCalls>10,'A substantial WebGL scene must be drawn.');
+  assert.equal(state.status.performanceProfile.tier,'low','The real starter world must be tested on the low-end profile.');
+  assert.ok(state.status.drawCalls<=45,'The real starter world must fit the low-end draw-call budget.');
+  assert.ok(state.status.geometryCount<100,'The starter world must stay within the low-end geometry budget.');
   assert.ok(state.status.frames>8,'The animation loop must advance.');
   assert.equal(state.storageKeys,0,'The renderer must not write browser storage.');
   assert.ok(state.canvas.width>100&&state.canvas.height>100);
