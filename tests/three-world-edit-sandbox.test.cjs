@@ -118,6 +118,50 @@ test('enforces two-cell door clearance and excavation depth bounds',()=>{
  assert.equal(dug.world.blocks.at(-1).y,-2);
 });
 
+test('exposes the original seven roaming animals and merges saved animals without duplicate identities',()=>{
+ const world=fixture();
+ world.animals=[
+  {id:'saved-mochi',species:'cat',name:'Mochi Two',x:31.5,z:-4.5,facing:.7,phase:1.2,body:'#c5b9a6',accent:'#eee1d2'},
+  {id:'sheep',species:'cat',name:'Duplicate Sheep',x:90,z:90}
+ ];
+ const before=JSON.stringify(world),edit=sandbox.create(world),animals=edit.animalStates(5);
+ assert.equal(animals.length,8,'Seven original residents plus one new saved animal should be available.');
+ assert.deepEqual(animals.slice(0,7).map(a=>a.id),[
+  'sheep','cat_mochi','dog_buddy','cow_bessie','horse_spirit','bird_chirpy','giraffe_raffy'
+ ]);
+ assert.equal(animals.find(a=>a.id==='sheep').name,'Pip the sheep',
+  'A saved record that duplicates a resident ID must not replace the original animal.');
+ const saved=animals.find(a=>a.id==='saved-mochi');
+ assert.equal(saved.name,'Mochi Two');assert.equal(saved.species,'cat');assert.equal(saved.emoji,'🐱');
+ assert.ok(Number.isFinite(saved.x)&&Number.isFinite(saved.z)&&Number.isFinite(saved.facing));
+ assert.equal(JSON.stringify(world),before,'Animal state prediction must not mutate the sandbox input.');
+});
+test('records all four gentle animal-care actions, preserves per-animal counts, and caps at 999',()=>{
+ const world=fixture();
+ world.animals=[{id:'saved-mochi',species:'cat',name:'Mochi Two',x:31.5,z:-4.5,facing:0,phase:0}];
+ world.animalCare={sheep:998,'saved-mochi':2};
+ const before=JSON.stringify(world),edit=sandbox.create(world);
+ const first=edit.careForAnimal('sheep','snack');
+ assert.equal(first.world.animalCare.sheep,999);
+ assert.equal(first.world.animalCare['saved-mochi'],2);
+ assert.equal(first.revision,1);
+ const second=edit.careForAnimal('sheep','water');
+ assert.equal(second.world.animalCare.sheep,999,'The counter must never exceed the production 999 limit.');
+ assert.equal(second.revision,2,'Care actions remain individually recorded even at the counter cap.');
+ for(const action of ['brush','play'])edit.careForAnimal('saved-mochi',action);
+ assert.equal(edit.getState().world.animalCare['saved-mochi'],4);
+ assert.equal(edit.getState().revision,4);
+ assert.equal(JSON.stringify(world),before,'Care actions may change only the isolated clone, never the source snapshot.');
+ assert.equal(edit.getState().sourceUnchanged,true);
+});
+test('rejects unknown animals and unsupported care actions without changing state',()=>{
+ const edit=sandbox.create(fixture()),before=edit.getState();
+ assert.throws(()=>edit.careForAnimal('missing-animal','snack'),/not available/);
+ assert.throws(()=>edit.careForAnimal('sheep','feed'),/supported/);
+ assert.throws(()=>edit.careForAnimal('../bad','brush'),/valid animal/);
+ assert.equal(edit.getState().revision,before.revision);
+ assert.deepEqual(edit.getState().world.animalCare||{},before.world.animalCare||{});
+});
 test('rejects invalid input snapshot and keeps snapshots detached from internal state',()=>{
  assert.throws(()=>sandbox.create(null),TypeError);
  const edit=sandbox.create(fixture()),first=edit.getState();
