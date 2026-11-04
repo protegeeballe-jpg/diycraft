@@ -414,6 +414,7 @@ check(getSurfaceHeight(3, 4, -100) === -3,
   'A player who falls below unexcavated terrain must recover to that column’s ground surface.');
 
 
+
 check(source.startsWith('(async()=>') && source.includes('let world=await load()') &&
   source.includes('async function decodeSavedWorld(value)'),
   'Compressed saves must be decoded before the game creates or mutates the world.');
@@ -430,24 +431,24 @@ check(source.includes("useGzip?'.diycraft.gz':'.json'") &&
   source.includes("bytes[0]===0x1f&&bytes[1]===0x8b") &&
   source.includes('async function restoreBackup(file)'),
   'Compressed gzip backups and existing JSON backups must both be restorable.');
+
 const colorPagesStart=source.indexOf('const COLOR_PAGES=[');
-const colorPagesEnd=source.indexOf('\\nlet coloringNeighbor',colorPagesStart);
+const colorPagesEnd=source.indexOf('\nlet coloringNeighbor',colorPagesStart);
 assert(colorPagesStart>=0&&colorPagesEnd>colorPagesStart,'Built-in coloring pages must remain a distinct, locally defined asset collection.');
 const colorPagesSource=source.slice(colorPagesStart,colorPagesEnd);
-const svgTags=[...colorPagesSource.matchAll(/<\\/?([a-zA-Z][\\w:-]*)\\b[^>]*>/g)].map(match=>match[1].toLowerCase());
+const svgTags=[...colorPagesSource.matchAll(/<([a-zA-Z][a-zA-Z0-9:-]*)\b/g)].map(match=>match[1].toLowerCase());
 const allowedSvgTags=new Set(['svg','rect','circle','path','g','ellipse']);
 check(svgTags.length>=25&&svgTags.every(tag=>allowedSvgTags.has(tag)) &&
-  !/<\\s*(?:text|metadata|desc|script|foreignObject|image|use|filter|mask)\\b/i.test(colorPagesSource) &&
-  !/\\son[a-z]+\\s*=|(?:href|xlink:href)\\s*=|opacity\\s*=\\s*["']0|display\\s*=\\s*["']none/i.test(colorPagesSource),
+  !['<text','<metadata','<desc','<script','<foreignobject','<image','<use','<filter','<mask'].some(tag=>colorPagesSource.toLowerCase().includes(tag)) &&
+  !/ on[a-z]+\s*=|(?:href|xlink:href)\s*=|opacity\s*=\s*["']0|display\s*=\s*["']none/i.test(colorPagesSource),
   'Built-in coloring art must remain visible, original vector shapes without embedded text, scripts, hidden nodes or linked content.');
-const htmlScripts=[...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
-const htmlResourceAttrs=[...html.matchAll(/\\b(?:src|href)\\s*=\\s*["']([^"']+)["']/gi)].map(match=>match[1]);
-const csp=(html.match(/Content-Security-Policy["']?\\s+content=["']([^"']+)["']/i)||[])[1]||'';
-check(htmlScripts.length===1&&htmlScripts[0][1].trim()===''&&
-  htmlScripts[0][0].includes('src="./diycraft.js"')&&
-  csp.includes("default-src 'none'")&&csp.includes("script-src 'self'")&&!csp.includes("script-src 'unsafe-inline'")&&
-  htmlResourceAttrs.every(url=>!/^https?:\\/\\//i.test(url))&&
-  !/<\\s*(?:iframe|object|embed)\\b/i.test(html),
+
+const htmlScripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+check(htmlScripts.length===1&&htmlScripts[0][2].trim()===''&&
+  htmlScripts[0][1].includes('src="./diycraft.js"')&&
+  html.includes("default-src 'none'")&&html.includes("script-src 'self'")&&!html.includes("script-src 'unsafe-inline'")&&
+  !/\b(?:src|href)\s*=\s*["']https?:\/\//i.test(html)&&
+  !['<iframe','<object','<embed','url(http','@import'].some(item=>html.toLowerCase().includes(item)),
   'The game shell must load only its local engine, block inline scripts, and contain no remote image, frame or embedded content.');
 check(html.includes('no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content') &&
   html.includes('no third-party images or hidden text are loaded'),
