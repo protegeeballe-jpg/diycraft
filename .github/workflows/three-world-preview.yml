@@ -18,6 +18,7 @@ on:
       - js/three-door-model.js
       - js/three-performance-profile.js
       - js/three-plant-geometry.js
+      - js/three-animal-geometry.js
       - three-world-edit-preview.html
       - three-world-edit-preview.js
       - tests/three-world-edit-preview.cjs
