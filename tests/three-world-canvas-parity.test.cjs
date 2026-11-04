@@ -53,10 +53,11 @@ function productionFillHarness(world,selectedType='grass',selectedBucketItem=nul
  const buildFill=new Function(
   'canvas','rayHitAtScreen','groundDepthAt','keyGround','world','selected','MAX_BLOCKS','showStatus',
   'addBlock','groundDepths','excavationRenderChunks','removeRenderChunkItem','waterLevels','waterCells',
-  'waterRenderChunks','rebuildFishRenderChunks','syncExcavations','syncWaterLife',
+  'waterRenderChunks','rebuildFishRenderChunks','syncExcavations',
   'invalidateNeighborNavigation','save','render','blockMap','initialFishSpots',
   [
    'let fishSpots=initialFishSpots;',
+   'const syncWaterLife=()=>{world.waterCells=Array.from(waterCells,key=>key.split(\",\").map(Number));world.waterLevels=Array.from(waterLevels,([key,level])=>[...key.split(\",\").map(Number),level]);world.fish=fishSpots.map(f=>[f.x,f.z]);};',
    'const fill=('+source.slice(start,end).trim()+');',
    'return {run:(...args)=>fill(...args),getFishSpots:()=>fishSpots};'
   ].join('\n')
@@ -65,7 +66,6 @@ function productionFillHarness(world,selectedType='grass',selectedBucketItem=nul
   world,selectedType,18000,()=>{},add,groundDepths,new Map(),()=>{},waterLevels,waterCells,new Map(),
   ()=>{},
   ()=>{world.excavations=Array.from(groundDepths,([key,depth])=>{const [x,z]=key.split(',').map(Number);return [x,z,depth];});},
-  ()=>{world.waterCells=Array.from(waterCells,key=>key.split(',').map(Number));world.waterLevels=Array.from(waterLevels,([key,level])=>[...key.split(',').map(Number),level]);world.fish=fishSpots.map(f=>[f.x,f.z]);},
   ()=>{},()=>{},()=>{},new Map([['stone',{name:'Stone'}],['dirt',{name:'Dirt'}],['tile',{name:'Tile'}],['custom',{name:'Custom'}]]),
   fishSpots
  );
