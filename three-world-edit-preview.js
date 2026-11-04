@@ -47,6 +47,123 @@ function cameraUpdate(){
  camera.position.set(target.x+orbit.radius*Math.sin(orbit.phi)*Math.sin(orbit.theta),target.y+orbit.radius*Math.cos(orbit.phi),target.z+orbit.radius*Math.sin(orbit.phi)*Math.cos(orbit.theta));
  camera.lookAt(target);
 }
+function updatePlayerModel(){
+ if(!playerModelRoot||!playerPhysicsState)return;
+ playerModelFactory.update(playerModelRoot,playerPhysicsState.player);
+ playerModelRoot.visible=!(playerPlayMode&&playerCameraMode==='first');
+}
+function updatePlayerCamera(){
+ if(!playerPhysicsState)return;
+ playerCameraPose=playerCamera.pose(playerPhysicsState.player,playerCameraMode);
+ const pose=playerCameraPose,cp=Math.cos(pose.pitch);
+ camera.position.set(pose.pos.x,pose.pos.y,pose.pos.z);
+ const look=new THREE.Vector3(
+  pose.pos.x+Math.sin(pose.yaw)*cp,
+  pose.pos.y+Math.sin(pose.pitch),
+  pose.pos.z-Math.cos(pose.yaw)*cp
+ );
+ camera.lookAt(look);
+ updatePlayerModel();
+}
+function updatePlayerDiagnostics(){
+ const debug=window.__DIYCRAFT_THREE_EDIT__;if(!debug)return;
+ debug.playerMode=playerPlayMode;debug.cameraMode=playerCameraMode;
+ debug.getPlayerState=()=>playerPhysicsState?{
+  player:{...playerPhysicsState.player},jumpVelocity:playerPhysicsState.jumpVelocity,
+  playerGrounded:playerPhysicsState.playerGrounded,flying:playerPhysicsState.flying,
+  playerActivity:playerPhysicsState.playerActivity
+ }:null;
+ debug.getPlayerCamera=()=>playerCameraPose?{pos:{...playerCameraPose.pos},yaw:playerCameraPose.yaw,pitch:playerCameraPose.pitch}:null;
+}
+function syncPlayerButtons(){
+ playModeButton.textContent=playerPlayMode?'Exit Play Mode':'Enter Play Mode';
+ cameraModeButton.disabled=!playerPlayMode;jumpButton.disabled=!playerPlayMode;flightButton.disabled=!playerPlayMode;
+ cameraModeButton.textContent=playerCameraMode==='third'?'First person':'Third person';
+ flightButton.textContent=playerPhysicsState?.flying?'Flight on':'Flight off';
+ touchControls.hidden=!playerPlayMode;
+}
+function syncTouchMovement(){
+ playerControls.moveX=(touchDirections.has('right')?1:0)-(touchDirections.has('left')?1:0);
+ playerControls.moveZ=(touchDirections.has('forward')?1:0)-(touchDirections.has('back')?1:0);
+}
+function clearPlayerInputs(){
+ playerControls={moveX:0,moveZ:0,vertical:0,keys:{}};
+ touchDirections.clear();
+}
+function setPlayerPlayMode(enabled){
+ playerPlayMode=!!enabled;
+ clearPlayerInputs();physicsClock.reset();lastPlayerPhysicsTime=performance.now();
+ if(playerPlayMode){
+  playerCameraMode='third';
+  status.textContent='Play mode · WASD / arrows or touch pad to move · Space to jump · F for flight';
+  updatePlayerCamera();
+ }else{
+  status.textContent='Build mode · Drag to orbit · Scroll to zoom · Click to select and edit';
+  if(playerModelRoot)playerModelRoot.visible=true;
+  cameraUpdate();
+ }
+ syncPlayerButtons();updatePlayerDiagnostics();
+}
+function jumpPlayer(){
+ if(!playerPlayMode||!playerPhysicsState)return;
+ const result=playerPhysics.jump(playerPhysicsState);
+ playerPhysicsState=result.state;
+ status.textContent=result.accepted?'Jump!':'Jump is unavailable while flying, airborne, or resting.';
+ updatePlayerModel();updatePlayerDiagnostics();
+}
+function togglePlayerFlight(){
+ if(!playerPlayMode||!playerPhysicsState)return;
+ playerPhysicsState={...playerPhysicsState,flying:!playerPhysicsState.flying,jumpVelocity:0};
+ status.textContent=playerPhysicsState.flying?'Creative flight enabled.':'Flight turned off.';
+ syncPlayerButtons();updatePlayerDiagnostics();
+}
+playModeButton.addEventListener('click',()=>setPlayerPlayMode(!playerPlayMode));
+cameraModeButton.addEventListener('click',()=>{
+ if(!playerPlayMode)return;
+ playerCameraMode=playerCameraMode==='third'?'first':'third';
+ syncPlayerButtons();updatePlayerCamera();updatePlayerDiagnostics();
+});
+jumpButton.addEventListener('click',jumpPlayer);
+flightButton.addEventListener('click',togglePlayerFlight);
+document.querySelectorAll('[data-move]').forEach(button=>{
+ const direction=button.dataset.move;
+ const press=event=>{
+  if(!playerPlayMode)return;event.preventDefault();
+  touchDirections.add(direction);syncTouchMovement();
+  try{button.setPointerCapture(event.pointerId);}catch(_){}
+ };
+ const release=event=>{
+  if(!touchDirections.has(direction))return;event.preventDefault();
+  touchDirections.delete(direction);syncTouchMovement();
+ };
+ button.addEventListener('pointerdown',press);
+ button.addEventListener('pointerup',release);
+ button.addEventListener('pointercancel',release);
+ button.addEventListener('lostpointercapture',release);
+});
+function movementKey(event){
+ if(event.key===' ')return ' ';
+ if(['w','a','s','d'].includes(event.key.toLowerCase()))return event.key.toLowerCase();
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Shift'].includes(event.key))return event.key;
+ return null;
+}
+document.addEventListener('keydown',event=>{
+ if(!playerPlayMode||['INPUT','SELECT','TEXTAREA'].includes(event.target?.tagName))return;
+ if(event.code==='Space'){
+  event.preventDefault();
+  if(playerPhysicsState?.flying)playerControls.keys[' ']=true;
+  else if(!event.repeat)jumpPlayer();
+  return;
+ }
+ if(event.key.toLowerCase()==='f'&&!event.repeat){event.preventDefault();togglePlayerFlight();return;}
+ const key=movementKey(event);if(!key)return;
+ if(key.startsWith('Arrow')||key===' ')event.preventDefault();
+ playerControls.keys[key]=true;
+});
+document.addEventListener('keyup',event=>{
+ const key=movementKey(event);if(key)playerControls.keys[key]=false;
+});
+window.addEventListener('blur',clearPlayerInputs);
 function mat(block){
  const color=block.color||({grass:'#70b85a',dirt:'#9a7049',stone:'#9ca6a1',wood:'#a97545',leaves:'#4e9a59',brick:'#c87862',glass:'#a5dce3',flower:'#e9a4c1',tall_grass:'#4ea859',sand:'#e8d38b',snow:'#f2f8fa',tile:'#c5a98a',door:'#a97545'}[block.type]||'#9ca6a1');
  const kind=block.type==='tile'?'tile-'+(block.tilePattern||'grid'):(block.texture||block.type);
