@@ -237,7 +237,7 @@ function buildWorld(snapshot,originalJson){
   geometryCount:renderer.info.memory.geometries,
   instanceGroups:blockInstances.size,
   sourceUnchanged:JSON.stringify(originalJson)===JSON.stringify(window.__DIYCRAFT_ORIGINAL_WORLD__),
-  frames:0,drawCalls:0,performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,waterAnimationFps:performanceProfile.waterAnimationFps}
+  frames:0,drawCalls:0,performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps}
  };
  return {water,player};
 }
