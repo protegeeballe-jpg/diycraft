@@ -172,6 +172,48 @@ async function verifyGame(page, label) {
 }
 
 
+async function verifyThreePainterlyPreview(browser) {
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.stack || error.message));
+  page.on('console', message => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  try {
+    await page.goto('http://127.0.0.1:4173/three-painterly-preview.html', {
+      waitUntil: 'networkidle', timeout: 60000
+    });
+    await page.waitForFunction(() =>
+      window.__THREE_PREVIEW_STATUS__ && window.__THREE_PREVIEW_STATUS__.frameCount > 5,
+      null, { timeout: 30000 }
+    );
+    await page.waitForTimeout(650);
+    const state = await page.evaluate(() => ({
+      status: window.__THREE_PREVIEW_STATUS__,
+      revision: window.THREE?.REVISION,
+      canvasWidth: document.getElementById('three-world')?.width || 0,
+      canvasHeight: document.getElementById('three-world')?.height || 0
+    }));
+    if (state.revision !== '128' || !state.status ||
+        state.status.objectCount < 40 || state.status.textureCount < 8 ||
+        state.status.drawCalls < 20 || state.canvasWidth < 100 || state.canvasHeight < 100) {
+      throw new Error('The Three.js painterly scene did not render correctly: ' + JSON.stringify(state));
+    }
+    const previousFrame = state.status.frameCount;
+    await page.waitForTimeout(350);
+    const animated = await page.evaluate(() => window.__THREE_PREVIEW_STATUS__?.frameCount || 0);
+    if (animated <= previousFrame) throw new Error('The Three.js preview animation loop is not advancing.');
+    await fs.promises.mkdir('preview-three', { recursive: true });
+    await page.screenshot({ path: 'preview-three/three-painterly-world.png' });
+    if (errors.length) throw new Error('Three.js preview browser errors:\\n' + errors.join('\\n\\n'));
+    console.log('Three.js painterly preview passed: ' + JSON.stringify(state));
+  } finally {
+    await context.close();
+  }
+}
+
+
 async function verifyOfflinePlay(browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -213,6 +255,7 @@ async function verifyOfflinePlay(browser) {
     const context = await browser.newContext({ serviceWorkers: 'block' });
     await verifyGame(await context.newPage(), 'local');
     await verifyOfflinePlay(browser);
+    await verifyThreePainterlyPreview(browser);
     await verifyGame(await context.newPage(), 'live');
   } finally {
     await browser.close();
