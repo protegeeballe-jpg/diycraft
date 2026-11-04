@@ -95,6 +95,29 @@ function freshWorld(){
   protectionState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.equal(protectionState.world.water.some(cell=>cell.x===55&&cell.z===60),false,'The original unprotected hole-fill action must still clear its water.');
 
+  // An actual sandbox edit must immediately detour the rendered 3D resident,
+  // and removing that edit must restore the original route and visible model pose.
+  const npcBaseline=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborStats(3.1).actors.find(actor=>actor.id==='hyacinth'));
+  assert.ok(npcBaseline&&npcBaseline.position,'Hyacinth must have an initialized 3D model before the obstacle test.');
+  const npcObstacle=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.debugPlaceObstacleForTest({type:'stone',x:-5,y:0,z:-8},3.1));
+  assert.equal(npcObstacle.revision,protectionRevision+1,'A sandbox obstacle placement must advance the edit revision exactly once.');
+  assert.equal(npcObstacle.sourceUnchanged,true,'Obstacle placement must not mutate the source snapshot.');
+  const npcDetour=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborStats(3.1).actors.find(actor=>actor.id==='hyacinth'));
+  assert.ok(Math.hypot(npcDetour.x-npcBaseline.x,npcDetour.z-npcBaseline.z)>.05,
+   'The production obstacle-aware route must move Hyacinth away from the blocked direct path.');
+  assert.ok(npcDetour.position&&Math.abs(npcDetour.position.x-npcDetour.x)<1e-9&&Math.abs(npcDetour.position.z-npcDetour.z)<1e-9,
+   'The visible Three.js model must immediately follow the newly predicted obstacle detour.');
+  const npcRemoval=await page.evaluate(key=>window.__DIYCRAFT_THREE_EDIT__.debugRemoveObstacleForTest(key,3.1),npcObstacle.key);
+  assert.equal(npcRemoval.revision,protectionRevision+2,'Removing the test obstacle must advance the edit revision once more.');
+  assert.equal(npcRemoval.sourceUnchanged,true);
+  const npcRestored=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborStats(3.1).actors.find(actor=>actor.id==='hyacinth'));
+  assert.deepEqual({x:npcRestored.x,z:npcRestored.z},{x:npcBaseline.x,z:npcBaseline.z},
+   'Removing the obstacle must restore Hyacinth to the exact original production route position.');
+  assert.deepEqual({x:npcRestored.position.x,z:npcRestored.position.z},{x:npcBaseline.position.x,z:npcBaseline.position.z},
+   'The rendered model must return to its original route position after obstacle removal.');
+  state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
+
+
   await page.waitForTimeout(350);
   animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
   assert.ok(Math.abs(animalStats.firstY-initialAnimalY)>.0001,'Animals must retain their idle bobbing animation.');
