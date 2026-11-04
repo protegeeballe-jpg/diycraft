@@ -67,11 +67,11 @@ function productionCollisionHarness(world){
  const start=source.indexOf('const GROUND_BASE_Y=-MAX_DIG_DEPTH;');
  const end=source.indexOf('\nfunction nudgePlayerOutOfBlocks',start);
  if(start<0||end<0)throw new Error('Could not extract production player-collision helpers.');
- return new Function('MAX_DIG_DEPTH','keyBlock','blockLookup','isPlantBlock','groundDepthAt',
+ return new Function('MAX_DIG_DEPTH','keyBlock','blockLookup','isPlantBlock','groundDepthAt','TILE_BASE_OFFSET','TILE_THICKNESS',
   source.slice(start,end)+'\nreturn playerCollisionAt;'
  )(
   1000000000,keyBlock,blockLookup,block=>!!block&&(block.type==='flower'||block.type==='tall_grass'),
-  (x,z)=>depths.get(keyGround(x,z))||0
+  (x,z)=>depths.get(keyGround(x,z))||0,.02,.13
  );
 }
 
