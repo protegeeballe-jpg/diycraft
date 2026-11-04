@@ -21,6 +21,7 @@ on:
       - tests/three-performance-profile.test.cjs
       - tests/three-player-physics.test.cjs
       - tests/three-player-camera.test.cjs
+      - tests/three-neighbor-model.test.cjs
       - tests/three-world-protection.test.cjs
       - tests/three-world-adapter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
@@ -63,6 +64,8 @@ jobs:
         run: node tests/three-player-physics.test.cjs
       - name: Run first-person and third-person camera parity tests
         run: node tests/three-player-camera.test.cjs
+      - name: Run painterly neighbor character model tests
+        run: node tests/three-neighbor-model.test.cjs
       - name: Run neighbor and animal protection parity tests
         run: node tests/three-world-protection.test.cjs
       - name: Compare Canvas 2D and Three.js placement behavior
