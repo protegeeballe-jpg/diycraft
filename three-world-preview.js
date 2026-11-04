@@ -3,11 +3,11 @@
 (function(){
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
-const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel;
+const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
 const canvas=document.getElementById('three-world');
 const status=document.getElementById('counts');
 const errorPanel=document.getElementById('error');
-if(!THREE||!adapter||!painterly||!performanceProfiles||!plantGeometryFactory||!doorModels)throw new Error('A required local DIYCraft Three.js migration module did not load.');
+if(!THREE||!adapter||!painterly||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory)throw new Error('A required local DIYCraft Three.js migration module did not load.');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xf2ead9);
 scene.fog=new THREE.Fog(0xf2ead9,34,78);
@@ -47,6 +47,8 @@ fill.position.set(12,9,-15);scene.add(fill);
 const palette=painterly.create(THREE,renderer,performanceProfile);
 const plantSurfaceMaterial=palette.get('#ffffff','paper');
 plantSurfaceMaterial.vertexColors=true;plantSurfaceMaterial.side=THREE.DoubleSide;plantSurfaceMaterial.needsUpdate=true;
+const animalSurfaceMaterial=palette.get('#ffffff','paper');
+animalSurfaceMaterial.vertexColors=true;animalSurfaceMaterial.needsUpdate=true;
 const sharedGeometry={
  cube:new THREE.BoxGeometry(1,1,1),
  tile:new THREE.BoxGeometry(1,.13,1),
@@ -55,7 +57,7 @@ const sharedGeometry={
  center:new THREE.SphereGeometry(.105,10,8),
  grassBlade:new THREE.ConeGeometry(.07,.72,5)
 };
-const animated=[];
+const animated=[],animalBatches=[];
 const blockInstances=new Map();
 let renderedBlocks=0,renderedPlants=0,renderedDoors=0,renderedAnimals=0;
 const defaultColors={
@@ -153,35 +155,47 @@ function makePlayer(player){
  fringe.scale.set(1,.27,.42);
  return root;
 }
-function makeAnimal(animal){
- const root=new THREE.Group();root.position.set(animal.x,0,animal.z);root.rotation.y=animal.facing||0;scene.add(root);
- const bodyColor=animal.body||({sheep:'#f0eee6',cat:'#c5c0b6',dog:'#c89b6d',cow:'#f2eee5',horse:'#8a6347',bird:'#e8c96d',giraffe:'#d9ad55'}[animal.species]||'#e9dfca');
- const accent=animal.accent||'#d0b6a0';
- const bodyMat=material(bodyColor,'animal'),accentMat=material(accent,'animal'),legMat=material('#775941','wood');
- if(animal.species==='bird'){
-  const body=addMesh(new THREE.SphereGeometry(.31,12,9),bodyMat,0,.55,0,root);body.scale.set(1.2,.85,.8);
-  addMesh(new THREE.SphereGeometry(.17,10,8),bodyMat,0,.82,.17,root);
-  const beak=addMesh(new THREE.ConeGeometry(.09,.22,5),material('#e8ad56','flower'),0,.79,.36,root);beak.rotation.x=Math.PI/2;
- }else{
-  const body=addMesh(new THREE.SphereGeometry(.48,14,10),bodyMat,0,.72,0,root);body.scale.set(1.35,.82,.9);
-  const neck=animal.species==='giraffe'?addMesh(new THREE.CylinderGeometry(.14,.19,.85,8),bodyMat,0,1.25,.28,root):null;
-  const headY=animal.species==='giraffe'?1.72:1.0;
-  const headZ=animal.species==='giraffe'?.34:.43;
-  const head=addMesh(new THREE.SphereGeometry(.27,12,9),bodyMat,0,headY,headZ,root);
-  head.scale.set(1,.9,1);
-  if(animal.species==='cat'||animal.species==='dog'){
-   for(const x of [-.16,.16]){
-    const ear=addMesh(new THREE.ConeGeometry(.10,.25,5),accentMat,x,headY+.22,headZ,root);
-    ear.rotation.z=x*.8;
-   }
-  }
-  if(neck&&animal.species==='giraffe'){
-   for(let i=0;i<5;i++)addMesh(new THREE.SphereGeometry(.055,7,6),accentMat,(i%2)*.13-.07,1.0+i*.15,.42,root);
-  }
-  for(const x of [-.27,.27])for(const z of [-.24,.24])addMesh(new THREE.CylinderGeometry(.055,.07,.42,6),legMat,x,.22,z,root);
- }
- animated.push({object:root,kind:'animal',phase:animal.phase||0});
- renderedAnimals++;
+function buildAnimalBatches(source){
+ const all=Array.isArray(source)?source:[];
+ const visible=all.slice().sort((a,b)=>{
+  const da=(a.x-target.x)*(a.x-target.x)+(a.z-target.z)*(a.z-target.z);
+  const db=(b.x-target.x)*(b.x-target.x)+(b.z-target.z)*(b.z-target.z);
+  return da-db;
+ }).slice(0,performanceProfile.maxVisibleAnimals);
+ const byAppearance=new Map();
+ visible.forEach(animal=>{
+  const body=animal.body||animalGeometryFactory.defaults[animal.species]||'#e9dfca';
+  const accent=animal.accent||'#d0b6a0',key=[animal.species,body,accent].join('|');
+  let entry=byAppearance.get(key);
+  if(!entry){entry={geometry:animalGeometryFactory.create(THREE,{...animal,body,accent}),animals:[]};byAppearance.set(key,entry);}
+  entry.animals.push(animal);
+ });
+ const dummy=new THREE.Object3D();
+ byAppearance.forEach(entry=>{
+  const mesh=new THREE.InstancedMesh(entry.geometry,animalSurfaceMaterial,entry.animals.length);
+  mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
+  mesh.userData.animalInstances=true;
+  entry.animals.forEach((animal,index)=>{
+   dummy.position.set(animal.x,.04,animal.z);dummy.rotation.set(0,animal.facing||0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+   mesh.setMatrixAt(index,dummy.matrix);
+  });
+  mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);
+  animalBatches.push({mesh,animals:entry.animals});
+ });
+ renderedAnimals=visible.length;
+}
+function updateAnimalBatches(){
+ if(!animalBatches.length)return;
+ const dummy=new THREE.Object3D();
+ animalBatches.forEach(batch=>{
+  batch.animals.forEach((animal,index)=>{
+   const phase=Number.isFinite(animal.phase)?animal.phase:0;
+   dummy.position.set(animal.x,.04+Math.sin(elapsed*2.2+phase)*.03,animal.z);
+   dummy.rotation.set(0,animal.facing||0,Math.sin(elapsed*1.1+phase)*.018);
+   dummy.scale.set(1,1,1);dummy.updateMatrix();batch.mesh.setMatrixAt(index,dummy.matrix);
+  });
+  batch.mesh.instanceMatrix.needsUpdate=true;
+ });
 }
 function makeWater(snapshot){
  if(!snapshot.water.length)return null;
@@ -212,13 +226,13 @@ function buildWorld(snapshot,originalJson){
  for(const [key,entry] of blockInstances)addInstanced(key,entry);
  const water=makeWater(snapshot);
  const player=makePlayer(snapshot.player);
- snapshot.animals.forEach(makeAnimal);
+ buildAnimalBatches(snapshot.animals);
  // The immutable snapshot is independent from the original source.
  window.__DIYCRAFT_THREE_WORLD__={
   revision:THREE.REVISION,source:snapshot.source,
   snapshotCounts:snapshot.counts,
   sourceBlocks:snapshot.counts.blocks,
-  renderedBlocks,renderedPlants,renderedDoors,renderedAnimals,
+  renderedBlocks,renderedPlants,renderedDoors,renderedAnimals,animalBatchCount:animalBatches.length,
   materialCount:palette.materialCount,textureCount:palette.textureCount,
   geometryCount:renderer.info.memory.geometries,
   instanceGroups:blockInstances.size,
@@ -256,11 +270,9 @@ function animate(now){
  for(const item of animated){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(elapsed*1.25+item.phase)*.075;
   else if(item.kind==='grass')item.object.rotation.z=Math.sin(elapsed*1.8+item.phase)*.11;
-  else if(item.kind==='animal'){
-   item.object.position.y=Math.max(0,Math.sin(elapsed*2.2+item.phase))*.035;
-   item.object.rotation.z=Math.sin(elapsed*1.1+item.phase)*.018;
   }
  }
+ updateAnimalBatches();
  if(waterMesh&&now-lastWaterUpdate>=1000/performanceProfile.waterAnimationFps){
   lastWaterUpdate=now;
   const position=waterMesh.geometry.attributes.position,base=waterMesh.userData.baseHeights;
