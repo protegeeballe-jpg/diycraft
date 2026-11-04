@@ -362,6 +362,10 @@ document.getElementById('fill-hole').addEventListener('click',()=>{
   renderSandbox(sandbox.fillExcavation(cell.x,cell.z,input));
  }catch(error){status.textContent=error.message;}
 });
+document.getElementById('dig-ground').addEventListener('click',()=>{
+ try{const cell=waterCellInput();renderSandbox(sandbox.excavateGround(cell.x,cell.z));}
+ catch(error){status.textContent=error.message;}
+});
 let pointerDown=null;
 canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId,moved:false};canvas.setPointerCapture(event.pointerId);});
 canvas.addEventListener('pointermove',event=>{
