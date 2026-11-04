@@ -207,6 +207,18 @@ function renderSandbox(state){
  }
  selected=state.selectedKey;
  const selectedBlock=blockByKey.get(selected);
+ const bucketSelect=document.getElementById('bucket-item');
+ if(bucketSelect){
+  bucketSelect.replaceChildren();
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Bucket: none selected';bucketSelect.append(placeholder);
+  (state.world.bucket||[]).forEach((item,index)=>{
+   const option=document.createElement('option');option.value=String(index);
+   const label=item.type==='custom'?'Custom solid':item.type==='tile'?'Tile':item.type==='door'?'Door':item.type==='water'?'Water':item.type.replace(/_/g,' ');
+   option.textContent=(index+1)+'. '+label+(item.color?' · '+item.color.toUpperCase():'');
+   bucketSelect.append(option);
+  });
+  bucketSelect.value=Number.isInteger(state.selectedBucketItemIndex)?String(state.selectedBucketItemIndex):'';
+ }
  document.getElementById('remove').disabled=!selectedBlock;
  document.getElementById('door').disabled=!selectedBlock||selectedBlock.type!=='door';
  document.getElementById('apply-pattern').disabled=!selectedBlock||selectedBlock.type!=='tile';
@@ -247,6 +259,7 @@ function addBeside(){
  const state=sandbox.getState(),occupied=new Set(state.world.blocks.map(b=>b.x+','+b.y+','+b.z));
  if(!base){let attempts=0;while(occupied.has(x+','+y+','+z)&&attempts++<100){x++;if(x>1000){x=0;z++;}}}
  const type=document.getElementById('block-type').value,color=document.getElementById('color').value;
+ if(type==='water'){const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z));return;}
  const input={type,x,y,z};
  if(type==='custom')input.color=color;
  if(type==='custom')input.texture='custom';
@@ -255,6 +268,20 @@ function addBeside(){
  renderSandbox(sandbox.addBlock(input));
 }
 document.getElementById('add').addEventListener('click',()=>{try{addBeside();}catch(e){status.textContent=e.message;}});
+document.getElementById('bucket-item').addEventListener('change',event=>{
+ try{
+  const value=event.target.value;
+  if(value===''){renderSandbox(sandbox.clearBucketSelection());return;}
+  const index=Number(value),state=sandbox.selectBucketItem(index),item=state.selectedBucketItem;
+  const typeSelect=document.getElementById('block-type');
+  if(Array.from(typeSelect.options).some(option=>option.value===item.type))typeSelect.value=item.type;
+  renderSandbox(state);
+ }catch(error){status.textContent=error.message;}
+});
+document.getElementById('block-type').addEventListener('change',event=>{
+ const selectedItem=sandbox.getState().selectedBucketItem;
+ if(selectedItem&&selectedItem.type!==event.target.value)renderSandbox(sandbox.clearBucketSelection());
+});
 document.getElementById('remove').addEventListener('click',()=>{if(selected){try{renderSandbox(sandbox.remove(selected));}catch(error){status.textContent=error.message;}}});
 document.getElementById('door').addEventListener('click',()=>{try{renderSandbox(sandbox.toggleDoor(selected));}catch(e){status.textContent=e.message;}});
 document.getElementById('apply-pattern').addEventListener('click',()=>{try{renderSandbox(sandbox.setTilePattern(selected,document.getElementById('pattern').value));}catch(e){status.textContent=e.message;}});
