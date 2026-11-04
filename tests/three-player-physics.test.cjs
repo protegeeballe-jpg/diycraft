@@ -87,6 +87,16 @@ function compareMove(state,controls,dt){
  return actual;
 }
 
+test('uses the sandbox unsticking callback before the next movement step',()=>{
+ const {edit,environment}=createEnvironment();
+ environment.nudgePlayer=player=>edit.nudgePlayerOutOfBlocks(player);
+ const state={player:{x:2.5,y:0,z:.5,yaw:0},jumpVelocity:0,playerGrounded:true,flying:false,playerActivity:''};
+ const result=physics.step(state,{moveX:0,moveZ:0,vertical:0,keys:{}},environment,0);
+ assert.equal(result.saveRequested,true,'Recovering the player from an embedded block must request a save just like the production function.');
+ assert.equal(edit.playerCollisionAt(result.player.x,result.player.z,result.player.y),false);
+ assert.notEqual(result.player.x,state.player.x);
+ assert.equal(result.player.y,state.player.y);
+});
 test('ports keyboard and touch movement direction, normalization and yaw transforms',()=>{
  const cases=[
   [{x:0,y:0,z:0,yaw:0},{moveX:0,moveZ:1,vertical:0,keys:{}},1/60],
