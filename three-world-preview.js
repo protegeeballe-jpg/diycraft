@@ -106,7 +106,7 @@ function queueSolidBlock(block){
  const color=block.color||defaultColors[type]||'#a0a0a0';
  const mat=material(color,kind,{glass:type==='glass',roughness:type==='glass'?.23:.94});
  const geometry=type==='tile'?sharedGeometry.tile:sharedGeometry.cube;
- const key=type+'|'+kind+'|'+color;
+ const key=Math.floor(block.x/16)+','+Math.floor(block.z/16)+'|'+type+'|'+kind+'|'+color;
  let entry=blockInstances.get(key);
  if(!entry){entry={type,geometry,material:mat,items:[]};blockInstances.set(key,entry);}
  entry.items.push(block);
