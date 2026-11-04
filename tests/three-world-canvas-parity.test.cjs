@@ -12,6 +12,11 @@ function freshWorld(){
  return new Function('emptySlots','return ('+source.slice(start,end+2)+');')(()=>Array.from({length:60},()=>null))();
 }
 const SOLID_STYLE_TYPES=['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow'];
+const PRODUCTION_BLOCKS=[
+ {id:'grass',color:'#70b85a'},{id:'dirt',color:'#9a7049'},{id:'stone',color:'#9ca6a1'},
+ {id:'wood',color:'#a97545'},{id:'leaves',color:'#4e9a59'},{id:'brick',color:'#c87862'},
+ {id:'glass',color:'#a5dce3'},{id:'flower',color:'#e9a4c1'},{id:'sand',color:'#e8d38b'},{id:'snow',color:'#f2f8fa'}
+];
 const CUSTOM_TEXTURES=['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom'].map(id=>({id}));
 const TILE_DESIGNS=['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral'].map(id=>({id}));
 function keyBlock(x,y,z){return x+','+y+','+z;}
@@ -47,7 +52,7 @@ function productionRemovalHarness(world){
  const removeStart=source.indexOf('function removeBlock('),removeEnd=source.indexOf('\nfunction cameraState',removeStart);
  if(bucketStart<0||bucketEnd<0||removeStart<0||removeEnd<0)throw new Error('Could not extract production removal helpers.');
  const addBucketItem=new Function('MAX_BUCKET_ITEMS','world','SOLID_STYLE_TYPES','BLOCKS',
-  'return ('+source.slice(bucketStart,bucketEnd).trim()+');')(120,world,SOLID_STYLE_TYPES,[{id:'wood',color:'#a97545'}]);
+  'return ('+source.slice(bucketStart,bucketEnd).trim()+');')(120,world,SOLID_STYLE_TYPES,PRODUCTION_BLOCKS);
  const remove=new Function('keyBlock','blockLookup','world','isProtectedDigCell','addBucketItem','showStatus',
   'removeRenderChunkItem','blockRenderChunks','keyGround','blockColumnBlocks','invalidateBlockChunkMeshesAt',
   'doorMotions','invalidateNeighborNavigation','save',
@@ -207,6 +212,22 @@ test('matches exact Canvas 2D player capsule collisions for solids, tiles, plant
  for(const [x,z,y] of [[74.5,70.5,0],[74.5,70.5,1]]){
   assert.equal(edit.playerCollisionAt(x,z,y),production(x,z,y),
    'Open-door collision must match Canvas 2D at '+[x,z,y].join(','));
+ }
+});
+test('matches Canvas 2D default Material Bucket colors for newly placed solids',()=>{
+ const world=freshWorld(),production=productionHarness(world);
+ const types=SOLID_STYLE_TYPES;
+ types.forEach((type,index)=>{
+  assert.equal(production.add(150+index,0,150,type,false),true);
+ });
+ const productionRemove=productionRemovalHarness(world);
+ const snapshot=adapter.createSnapshot(world),sandbox=sandboxApi.create(snapshot);
+ const created=snapshot.blocks.filter(block=>block.x>=150&&block.x<150+types.length);
+ for(const block of created){
+  assert.equal(productionRemove.remove(block.x,block.y,block.z),true);
+  const next=sandbox.remove(block.key);
+  assert.deepEqual(next.world.bucket.at(-1),world.bucket.at(-1),
+   'Material Bucket fallback color/texture must match production for '+block.type+'.');
  }
 });
 test('matches duplicate-cell rejection',()=>{
