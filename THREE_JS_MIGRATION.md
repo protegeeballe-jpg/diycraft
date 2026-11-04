@@ -21,7 +21,7 @@
 ## Migration stages
 
 ### Stage 0 — Read-only data boundary
-<status>COMPLETED</status>
+**Status: Complete**
 - Pure adapter maps validated saved-world fields to immutable renderer snapshots.
 - Covers blocks, custom colors/textures, doors, 20 tile patterns, player appearance/pose, excavations, layered water, fish and animals.
 - Source data is not mutated; there is no DOM, storage, or Three.js dependency in the adapter.
@@ -29,7 +29,7 @@
 - CI validation passed: https://github.com/protegeeballe-jpg/diycraft/actions/runs/41766918674
 
 ### Stage 1 — Render the real starter world
-<status>COMPLETED</status>
+**Status: Complete**
 - Added shared procedural watercolor and colored-pencil texture materials in `js/three-painterly-materials.js`.
 - Added an isolated read-only preview route at `three-world-preview.html`.
 - The CI test extracts the actual production `freshWorld()` function from `diycraft.js`, generates the starter-world fixture, adapts it, and renders it with the bundled local Three.js r128 library.
