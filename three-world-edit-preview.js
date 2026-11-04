@@ -103,7 +103,8 @@ function renderSandbox(state){
    group.add(mesh);meshByKey.set(block.key,mesh);return;
   }
   const isTile=block.type==='tile',geometry=isTile?tileGeometry:boxGeometry,material=mat(block);
-  const batchKey=[block.type,block.color||'',block.texture||'',block.tilePattern||'',isTile?'tile':'cube'].join('|');
+  const chunkX=Math.floor(block.x/16),chunkZ=Math.floor(block.z/16);
+  const batchKey=[chunkX,chunkZ,block.type,block.color||'',block.texture||'',block.tilePattern||'',isTile?'tile':'cube'].join('|');
   let batch=batches.get(batchKey);
   if(!batch){batch={geometry,material,blocks:[]};batches.set(batchKey,batch);}
   batch.blocks.push(block);
