@@ -55,38 +55,174 @@
   }
   return ['day','sunset','night'].includes(timeMode)?timeMode:'day';
  }
- function routePosition(route,tick,phase,speed=1.05){
+ const NAV_CELL_SCALE=2,NAV_NEIGHBOR_RADIUS=.23,NAV_NEIGHBOR_HEIGHT=2.16;
+ const NAV_STEPS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+ const navigationCache=new WeakMap();
+ function navCellKey(x,z){return x+','+z;}
+ function navCircleHitsRect(px,pz,x,z,w,d){
+  const nx=Math.max(x,Math.min(x+w,px)),nz=Math.max(z,Math.min(z+d,pz));
+  const dx=px-nx,dz=pz-nz;
+  return dx*dx+dz*dz<NAV_NEIGHBOR_RADIUS*NAV_NEIGHBOR_RADIUS;
+ }
+ function markNeighborObstacleRect(set,x,z,w,d){
+  const minX=Math.floor((x-NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+  const maxX=Math.ceil((x+w+NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+  const minZ=Math.floor((z-NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+  const maxZ=Math.ceil((z+d+NAV_NEIGHBOR_RADIUS)*NAV_CELL_SCALE);
+  for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++){
+   if(navCircleHitsRect(ix/NAV_CELL_SCALE,iz/NAV_CELL_SCALE,x,z,w,d))set.add(navCellKey(ix,iz));
+  }
+ }
+ function createNavigationState(world,revision){
+  let cached=navigationCache.get(world);
+  if(cached&&cached.revision===revision)return cached;
+  const cells=new Set();
+  for(const block of Array.isArray(world.blocks)?world.blocks:[]){
+   if(!block||block.type==='flower'||block.type==='tall_grass'||block.type==='tile'||
+      (block.type==='door'&&block.open)||block.y>=NAV_NEIGHBOR_HEIGHT||block.y+1<=0)continue;
+   markNeighborObstacleRect(cells,block.x,block.z,1,1);
+  }
+  for(const cell of Array.isArray(world.excavations)?world.excavations:[]){
+   if(cell&&cell.depth>0)markNeighborObstacleRect(cells,cell.x,cell.z,1,1);
+  }
+  // These three cottage wall rectangles are scenery in Canvas 2D, not world blocks.
+  const houses=[[-13,-7],[10,-17],[16,-9]];
+  for(const [x,z] of houses){
+   markNeighborObstacleRect(cells,x,z,4.3,.18);
+   markNeighborObstacleRect(cells,x,z+.18,.18,3.95);
+   markNeighborObstacleRect(cells,x+4.12,z+.18,.18,3.95);
+   markNeighborObstacleRect(cells,x,z+4.12,1.58,.18);
+   markNeighborObstacleRect(cells,x+2.50,z+4.12,1.80,.18);
+  }
+  cached={revision,cells,pathCache:new Map(),routeCache:new WeakMap()};
+  navigationCache.set(world,cached);
+  return cached;
+ }
+ function nearestOpenNeighborCell(ix,iz,cells,minX,maxX,minZ,maxZ){
+  if(!cells.has(navCellKey(ix,iz)))return {x:ix,z:iz};
+  for(let radius=1;radius<=20;radius++)for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+   if(Math.max(Math.abs(dx),Math.abs(dz))!==radius)continue;
+   const x=ix+dx,z=iz+dz;
+   if(x<minX||x>maxX||z<minZ||z>maxZ||cells.has(navCellKey(x,z)))continue;
+   return {x,z};
+  }
+  return null;
+ }
+ function findNeighborPath(start,end,nav){
+  const key=start.x.toFixed(2)+','+start.z.toFixed(2)+'>'+end.x.toFixed(2)+','+end.z.toFixed(2);
+  const cached=nav.pathCache.get(key);if(cached)return cached;
+  const cells=nav.cells;
+  let sx=Math.round(start.x*NAV_CELL_SCALE),sz=Math.round(start.z*NAV_CELL_SCALE);
+  let gx=Math.round(end.x*NAV_CELL_SCALE),gz=Math.round(end.z*NAV_CELL_SCALE);
+  const worldLimit=1000000000,margin=24;
+  const minX=Math.max(-worldLimit*NAV_CELL_SCALE,Math.min(sx,gx)-margin);
+  const maxX=Math.min(worldLimit*NAV_CELL_SCALE,Math.max(sx,gx)+margin);
+  const minZ=Math.max(-worldLimit*NAV_CELL_SCALE,Math.min(sz,gz)-margin);
+  const maxZ=Math.min(worldLimit*NAV_CELL_SCALE,Math.max(sz,gz)+margin);
+  const originalStartFree=!cells.has(navCellKey(sx,sz)),originalEndFree=!cells.has(navCellKey(gx,gz));
+  const openStart=nearestOpenNeighborCell(sx,sz,cells,minX,maxX,minZ,maxZ);
+  const openGoal=nearestOpenNeighborCell(gx,gz,cells,minX,maxX,minZ,maxZ);
+  if(!openStart||!openGoal){
+   const stuck=[{x:start.x,z:start.z}];nav.pathCache.set(key,stuck);return stuck;
+  }
+  sx=openStart.x;sz=openStart.z;gx=openGoal.x;gz=openGoal.z;
+  const directSteps=Math.max(1,Math.ceil(Math.hypot(end.x-start.x,end.z-start.z)*4));
+  let clear=true;
+  for(let i=0;i<=directSteps;i++){
+   const t=i/directSteps,ix=Math.round((start.x+(end.x-start.x)*t)*NAV_CELL_SCALE);
+   const iz=Math.round((start.z+(end.z-start.z)*t)*NAV_CELL_SCALE);
+   if(cells.has(navCellKey(ix,iz))){clear=false;break;}
+  }
+  if(clear&&originalStartFree&&originalEndFree){
+   const direct=[{x:start.x,z:start.z},{x:end.x,z:end.z}];nav.pathCache.set(key,direct);return direct;
+  }
+  const width=maxZ-minZ+1,total=(maxX-minX+1)*width,indexOf=(x,z)=>(x-minX)*width+(z-minZ);
+  const startIndex=indexOf(sx,sz),goalIndex=indexOf(gx,gz);
+  const parent=new Int32Array(total);parent.fill(-1);
+  const seen=new Uint8Array(total),queue=new Int32Array(total);
+  let head=0,tail=0,found=startIndex===goalIndex;queue[tail++]=startIndex;seen[startIndex]=1;
+  while(head<tail&&!found&&tail<total){
+   const current=queue[head++],cx=Math.floor(current/width)+minX,cz=current%width+minZ;
+   for(const [dx,dz] of NAV_STEPS){
+    const nx=cx+dx,nz=cz+dz;
+    if(nx<minX||nx>maxX||nz<minZ||nz>maxZ||cells.has(navCellKey(nx,nz)))continue;
+    if(dx&&dz&&(cells.has(navCellKey(cx+dx,cz))||cells.has(navCellKey(cx,cz+dz))))continue;
+    const next=indexOf(nx,nz);if(seen[next])continue;
+    seen[next]=1;parent[next]=current;queue[tail++]=next;
+    if(next===goalIndex){found=true;break;}
+   }
+  }
+  if(!found){
+   const stuck=[{x:originalStartFree?start.x:sx/NAV_CELL_SCALE,z:originalStartFree?start.z:sz/NAV_CELL_SCALE}];
+   nav.pathCache.set(key,stuck);return stuck;
+  }
+  const reverse=[];let cursor=goalIndex;
+  while(cursor!==-1){
+   reverse.push({x:(Math.floor(cursor/width)+minX)/NAV_CELL_SCALE,z:(cursor%width+minZ)/NAV_CELL_SCALE});
+   if(cursor===startIndex)break;cursor=parent[cursor];
+  }
+  reverse.reverse();
+  const path=[],first=originalStartFree?{x:start.x,z:start.z}:reverse[0];path.push(first);
+  for(const point of reverse){
+   const last=path[path.length-1];
+   if(Math.hypot(point.x-last.x,point.z-last.z)>.04)path.push(point);
+  }
+  const last=path[path.length-1],destination=originalEndFree?{x:end.x,z:end.z}:reverse[reverse.length-1];
+  if(Math.hypot(destination.x-last.x,destination.z-last.z)>.04)path.push(destination);
+  nav.pathCache.set(key,path);return path;
+ }
+ function neighborPathLength(path){
+  let length=0;
+  for(let i=1;i<path.length;i++)length+=Math.hypot(path[i].x-path[i-1].x,path[i].z-path[i-1].z);
+  return length;
+ }
+ function getNeighborRouteSegments(route,speed,nav){
+  let cached=nav.routeCache.get(route);
+  if(cached&&cached.speed===speed)return cached;
   const segments=route.map((point,index)=>{
-   const next=route[(index+1)%route.length],length=Math.hypot(next.x-point.x,next.z-point.z);
-   return {point,next,length,travel:Math.max(1.8,length/speed),pause:point.pause||1};
+   const next=route[(index+1)%route.length],path=findNeighborPath(point,next,nav),length=neighborPathLength(path);
+   return {point,next,path,length,travel:Math.max(1.8,length/speed),pause:point.pause||1};
   });
-  const cycle=segments.reduce((sum,item)=>sum+item.pause+item.travel,0);
+  cached={speed,segments,cycle:segments.reduce((sum,segment)=>sum+segment.pause+segment.travel,0)};
+  nav.routeCache.set(route,cached);return cached;
+ }
+ function routePosition(route,tick,phase,speed=1.05,nav=null){
+  const {segments,cycle}=getNeighborRouteSegments(route,speed,nav||{cells:new Set(),pathCache:new Map(),routeCache:new WeakMap()});
   let time=((tick+phase)%cycle+cycle)%cycle;
   for(const segment of segments){
-   if(time<segment.pause)return {x:segment.point.x,z:segment.point.z};
+   const path=segment.path,first=path[0]||segment.point,second=path[1]||segment.next;
+   const initialFacing=Math.atan2(second.x-first.x,second.z-first.z);
+   if(time<segment.pause)return {x:first.x,z:first.z,facing:initialFacing,moving:false,walk:0};
    time-=segment.pause;
    if(time<segment.travel&&segment.length>.001){
     const raw=Math.max(0,Math.min(1,time/segment.travel)),progress=raw*raw*(3-2*raw);
-    return {
-     x:segment.point.x+(segment.next.x-segment.point.x)*progress,
-     z:segment.point.z+(segment.next.z-segment.point.z)*progress
-    };
+    let distance=progress*segment.length;
+    for(let i=1;i<path.length;i++){
+     const a=path[i-1],b=path[i],dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz);
+     if(distance<=length||i===path.length-1){
+      const ratio=length?Math.min(1,distance/length):0;
+      return {x:a.x+dx*ratio,z:a.z+dz*ratio,facing:Math.atan2(dx,dz),moving:true,walk:Math.sin(time*8+phase),activity:''};
+     }
+     distance-=length;
+    }
    }
    time-=segment.travel;
   }
-  return {x:route[0].x,z:route[0].z};
+  const first=segments[0]?.path[0]||route[0];
+  return {...route[0],x:first.x,z:first.z,facing:0,moving:false,walk:0};
  }
- function actorContext(world={},timeSeconds=0){
+ function actorContext(world={},timeSeconds=0,geometryRevision=0){
   if(!finite(timeSeconds))throw new TypeError('Protection time must be finite seconds.');
   const mode=modeAt(timeSeconds,world.timeMode),night=mode==='night';
   const neighbors=[];
+  const nav=night?null:createNavigationState(world,geometryRevision);
   const neighborRoutes=[
    {id:'hyacinth',route:NEIGHBOR_ROUTES.hyacinth,phase:0,speed:1.05},
    {id:'theo',route:NEIGHBOR_ROUTES.theo,phase:11,speed:1.05},
    ...FAMILY
   ];
   for(const actor of neighborRoutes){
-   const pos=night?SLEEP_SPOTS[actor.id]:routePosition(actor.route,timeSeconds,actor.phase,actor.speed);
+   const pos=night?SLEEP_SPOTS[actor.id]:routePosition(actor.route,timeSeconds,actor.phase,actor.speed,nav);
    neighbors.push({id:actor.id,x:pos.x,z:pos.z});
   }
   const animals=RESIDENTS.map(a=>({
@@ -119,5 +255,5 @@
   }
   return false;
  }
- return Object.freeze({HOMES,modeAt,routePosition,actorContext,isProtectedCell});
+ return Object.freeze({HOMES,modeAt,routePosition,actorContext,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });
