@@ -3,25 +3,29 @@
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
-const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion;
+const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
-if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion)throw new Error('A local Three.js sandbox dependency did not load.');
+if(!THREE||!adapter||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles)throw new Error('A local Three.js sandbox dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'low-power'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight,false);
+const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
+const performanceProfile=performanceProfiles.select(deviceSignals),frameGate=performanceProfiles.createFrameGate(performanceProfile.fpsCap);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:performanceProfile.antialias,powerPreference:'low-power'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));renderer.setSize(innerWidth,innerHeight,false);
 renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=performanceProfile.shadows;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 scene.add(new THREE.HemisphereLight(0xfff7e9,0x788b70,.86));
-const sun=new THREE.DirectionalLight(0xfff0d5,1.05);sun.position.set(-14,23,16);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+const sun=new THREE.DirectionalLight(0xfff0d5,1.05);sun.position.set(-14,23,16);sun.castShadow=performanceProfile.shadows;sun.shadow.mapSize.set(performanceProfile.shadows?1024:1,performanceProfile.shadows?1024:1);scene.add(sun);
 const fill=new THREE.DirectionalLight(0xc5d9e8,.24);fill.position.set(12,9,-15);scene.add(fill);
-const materials=painterly.create(THREE,renderer);
+const materials=painterly.create(THREE,renderer,performanceProfile);
 const floorMat=new THREE.MeshStandardMaterial({color:0x789767,roughness:1});
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const group=new THREE.Group();scene.add(group);
 const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(.82,1.9,.14);
+const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
+const animatedPlants=[];
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),doorMotions=new Map();
+let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map();
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
  orbit.phi=Math.max(.2,Math.min(1.3,orbit.phi));
@@ -68,40 +72,86 @@ function updateDoorAnimations(now=performance.now()){
   if(now>=motion.start+motion.duration)doorMotions.delete(key);
  }
 }
+function addPlant(block){
+ const root=new THREE.Group();root.position.set(block.x+.5,block.y,block.z+.5);root.userData.blockKey=block.key;
+ if(block.type==='flower'){
+  const green=materials.get('#47834d','leaves'),leaf=materials.get('#8eac6c','leaves'),petals=mat(block),center=materials.get('#edc76b','flower');
+  const stem=new THREE.Mesh(plantStemGeometry,green);stem.position.y=.39;root.add(stem);
+  const leafA=new THREE.Mesh(plantLeafGeometry,leaf);leafA.position.set(-.15,.34,0);leafA.scale.set(1,.28,.55);leafA.rotation.z=-.35;root.add(leafA);
+  const leafB=new THREE.Mesh(plantLeafGeometry,leaf);leafB.position.set(.15,.5,0);leafB.scale.set(1,.27,.52);leafB.rotation.z=.38;root.add(leafB);
+  const bloom=new THREE.Group();bloom.position.y=.78;root.add(bloom);
+  for(let i=0;i<6;i++){const angle=i*Math.PI/3,petal=new THREE.Mesh(plantPetalGeometry,petals);petal.position.set(Math.cos(angle)*.16,.015,Math.sin(angle)*.16);petal.scale.set(1,.62,.42);petal.rotation.y=-angle;bloom.add(petal);}
+  const centre=new THREE.Mesh(plantCenterGeometry,center);centre.position.y=.04;bloom.add(centre);
+ }else{
+  const green=materials.get('#4e9850','grass'),light=materials.get('#a4c374','grass');
+  for(let i=0;i<6;i++){const angle=i*2.399,r=.10+(i%3)*.035,blade=new THREE.Mesh(grassBladeGeometry,i%3===0?light:green);
+   blade.position.set(Math.cos(angle)*r,.36,Math.sin(angle)*r);blade.rotation.z=Math.cos(angle)*.23;blade.rotation.x=Math.sin(angle)*.20;root.add(blade);}
+ }
+ root.traverse(obj=>{if(obj.isMesh){obj.castShadow=performanceProfile.shadows;obj.receiveShadow=performanceProfile.shadows;}});
+ group.add(root);animatedPlants.push({object:root,kind:block.type,phase:block.x*.71+block.z*.53});
+}
 function renderSandbox(state){
  const now=performance.now();syncDoorMotions(state,now);
- clearGroup();
+ clearGroup();blockByKey.clear();animatedPlants.length=0;
+ const batches=new Map();
  state.world.blocks.forEach(block=>{
-  const isTile=block.type==='tile',isDoor=block.type==='door';
-  const geometry=isTile?tileGeometry:(isDoor?doorGeometry:boxGeometry);
-  const mesh=new THREE.Mesh(geometry,mat(block));
-  mesh.position.set(block.x+.5,block.y+(isTile?.065:(isDoor?.95:.5)),block.z+.5);
-  if(isDoor){const base=block.orientation==='ew'?-Math.PI/2:0,swing=block.swing===-1?-1:1;mesh.userData.baseDoorAngle=base;mesh.userData.doorSwing=swing;mesh.rotation.y=base+swing*displayedDoorAngle(block,now);}
-  mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.blockKey=block.key;mesh.userData.blockType=block.type;
-  group.add(mesh);meshByKey.set(block.key,mesh);
-  if(block.type==='flower'||block.type==='tall_grass'){
-   const topper=new THREE.Mesh(block.type==='flower'?new THREE.SphereGeometry(.24,10,8):new THREE.ConeGeometry(.18,.62,6),mat(block));
-   topper.position.set(block.x+.5,block.y+(block.type==='flower'?.88:.7),block.z+.5);
-   topper.castShadow=true;topper.userData.blockKey=block.key;group.add(topper);
+  blockByKey.set(block.key,block);
+  if(block.type==='flower'||block.type==='tall_grass'){addPlant(block);return;}
+  if(block.type==='door'){
+   const mesh=new THREE.Mesh(doorGeometry,mat(block));
+   mesh.position.set(block.x+.5,block.y+.95,block.z+.5);
+   const base=block.orientation==='ew'?-Math.PI/2:0,swing=block.swing===-1?-1:1;
+   mesh.userData.baseDoorAngle=base;mesh.userData.doorSwing=swing;mesh.userData.blockKey=block.key;
+   mesh.rotation.y=base+swing*displayedDoorAngle(block,now);
+   mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
+   group.add(mesh);meshByKey.set(block.key,mesh);return;
   }
+  const isTile=block.type==='tile',geometry=isTile?tileGeometry:boxGeometry,material=mat(block);
+  const batchKey=[block.type,block.color||'',block.texture||'',block.tilePattern||'',isTile?'tile':'cube'].join('|');
+  let batch=batches.get(batchKey);
+  if(!batch){batch={geometry,material,blocks:[]};batches.set(batchKey,batch);}
+  batch.blocks.push(block);
  });
- if(state.selectedKey&&meshByKey.has(state.selectedKey)){
-  const selectedMesh=meshByKey.get(state.selectedKey);
-  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(selectedMesh.geometry),new THREE.LineBasicMaterial({color:0x4b6550,transparent:true,opacity:.9}));
-  edges.position.copy(selectedMesh.position);edges.rotation.copy(selectedMesh.rotation);edges.scale.setScalar(1.035);edges.userData.selectionOutline=true;edges.userData.blockKey=state.selectedKey;group.add(edges);
+ const dummy=new THREE.Object3D();
+ batches.forEach(batch=>{
+  const mesh=new THREE.InstancedMesh(batch.geometry,batch.material,batch.blocks.length);
+  batch.blocks.forEach((block,index)=>{
+   dummy.position.set(block.x+.5,block.y+(block.type==='tile'?.065:.5),block.z+.5);
+   dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+   mesh.setMatrixAt(index,dummy.matrix);
+  });
+  mesh.instanceMatrix.needsUpdate=true;
+  mesh.userData.blockKeys=batch.blocks.map(block=>block.key);
+  mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
+  group.add(mesh);
+ });
+ if(state.selectedKey){
+  const block=blockByKey.get(state.selectedKey);
+  if(block){
+   const outlineGeometry=new THREE.EdgesGeometry(block.type==='door'?doorGeometry:(block.type==='tile'?tileGeometry:boxGeometry));
+   const edges=new THREE.LineSegments(outlineGeometry,new THREE.LineBasicMaterial({color:0x4b6550,transparent:true,opacity:.9}));
+   edges.position.set(block.x+.5,block.y+(block.type==='door'?.95:(block.type==='tile'?.065:.5)),block.z+.5);
+   const door=block.type==='door';
+   if(door){const mesh=meshByKey.get(block.key);if(mesh)edges.rotation.copy(mesh.rotation);}
+   edges.scale.setScalar(1.035);edges.userData.selectionOutline=true;edges.userData.blockKey=state.selectedKey;group.add(edges);
+  }
  }
  selected=state.selectedKey;
- const selectedBlock=state.world.blocks.find(b=>b.key===selected);
+ const selectedBlock=blockByKey.get(selected);
  document.getElementById('remove').disabled=!selectedBlock;
  document.getElementById('door').disabled=!selectedBlock||selectedBlock.type!=='door';
  document.getElementById('apply-pattern').disabled=!selectedBlock||selectedBlock.type!=='tile';
  document.getElementById('pattern').value=selectedBlock&&selectedBlock.type==='tile'?selectedBlock.tilePattern||'grid':'grid';
- status.textContent=state.world.name+' · '+state.world.blocks.length+' sandbox blocks · revision '+state.revision+' · Bucket: '+(state.world.bucket?.length||0)+
+ const renderObjects=group.children.length,instanceBatches=batches.size;
+ status.textContent=state.world.name+' · '+state.world.blocks.length+' blocks · '+instanceBatches+' instanced batches · '+renderObjects+' render objects · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
-  ' · Original unchanged: '+state.sourceUnchanged;
+  ' · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,
-  sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size,lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
-  pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},getDoorAngle:(key)=>{const block=sandbox.getState().world.blocks.find(item=>item.key===key&&item.type==='door');return block?displayedDoorAngle(block):null;},getState:()=>sandbox.getState()};
+  sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:renderObjects,renderObjects,instanceBatches,
+  performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize},
+  lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
+  pickBlock:(key)=>{const block=blockByKey.get(key);if(!block)return false;const p=new THREE.Vector3(block.x+.5,block.y+.5,block.z+.5).project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},
+  getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
@@ -149,9 +199,9 @@ canvas.addEventListener('pointerup',event=>{
 });
 canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
 canvas.addEventListener('wheel',event=>{event.preventDefault();orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));});
 let frame=0;
-function animate(){requestAnimationFrame(animate);updateDoorAnimations(performance.now());renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__)window.__DIYCRAFT_THREE_EDIT__.frames=frame;}
+function animate(now){requestAnimationFrame(animate);if(!frameGate.shouldRender(now))return;updateDoorAnimations(now);for(const item of animatedPlants){if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;}renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__){window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;}}
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
