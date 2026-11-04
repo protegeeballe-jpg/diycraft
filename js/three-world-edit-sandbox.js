@@ -54,7 +54,7 @@
    return state();
   }
   function clearBucketSelection(){selectedBucketItem=null;selectedBucketItemIndex=null;return state();}
-  function addBlock(input){
+  function addBlockRecord(input){
    if(!object(input)||!coord(input.x)||!Number.isInteger(input.y)||input.y>MAX_Y||!coord(input.z)||input.y<-(depthByCell.get(input.x+','+input.z)||0))
     throw new TypeError('Block coordinates must be valid whole-number cells.');
    if(!TYPES.has(input.type))throw new TypeError('Unsupported block type.');
@@ -93,7 +93,11 @@
    }
    world.blocks.push(block);blockIndex.set(block.key,block);occupied.set(position,block.key);
    if(input.type==='door')occupied.set(upperPosition,block.key);
-   selectedKey=block.key;revision++;
+   selectedKey=block.key;
+   return block;
+  }
+  function addBlock(input){
+   addBlockRecord(input);revision++;
    return state();
   }
   function remove(key){
@@ -113,6 +117,30 @@
    occupied.delete(cellKey(block.x,block.y,block.z));
    if(block.type==='door')occupied.delete(cellKey(block.x,block.y+1,block.z));
    if(selectedKey===key)selectedKey=null;
+   revision++;
+   return state();
+  }
+  function fillExcavation(x,z,input){
+   if(!coord(x)||!coord(z))throw new TypeError('Excavation coordinates must be valid whole-number cells.');
+   if(!object(input)||!TYPES.has(input.type))throw new TypeError('Choose a supported building block to fill this hole.');
+   if(input.type==='door')throw new Error('Choose a solid building block to fill a hole.');
+   const key=x+','+z,depth=depthByCell.get(key)||0;
+   if(depth<=0)throw new Error('That ground is already at its original level.');
+   if(world.blocks.length+depth>MAX_BLOCKS)throw new RangeError('Not enough building space available.');
+   if(input.type==='custom'){
+    const custom=object(world.customBlock)?world.customBlock:{};
+    const color=input.color===undefined?custom.color:input.color;
+    if(typeof color!=='string'||!HEX.test(color))throw new TypeError('Custom blocks require a valid six-digit color.');
+   }
+   for(let y=-depth;y<0;y++){
+    if(occupied.has(cellKey(x,y,z)))throw new Error('A block is already occupying part of this excavation.');
+   }
+   const placed=[];
+   for(let y=-depth;y<0;y++)placed.push(addBlockRecord({...input,x,y,z}));
+   world.excavations=(world.excavations||[]).filter(cell=>cell.x!==x||cell.z!==z);
+   depthByCell.delete(key);
+   if(Array.isArray(world.water))world.water=world.water.filter(cell=>cell.x!==x||cell.z!==z);
+   if(Array.isArray(world.fish))world.fish=world.fish.filter(fish=>fish.x!==x||fish.z!==z);
    revision++;
    return state();
   }
@@ -211,7 +239,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
