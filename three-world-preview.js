@@ -3,11 +3,11 @@
 (function(){
 'use strict';
 const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter;
-const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile;
+const painterly=window.DIYCraftPainterlyMaterials,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry;
 const canvas=document.getElementById('three-world');
 const status=document.getElementById('counts');
 const errorPanel=document.getElementById('error');
-if(!THREE||!adapter||!painterly||!performanceProfiles)throw new Error('A required local DIYCraft Three.js migration module did not load.');
+if(!THREE||!adapter||!painterly||!performanceProfiles||!plantGeometryFactory)throw new Error('A required local DIYCraft Three.js migration module did not load.');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xf2ead9);
 scene.fog=new THREE.Fog(0xf2ead9,34,78);
@@ -45,6 +45,8 @@ sun.shadow.bias=-.00025;scene.add(sun);
 const fill=new THREE.DirectionalLight(0xc5d9e8,.24);
 fill.position.set(12,9,-15);scene.add(fill);
 const palette=painterly.create(THREE,renderer,performanceProfile);
+const plantSurfaceMaterial=palette.get('#ffffff','paper');
+plantSurfaceMaterial.vertexColors=true;plantSurfaceMaterial.side=THREE.DoubleSide;plantSurfaceMaterial.needsUpdate=true;
 const sharedGeometry={
  cube:new THREE.BoxGeometry(1,1,1),
  tile:new THREE.BoxGeometry(1,.13,1),
@@ -109,40 +111,13 @@ function queueSolidBlock(block){
  if(!entry){entry={type,geometry,material:mat,items:[]};blockInstances.set(key,entry);}
  entry.items.push(block);
 }
-function makeFlower(block){
- const color=block.color||defaultColors.flower;
- const root=new THREE.Group();
- root.position.set(block.x+.5,block.y,block.z+.5);
- scene.add(root);
- const stemMat=material('#47834d','leaves');
- const leafMat=material('#8eac6c','leaves');
- const petalMat=material(color,'flower');
- const centerMat=material('#edc76b','flower');
- addMesh(sharedGeometry.stem,stemMat,0,.39,0,root);
- const leaf1=addMesh(new THREE.SphereGeometry(.21,9,7),leafMat,-.15,.34,0,root);
- leaf1.scale.set(1,.28,.55);leaf1.rotation.z=-.35;
- const leaf2=addMesh(new THREE.SphereGeometry(.20,9,7),leafMat,.15,.5,0,root);
- leaf2.scale.set(1,.27,.52);leaf2.rotation.z=.38;
- const bloom=new THREE.Group();bloom.position.y=.78;root.add(bloom);
- for(let i=0;i<8;i++){
-  const a=i*Math.PI/4;
-  const petal=addMesh(sharedGeometry.petal,petalMat,Math.cos(a)*.19,.015,Math.sin(a)*.19,bloom);
-  petal.scale.set(1,.6,.42);petal.rotation.y=-a;
- }
- addMesh(sharedGeometry.center,centerMat,0,.04,0,bloom);
- animated.push({object:root,kind:'flower',phase:block.x*.71+block.z*.53});
- renderedPlants++;
-}
-function makeTallGrass(block){
- const root=new THREE.Group();root.position.set(block.x+.5,block.y,block.z+.5);scene.add(root);
- const green1=material('#4e9850','grass'),green2=material('#a4c374','grass');
- for(let i=0;i<7;i++){
-  const a=i*2.399,r=.12+(i%3)*.035;
-  const blade=addMesh(sharedGeometry.grassBlade,i%3===0?green2:green1,
-   Math.cos(a)*r,.36,Math.sin(a)*r,root);
-  blade.rotation.z=Math.cos(a)*.23;blade.rotation.x=Math.sin(a)*.20;
- }
- animated.push({object:root,kind:'grass',phase:block.x*.47+block.z*.61});
+function makePlant(block){
+ const root=new THREE.Group();root.position.set(block.x+.5,block.y,block.z+.5);
+ const geometry=plantGeometryFactory.createGeometry(THREE,block);
+ const mesh=new THREE.Mesh(geometry,plantSurfaceMaterial);
+ mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
+ root.add(mesh);scene.add(root);
+ animated.push({object:root,kind:block.type==='flower'?'flower':'grass',phase:block.x*.71+block.z*.53});
  renderedPlants++;
 }
 function makeDoor(block){
@@ -242,8 +217,7 @@ function buildWorld(snapshot,originalJson){
  buildTerrain();
  // Block material and geometry grouping keeps the voxel world efficient.
  snapshot.blocks.forEach(block=>{
-  if(block.type==='flower'){makeFlower(block);return;}
-  if(block.type==='tall_grass'){makeTallGrass(block);return;}
+  if(block.type==='flower'||block.type==='tall_grass'){makePlant(block);return;}
   if(block.type==='door'){makeDoor(block);return;}
   queueSolidBlock(block);
  });
