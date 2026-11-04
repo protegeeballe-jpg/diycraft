@@ -12,6 +12,7 @@
  const HEX=/^#[0-9a-f]{6}$/i;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const SOLID_TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow']);
+ const BASE_COLORS={grass:'#70b85a',dirt:'#9a7049',stone:'#9ca6a1',wood:'#a97545',leaves:'#4e9a59',brick:'#c87862',glass:'#a5dce3',flower:'#e9a4c1',sand:'#e8d38b',snow:'#f2f8fa'};
  const TEXTURES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom']);
  const PATTERNS=new Set(['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral']);
  function object(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
@@ -104,7 +105,7 @@
    for(const field of ['color','texture','tilePattern','style','orientation','swing'])
     if(block[field]!==undefined)item[field]=block[field];
    if(SOLID_TYPES.has(block.type)){
-    if(!item.color)item.color=block.color||'#9a9a9a';
+    if(!item.color)item.color=block.color||BASE_COLORS[block.type]||'#9a9a9a';
     if(!item.texture)item.texture=block.type;
    }
    bucket.push(item);
