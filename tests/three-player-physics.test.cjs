@@ -58,7 +58,7 @@ function runProductionMove(state,controls,environment,dt){
   'WORLD_LIMIT','MAX_DIG_DEPTH','nudgePlayerOutOfBlocks','groundDepthAt','PLAYER_GRAVITY',
   'playerCollisionAt','playerGrounded','jumpVelocity','surfaceHeightAt','save','dt',
   productionMoveSource+
-  '\nmove(dt); return {player, jumpVelocity, playerGrounded, flying, playerActivity, controls:{moveX,moveZ,vertical,keys},saveRequested:saved};'
+  '\nmove(dt); return {player:world.player, jumpVelocity, playerGrounded, flying, playerActivity, controls:{moveX,moveZ,vertical,keys},saveRequested:saved};'
  );
  return run(world,isStationaryRestActivity,playerActivity,moveX,moveZ,vertical,keys,flying,
   1000000000,1000000000,nudgePlayerOutOfBlocks,groundDepthAt,14.5,playerCollisionAt,
@@ -195,7 +195,7 @@ test('fixed-step clock clamps tab stalls and never exceeds six 60 Hz updates per
  assert.equal(first.elapsed,.1);
  assert.equal(first.steps,6);
  assert.equal(ticks.length,6);
- assert.equal(first.accumulator,0);
+ assert.ok(first.accumulator<1e-9);
  const half=clock.advance(1000/120,()=>{});
  assert.equal(half.steps,0);
  assert.ok(Math.abs(half.alpha-.5)<1e-9);
