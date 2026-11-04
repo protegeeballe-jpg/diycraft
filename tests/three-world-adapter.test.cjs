@@ -82,6 +82,21 @@ test('preserves bounded Material Bucket items and normalizes recovered doors',()
  assert.equal(many.bucket.length,120);
 });
 
+test('keeps normalized renderer colors separate from explicitly configured solid styles',()=>{
+ const defaults=adapter.createSnapshot({solidStyles:{}});
+ assert.deepEqual(defaults.styledSolidTypes,[]);
+ assert.equal(defaults.solidStyles.stone.color,'#9ca6a1','Renderer still receives the normal stone appearance.');
+ assert.equal(defaults.solidStyles.stone.texture,'stone');
+ const explicit=adapter.createSnapshot({solidStyles:{
+  grass:{color:'#123456',texture:'leaves'},
+  stone:{color:'#abcdef',texture:'brick'},
+  custom:{color:'#112233',texture:'custom'}
+ }});
+ assert.deepEqual(explicit.styledSolidTypes,['grass','stone']);
+ assert.deepEqual(explicit.solidStyles.grass,{color:'#123456',texture:'leaves'});
+ assert.deepEqual(explicit.solidStyles.stone,{color:'#abcdef',texture:'brick'});
+ assert.ok(Object.isFrozen(explicit.styledSolidTypes));
+});
 test('normalizes layered water and limits fish to three per wet cell',()=>{
  const s=adapter.createSnapshot(validWorld);
  assert.deepEqual(s.water,[
