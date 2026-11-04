@@ -40,17 +40,21 @@
 - Screenshot artifact: `diycraft-three-actual-starter-world` (retained for 7 days by CI).
 
 ### Stage 2 — Editing parity in a sandbox
-**Status: In progress — isolated data actions and selection resolver complete; browser interaction not yet connected**
-- `js/three-world-edit-sandbox.js` clones the immutable renderer snapshot into private in-memory state and exposes selection, validated block placement/removal, door toggling and tile-pattern changes. Removal recovers the original block appearance into a bounded 120-item Material Bucket and refuses deletion when the bucket is full.
+**Status: In progress — block editing, water/fish data actions, collision rules and door animation have isolated regression coverage; production remains untouched**
+- `js/three-world-edit-sandbox.js` clones the immutable renderer snapshot into private in-memory state and exposes selection, validated block placement/removal, door toggling, tile-pattern changes, stacked water-layer addition/collection and fish placement. Removal recovers the original block appearance into a bounded 120-item Material Bucket and refuses destructive edits when the bucket is full.
+- Water edits follow the production rules: only excavated cells can be filled, each cell is capped at its recorded depth, collection recovers a water item into the Material Bucket, and collecting the final layer removes fish in that cell. A wet cell accepts up to three fish.
+- Plant/door movement parity is covered at the block level: flowers and tall grass remain pass-through; a closed door occupies both vertical collision cells; an open door releases both.
 - Each operation returns a detached, deeply frozen state snapshot. The original renderer snapshot is checked for unchanged content; no storage APIs or production-world references are used.
 - `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups. Browser placement uses the clicked face normal and rejects occupied cells.
-- Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, tile patterns, immutable state and nearest-hit selection.
+- `js/three-door-motion.js` provides a pure smoothstep animation helper using the production 260 ms duration and 1.32-radian open angle. It supports continuous reversal while the door is moving; the browser preview animates the door leaf and its selection outline together.
+- Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, plant pass-through, two-cell door occupancy, water depth/stacking/collection, fish limits, Material Bucket protection, immutable state and nearest-hit selection. The door helper has deterministic endpoint, midpoint and reversal tests.
 - CI runs the adapter, editing-sandbox and raycast tests independently.
 - `three-world-edit-preview.html` and `three-world-edit-preview.js` provide a separate interactive browser sandbox with real 3D raycast selection, face-normal block placement, removal, door open/close, and tile-pattern changes. Occupied face targets are rejected rather than silently shifted. It loads the CI-generated production starter-world fixture and uses the painterly material library.
-- Browser regression coverage in `tests/three-world-edit-preview.cjs` verifies real projected selection, add/remove, door operation, tile-pattern changes, unchanged source data, and zero browser-storage keys.
+- Browser regression coverage in `tests/three-world-edit-preview.cjs` verifies real projected selection, face-normal placement, add/remove, Material Bucket recovery, door opening/closing at intermediate and final angles, continuous close reversal, tile-pattern changes, unchanged source data, and zero browser-storage keys.
 - `tests/three-world-canvas-parity.test.cjs` extracts the actual production Canvas 2D `addBlock()` function and compares its resulting block records with the Three.js sandbox for custom blocks, tiles, doors, styled solids and flowers.
-- Cross-engine checks also cover two-cell door occupancy, excavation depth, the world-height ceiling and duplicate-cell rejection. The migration guard runs these alongside the adapter, sandbox and raycast suites.
-- Remaining before Stage 2 completion: verify removal/inventory behavior and broader special-block interactions against Canvas 2D. Do not connect production controls or storage.
+- Cross-engine checks also cover two-cell door occupancy, excavation depth, the world-height ceiling and duplicate-cell rejection. The migration guard now runs the door-motion timing tests alongside the adapter, sandbox, raycast and Canvas 2D/Three.js parity suites.
+- Latest verification: migration guard passed at commit `3f632667a4c579004ce9033444730bea9b774717`; browser preview passed at `1f48c8a3cfc058c7b58f64583af38342dbb58c48`. Both runs checked the branch's new sandbox behavior; the browser run rendered the real 232-block starter world and passed the interactive editing test.
+- Remaining before Stage 2 completion: add and browser-test interactive water/fish editing and rendering, improve plant meshes and sway in the editing sandbox, then validate more detailed collision behavior against Canvas 2D. Do not connect production controls or storage.
 
 ### Stage 3 — Player, physics and animation
 - Port camera modes, movement, collision, flying, jumping, swimming, water-level behavior, plant sway, water motion, animals and NPC navigation in isolated increments.
