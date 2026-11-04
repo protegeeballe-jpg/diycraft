@@ -20,6 +20,50 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .dpad button{font-size:18px;font-weight:700;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}
 .dpad button[data-move="forward"]{grid-column:2;grid-row:1}.dpad button[data-move="left"]{grid-column:1;grid-row:2}.dpad button[data-move="back"]{grid-column:2;grid-row:2}.dpad button[data-move="right"]{grid-column:3;grid-row:2}
 #play-instructions{font-size:10px;line-height:1.35;color:var(--muted);margin-top:6px;max-width:150px}
+/* Shared neighbor coloring activity */
+#neighbor-coloring[hidden]{display:none!important}
+.neighbor-color-shade{position:fixed;z-index:20;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.neighbor-color-panel{width:min(820px,100%);max-height:94vh;overflow:auto;padding:16px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:18px;box-shadow:0 16px 50px #263c3250}
+.neighbor-color-head,.neighbor-color-page-head,.neighbor-color-tools,.neighbor-color-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.neighbor-color-head{justify-content:space-between;margin-bottom:8px}
+.neighbor-color-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.neighbor-color-note{font-size:12px;line-height:1.45;color:#718075;margin:6px 0 12px}
+.neighbor-color-templates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.neighbor-color-template{min-width:0;padding:8px;background:#f5f1e7;border:1px solid #d9dfd2;border-radius:12px;text-align:left}
+.neighbor-color-template img{display:block;width:100%;aspect-ratio:640/460;object-fit:contain;background:#fffdf8;border:1px solid #e8e2d5;border-radius:8px}
+.neighbor-color-template span{display:block;margin-top:6px;font-size:12px;font-weight:700}
+.neighbor-color-work[hidden]{display:none!important}
+.neighbor-color-page-head{justify-content:space-between;margin:8px 0}
+.neighbor-color-page-title{font-size:13px;font-weight:700}
+.neighbor-color-canvas-wrap{position:relative;width:100%;max-width:760px;margin:0 auto;background:#fffdf8;border:1px solid #e4ddce;border-radius:12px;overflow:hidden}
+#neighbor-color-canvas{display:block;width:100%;height:auto;touch-action:none;background:#fffdf8}
+#neighbor-color-cursor{position:absolute;left:0;top:0;width:16px;height:16px;border:2px solid white;border-radius:50%;box-shadow:0 0 0 2px #54684d88;pointer-events:none;opacity:0;transform:translate(-50%,-50%);transition:opacity .12s}
+#neighbor-color-cursor.active{opacity:1}
+.neighbor-color-live{display:flex;align-items:center;gap:10px;margin:10px 0;padding:9px 11px;background:#edf4e8;border:1px solid #dce7d5;border-radius:12px}
+.neighbor-color-avatar{font-size:25px}
+.neighbor-color-live-copy{flex:1;min-width:0}
+.neighbor-color-live-copy strong{display:block;font-size:12px}
+.neighbor-color-live-copy small{display:block;color:#657563;font-size:11px;line-height:1.4;margin-top:2px}
+.neighbor-color-progress{height:6px;margin-top:7px;background:#d9e3d3;border-radius:8px;overflow:hidden}
+#neighbor-color-progress-fill{display:block;width:0;height:100%;background:#8aaa79;transition:width .2s}
+.neighbor-color-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.neighbor-color-tools label{display:flex;align-items:center;gap:5px;font-size:11px;color:#657563}
+#neighbor-color-color{width:36px;height:32px;padding:2px}
+#neighbor-color-brush{width:105px}
+.neighbor-color-tools button,.neighbor-color-actions button{padding:8px 10px}
+.neighbor-color-actions{justify-content:space-between;margin-top:8px}
+.neighbor-color-help{font-size:11px;line-height:1.45;color:#718075;margin:9px 0 0}
+@media(max-width:600px){
+ .neighbor-color-shade{padding:7px}
+ .neighbor-color-panel{max-height:96vh;padding:11px;border-radius:14px}
+ .neighbor-color-templates{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .neighbor-color-template{padding:6px}
+ .neighbor-color-template span{font-size:11px}
+ .neighbor-color-head h2{font-size:16px}
+ .neighbor-color-tools{gap:6px}
+ .neighbor-color-tools label{font-size:10px}
+ .neighbor-color-tools button,.neighbor-color-actions button{padding:7px 8px;font-size:11px}
+}
 @media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#safety{right:8px;top:auto;bottom:8px;max-width:190px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
 </style></head>
 <body>
@@ -52,7 +96,31 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  <div id="play-instructions">Hold to move · Drag the world to look · Jump with the button</div>
 </section>
 <div id="safety">Sandbox only · No save, localStorage, or live-game changes<br>Drag to orbit · Scroll to zoom · Click to select</div>
+<section id="neighbor-coloring" class="neighbor-color-shade" hidden aria-label="Color together with a neighbor">
+ <div class="neighbor-color-panel" role="dialog" aria-modal="true" aria-labelledby="neighbor-color-title">
+  <div class="neighbor-color-head"><h2 id="neighbor-color-title">🖍 Color together</h2><button id="neighbor-color-close" type="button">Close ✕</button></div>
+  <p id="neighbor-color-note" class="neighbor-color-note">A kind neighbor is sitting with you for a quiet coloring activity. No talking is needed.</p>
+  <div id="neighbor-color-templates" class="neighbor-color-templates" aria-label="Choose a coloring picture"></div>
+  <div id="neighbor-color-work" class="neighbor-color-work" hidden>
+   <div class="neighbor-color-page-head"><strong id="neighbor-color-page-title" class="neighbor-color-page-title">My coloring page</strong><button id="neighbor-color-back" type="button">Choose another picture</button></div>
+   <div class="neighbor-color-canvas-wrap">
+    <canvas id="neighbor-color-canvas" width="640" height="460" aria-label="Shared coloring page"></canvas>
+    <div id="neighbor-color-cursor" aria-hidden="true"></div>
+   </div>
+   <div class="neighbor-color-live"><div class="neighbor-color-avatar">🧑‍🎨</div><div class="neighbor-color-live-copy"><strong id="neighbor-color-neighbor-title">Your neighbor is ready to color</strong><small id="neighbor-color-status">Their colors will appear on this same shared picture.</small><div class="neighbor-color-progress"><span id="neighbor-color-progress-fill"></span></div></div></div>
+   <div class="neighbor-color-tools">
+    <label>Color <input id="neighbor-color-color" type="color" value="#f3a45c"></label>
+    <label>Brush <input id="neighbor-color-brush" type="range" min="4" max="34" value="13"></label>
+    <button id="neighbor-color-fill" class="primary" type="button">🪣 Fill</button>
+    <button id="neighbor-color-brush-tool" type="button">🖌 Brush</button>
+    <button id="neighbor-color-undo" type="button">↶ Undo</button>
+   </div>
+   <div class="neighbor-color-actions"><button id="neighbor-color-reset" type="button">Start this picture again</button><button id="neighbor-color-save" class="primary" type="button">Save our picture</button></div>
+   <p class="neighbor-color-help">Tap inside a closed shape to fill it, or choose Brush to color by hand. The neighbor adds a few colors to your shared picture. This activity is saved only in the sandbox copy.</p>
+  </div>
+ </div>
+</section>
 <script src="./js/three.js"></script><script src="./js/three-performance-profile.js"></script><script src="./js/three-world-adapter.js"></script><script src="./js/three-door-model.js"></script>
 <script src="./js/three-painterly-materials.js"></script><script src="./js/three-plant-geometry.js"></script><script src="./js/three-animal-geometry.js"></script><script src="./js/three-world-protection.js"></script><script src="./js/three-world-edit-sandbox.js"></script>
-<script src="./js/three-world-raycast.js"></script><script src="./js/three-door-motion.js"></script><script src="./js/three-player-physics.js"></script><script src="./js/three-player-camera.js"></script><script src="./js/three-player-model.js"></script><script src="./js/three-neighbor-model.js"></script><script src="./three-world-edit-preview.js"></script>
+<script src="./js/three-world-raycast.js"></script><script src="./js/three-door-motion.js"></script><script src="./js/three-player-physics.js"></script><script src="./js/three-player-camera.js"></script><script src="./js/three-player-model.js"></script><script src="./js/three-neighbor-model.js"></script><script src="./js/three-neighbor-coloring.js"></script><script src="./three-world-edit-preview.js"></script>
 </body></html>
