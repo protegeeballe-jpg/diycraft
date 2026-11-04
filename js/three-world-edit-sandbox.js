@@ -180,7 +180,10 @@
    return false;
   }
   function isMovementSolidAt(x,y,z){
-   return playerCollisionAt(x+.5,z+.5,y);
+   if(!coord(x)||!Number.isInteger(y)||!coord(z))return false;
+   const blockKey=occupied.get(cellKey(x,y,z)),block=blockKey?find(blockKey):null;
+   if(!block||block.type==='flower'||block.type==='tall_grass')return false;
+   return !(block.type==='door'&&block.open);
   }
   function toggleDoor(key){
    const block=find(key);
