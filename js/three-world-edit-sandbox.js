@@ -145,7 +145,8 @@
    return state();
   }
   function isMovementSolidAt(x,y,z){
-   const block=world.blocks.find(item=>item.x===x&&item.y===y&&item.z===z);
+   const block=world.blocks.find(item=>item.x===x&&item.z===z&&
+    (item.y===y||(item.type==='door'&&item.y+1===y)));
    if(!block||block.type==='flower'||block.type==='tall_grass')return false;
    return !(block.type==='door'&&block.open);
   }
