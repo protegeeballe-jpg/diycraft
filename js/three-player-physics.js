@@ -29,13 +29,13 @@
   if(![player.x,player.y,player.z,player.yaw].every(Number.isFinite))
    throw new TypeError('Player position and yaw must be finite numbers.');
   let moveX=finite(controls.moveX),moveZ=finite(controls.moveZ),vertical=finite(controls.vertical);
-  const keys=controls.keys&&typeof controls.keys==='object'?{...controls.keys}:{};
+  let keys=controls.keys&&typeof controls.keys==='object'?{...controls.keys}:{};
   let jumpVelocity=finite(state.jumpVelocity),playerGrounded=!!state.playerGrounded;
   let flying=!!state.flying,playerActivity=typeof state.playerActivity==='string'?state.playerActivity:'';
   let saveRequested=false;
   const save=()=>{saveRequested=true;if(typeof environment.save==='function')environment.save();};
   if(isStationaryRestActivity(playerActivity)){
-   moveX=0;moveZ=0;vertical=0;for(const key of Object.keys(keys))keys[key]=false;jumpVelocity=0;
+   moveX=0;moveZ=0;vertical=0;keys={};jumpVelocity=0;
    return {player,jumpVelocity,playerGrounded,flying,playerActivity,
     controls:{moveX,moveZ,vertical,keys},saveRequested};
   }
