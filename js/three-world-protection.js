@@ -55,7 +55,7 @@
  const finite=value=>typeof value==='number'&&Number.isFinite(value);
  function modeAt(timeSeconds,timeMode='day'){
   if(timeMode==='auto'){
-   const phase=((timeSeconds%180)+180)%180/180;
+   const phase=(timeSeconds%180)/180;
    return phase<.55?'day':phase<.68?'sunset':'night';
   }
   return ['day','sunset','night'].includes(timeMode)?timeMode:'day';
