@@ -9,7 +9,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const WORLD_LIMIT=1000000000,MAX_DIG_DEPTH=1000000000;
- const MAX_BLOCKS=18000,MAX_GROUND_CELLS=12000,MAX_FISH=MAX_GROUND_CELLS*3,MAX_ANIMALS=100;
+ const MAX_BLOCKS=18000,MAX_GROUND_CELLS=12000,MAX_FISH=MAX_GROUND_CELLS*3,MAX_ANIMALS=100,MAX_ARTWORKS=20,MAX_ARTWORK_DATA=550000;
  const HEX=/^#[0-9a-f]{6}$/i;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const TEXTURES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom']);
@@ -185,6 +185,16 @@
   }
   return out;
  }
+ function normalizeArtworks(source){
+  const out=[];
+  if(!Array.isArray(source))return out;
+  const validData=/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
+  for(const item of source.slice(0,MAX_ARTWORKS)){
+   if(!isObject(item)||typeof item.data!=='string'||item.data.length>=MAX_ARTWORK_DATA||!validData.test(item.data))continue;
+   out.push({name:String(item.name||'Artwork').slice(0,28),data:item.data});
+  }
+  return out;
+ }
  function normalizeAnimals(source){
   const out=[];
   if(!Array.isArray(source))return out;
@@ -237,7 +247,7 @@
   const fish=normalizeFish(world.fish,water);
   const animals=normalizeAnimals(world.animals);
   const bucket=normalizeBucket(world.bucket);
-  const materials=normalizeInventory(world.materials),crafted=normalizeInventory(world.crafted);
+  const materials=normalizeInventory(world.materials),crafted=normalizeInventory(world.crafted),artworks=normalizeArtworks(world.artworks);
   return freezeDeep({
    source:'diycraft-world-v1',
    version:integer(world.version)?world.version:1,
@@ -245,15 +255,15 @@
    timeMode:TIME_MODES.has(world.timeMode)?world.timeMode:'day',
    player:normalizePlayer(world.player),
    customBlock,doorDesign,tileDesign,solidStyles,styledSolidTypes,
-   blocks,excavations,water,fish,animals,bucket,materials,crafted,
+   blocks,excavations,water,fish,animals,bucket,materials,crafted,artworks,
    counts:{
     blocks:blocks.length,excavations:excavations.length,
-    water:water.length,fish:fish.length,animals:animals.length,bucket:bucket.length
+    water:water.length,fish:fish.length,animals:animals.length,bucket:bucket.length,artworks:artworks.length
    }
   });
  }
  return Object.freeze({
   createSnapshot,
-  limits:Object.freeze({world:WORLD_LIMIT,blocks:MAX_BLOCKS,groundCells:MAX_GROUND_CELLS,fish:MAX_FISH,animals:MAX_ANIMALS})
+  limits:Object.freeze({world:WORLD_LIMIT,blocks:MAX_BLOCKS,groundCells:MAX_GROUND_CELLS,fish:MAX_FISH,animals:MAX_ANIMALS,artworks:MAX_ARTWORKS,artworkData:MAX_ARTWORK_DATA})
  });
 });
