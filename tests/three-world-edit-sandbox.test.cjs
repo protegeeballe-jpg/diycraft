@@ -336,7 +336,7 @@ test('blocks digging and removal inside protected homes and near live neighbors 
  assert.throws(()=>edit.excavateGround(32,32,animalContext),/protected/);
  assert.equal(edit.getState().world.excavations.length,1,'Blocked digging must not change excavations.');
  assert.equal(edit.getState().world.blocks.some(b=>b.key==='protected-block'),true,'Blocked removal must preserve the block.');
- assert.equal(edit.getState().world.bucket.length,0,'Blocked removal must not recover an item.');
+ assert.equal((edit.getState().world.bucket||[]).length,0,'Blocked removal must not recover an item.');
 });
 test('protects water filling and collection but preserves the original unprotected hole-fill rule',()=>{
  const world=fixture();
