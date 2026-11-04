@@ -35,6 +35,29 @@ function productionHarness(world){
  );
  return {add:fn,lookup:blockLookup};
 }
+
+function productionRemovalHarness(world){
+ const blockLookup=new Map(),blockColumnBlocks=new Map(),blockRenderChunks=new Map(),doorMotions=new Map();
+ for(const b of world.blocks){
+  blockLookup.set(keyBlock(b.x,b.y,b.z),b);
+  if(b.type==='door')blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);
+  else{const column=keyGround(b.x,b.z);if(!blockColumnBlocks.has(column))blockColumnBlocks.set(column,[]);blockColumnBlocks.get(column).push(b);}
+ }
+ const bucketStart=source.indexOf('function addBucketItem('),bucketEnd=source.indexOf('\nfunction consumeItem',bucketStart);
+ const removeStart=source.indexOf('function removeBlock('),removeEnd=source.indexOf('\nfunction cameraState',removeStart);
+ if(bucketStart<0||bucketEnd<0||removeStart<0||removeEnd<0)throw new Error('Could not extract production removal helpers.');
+ const addBucketItem=new Function('MAX_BUCKET_ITEMS','world','SOLID_STYLE_TYPES','BLOCKS',
+  'return ('+source.slice(bucketStart,bucketEnd).trim()+');')(120,world,SOLID_STYLE_TYPES,[{id:'wood',color:'#a97545'}]);
+ const remove=new Function('keyBlock','blockLookup','world','isProtectedDigCell','addBucketItem','showStatus',
+  'removeRenderChunkItem','blockRenderChunks','keyGround','blockColumnBlocks','invalidateBlockChunkMeshesAt',
+  'doorMotions','invalidateNeighborNavigation','save',
+  'return ('+source.slice(removeStart,removeEnd).trim()+');')(
+   keyBlock,blockLookup,world,()=>false,addBucketItem,()=>{},()=>{},blockRenderChunks,keyGround,blockColumnBlocks,
+   ()=>{},doorMotions,()=>{},()=>{}
+  );
+ return {remove};
+}
+
 function comparable(block){
  const out={type:block.type,x:block.x,y:block.y,z:block.z};
  for(const key of ['color','texture','tilePattern','style','orientation','swing','open'])if(block[key]!==undefined)out[key]=block[key];
@@ -76,6 +99,36 @@ test('matches excavation depth and world-height placement limits',()=>{
  assert.equal(production.add(63,64,60,'door',false),false);
  assert.throws(()=>sandbox.addBlock({type:'door',x:63,y:64,z:60}),/two clear/);
 });
+
+test('matches Canvas 2D recovered Material Bucket records for solids, tiles and doors',()=>{
+ const world=freshWorld();
+ world.blocks=[
+  {x:50,y:0,z:50,type:'wood'},
+  {x:51,y:0,z:50,type:'tile',color:'#c5a98a',tilePattern:'spiral'},
+  {x:52,y:0,z:50,type:'door',color:'#a97545',style:'garden',orientation:'ew',swing:-1,open:true}
+ ];
+ world.bucket=[];
+ const production=productionRemovalHarness(world),snapshot=adapter.createSnapshot(world),sandbox=sandboxApi.create(snapshot);
+ for(const block of snapshot.blocks){
+  assert.equal(production.remove(block.x,block.y,block.z),true);
+  const next=sandbox.remove(block.key);
+  const productionItem=world.bucket[world.bucket.length-1],sandboxItem=next.world.bucket[next.world.bucket.length-1];
+  assert.deepEqual(sandboxItem,productionItem,'Recovered item data must match the production Material Bucket.');
+ }
+ assert.equal(world.blocks.length,0);
+ assert.equal(sandbox.getState().world.blocks.length,0);
+});
+test('matches full Material Bucket protection without deleting the block',()=>{
+ const world=freshWorld();
+ world.blocks=[{x:70,y:0,z:70,type:'wood'}];
+ world.bucket=Array.from({length:120},()=>({type:'stone'}));
+ const production=productionRemovalHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
+ assert.equal(production.remove(70,0,70),false);
+ assert.throws(()=>sandbox.remove('block-0'),/Material Bucket is full/);
+ assert.equal(world.blocks.length,1);
+ assert.equal(sandbox.getState().world.blocks.length,1);
+});
+
 test('matches duplicate-cell rejection',()=>{
  const world=freshWorld(),production=productionHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
  const b=world.blocks[0];
