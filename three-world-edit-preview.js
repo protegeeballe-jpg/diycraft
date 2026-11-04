@@ -221,7 +221,7 @@ function renderSandbox(state){
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   pickBlock:(key)=>{const block=blockByKey.get(key);if(!block)return false;const p=new THREE.Vector3(block.x+.5,block.y+.5,block.z+.5).project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
-  getWaterStats:()=>({cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount}),getState:()=>sandbox.getState()};
+  getWaterStats:()=>({cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0}),getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
  const state=sandbox.getState();return state.world.blocks.find(b=>b.key===state.selectedKey)||null;
