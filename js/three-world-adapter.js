@@ -148,6 +148,23 @@
   }
   return out;
  }
+ function normalizeBucket(source){
+  const allowed=new Set([...TYPES,'water']);
+  const out=[];
+  if(!Array.isArray(source))return out;
+  for(const item of source.slice(0,120)){
+   if(!isObject(item)||!allowed.has(item.type))continue;
+   const saved={type:item.type};
+   if(color(item.color,null))saved.color=item.color;
+   if(TEXTURES.has(item.texture))saved.texture=item.texture;
+   if(TILE_PATTERNS.has(item.tilePattern))saved.tilePattern=item.tilePattern;
+   if(DOOR_STYLES.has(item.style))saved.style=item.style;
+   if(item.orientation==='ew'||item.orientation==='ns')saved.orientation=item.orientation;
+   if(item.type==='door'){saved.open=false;saved.swing=item.swing===-1?-1:1;}
+   out.push(saved);
+  }
+  return out;
+ }
  function normalizeAnimals(source){
   const out=[];
   if(!Array.isArray(source))return out;
@@ -198,6 +215,7 @@
   const water=normalizeWater(world,excavations);
   const fish=normalizeFish(world.fish,water);
   const animals=normalizeAnimals(world.animals);
+  const bucket=normalizeBucket(world.bucket);
   return freezeDeep({
    source:'diycraft-world-v1',
    version:integer(world.version)?world.version:1,
@@ -205,10 +223,10 @@
    timeMode:TIME_MODES.has(world.timeMode)?world.timeMode:'day',
    player:normalizePlayer(world.player),
    customBlock,doorDesign,tileDesign,solidStyles,
-   blocks,excavations,water,fish,animals,
+   blocks,excavations,water,fish,animals,bucket,
    counts:{
     blocks:blocks.length,excavations:excavations.length,
-    water:water.length,fish:fish.length,animals:animals.length
+    water:water.length,fish:fish.length,animals:animals.length,bucket:bucket.length
    }
   });
  }
