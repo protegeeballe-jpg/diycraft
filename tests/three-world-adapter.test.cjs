@@ -138,6 +138,28 @@ test('supports old waterCell-only saves as one water layer',()=>{
  const s=adapter.createSnapshot(old);
  assert.deepEqual(s.water,[{x:5,z:-2,level:1,depth:4}]);
 });
+test('preserves bounded animal-care counters for default and saved animals',()=>{
+ const snapshot=adapter.createSnapshot({
+  animalCare:{
+   sheep:7,cat_mochi:'4',dog_buddy:-2,cow_bessie:1200,
+   'saved-pet_1':9,'invalid id':99
+  }
+ });
+ assert.deepEqual(snapshot.animalCare,{
+  sheep:7,cat_mochi:4,dog_buddy:0,cow_bessie:999,
+  horse_spirit:0,bird_chirpy:0,giraffe_raffy:0,
+  saved-pet_1:9
+ });
+ assert.ok(Object.isFrozen(snapshot.animalCare));
+});
+test('limits animal-care normalization to the first 200 source entries',()=>{
+ const source={};
+ for(let i=0;i<205;i++)source['saved_'+i]=i;
+ const snapshot=adapter.createSnapshot({animalCare:source});
+ assert.equal(snapshot.animalCare.saved_199,199);
+ assert.equal(Object.hasOwn(snapshot.animalCare,'saved_200'),false);
+ assert.equal(Object.hasOwn(snapshot.animalCare,'saved_204'),false);
+});
 test('normalizes animals with unique renderer keys while preserving saved IDs',()=>{
  const s=adapter.createSnapshot(validWorld);
  assert.equal(s.animals.length,3);
