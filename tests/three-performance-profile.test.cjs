@@ -12,6 +12,11 @@ test('selects conservative profile for budget phones and data-saver mode',()=>{
  assert.equal(profiles.select({saveData:true}).tier,'low');
  assert.equal(profiles.select({maxTextureSize:2048}).tier,'low');
 });
+test('keeps 4 GB and hardware-unknown budget phones on the low profile',()=>{
+ assert.equal(profiles.select({mobile:true,hardwareConcurrency:8,deviceMemory:4,maxTextureSize:4096}).tier,'low');
+ assert.equal(profiles.select({mobile:true,hardwareConcurrency:4,deviceMemory:undefined,maxTextureSize:4096}).tier,'low');
+ assert.equal(profiles.select({mobile:true,hardwareConcurrency:undefined,deviceMemory:6,maxTextureSize:4096}).tier,'low');
+});
 test('selects balanced profile for typical phones and midrange hardware',()=>{
  assert.equal(profiles.select({mobile:true,hardwareConcurrency:8,deviceMemory:6,maxTextureSize:8192}).tier,'balanced');
  assert.equal(profiles.select({hardwareConcurrency:6,deviceMemory:8}).tier,'balanced');
