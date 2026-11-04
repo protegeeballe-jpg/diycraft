@@ -249,13 +249,15 @@
    const pose=night
     ?{...SLEEP_SPOTS[actor.id],sleeping:true,moving:false,walk:0}
     :routePosition(actor.route,timeSeconds,actor.phase,actor.speed,nav);
-   const {route,...appearance}=actor;
+   const {route,speed,pace,scale,...appearance}=actor;
+   const familyMember=FAMILY.some(member=>member.id===actor.id);
    return Object.freeze({
     ...appearance,...pose,
     id:actor.id,name:actor.name,
     x:pose.x,z:pose.z,
-    phase:actor.phase,pace:actor.pace,
-    activity:FAMILY.some(member=>member.id===actor.id)?undefined:pose.activity,
+    phase:actor.phase,
+    ...(familyMember?{pace,speed,scale}:{}),
+    activity:familyMember?undefined:pose.activity,
     ...(night?{sleeping:true}:{}),
     moving:night?false:!!pose.moving,
     walk:night?0:finite(pose.walk)?pose.walk:0,
