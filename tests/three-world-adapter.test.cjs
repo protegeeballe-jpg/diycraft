@@ -97,6 +97,32 @@ test('keeps normalized renderer colors separate from explicitly configured solid
  assert.deepEqual(explicit.solidStyles.stone,{color:'#abcdef',texture:'brick'});
  assert.ok(Object.isFrozen(explicit.styledSolidTypes));
 });
+test('preserves bounded materials and crafted pouch slots with production count rules',()=>{
+ const s=adapter.createSnapshot({
+  materials:[
+   {id:'dirt',count:3,label:'Loose soil'},
+   {id:'stone',count:150},
+   {id:'unknown',count:5},
+   null,
+   {id:'wood',count:0,label:'Logs'}
+  ],
+  crafted:[
+   {id:'flowerpot',count:2,label:'Little pot'},
+   {id:'picnic',count:1}
+  ]
+ });
+ assert.equal(s.materials.length,60);
+ assert.deepEqual(s.materials[0],{id:'dirt',count:3,label:'Loose soil'});
+ assert.equal(s.materials[1].count,99,'Production inventory count is capped at 99.');
+ assert.equal(s.materials[2],null,'Unknown inventory item IDs are ignored.');
+ assert.equal(s.materials[3],null);
+ assert.deepEqual(s.materials[4],{id:'wood',count:1,label:'Logs'});
+ assert.deepEqual(s.crafted[0],{id:'flowerpot',count:2,label:'Little pot'});
+ assert.deepEqual(s.crafted[1],{id:'picnic',count:1,label:''});
+ assert.equal(s.crafted.length,60);
+ assert.ok(Object.isFrozen(s.materials));
+ assert.ok(Object.isFrozen(s.materials[0]));
+});
 test('normalizes layered water and limits fish to three per wet cell',()=>{
  const s=adapter.createSnapshot(validWorld);
  assert.deepEqual(s.water,[
