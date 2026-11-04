@@ -795,25 +795,26 @@ function drawPainterlySurfaceFinish(c,seed=0,strength=1){
   wash.addColorStop(0,washes[i%washes.length]);wash.addColorStop(.62,washes[i%washes.length]);wash.addColorStop(1,'rgba(255,255,255,0)');
   c.fillStyle=wash;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,Math.PI*2);c.fill();
  }
- // Colored-pencil grain: short directional strokes, not a repeating outline motif.
+ // More visible colored-pencil grain: layered, short directional strokes with
+ // soft variation so the surface feels hand-shaded rather than digitally outlined.
  c.lineCap='round';c.lineJoin='round';
- for(let i=0;i<38;i++){
-  const x=next()*104-4,y=next()*104-4,len=5+next()*10,drift=(next()-.5)*3;
-  c.strokeStyle=i%5===0?'rgba(255,250,235,.48)':'rgba(48,62,54,.31)';
-  c.lineWidth=2.4+next()*1.0;
+ for(let i=0;i<58;i++){
+  const x=next()*104-4,y=next()*104-4,len=5+next()*10,drift=(next()-.5)*3.6;
+  c.strokeStyle=i%6===0?'rgba(255,250,235,.62)':'rgba(48,62,54,.43)';
+  c.lineWidth=2.8+next()*1.15;
   c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+len*.48,y+drift,x+len,y+drift);c.stroke();
  }
- for(let i=0;i<14;i++){
-  const x=next()*104-4,y=next()*104-4,len=3+next()*6;
-  c.strokeStyle=i%3===0?'rgba(255,247,225,.41)':'rgba(65,78,67,.23)';
-  c.lineWidth=1.3+next()*.7;
+ for(let i=0;i<24;i++){
+  const x=next()*104-4,y=next()*104-4,len=3+next()*7;
+  c.strokeStyle=i%3===0?'rgba(255,247,225,.55)':'rgba(65,78,67,.34)';
+  c.lineWidth=1.5+next()*.8;
   c.beginPath();c.moveTo(x,y);c.lineTo(x+len*.45,y+len*.7);c.stroke();
  }
- // Small paper flecks preserve a tactile finish without obscuring the base color.
- for(let i=0;i<76;i++){
+ // Slightly richer paper flecks add visible colored-pencil tooth without masking color.
+ for(let i=0;i<96;i++){
   const x=next()*96,y=next()*96;
-  c.fillStyle=i%3===0?'rgba(255,250,233,.38)':'rgba(63,69,60,.22)';
-  c.beginPath();c.arc(x,y,.24+next()*.38,0,Math.PI*2);c.fill();
+  c.fillStyle=i%3===0?'rgba(255,250,233,.50)':'rgba(63,69,60,.29)';
+  c.beginPath();c.arc(x,y,.25+next()*.42,0,Math.PI*2);c.fill();
  }
  c.restore();
 }
@@ -828,20 +829,20 @@ function drawPainterlyPaperPattern(c,seed=0){
  for(let i=0;i<220;i++){
   const x=next()*size,y=next()*size,len=2.5+next()*9,angle=(next()-.5)*Math.PI;
   const x2=x+Math.cos(angle)*len,y2=y+Math.sin(angle)*len*.36;
-  c.strokeStyle=i%6===0?'rgba(255,250,236,.25)':'rgba(54,68,60,.16)';
+  c.strokeStyle=i%6===0?'rgba(255,250,236,.36)':'rgba(54,68,60,.23)';
   c.lineWidth=.55+next()*.48;
   c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke();
  }
  for(let i=0;i<42;i++){
   const x=next()*size,y=next()*size,len=3+next()*7,angle=(next()-.5)*Math.PI*.7;
-  c.strokeStyle=i%4===0?'rgba(255,248,230,.22)':'rgba(67,75,64,.12)';
+  c.strokeStyle=i%4===0?'rgba(255,248,230,.31)':'rgba(67,75,64,.19)';
   c.lineWidth=.35+next()*.38;
   c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(angle)*len,y+Math.sin(angle)*len);c.stroke();
  }
  // Sparse warm and cool specks mimic natural paper tooth without forming motifs.
  for(let i=0;i<220;i++){
   const x=next()*size,y=next()*size;
-  c.fillStyle=i%3===0?'rgba(255,250,236,.20)':'rgba(54,68,60,.10)';
+  c.fillStyle=i%3===0?'rgba(255,250,236,.28)':'rgba(54,68,60,.16)';
   c.beginPath();c.arc(x,y,.13+next()*.30,0,Math.PI*2);c.fill();
  }
  c.restore();
@@ -857,7 +858,7 @@ const painterlyCanvasPattern=(()=>{
 })();
 function paintPainterlyCanvasOverlay(width,height){
  if(!painterlyCanvasPattern)return;
- ctx.save();ctx.globalAlpha=.82;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
+ ctx.save();ctx.globalAlpha=.90;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
 }
 const DEFAULT_FLOWER_PETAL_COLOR='#e9a4c1';
 function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
@@ -871,7 +872,7 @@ function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
  c.fillStyle='#fff0a0';c.beginPath();c.arc(cx-2,cy-2,2,0,Math.PI*2);c.fill();
  // The pigment and pencil finish is baked into the cached flower image; the
  // bloom still uses the exact petal color chosen in the existing color picker.
- drawPainterlySurfaceFinish(c,painterlySeed(petalColor),.86);
+ drawPainterlySurfaceFinish(c,painterlySeed(petalColor),.98);
 }
 // Small, locally generated patterns give every material its own tactile surface.
 const TEXTURE_REFERENCE_SIZE=96,TEXTURE_TILE_SIZE=32,TEXTURE_DRAW_SCALE=TEXTURE_TILE_SIZE/TEXTURE_REFERENCE_SIZE;
@@ -944,7 +945,7 @@ function makeTexturePatterns(){
   snow:c=>{for(let i=0;i<12;i++){const x=(i*29+9)%96,y=(i*41+6)%96;c.strokeStyle=i%2?'#9bc6dcaa':'#ffffffdd';c.lineWidth=1.5;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.moveTo(x-3.5,y-3.5);c.lineTo(x+3.5,y+3.5);c.stroke();}for(let i=0;i<25;i++){c.fillStyle='#ffffffdd';c.fillRect((i*17)%96,(i*43)%96,2,2);}},
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
  };
- for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);drawPainterlySurfaceFinish(c,painterlySeed(id),.82);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);drawPainterlySurfaceFinish(c,painterlySeed(id),.98);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
  // Direction-aware overlays keep the grass lip on the physical top edge of each side face.
  const faceMakers={
   'grass-side-right':c=>{
@@ -980,7 +981,7 @@ function makeTexturePatterns(){
    c.strokeStyle='#f0d09a99';c.lineWidth=1;c.beginPath();c.arc(cx-1,cy-1,34,.3,2.3);c.stroke();
   }
  };
- for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);drawPainterlySurfaceFinish(c,painterlySeed(id),.82);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);drawPainterlySurfaceFinish(c,painterlySeed(id),.98);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 
 // Original tile surfaces: all twenty are drawn locally at 32×32 pixels.
@@ -1010,7 +1011,7 @@ function makeTileTexturePatterns(){
  for(const design of TILE_DESIGNS){
   const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;
   const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);makers[design.id](c);
-  drawPainterlySurfaceFinish(c,painterlySeed('tile-'+design.id),.68);
+  drawPainterlySurfaceFinish(c,painterlySeed('tile-'+design.id),.90);
   textureTiles.set('tile-'+design.id,tile);
   texturePatterns.set('tile-'+design.id,ctx.createPattern(tile,'repeat'));
  }
