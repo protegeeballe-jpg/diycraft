@@ -15,6 +15,12 @@ function freshWorld(){
 }
 (async()=>{
  const world=freshWorld(),occupied=new Set(world.blocks.map(b=>b.x+','+b.y+','+b.z));
+ const species=['sheep','cat','dog','cow','horse','bird','giraffe'];
+ world.animals=Array.from({length:18},(_,index)=>({
+  id:'stress-pet-'+index,species:species[index%species.length],
+  x:(index%6)*1.5-4,z:Math.floor(index/6)*1.8-2,
+  facing:index*.11,phase:index*.63
+ }));
  const types=['grass','dirt','stone','wood'];let added=0;
  for(let z=-24;z<24&&added<1800;z++)for(let x=-24;x<24&&added<1800;x++){
   const key=x+',0,'+z;if(occupied.has(key))continue;
@@ -44,6 +50,10 @@ function freshWorld(){
   assert.equal(state.world.performanceProfile.tier,'low');
   assert.equal(state.world.performanceProfile.fpsCap,30);
   assert.equal(state.world.sourceBlocks,world.blocks.length);
+  assert.equal(state.world.snapshotCounts.animals,18);
+  assert.equal(state.world.renderedAnimals,12,'The read-only low-end profile must cap drawn animals, not erase saved animals.');
+  assert.equal(state.world.animalBatchCount,7,'Identical animal appearances must batch together.');
+  assert.equal(state.world.performanceProfile.maxVisibleAnimals,12);
   assert.equal(state.world.renderedBlocks+state.world.renderedPlants+state.world.renderedDoors,world.blocks.length,
    'Every block must be represented even in the large world.');
   assert.ok(state.world.instanceGroups>0&&state.world.instanceGroups<120,
@@ -72,6 +82,9 @@ function freshWorld(){
   const editState=await editPage.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(editState.performanceProfile.tier,'low');
   assert.equal(editState.blockCount,world.blocks.length);
+  assert.equal(editState.animalCount,18,'The editable renderer must retain every animal in its cloned world data.');
+  assert.equal(editState.renderedAnimalCount,12,'The editable low-end profile must cap visible animals at twelve.');
+  assert.ok(editState.animalBatchCount<=7,'The editor must instance identical animal appearances.');
   assert.equal(editState.renderedBlocks,world.blocks.length,'The editable renderer must retain every large-world block.');
   assert.ok(editState.instanceBatches>0&&editState.instanceBatches<120,
    'The editable renderer must batch large worlds by spatial chunk and material.');
