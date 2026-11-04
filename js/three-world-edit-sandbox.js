@@ -102,6 +102,53 @@
    revision++;
    return state();
   }
+  function waterAt(x,z){
+   return Array.isArray(world.water)?world.water.find(cell=>cell.x===x&&cell.z===z)||null:null;
+  }
+  function addWaterLayer(x,z){
+   if(!coord(x)||!coord(z))throw new TypeError('Water coordinates must be valid whole-number cells.');
+   const key=x+','+z,depth=depthByCell.get(key)||0;
+   if(depth<1)throw new Error('Dig a pool cell first, then add water.');
+   if(!Array.isArray(world.water))world.water=[];
+   const current=waterAt(x,z),level=current?current.level:0;
+   if(level>=depth)throw new Error('This pool cell is full to the rim.');
+   if(current)current.level=level+1;
+   else world.water.push({x,z,level:1,depth});
+   revision++;
+   return state();
+  }
+  function collectWaterLayer(x,z){
+   if(!coord(x)||!coord(z))throw new TypeError('Water coordinates must be valid whole-number cells.');
+   const index=Array.isArray(world.water)?world.water.findIndex(cell=>cell.x===x&&cell.z===z):-1;
+   if(index<0)throw new Error('There is no water layer to collect here.');
+   const bucket=Array.isArray(world.bucket)?world.bucket:(world.bucket=[]);
+   if(bucket.length>=MAX_BUCKET_ITEMS)throw new RangeError('Your Material Bucket is full. Use or clear recovered blocks first.');
+   bucket.push({type:'water'});
+   const cell=world.water[index];
+   if(cell.level>1)cell.level--;
+   else{
+    world.water.splice(index,1);
+    if(Array.isArray(world.fish))world.fish=world.fish.filter(fish=>fish.x!==x||fish.z!==z);
+   }
+   revision++;
+   return state();
+  }
+  function addFish(x,z){
+   if(!coord(x)||!coord(z))throw new TypeError('Fish coordinates must be valid whole-number cells.');
+   const cell=waterAt(x,z);
+   if(!cell)throw new Error('Add water to this dug cell first.');
+   if(!Array.isArray(world.fish))world.fish=[];
+   const count=world.fish.filter(fish=>fish.x===x&&fish.z===z).length;
+   if(count>=3)throw new Error('This water cell already has three fish.');
+   world.fish.push({key:'sandbox-fish-'+(world.fish.length+1),x,z});
+   revision++;
+   return state();
+  }
+  function isMovementSolidAt(x,y,z){
+   const block=world.blocks.find(item=>item.x===x&&item.y===y&&item.z===z);
+   if(!block||block.type==='flower'||block.type==='tall_grass')return false;
+   return !(block.type==='door'&&block.open);
+  }
   function toggleDoor(key){
    const block=find(key);
    if(!block||block.type!=='door')throw new Error('Select a door to operate it.');
@@ -115,7 +162,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,addBlock,remove,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,addBlock,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
