@@ -39,6 +39,7 @@ function freshWorld(){
   assert.equal(state.performanceProfile.maxPixelRatio,1);
   assert.equal(state.performanceProfile.antialias,false);
   assert.equal(state.performanceProfile.shadows,false);
+  assert.equal(state.performanceProfile.waterAnimationFps,15,'Low-end water animation should use a lighter update cadence.');
   const frameStart=state.frames;
   await page.waitForTimeout(650);
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
