@@ -13,7 +13,7 @@ function freshWorld(){
  return new Function('emptySlots','return ('+source.slice(start,end+2)+');')(()=>Array.from({length:60},()=>null))();
 }
 (async()=>{
- const world=freshWorld();world.excavations.push([14,-5,2]);
+ const world=freshWorld();world.excavations.push([100,100,2]);
  world.animals=[
   {id:'pet-cat-1',species:'cat',name:'Mittens',x:1.5,z:1.5,facing:.2,phase:.4,body:'#c5c0b6',accent:'#d0b6a0'},
   {id:'pet-cat-2',species:'cat',name:'Buttons',x:2.5,z:1.5,facing:-.4,phase:1.3,body:'#c5c0b6',accent:'#d0b6a0'},
@@ -212,11 +212,11 @@ function freshWorld(){
    worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
    assert.equal(worldState.world.blocks.find(b=>b.key===tile.key).tilePattern,pattern,'Tile pattern must remain editable: '+pattern);
   }
-  await page.locator('#water-x').fill('14');
-  await page.locator('#water-z').fill('-5');
+  await page.locator('#water-x').fill('100');
+  await page.locator('#water-z').fill('100');
   await page.locator('#water-add').click();
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
-  assert.deepEqual(worldState.world.water,[{x:14,z:-5,level:1,depth:2}],'Water must be created as one layer in the dug pool cell.');
+  assert.deepEqual(worldState.world.water,[{x:100,z:100,level:1,depth:2}],'Water must be created as one layer in the dug pool cell.');
   let waterStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getWaterStats());
   assert.equal(waterStats.cells,1);
   assert.equal(waterStats.waterVertices,4,'The water surface must be represented by a rendered 3D mesh.');
