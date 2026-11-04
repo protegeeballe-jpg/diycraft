@@ -11,7 +11,7 @@ scene.background=new THREE.Color(0xf2ead9);
 scene.fog=new THREE.Fog(0xf2ead9,24,48);
 const camera=new THREE.PerspectiveCamera(42,1,.1,100);
 const target=new THREE.Vector3(0,1.1,0);
-let orbit={radius:22,theta:Math.PI*.22,phi:Math.PI*.31};
+let orbit={radius:24,theta:Math.PI*.16,phi:Math.PI*.31};
 function placeCamera(){
  orbit.phi=Math.max(.18,Math.min(1.18,orbit.phi));
  camera.position.set(
@@ -26,18 +26,20 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerP
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
 renderer.setSize(window.innerWidth,window.innerHeight,false);
 renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=.96;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.setClearColor(0xf2ead9,1);
 
-scene.add(new THREE.HemisphereLight(0xfff7e9,0x788b70,1.05));
-const sun=new THREE.DirectionalLight(0xfff0d5,1.35);
+scene.add(new THREE.HemisphereLight(0xfff7e9,0x788b70,.72));
+const sun=new THREE.DirectionalLight(0xfff0d5,.88);
 sun.position.set(-9,17,10);sun.castShadow=true;
 sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.left=-22;sun.shadow.camera.right=22;
 sun.shadow.camera.top=22;sun.shadow.camera.bottom=-22;
 sun.shadow.bias=-.00025;scene.add(sun);
-const fill=new THREE.DirectionalLight(0xc5d9e8,.42);
+const fill=new THREE.DirectionalLight(0xc5d9e8,.22);
 fill.position.set(12,8,-10);scene.add(fill);
 
 function seeded(seed){
@@ -62,7 +64,7 @@ function painterlyTexture(color,seed,kind){
  for(let i=0;i<washCount;i++){
   const x=random()*size,y=random()*size,rx=10+random()*34,ry=7+random()*27;
   const warm=i%3===0?[255,246,224]:i%3===1?[base[0],Math.min(255,base[1]+24),Math.min(255,base[2]+18)]:[Math.max(0,base[0]-18),Math.max(0,base[1]-12),Math.max(0,base[2]-8)];
-  const alpha=.035+random()*.075;
+  const alpha=.045+random()*.085;
   const grad=g.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.4);
   grad.addColorStop(0,'rgba('+warm.join(',')+','+(alpha*1.8)+')');
   grad.addColorStop(.55,'rgba('+warm.join(',')+','+alpha+')');
@@ -71,16 +73,16 @@ function painterlyTexture(color,seed,kind){
  }
  // Colored-pencil hatching: repeated, slightly irregular strokes with layered pressure.
  g.lineCap='round';g.lineJoin='round';
- const pencilCount=kind==='paper'?980:690;
+ const pencilCount=kind==='paper'?980:820;
  for(let i=0;i<pencilCount;i++){
   const x=random()*size,y=random()*size,len=3+random()*(kind==='paper'?13:19);
   const angle=(random()-.5)*.9+(kind==='grass'?.3:0);
   const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len;
   const light=i%5===0;
   const tint=light?base.map(v=>mix(v,255,.5)):base.map(v=>mix(v,Math.max(0,v-48),.48));
-  const alpha=(light?.10:.085)+random()*.085;
+  const alpha=(light?.14:.115)+random()*.095;
   g.strokeStyle='rgba('+tint.join(',')+','+alpha+')';
-  g.lineWidth=.7+random()*1.7;
+  g.lineWidth=.85+random()*1.8;
   g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+dx*.48,y+dy*.48+(random()-.5)*2,x+dx,y+dy);g.stroke();
  }
  // Fine paper fibers and flecks sit above every pigment layer.
@@ -106,15 +108,15 @@ function paint(color,kind='surface',roughness=.94){
  materialCache.set(key,mat);return mat;
 }
 const mats={
- grass:paint('#86ad70','grass'),grassLight:paint('#a5c17c','grass'),
+ grass:paint('#789767','grass'),grassLight:paint('#9aae78','grass'),
  earth:paint('#a88765','earth'),stone:paint('#c0b8a5','stone'),
  path:paint('#d5c49f','path'),wood:paint('#96704e','wood'),
- leaf:paint('#729b65','leaf'),leafLight:paint('#a2b77b','leaf'),
+ leaf:paint('#65865d','leaf'),leafLight:paint('#91a86d','leaf'),
  roof:paint('#c98576','roof'),wall:paint('#ead8b9','wall'),
  cream:paint('#f2e5c8','wall'),blue:paint('#9ebdc0','wall'),
  flowerPink:paint('#e9a2bb','flower'),flowerYellow:paint('#edc76b','flower'),
  flowerLilac:paint('#b8a8d3','flower'),flowerWhite:paint('#f3eee0','flower'),
- water:paint('#8dc5d0','water',.28)
+ water:paint('#79b5c3','water',.28)
 };
 function add(geometry,material,x,y,z,parent=scene){
  const obj=new THREE.Mesh(geometry,material);
@@ -180,8 +182,8 @@ function makeHouse(x,z,wallMaterial,roofMaterial){
  roof.rotation.y=Math.PI/4;roof.scale.z=.84;
  for(const w of [win1,win2]){w.castShadow=false;w.material.side=THREE.DoubleSide;}
 }
-makeHouse(-3.7,3.8,mats.wall,mats.roof);
-makeHouse(3.3,7,mats.cream,mats.leafLight);
+makeHouse(-2.5,2.9,mats.wall,mats.roof);
+makeHouse(6.2,-8,mats.cream,mats.leafLight);
 
 // Flower stems and petals use shared watercolor/pencil CanvasTextures as 3D materials.
 function makeFlower(x,z,color,phase){
@@ -200,7 +202,7 @@ function makeFlower(x,z,color,phase){
  animatedPlants.push({group,kind:'flower',phase});
 }
 for(let i=0;i<24;i++){
- const x=-7+(i%8)*.55,z=5+Math.floor(i/8)*.7;
+ const x=-5.2+(i%8)*.56,z=5.1+Math.floor(i/8)*.66;
  makeFlower(x,z,['pink','yellow','lilac','white'][i%4],i*.83);
 }
 // Tufts of individually modeled blades, grouped for smooth collective swaying.
@@ -213,7 +215,7 @@ function makeGrass(x,z,phase){
  }
  animatedPlants.push({group,kind:'grass',phase});
 }
-for(let i=0;i<46;i++)makeGrass(-8+(i%12)*1.35,-6+Math.floor(i/12)*1.4,i*.53);
+for(let i=0;i<34;i++)makeGrass(-7.5+(i%10)*1.55,-6+Math.floor(i/10)*1.65,i*.53);
 
 // Tiny sheep companion to test painterly materials on rounded forms.
 const sheep=new THREE.Group();sheep.position.set(-1.2,0,1.1);scene.add(sheep);
