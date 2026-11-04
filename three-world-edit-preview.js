@@ -159,7 +159,7 @@ function selectedBlock(){
 function choose(key){renderSandbox(sandbox.select(key));}
 function clickAt(x,y){
  pointer.x=(x/innerWidth)*2-1;pointer.y=-(y/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);
- const hits=raycaster.intersectObjects(group.children,false).filter(hit=>!hit.object.userData.selectionOutline);
+ const hits=raycaster.intersectObjects(group.children,true).filter(hit=>!hit.object.userData.selectionOutline);
  const key=raycastKeys.resolve(hits),hit=hits.find(item=>raycastKeys.resolve([item])===key);
  const block=sandbox.getState().world.blocks.find(item=>item.key===key);
  if(key&&hit&&hit.face&&block){
