@@ -11,6 +11,7 @@ on:
       - tests/three-world-adapter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-world-raycast.test.cjs
+      - tests/three-world-canvas-parity.test.cjs
       - THREE_JS_MIGRATION.md
       - .github/workflows/three-migration-guard.yml
   pull_request:
@@ -38,3 +39,5 @@ jobs:
         run: node tests/three-world-edit-sandbox.test.cjs
       - name: Run raycast selection resolver tests
         run: node tests/three-world-raycast.test.cjs
+      - name: Compare Canvas 2D and Three.js placement behavior
+        run: node tests/three-world-canvas-parity.test.cjs
