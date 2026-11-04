@@ -42,7 +42,8 @@ let neighborColorName='',neighborColorPage=null,neighborColorTool='fill',neighbo
 const neighborColorShade=document.getElementById('neighbor-coloring');
 const neighborColorCanvas=document.getElementById('neighbor-color-canvas');
 const neighborColorCtx=neighborColorCanvas.getContext('2d',{willReadFrequently:true});
-\nconst neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
+
+const neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
 let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
 const touchControls=document.getElementById('player-controls'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
