@@ -24,8 +24,10 @@ on:
       - tests/three-player-camera.test.cjs
       - tests/three-neighbor-model.test.cjs
       - tests/three-neighbor-coloring.test.cjs
+      - tests/three-neighbor-selection.test.cjs
       - tests/three-world-protection.test.cjs
       - tests/three-world-adapter.test.cjs
+      - js/three-world-protection.js
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-world-raycast.test.cjs
       - tests/three-world-canvas-parity.test.cjs
@@ -70,6 +72,8 @@ jobs:
         run: node tests/three-neighbor-model.test.cjs
       - name: Run cooperative neighbor coloring tests
         run: node tests/three-neighbor-coloring.test.cjs
+      - name: Run NPC tap-selection parity tests
+        run: node tests/three-neighbor-selection.test.cjs
       - name: Run neighbor and animal protection parity tests
         run: node tests/three-world-protection.test.cjs
       - name: Compare Canvas 2D and Three.js placement behavior

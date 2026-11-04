@@ -84,7 +84,8 @@ function freshWorld(){
   assert.equal(editState.blockCount,world.blocks.length);
   assert.equal(editState.animalCount,18,'The editable renderer must retain every animal in its cloned world data.');
   assert.equal(editState.renderedAnimalCount,12,'The editable low-end profile must cap visible animals at twelve.');
-  assert.ok(editState.animalBatchCount<=7,'The editor must instance identical animal appearances.');
+  assert.ok(editState.animalBatchCount>=7&&editState.animalBatchCount<=11,
+   'The editor must instance identical appearances while allowing the seven built-in looks and four saved-pet looks.');
   assert.equal(editState.renderedBlocks,world.blocks.length,'The editable renderer must retain every large-world block.');
   assert.ok(editState.instanceBatches>0&&editState.instanceBatches<120,
    'The editable renderer must batch large worlds by spatial chunk and material.');

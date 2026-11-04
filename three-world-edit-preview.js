@@ -528,14 +528,7 @@ function projectNeighborPick(actor){
 }
 function neighborAtScreen(x,y){
  const actors=sandbox?sandbox.characterStates(performance.now()/1000):[];
- let best=Infinity,hit=null;
- for(const actor of actors){
-  if(actor.sleeping)continue;
-  const point=projectNeighborPick(actor);if(!point)continue;
-  const distance=Math.hypot(x-point.x,y-point.y);
-  if(distance<66&&distance<best){best=distance;hit=actor;}
- }
- return hit;
+ return protection.pickNeighborAtScreen(actors,x,y,projectNeighborPick);
 }
 function stopNeighborColoring(){
  if(neighborColorTimer!==null){clearTimeout(neighborColorTimer);neighborColorTimer=null;}

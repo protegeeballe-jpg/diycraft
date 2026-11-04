@@ -271,6 +271,24 @@
   }
   return hit;
  }
+ function pickNeighborAtScreen(actors,px,py,project){
+  if(!finite(px)||!finite(py))throw new TypeError('Neighbor pick coordinates must be finite.');
+  if(typeof project!=='function')throw new TypeError('A neighbor screen projection callback is required.');
+  let best=Infinity,hit=null;
+  for(const actor of Array.isArray(actors)?actors:[]){
+   if(!actor||actor.sleeping||!finite(actor.x)||!finite(actor.z))continue;
+   const facing=actor.facing||0;
+   const point=project({
+    x:actor.x+Math.sin(facing)*.38,
+    y:1.18,
+    z:actor.z+Math.cos(facing)*.38
+   },actor);
+   if(!point||!finite(point.x)||!finite(point.y))continue;
+   const distance=Math.hypot(px-point.x,py-point.y);
+   if(distance<66&&distance<best){best=distance;hit=actor;}
+  }
+  return hit;
+ }
  function characterStates(world={},timeSeconds=0,geometryRevision=0){
   if(!finite(timeSeconds))throw new TypeError('Character animation time must be finite seconds.');
   const mode=modeAt(timeSeconds,world.timeMode),night=mode==='night';
@@ -309,5 +327,5 @@
   }
   return false;
  }
- return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,RESIDENTS,modeAt,routePosition,animalStates,pickAnimalAtScreen,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
+ return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,RESIDENTS,modeAt,routePosition,animalStates,pickAnimalAtScreen,pickNeighborAtScreen,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });
