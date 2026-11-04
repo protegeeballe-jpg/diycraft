@@ -78,11 +78,12 @@ test('supports old waterCell-only saves as one water layer',()=>{
  const s=adapter.createSnapshot(old);
  assert.deepEqual(s.water,[{x:5,z:-2,level:1,depth:4}]);
 });
-test('normalizes animals and makes renderer keys unique without losing source identity',()=>{
+test('normalizes animals with unique renderer keys while preserving saved IDs',()=>{
  const s=adapter.createSnapshot(validWorld);
  assert.equal(s.animals.length,3);
  assert.equal(s.animals[0].id,'pip');
- assert.equal(s.animals[1].id,'pip-1');
+ assert.equal(s.animals[1].id,'pip');
+ assert.equal(new Set(s.animals.map(a=>a.key)).size,3);
  assert.equal(s.animals[1].species,'cat');
  assert.equal(s.animals[2].facing,0);
  assert.equal(s.animals[2].phase,2*1.7);
