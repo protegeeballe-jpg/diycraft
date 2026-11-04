@@ -30,8 +30,8 @@ function fixture(){
   water:[],fish:[],bucket:[]
  };
 }
-function createEnvironment(){
- const edit=sandboxApi.create(fixture());
+function createEnvironment(world=fixture()){
+ const edit=sandboxApi.create(world);
  return {
   edit,
   environment:{
@@ -164,6 +164,18 @@ test('keeps sleep and bed stationary and clears input and jump velocity',()=>{
   assert.equal(result.jumpVelocity,0);
   assert.deepEqual(result.controls,{moveX:0,moveZ:0,vertical:0,keys:{}});
  }
+});
+test('preserves the original no-swimming rule: water does not change movement, gravity, or collision',()=>{
+ const dryWorld=fixture(),wetWorld=fixture();
+ wetWorld.water=[{x:0,z:2,level:2,depth:2}];
+ const state={player:{x:.5,y:-1,z:2.5,yaw:0},jumpVelocity:-.4,playerGrounded:false,flying:false,playerActivity:''};
+ const controls={moveX:.2,moveZ:.8,vertical:0,keys:{}};
+ const dryEnvironment=createEnvironment(dryWorld).environment;
+ const wetEnvironment=createEnvironment(wetWorld).environment;
+ const dry=physics.step(state,controls,dryEnvironment,1/60);
+ const wet=physics.step(state,controls,wetEnvironment,1/60);
+ assert.deepEqual(wet,dry,'Adding water to an otherwise identical excavated world must not alter the player physics result.');
+ assert.ok(!/waterLevelAt|waterTopAt|inWater|swim/i.test(productionMoveSource),'The original move(dt) must remain independent of water and swimming state.');
 });
 test('clamps world coordinates before collision checks',()=>{
  const result=compareMove(
