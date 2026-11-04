@@ -38,6 +38,11 @@
   {id:'maya',route:FAMILY_ROUTES.maya,speed:1.30,phase:12.7},
   {id:'nico',route:FAMILY_ROUTES.nico,speed:1.68,phase:5.9}
  ]);
+ const ROUTE_ACTORS=Object.freeze([
+  Object.freeze({id:'hyacinth',route:NEIGHBOR_ROUTES.hyacinth,phase:0,speed:1.05}),
+  Object.freeze({id:'theo',route:NEIGHBOR_ROUTES.theo,phase:11,speed:1.05}),
+  ...FAMILY.map(actor=>Object.freeze(actor))
+ ]);
  const RESIDENTS=Object.freeze([
   {id:'sheep',x:-2,z:-7,phase:.2,rate:.22,rx:.42,rz:.30},
   {id:'cat_mochi',x:3,z:-7,phase:1.6,rate:.25,rx:.42,rz:.30},
@@ -216,12 +221,7 @@
   const mode=modeAt(timeSeconds,world.timeMode),night=mode==='night';
   const neighbors=[];
   const nav=night?null:createNavigationState(world,geometryRevision);
-  const neighborRoutes=[
-   {id:'hyacinth',route:NEIGHBOR_ROUTES.hyacinth,phase:0,speed:1.05},
-   {id:'theo',route:NEIGHBOR_ROUTES.theo,phase:11,speed:1.05},
-   ...FAMILY
-  ];
-  for(const actor of neighborRoutes){
+  for(const actor of ROUTE_ACTORS){
    const pos=night?SLEEP_SPOTS[actor.id]:routePosition(actor.route,timeSeconds,actor.phase,actor.speed,nav);
    neighbors.push({id:actor.id,x:pos.x,z:pos.z});
   }
@@ -255,5 +255,5 @@
   }
   return false;
  }
- return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,modeAt,routePosition,actorContext,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
+ return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,modeAt,routePosition,actorContext,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });
