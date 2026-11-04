@@ -496,17 +496,45 @@ let pointerDown=null;
 canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId,moved:false};canvas.setPointerCapture(event.pointerId);});
 canvas.addEventListener('pointermove',event=>{
  if(!pointerDown)return;const dx=event.clientX-pointerDown.x,dy=event.clientY-pointerDown.y;
- if(Math.abs(dx)+Math.abs(dy)>3)pointerDown.moved=true;pointerDown.x=event.clientX;pointerDown.y=event.clientY;orbit.theta-=dx*.005;orbit.phi+=dy*.004;cameraUpdate();
+ if(Math.abs(dx)+Math.abs(dy)>3)pointerDown.moved=true;pointerDown.x=event.clientX;pointerDown.y=event.clientY;
+ if(playerPlayMode&&playerPhysicsState){
+  playerPhysicsState.player.yaw-=dx*.0055;
+  if(playerCameraMode==='first')playerPhysicsState.player.pitch=Math.max(-1.25,Math.min(1.25,playerPhysicsState.player.pitch+dy*.004));
+  updatePlayerCamera();
+ }else{orbit.theta-=dx*.005;orbit.phi+=dy*.004;cameraUpdate();}
 });
 canvas.addEventListener('pointerup',event=>{
  if(!pointerDown)return;const dx=event.clientX-pointerDown.x,dy=event.clientY-pointerDown.y;
- if(!pointerDown.moved&&Math.abs(dx)+Math.abs(dy)<7)clickAt(event.clientX,event.clientY);pointerDown=null;
+ if(!playerPlayMode&&!pointerDown.moved&&Math.abs(dx)+Math.abs(dy)<7)clickAt(event.clientX,event.clientY);pointerDown=null;
 });
 canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
-canvas.addEventListener('wheel',event=>{event.preventDefault();orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
+canvas.addEventListener('wheel',event=>{event.preventDefault();if(playerPlayMode)return;orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));});
 let frame=0;
-function animate(now){requestAnimationFrame(animate);if(!frameGate.shouldRender(now))return;updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);for(const item of animatedPlants){if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;}renderer.render(scene,camera);frame++;if(window.__DIYCRAFT_THREE_EDIT__){window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;}}
+function animate(now){
+ requestAnimationFrame(animate);
+ if(!frameGate.shouldRender(now))return;
+ if(playerPlayMode&&playerPhysicsState&&playerPhysicsEnvironment){
+  const elapsedMs=lastPlayerPhysicsTime?Math.max(0,now-lastPlayerPhysicsTime):0;
+  lastPlayerPhysicsTime=now;
+  physicsClock.advance(elapsedMs,dt=>{
+   const next=playerPhysics.step(playerPhysicsState,playerControls,playerPhysicsEnvironment,dt);
+   playerPhysicsState=next;playerControls=next.controls;
+  });
+  updatePlayerCamera();updatePlayerDiagnostics();
+ }else lastPlayerPhysicsTime=now;
+ updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);
+ for(const item of animatedPlants){
+  if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;
+  else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;
+ }
+ renderer.render(scene,camera);frame++;
+ if(window.__DIYCRAFT_THREE_EDIT__){
+  window.__DIYCRAFT_THREE_EDIT__.frames=frame;window.__DIYCRAFT_THREE_EDIT__.drawCalls=renderer.info.render.calls;
+  window.__DIYCRAFT_THREE_EDIT__.geometryCount=renderer.info.memory.geometries;
+  window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;
+ }
+}
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
