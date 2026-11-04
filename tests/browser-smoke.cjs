@@ -2,7 +2,6 @@
 
 const fs = require('node:fs');
 const zlib = require('node:zlib');
-
 const { chromium } = require('playwright');
 const { spawn } = require('node:child_process');
 
@@ -19,7 +18,9 @@ async function verifyGame(page, label) {
     { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForTimeout(1000);
 
+
   if (label === 'local') {
+    await page.waitForFunction(() => !!localStorage.getItem('diycraft_peaceful_voxel_v1'), null, { timeout: 10000 });
     const initial = await page.evaluate
 async function verifyOfflinePlay(browser) {
   const context = await browser.newContext();
@@ -28,8 +29,8 @@ async function verifyOfflinePlay(browser) {
   page.on('pageerror', error => errors.push(error.stack || error.message));
   try {
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForFunction(() => document.getElementById('game')?.width > 100, { timeout: 15000 });
-    await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 20000 });
+    await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 15000 });
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 20000 });
     await page.evaluate(async () => {
       const registration = await navigator.serviceWorker.ready;
       if (!registration.active || registration.active.state !== 'activated') {
@@ -38,11 +39,9 @@ async function verifyOfflinePlay(browser) {
     });
     await context.setOffline(true);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForFunction(() => document.getElementById('game')?.width > 100, { timeout: 10000 });
+    await page.waitForFunction(() => document.getElementById('game')?.width > 100, null, { timeout: 10000 });
     const state = await page.locator('#game').evaluate(canvas => ({
-      width: canvas.width,
-      height: canvas.height,
-      ready: !!canvas.getContext('2d')
+      width: canvas.width, height: canvas.height, ready: !!canvas.getContext('2d')
     }));
     if (state.width < 100 || state.height < 100 || !state.ready) {
       throw new Error('DIYCraft did not reopen from its offline cache: ' + JSON.stringify(state));
@@ -58,38 +57,66 @@ async function verifyOfflinePlay(browser) {
       const key = 'diycraft_peaceful_voxel_v1';
       const prefix = 'DIYCraft:gzip:v1:';
       const stored = localStorage.getItem(key);
-      if (!stored || !stored.startsWith(prefix)) return { format: 'not-compressed' };
-      const binary = atob(stored.slice(prefix.length));
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-      return { format: 'gzip', raw, world: JSON.parse(raw) };
+      if (!stored) return { format: 'missing' };
+      let raw = stored;
+      if (stored.startsWith(prefix)) {
+        const binary = atob(stored.slice(prefix.length));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      }
+      const canCompress = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+      const jsonBytes = new TextEncoder().encode(raw).length;
+      let gzipBytes = null;
+      if (canCompress) {
+        const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+        gzipBytes = (await new Response(stream).arrayBuffer()).byteLength;
+      }
+      return {
+        format: stored.startsWith(prefix) ? 'gzip' : 'json',
+        canCompress,
+        jsonBytes,
+        gzipBytes,
+        world: JSON.parse(raw)
+      };
     });
-    if (initial.format !== 'gzip' || !Array.isArray(initial.world.blocks)) {
-      throw new Error('local: new autosaves were not stored as valid compressed worlds.');
+    if (!initial.world || !Array.isArray(initial.world.blocks)) {
+      throw new Error('local: autosave did not contain a valid DIYCraft world: ' + JSON.stringify(initial));
     }
-    const originalBlockCount = initial.world.blocks.length;
-    await page.evaluate(raw => localStorage.setItem('diycraft_peaceful_voxel_v1', raw), JSON.stringify(initial.world));
+    if (initial.canCompress && initial.gzipBytes + Math.ceil(initial.gzipBytes / 3) < initial.jsonBytes &&
+        initial.format !== 'gzip') {
+      throw new Error('local: compression was available and beneficial but was not used: ' + JSON.stringify(initial));
+    }
+    console.log('local autosave format: ' + JSON.stringify({
+      format: initial.format, canCompress: initial.canCompress,
+      jsonBytes: initial.jsonBytes, gzipBytes: initial.gzipBytes
+    }));
+
+    const original = JSON.stringify(initial.world);
+    await page.evaluate(raw => localStorage.setItem('diycraft_peaceful_voxel_v1', raw), original);
     await page.reload({ waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForTimeout(900);
+    await page.waitForFunction(() => {
+      const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
+      return !!stored && stored.startsWith('DIYCraft:gzip:v1:');
+    }, null, { timeout: 10000 });
     const migrated = await page.evaluate(async () => {
       const prefix = 'DIYCraft:gzip:v1:';
       const stored = localStorage.getItem('diycraft_peaceful_voxel_v1');
-      if (!stored || !stored.startsWith(prefix)) return null;
       const binary = atob(stored.slice(prefix.length));
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const raw = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-      return JSON.parse(raw);
+      return JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
     });
-    if (!migrated || migrated.blocks.length !== originalBlockCount) {
-      throw new Error('local: an existing JSON world did not migrate safely to compressed storage.');
+    if (!migrated || JSON.stringify(migrated.blocks) !== JSON.stringify(initial.world.blocks) ||
+        migrated.name !== initial.world.name || JSON.stringify(migrated.animals) !== JSON.stringify(initial.world.animals)) {
+      throw new Error('local: legacy JSON world did not migrate without changing its saved content.');
     }
   }
 
+  await page.locator('#menuBtn').click();
   const [backupDownload] = await Promise.all([
     page.waitForEvent('download'),
-    page.locator('#menuBtn').click().then(() => page.locator('#backupBtn').click())
+    page.locator('#backupBtn').click()
   ]);
   const backupPath = await backupDownload.path();
   if (!backupPath) throw new Error(label + ': backup download did not produce a file.');
@@ -98,15 +125,16 @@ async function verifyOfflinePlay(browser) {
     ? zlib.gunzipSync(backupBytes).toString('utf8')
     : backupBytes.toString('utf8');
   const backupWorld = JSON.parse(backupJson);
-  if (!Array.isArray(backupWorld.blocks)) throw new Error(label + ': backup file did not contain a valid world.');
-
+  if (!Array.isArray(backupWorld.blocks)) {
+    throw new Error(label + ': backup file did not contain a valid world.');
+  }
   if (label === 'local') {
     await page.setInputFiles('#restoreInput', {
       name: backupDownload.suggestedFilename(),
-      mimeType: 'application/gzip',
+      mimeType: backupDownload.suggestedFilename().endsWith('.gz') ? 'application/gzip' : 'application/json',
       buffer: backupBytes
     });
-    await page.waitForFunction(() => document.getElementById('status')?.textContent === 'World backup restored.', { timeout: 10000 });
+    await page.waitForFunction(() => document.getElementById('status')?.textContent === 'World backup restored.', null, { timeout: 10000 });
   }
   await page.locator('#menuShade [data-close]').first().click();
 
