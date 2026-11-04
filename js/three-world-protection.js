@@ -14,18 +14,18 @@
  ]);
  const NEIGHBOR_ROUTES=Object.freeze({
   hyacinth:[
-   {x:-5,z:-8,pause:2.8},{x:-7,z:-7,pause:2.0},{x:-10,z:-1.8,pause:2.7},{x:-10,z:-9.5,pause:2.5},{x:-6,z:-11,pause:2.4}
+   {x:-5,z:-8,pause:2.8,activity:'👋'},{x:-7,z:-7,pause:2.0,activity:'🌼'},{x:-10,z:-1.8,pause:2.7,activity:'🏡'},{x:-10,z:-9.5,pause:2.5,activity:'🌳'},{x:-6,z:-11,pause:2.4,activity:'🌸'}
   ],
   theo:[
-   {x:5,z:-11,pause:2.3},{x:8,z:-10,pause:2.0},{x:12,z:-12.1,pause:2.8},{x:9,z:-8.5,pause:2.2},{x:4,z:-7,pause:2.8}
+   {x:5,z:-11,pause:2.3,activity:'👋'},{x:8,z:-10,pause:2.0,activity:'🌱'},{x:12,z:-12.1,pause:2.8,activity:'🏡'},{x:9,z:-8.5,pause:2.2,activity:'☀️'},{x:4,z:-7,pause:2.8,activity:'🐑'}
   ]
  });
  const FAMILY_ROUTES=Object.freeze({
-  dad:[{x:14,z:-4.8,pause:1.4},{x:14,z:-1.4,pause:2},{x:17,z:-.8,pause:1},{x:19.5,z:-2,pause:1.8},{x:17,z:-3.3,pause:1.1}],
-  mom:[{x:22,z:-4.4,pause:2.4},{x:23.5,z:-1.8,pause:2.1},{x:20.8,z:-.5,pause:2.8},{x:19.8,z:-2.5,pause:2}],
-  lia:[{x:15.2,z:-1.1,pause:1.4},{x:16.5,z:-.4,pause:1},{x:17.3,z:-1.7,pause:1.2},{x:16.2,z:-2.7,pause:1}],
-  maya:[{x:19.2,z:-1.2,pause:1.1},{x:21.4,z:-.8,pause:1.5},{x:22.3,z:-2.2,pause:1},{x:20.4,z:-3.2,pause:1.3}],
-  nico:[{x:13.2,z:-7.7,pause:.7},{x:13.6,z:-5.5,pause:.6},{x:14.8,z:-3.9,pause:.9},{x:13.7,z:-2.5,pause:.6},{x:12.8,z:-4.7,pause:.8}]
+  dad:[{x:14,z:-4.8,pause:1.4,activity:'👋'},{x:14,z:-1.4,pause:2,activity:'🌳'},{x:17,z:-.8,pause:1,activity:'☀️'},{x:19.5,z:-2,pause:1.8,activity:'🏡'},{x:17,z:-3.3,pause:1.1,activity:'🌼'}],
+  mom:[{x:22,z:-4.4,pause:2.4,activity:'🌸'},{x:23.5,z:-1.8,pause:2.1,activity:'🌷'},{x:20.8,z:-.5,pause:2.8,activity:'☀️'},{x:19.8,z:-2.5,pause:2,activity:'🏡'}],
+  lia:[{x:15.2,z:-1.1,pause:1.4,activity:'🦋'},{x:16.5,z:-.4,pause:1,activity:'🌼'},{x:17.3,z:-1.7,pause:1.2,activity:'🌷'},{x:16.2,z:-2.7,pause:1,activity:'💐'}],
+  maya:[{x:19.2,z:-1.2,pause:1.1,activity:'🌻'},{x:21.4,z:-.8,pause:1.5,activity:'🐾'},{x:22.3,z:-2.2,pause:1,activity:'🌺'},{x:20.4,z:-3.2,pause:1.3,activity:'🌿'}],
+  nico:[{x:13.2,z:-7.7,pause:.7,activity:'🏃'},{x:13.6,z:-5.5,pause:.6,activity:'🐕'},{x:14.8,z:-3.9,pause:.9,activity:'⚽'},{x:13.7,z:-2.5,pause:.6,activity:'🌳'},{x:12.8,z:-4.7,pause:.8,activity:'🏃'}]
  });
  const SLEEP_SPOTS=Object.freeze({
   hyacinth:{x:-10.85,z:-4.85},theo:{x:12.15,z:-14.85},
@@ -256,7 +256,7 @@
     x:pose.x,z:pose.z,
     phase:actor.phase,pace:actor.pace,
     activity:FAMILY.some(member=>member.id===actor.id)?undefined:pose.activity,
-    sleeping:night,
+    ...(night?{sleeping:true}:{}),
     moving:night?false:!!pose.moving,
     walk:night?0:finite(pose.walk)?pose.walk:0,
     y:0
