@@ -20,6 +20,7 @@ on:
       - three-world-edit-preview.html
       - three-world-edit-preview.js
       - tests/three-world-edit-preview.cjs
+      - tests/three-world-performance.cjs
       - tests/three-performance-profile.test.cjs
       - .github/workflows/three-world-preview.yml
   pull_request:
@@ -50,6 +51,8 @@ jobs:
           npm init -y
           npm install --no-save playwright
           npx playwright install --with-deps chromium
+      - name: Run large-world mobile performance stress test
+        run: node tests/three-world-performance.cjs
       - name: Render and test the real production starter world
         run: node tests/three-world-preview.cjs
       - name: Run interactive editing sandbox browser tests
