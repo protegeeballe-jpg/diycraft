@@ -8,6 +8,8 @@ on:
       - js/three-world-adapter.js
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
+      - js/three-door-motion.js
+      - tests/three-door-motion.test.cjs
       - tests/three-world-adapter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-world-raycast.test.cjs
@@ -39,5 +41,7 @@ jobs:
         run: node tests/three-world-edit-sandbox.test.cjs
       - name: Run raycast selection resolver tests
         run: node tests/three-world-raycast.test.cjs
+      - name: Run door animation timing and reversal tests
+        run: node tests/three-door-motion.test.cjs
       - name: Compare Canvas 2D and Three.js placement behavior
         run: node tests/three-world-canvas-parity.test.cjs
