@@ -16,7 +16,7 @@ const CUSTOM_TEXTURES=['grass','dirt','stone','wood','leaves','brick','glass','f
 const TILE_DESIGNS=['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral'].map(id=>({id}));
 function keyBlock(x,y,z){return x+','+y+','+z;}
 function keyGround(x,z){return Math.floor(x)+','+Math.floor(z);}
-function productionHarness(world){
+function productionHarness(world,selectedBucketItem=null){
  const blockLookup=new Map(),blockColumnBlocks=new Map(),blockRenderChunks=new Map();
  const depth=new Map((world.excavations||[]).map(v=>[keyGround(v[0],v[1]),v[2]]));
  for(const b of world.blocks){blockLookup.set(keyBlock(b.x,b.y,b.z),b);if(b.type==='door')blockLookup.set(keyBlock(b.x,b.y+1,b.z),b);}
@@ -30,7 +30,7 @@ function productionHarness(world){
  )(
   1000000000,1000000000,(x,z)=>depth.get(keyGround(x,z))||0,keyBlock,blockLookup,'grass',18000,world,
   ()=>{},(value,fallback)=>/^#[0-9a-f]{6}$/i.test(value||'')?value:fallback,
-  CUSTOM_TEXTURES,SOLID_STYLE_TYPES,TILE_DESIGNS,null,keyGround,blockColumnBlocks,
+  CUSTOM_TEXTURES,SOLID_STYLE_TYPES,TILE_DESIGNS,selectedBucketItem,keyGround,blockColumnBlocks,
   ()=>{},blockRenderChunks,()=>{},()=>{},()=>{}
  );
  return {add:fn,lookup:blockLookup};
@@ -98,6 +98,37 @@ function pair(type,x,y,z){
 }
 test('matches Canvas 2D appearance defaults for custom, tile, door and styled solids',()=>{
  pair('custom',50,0,50);pair('tile',51,0,50);pair('door',52,0,50);pair('stone',53,0,50);pair('flower',54,0,50);
+});
+test('reuses Material Bucket appearance data exactly like Canvas 2D without consuming the item',()=>{
+ const cases=[
+  ['custom',{type:'custom',color:'#123456',texture:'brick'}],
+  ['tile',{type:'tile',color:'#ab4567',tilePattern:'spiral'}],
+  ['door',{type:'door',color:'#56789a',style:'garden',orientation:'ew',swing:-1}],
+  ['wood',{type:'wood',color:'#345678',texture:'leaves'}]
+ ];
+ for(let i=0;i<cases.length;i++){
+  const [type,item]=cases[i],world=freshWorld();
+  world.customBlock={color:'#aa83d8',texture:'custom'};
+  world.tileDesign={color:'#c5a98a',pattern:'grid'};
+  world.doorDesign={color:'#a97545',style:'classic'};
+  world.solidStyles={wood:{color:'#a97545',texture:'wood'}};
+  world.bucket=[{...item}];
+  const bucketBefore=JSON.stringify(world.bucket),production=productionHarness(world,world.bucket[0]);
+  const sandbox=sandboxApi.create(adapter.createSnapshot(world));
+  const selected=sandbox.selectBucketItem(0);
+  assert.deepEqual(selected.selectedBucketItem,item);
+  const x=100+i*3,z=100;
+  assert.equal(production.add(x,0,z,type,false),true);
+  const added=sandbox.addBlock({type,x,y:0,z});
+  assert.deepEqual(comparable(added.world.blocks.at(-1)),comparable(world.blocks.at(-1)),
+   'Recovered bucket item appearance must match production for '+type+'.');
+  assert.equal(JSON.stringify(added.world.bucket),bucketBefore,'Selecting and using a bucket item must not consume it.');
+  assert.deepEqual(added.selectedBucketItem,item,'The selected recovered item remains available for reuse.');
+  const second=sandbox.addBlock({type,x:x+1,y:0,z});
+  assert.deepEqual(comparable(second.world.blocks.at(-1)),comparable(world.blocks.at(-1)),
+   'The same recovered item can be reused repeatedly for '+type+'.');
+  assert.equal(JSON.stringify(second.world.bucket),bucketBefore);
+ }
 });
 test('matches two-cell door occupancy rules',()=>{
  const world=freshWorld(),production=productionHarness(world),sandbox=sandboxApi.create(adapter.createSnapshot(world));
