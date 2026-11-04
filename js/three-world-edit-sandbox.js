@@ -3,10 +3,10 @@
    production-world references are retained or modified. */
 (function(root,factory){
  'use strict';
- const api=factory();
+ const api=factory(root&&root.DIYCraftThreeWorldProtection);
  if(typeof module==='object'&&module.exports)module.exports=api;
  if(root)root.DIYCraftThreeEditSandbox=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+})(typeof globalThis!=='undefined'?globalThis:this,function(protectionApi){
  'use strict';
  const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99;
  const HEX=/^#[0-9a-f]{6}$/i;
@@ -43,6 +43,10 @@
     if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
    }
   });
+  function isProtectedDigCell(x,z,context={}){
+   return !!(protectionApi&&typeof protectionApi.isProtectedCell==='function'&&
+    protectionApi.isProtectedCell(x,z,context));
+  }
   function find(key){return blockIndex.get(key)||null;}
   function state(){
    const copy=clone(world);
@@ -109,10 +113,12 @@
    addBlockRecord(input);revision++;
    return state();
   }
-  function remove(key){
+  function remove(key,protectionContext={}){
    const index=world.blocks.findIndex(block=>block.key===key);
    if(index<0)return state();
-   const block=world.blocks[index],bucket=Array.isArray(world.bucket)?world.bucket:(world.bucket=[]);
+   const block=world.blocks[index];
+   if(isProtectedDigCell(block.x,block.z,protectionContext))throw new Error('This block is too close to a neighbor or animal. Their homes and little friends are protected!');
+   const bucket=Array.isArray(world.bucket)?world.bucket:(world.bucket=[]);
    if(bucket.length>=MAX_BUCKET_ITEMS)throw new RangeError('Your Material Bucket is full. Use or clear recovered blocks first.');
    const item={type:block.type};
    for(const field of ['color','texture','tilePattern','style','orientation','swing'])
@@ -142,8 +148,9 @@
    if(index<0)return false;
    slots[index]={id,count:1,label};return true;
   }
-  function excavateGround(x,z){
+  function excavateGround(x,z,protectionContext={}){
    if(!coord(x)||!coord(z))throw new TypeError('Excavation coordinates must be valid whole-number cells.');
+   if(isProtectedDigCell(x,z,protectionContext))throw new Error('This patch is protected for the neighbors and their homes.');
    const key=x+','+z,currentDepth=depthByCell.get(key)||0;
    if(waterAt(x,z))return collectWaterLayer(x,z);
    if(currentDepth>=MAX_DIG_DEPTH)throw new RangeError('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');
@@ -188,8 +195,9 @@
   function waterAt(x,z){
    return Array.isArray(world.water)?world.water.find(cell=>cell.x===x&&cell.z===z)||null:null;
   }
-  function addWaterLayer(x,z){
+  function addWaterLayer(x,z,protectionContext={}){
    if(!coord(x)||!coord(z))throw new TypeError('Water coordinates must be valid whole-number cells.');
+   if(isProtectedDigCell(x,z,protectionContext))throw new Error('This patch is protected for the neighbors and their homes.');
    const key=x+','+z,depth=depthByCell.get(key)||0;
    if(depth<1)throw new Error('Dig a pool cell first, then add water.');
    if(!Array.isArray(world.water))world.water=[];
@@ -200,8 +208,9 @@
    revision++;
    return state();
   }
-  function collectWaterLayer(x,z){
+  function collectWaterLayer(x,z,protectionContext={}){
    if(!coord(x)||!coord(z))throw new TypeError('Water coordinates must be valid whole-number cells.');
+   if(isProtectedDigCell(x,z,protectionContext))throw new Error('This patch is protected for the neighbors and their homes.');
    const index=Array.isArray(world.water)?world.water.findIndex(cell=>cell.x===x&&cell.z===z):-1;
    if(index<0)throw new Error('There is no water layer to collect here.');
    const bucket=Array.isArray(world.bucket)?world.bucket:(world.bucket=[]);
@@ -311,7 +320,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds):{neighbors:[],animals:[]},isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
