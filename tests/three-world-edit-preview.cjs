@@ -345,6 +345,7 @@ function freshWorld(){
   assert.equal(await page.locator('#neighbor-color-templates [data-color-page]').count(),6,'All six original coloring sheets must be available.');
   await page.locator('[data-color-page="flower"]').click();
   await page.waitForFunction(()=>parseFloat(document.getElementById('neighbor-color-progress-fill').style.width)>0,null,{timeout:8000});
+  await page.waitForFunction(()=>document.getElementById('neighbor-color-progress-fill').style.width==='100%',null,{timeout:12000});
   let flowerPixel=await page.evaluate(()=>{
    const data=document.getElementById('neighbor-color-canvas').getContext('2d').getImageData(320,112,1,1).data;
    return Array.from(data);
