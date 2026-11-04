@@ -244,6 +244,46 @@ test('matches production eased route positions and travel timing for all seven a
   }
  }
 });
+function productionCurrentNeighbors(world,timeSeconds){
+ const familyStart=source.indexOf('function familyMembers(t,night=false){');
+ const currentStart=source.indexOf('function currentNeighbors(t=performance.now()/1000,night=getTimePalette(t).mode===\'night\'){');
+ const animalStart=source.indexOf('\nfunction animalPositions(',currentStart);
+ if(familyStart<0||currentStart<0||animalStart<=currentStart)throw new Error('Could not extract the original neighbor presentation functions.');
+ const familySource=source.slice(familyStart,currentStart);
+ const currentSource=source.slice(currentStart,animalStart);
+ const paletteStart=source.indexOf('function getTimePalette(tick){');
+ const paletteEnd=source.indexOf('\n}',paletteStart)+2;
+ if(paletteStart<0||paletteEnd<=paletteStart)throw new Error('Could not extract production time palette.');
+ const paletteSource=source.slice(paletteStart,paletteEnd);
+ const palette={
+  day:{},sunset:{},night:{}
+ };
+ const getNeighbors=new Function(
+  'world','NEIGHBOR_ROUTES','FAMILY_ROUTES','NEIGHBOR_SLEEP_SPOTS','TIME_PALETTES','neighborOnRoute',
+  familySource+'\n'+currentSource+'\n'+paletteSource+'\nreturn currentNeighbors;'
+ )(world,productionRoutes,productionFamilyRoutes,productionSleepSpots,palette,
+  (route,tick,phase,speed=1.05)=>productionNavigation(world).neighborOnRoute(route,tick,phase,speed));
+ return getNeighbors(timeSeconds,undefined);
+}
+test('matches all seven original visible neighbor character states, appearances, and sleep schedules',()=>{
+ const worlds=[
+  {timeMode:'day',blocks:[],excavations:[]},
+  {timeMode:'sunset',blocks:[{x:0,y:0,z:-8,type:'stone'}],excavations:[]},
+  {timeMode:'night',blocks:[],excavations:[]},
+  {timeMode:'auto',blocks:[{x:1,y:0,z:-8,type:'door',open:false}],excavations:[]}
+ ];
+ const times=[0,.25,2.8,3.1,5.75,11,19.25,37.5,81.2,123.45,140,179.9];
+ const keys=['id','name','x','z','facing','moving','walk','sleeping','phase','pace','speed','scale',
+  'shirt','hair','skin','pants','shoes','eyes','hairStyle','outfitStyle','accessory','accessoryColor',
+  'homeX','homeZ','activity'];
+ const project=actor=>Object.fromEntries(keys.map(key=>[key,actor[key]]));
+ for(const world of worlds)for(const time of times){
+  const expected=productionCurrentNeighbors(world,time);
+  const actual=protection.characterStates(world,time,7);
+  assert.equal(actual.length,7,'All seven original neighbor and family characters must exist.');
+  assert.deepEqual(actual.map(project),expected.map(project),'Character states must match currentNeighbors() at '+world.timeMode+' '+time+'s.');
+ }
+});
 test('rebuilds its obstacle grid and path cache only when the sandbox world revision advances',()=>{
  const world={blocks:[],excavations:[]},start={x:-2,z:0},end={x:2,z:0};
  const first=protection.createNavigationState(world,0);
