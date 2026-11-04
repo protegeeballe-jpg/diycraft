@@ -8,9 +8,9 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const PROFILES=Object.freeze({
-  low:Object.freeze({tier:'low',maxPixelRatio:1,antialias:false,shadows:false,fpsCap:30,textureSize:128,pencilScale:.72,maxAnisotropy:2}),
-  balanced:Object.freeze({tier:'balanced',maxPixelRatio:1.2,antialias:false,shadows:false,fpsCap:45,textureSize:192,pencilScale:.88,maxAnisotropy:4}),
-  high:Object.freeze({tier:'high',maxPixelRatio:1.5,antialias:true,shadows:true,fpsCap:60,textureSize:256,pencilScale:1,maxAnisotropy:8})
+  low:Object.freeze({tier:'low',maxPixelRatio:1,antialias:false,shadows:false,fpsCap:30,textureSize:128,pencilScale:.72,maxAnisotropy:2,maxVisibleFish:48}),
+  balanced:Object.freeze({tier:'balanced',maxPixelRatio:1.2,antialias:false,shadows:false,fpsCap:45,textureSize:192,pencilScale:.88,maxAnisotropy:4,maxVisibleFish:128}),
+  high:Object.freeze({tier:'high',maxPixelRatio:1.5,antialias:true,shadows:true,fpsCap:60,textureSize:256,pencilScale:1,maxAnisotropy:8,maxVisibleFish:512})
  });
  function positive(value){return typeof value==='number'&&Number.isFinite(value)&&value>0?value:null;}
  function select(capabilities){
