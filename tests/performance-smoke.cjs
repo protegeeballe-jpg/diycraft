@@ -26,7 +26,7 @@ for (const [label, snippet] of painterlyRequirements) {
   assert(source.includes(snippet), `The watercolor/pencil theme must preserve ${label}.`);
 }
 assert(source.includes('function paintPainterlyCanvasOverlay(width,height)') &&
-       source.includes('ctx.globalAlpha=.66;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height)'),
+       source.includes('ctx.globalAlpha=.72;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height)'),
   'The painterly finish must use its prebuilt canvas pattern, not per-frame image filters.');
 const helperStart = source.indexOf('function renderChunkKey');
 const helperEnd = source.indexOf('function rebuildFishRenderChunks', helperStart);
