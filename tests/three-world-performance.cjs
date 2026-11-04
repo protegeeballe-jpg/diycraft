@@ -1,0 +1,68 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {spawn}=require('node:child_process');
+const {chromium}=require('playwright');
+const adapter=require('../js/three-world-adapter.js');
+
+function freshWorld(){
+ const source=fs.readFileSync('diycraft.js','utf8');
+ const start=source.indexOf('function freshWorld(){');
+ const marker='\n}\n\nfunction validHex';
+ const end=source.indexOf(marker,start);
+ if(start<0||end<0)throw new Error('Could not locate production freshWorld().');
+ return new Function('emptySlots','return ('+source.slice(start,end+2)+');')(()=>Array.from({length:60},()=>null))();
+}
+(async()=>{
+ const world=freshWorld(),occupied=new Set(world.blocks.map(b=>b.x+','+b.y+','+b.z));
+ const types=['grass','dirt','stone','wood'];let added=0;
+ for(let z=-24;z<24&&added<1800;z++)for(let x=-24;x<24&&added<1800;x++){
+  const key=x+',0,'+z;if(occupied.has(key))continue;
+  world.blocks.push({x,y:0,z,type:types[(x-z+400)%types.length]});occupied.add(key);added++;
+ }
+ assert.equal(added,1800,'Synthetic stress fixture must add the planned solid blocks.');
+ const before=JSON.stringify(world),snapshot=adapter.createSnapshot(world);
+ assert.equal(snapshot.counts.blocks,world.blocks.length);
+ await fs.promises.mkdir('preview-three',{recursive:true});
+ await fs.promises.writeFile('preview-three/starter-world.json',before,'utf8');
+ const server=spawn('python3',['-m','http.server','4177','--bind','127.0.0.1'],{stdio:'ignore'});
+ const browser=await chromium.launch({headless:true,args:['--enable-webgl','--ignore-gpu-blocklist','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ try{
+  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:true,hasTouch:true,serviceWorkers:'block'});
+  const page=await context.newPage(),errors=[];
+  await page.addInitScript(()=>{try{Object.defineProperty(navigator,'deviceMemory',{configurable:true,value:2});Object.defineProperty(navigator,'hardwareConcurrency',{configurable:true,value:4});}catch(_){}});
+  page.on('pageerror',e=>errors.push(e.stack||e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  await page.goto('http://127.0.0.1:4177/three-world-preview.html',{waitUntil:'networkidle',timeout:60000});
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_WORLD__?.frames>3,null,{timeout:30000});
+  await page.waitForTimeout(500);
+  const state=await page.evaluate(()=>({
+   world:window.__DIYCRAFT_THREE_WORLD__,
+   canvas:{width:document.getElementById('three-world')?.width,height:document.getElementById('three-world')?.height},
+   storageKeys:localStorage.length
+  }));
+  assert.equal(state.world.performanceProfile.tier,'low');
+  assert.equal(state.world.performanceProfile.fpsCap,30);
+  assert.equal(state.world.sourceBlocks,world.blocks.length);
+  assert.equal(state.world.renderedBlocks+state.world.renderedPlants+state.world.renderedDoors,world.blocks.length,
+   'Every block must be represented even in the large world.');
+  assert.ok(state.world.instanceGroups>0&&state.world.instanceGroups<120,
+   'Spatial/material batching must keep GPU object groups bounded.');
+  assert.ok(state.world.drawCalls>0&&state.world.drawCalls<=90,
+   'Frustum culling and spatial batches must keep draw calls bounded on a low-end phone profile.');
+  assert.ok(state.world.geometryCount<100,'Shared geometry must keep GPU geometry count bounded.');
+  assert.ok(state.world.textureCount<50,'Painterly textures must stay cached and bounded.');
+  assert.ok(state.canvas.width<=390&&state.canvas.height<=844,
+   'The low-end mobile profile must not render at the phone’s full 3x device pixel ratio.');
+  assert.equal(state.world.sourceUnchanged,true);
+  assert.equal(state.storageKeys,0);
+  if(errors.length)throw new Error('Mobile stress-test browser errors:\n'+errors.join('\n\n'));
+  console.log('Low-end mobile stress test passed: '+JSON.stringify({
+   sourceBlocks:state.world.sourceBlocks,instanceGroups:state.world.instanceGroups,
+   drawCalls:state.world.drawCalls,geometryCount:state.world.geometryCount,
+   textureCount:state.world.textureCount,profile:state.world.performanceProfile,
+   canvas:state.canvas,storageKeys:state.storageKeys
+  }));
+  await context.close();
+ }finally{await browser.close();server.kill('SIGTERM');}
+})().catch(error=>{console.error(error);process.exitCode=1;});
