@@ -785,9 +785,9 @@ function drawPainterlySurfaceFinish(c,seed=0,strength=1){
  c.save();c.globalCompositeOperation='source-over';c.globalAlpha=intensity;
  // Gentle, soft-edged pigment pools let the selected color remain the dominant hue.
  const washes=[
-  'rgba(255,244,218,.24)','rgba(126,174,166,.18)',
-  'rgba(223,151,160,.17)','rgba(177,157,204,.16)',
-  'rgba(229,199,137,.15)'
+  'rgba(255,244,218,.32)','rgba(126,174,166,.25)',
+  'rgba(223,151,160,.23)','rgba(177,157,204,.22)',
+  'rgba(229,199,137,.20)'
  ];
  for(let i=0;i<7;i++){
   const x=next()*96,y=next()*96,rx=8+next()*13,ry=5+next()*9,angle=next()*Math.PI;
@@ -799,20 +799,20 @@ function drawPainterlySurfaceFinish(c,seed=0,strength=1){
  c.lineCap='round';c.lineJoin='round';
  for(let i=0;i<38;i++){
   const x=next()*104-4,y=next()*104-4,len=5+next()*10,drift=(next()-.5)*3;
-  c.strokeStyle=i%5===0?'rgba(255,250,235,.42)':'rgba(48,62,54,.23)';
-  c.lineWidth=2.0+next()*.95;
+  c.strokeStyle=i%5===0?'rgba(255,250,235,.48)':'rgba(48,62,54,.31)';
+  c.lineWidth=2.4+next()*1.0;
   c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+len*.48,y+drift,x+len,y+drift);c.stroke();
  }
  for(let i=0;i<14;i++){
   const x=next()*104-4,y=next()*104-4,len=3+next()*6;
-  c.strokeStyle=i%3===0?'rgba(255,247,225,.34)':'rgba(65,78,67,.17)';
-  c.lineWidth=1.1+next()*.65;
+  c.strokeStyle=i%3===0?'rgba(255,247,225,.41)':'rgba(65,78,67,.23)';
+  c.lineWidth=1.3+next()*.7;
   c.beginPath();c.moveTo(x,y);c.lineTo(x+len*.45,y+len*.7);c.stroke();
  }
  // Small paper flecks preserve a tactile finish without obscuring the base color.
  for(let i=0;i<76;i++){
   const x=next()*96,y=next()*96;
-  c.fillStyle=i%3===0?'rgba(255,250,233,.30)':'rgba(63,69,60,.16)';
+  c.fillStyle=i%3===0?'rgba(255,250,233,.38)':'rgba(63,69,60,.22)';
   c.beginPath();c.arc(x,y,.24+next()*.38,0,Math.PI*2);c.fill();
  }
  c.restore();
@@ -824,8 +824,8 @@ function drawPainterlyPaperPattern(c,seed=0){
  c.save();c.globalCompositeOperation='source-over';
  // Very light, cloud-soft watercolor blooms spread across the complete paper tile.
  const pigments=[
-  'rgba(255,244,221,.085)','rgba(132,180,173,.070)',
-  'rgba(225,157,165,.065)','rgba(184,164,207,.060)'
+  'rgba(255,244,221,.12)','rgba(132,180,173,.10)',
+  'rgba(225,157,165,.095)','rgba(184,164,207,.09)'
  ];
  for(let i=0;i<12;i++){
   const x=next()*size,y=next()*size,rx=10+next()*18,ry=7+next()*13,angle=next()*Math.PI;
@@ -837,14 +837,14 @@ function drawPainterlyPaperPattern(c,seed=0){
  c.lineCap='round';
  for(let i=0;i<145;i++){
   const x=next()*size,y=next()*size,len=4+next()*12,dy=(next()-.5)*2.2;
-  c.strokeStyle=i%5===0?'rgba(255,250,236,.20)':'rgba(54,68,60,.115)';
-  c.lineWidth=.55+next()*.42;
+  c.strokeStyle=i%5===0?'rgba(255,250,236,.30)':'rgba(54,68,60,.19)';
+  c.lineWidth=.78+next()*.5;
   c.beginPath();c.moveTo(x,y);c.lineTo(x+len,y+dy);c.stroke();
  }
  // Sparse paper tooth; small enough to stay gentle at the game's normal zoom.
  for(let i=0;i<260;i++){
   const x=next()*size,y=next()*size;
-  c.fillStyle=i%3===0?'rgba(255,250,236,.15)':'rgba(54,68,60,.075)';
+  c.fillStyle=i%3===0?'rgba(255,250,236,.22)':'rgba(54,68,60,.125)';
   c.beginPath();c.arc(x,y,.16+next()*.34,0,Math.PI*2);c.fill();
  }
  c.restore();
@@ -860,7 +860,7 @@ const painterlyCanvasPattern=(()=>{
 })();
 function paintPainterlyCanvasOverlay(width,height){
  if(!painterlyCanvasPattern)return;
- ctx.save();ctx.globalAlpha=.72;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
+ ctx.save();ctx.globalAlpha=.82;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
 }
 const DEFAULT_FLOWER_PETAL_COLOR='#e9a4c1';
 function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
