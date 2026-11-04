@@ -21,7 +21,7 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotati
 const group=new THREE.Group();scene.add(group);
 const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(.82,1.9,.14);
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,meshByKey=new Map();
+let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map();
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
  orbit.phi=Math.max(.2,Math.min(1.3,orbit.phi));
@@ -68,7 +68,7 @@ function renderSandbox(state){
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
   ' · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,
-  sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size,
+  sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:meshByKey.size,lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   pickBlock:(key)=>{const mesh=meshByKey.get(key);if(!mesh)return false;const p=mesh.position.clone().project(camera);clickAt((p.x+1)*innerWidth/2,(1-p.y)*innerHeight/2);return true;},getState:()=>sandbox.getState()};
 }
 function selectedBlock(){
@@ -78,10 +78,19 @@ function choose(key){renderSandbox(sandbox.select(key));}
 function clickAt(x,y){
  pointer.x=(x/innerWidth)*2-1;pointer.y=-(y/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);
  const hits=raycaster.intersectObjects(group.children,false).filter(hit=>!hit.object.userData.selectionOutline);
- choose(raycastKeys.resolve(hits));
+ const key=raycastKeys.resolve(hits),hit=hits.find(item=>raycastKeys.resolve([item])===key);
+ const block=sandbox.getState().world.blocks.find(item=>item.key===key);
+ if(key&&hit&&hit.face&&block){
+  const normal=hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
+  const values=[normal.x,normal.y,normal.z],axis=values.map(Math.abs).indexOf(Math.max(...values));
+  const step=[0,0,0];step[axis]=values[axis]>=0?1:-1;
+  lastPlacement={key,x:block.x,y:block.y,z:block.z,step};
+ }else lastPlacement=null;
+ choose(key);
 }
 function addBeside(){
  const base=selectedBlock();let x=base?base.x+1:0,y=base?base.y:0,z=base?base.z:0;
+ if(base&&lastPlacement&&lastPlacement.key===base.key){x=base.x+lastPlacement.step[0];y=base.y+lastPlacement.step[1];z=base.z+lastPlacement.step[2];}
  const state=sandbox.getState(),occupied=new Set(state.world.blocks.map(b=>b.x+','+b.y+','+b.z));
  let attempts=0;while(occupied.has(x+','+y+','+z)&&attempts++<100){x++;if(x>1000){x=0;z++;}}
  const type=document.getElementById('block-type').value,color=document.getElementById('color').value;
