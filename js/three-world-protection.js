@@ -248,8 +248,7 @@
   });
   const ids=new Set(animals.map(animal=>animal.id));
   for(const animal of Array.isArray(world.animals)?world.animals:[]){
-   if(!animal||typeof animal.id!=='string'||ids.has(animal.id)||
-      typeof animal.species!=='string'||!finite(animal.x)||!finite(animal.z))continue;
+   if(!animal||typeof animal.id!=='string'||ids.has(animal.id)||!finite(animal.x)||!finite(animal.z))continue;
    const {key,...saved}=animal;
    animals.push({...saved,emoji:ANIMAL_EMOJI[animal.species]||'🐾'});
    ids.add(animal.id);
