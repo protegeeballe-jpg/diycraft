@@ -53,6 +53,7 @@ function freshWorld(){
   const protectionContext=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getProtectionContext());
   assert.equal(protectionContext.neighbors.length,7,'Protection must include both individual neighbors and all five family members.');
   assert.ok(protectionContext.animals.some(a=>a.id==='protection-dog-1'),'Saved animals must contribute to live digging protection.');
+  assert.ok(protectionContext.animals.some(a=>a.id==='protection-dog-2'&&a.x===55.5&&a.z===60.5),'The second saved animal and its exact cell position must reach the protection context.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(-14,-8)),true,'Fixed neighbor home rectangles must be protected.');
   const liveNeighbor=protectionContext.neighbors[0],neighborCell={x:Math.floor(liveNeighbor.x),z:Math.floor(liveNeighbor.z)};
   assert.equal(await page.evaluate(c=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(c.x,c.z),neighborCell),true,'Current neighbor positions must be protected.');
@@ -72,6 +73,9 @@ function freshWorld(){
   await page.locator('#water-add').click();
   protectionState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.equal(protectionState.world.water.some(cell=>cell.x===45&&cell.z===50),false,'Water must not be added inside a protected animal area.');
+  const collectProtection=await page.evaluate(()=>({context:window.__DIYCRAFT_THREE_EDIT__.getProtectionContext(),protected:window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(55,60)}));
+  assert.equal(collectProtection.protected,true,'The saved animal must protect its own pool cell before the collect button runs.');
+  assert.ok(collectProtection.context.animals.some(a=>a.id==='protection-dog-2'&&a.x===55.5&&a.z===60.5));
   await page.locator('#water-x').fill('55');await page.locator('#water-z').fill('60');
   await page.locator('#water-collect').click();
   protectionState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
