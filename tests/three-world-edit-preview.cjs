@@ -77,6 +77,18 @@ function freshWorld(){
   assert.equal(worldState.world.blocks.some(b=>b.key===addedStone.key),false);
   assert.equal(worldState.world.bucket.length,1,'Removing a block must recover it into the sandbox Material Bucket.');
   assert.equal(worldState.world.bucket[0].type,'stone');
+  const recoveredStone={...worldState.world.bucket[0]};
+  await page.locator('#bucket-item').selectOption('0');
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.deepEqual(worldState.selectedBucketItem,recoveredStone,'Selecting a bucket slot must retain its recovered appearance data.');
+  assert.equal(await page.locator('#block-type').inputValue(),'stone','Selecting a recovered item must select its block type.');
+  await page.locator('#add').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  const reusedStone=worldState.world.blocks.at(-1);
+  assert.equal(reusedStone.type,'stone');
+  assert.equal(reusedStone.color,recoveredStone.color);
+  assert.equal(reusedStone.texture,recoveredStone.texture);
+  assert.equal(worldState.world.bucket.length,1,'Placing a recovered item must leave it available for reuse.');
   await page.locator('#block-type').selectOption('door');
   await page.locator('#add').click();
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
