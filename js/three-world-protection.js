@@ -242,14 +242,16 @@
    facing:Math.atan2(rate*Math.cos(timeSeconds*rate+phase)*rx,-rate*.82*Math.sin(timeSeconds*(rate*.82)+phase)*rz),
    moving:true,phase
   });
-  const animals=RESIDENTS.map(animal=>({
-   ...animal,...stroll(animal.x,animal.z,animal.phase,animal.rate,animal.rx,animal.rz),resident:true
-  }));
+  const animals=RESIDENTS.map(animal=>{
+   const {rate,rx,rz,...appearance}=animal;
+   return {...appearance,...stroll(animal.x,animal.z,animal.phase,rate,rx,rz)};
+  });
   const ids=new Set(animals.map(animal=>animal.id));
   for(const animal of Array.isArray(world.animals)?world.animals:[]){
    if(!animal||typeof animal.id!=='string'||ids.has(animal.id)||
       typeof animal.species!=='string'||!finite(animal.x)||!finite(animal.z))continue;
-   animals.push({...animal,emoji:ANIMAL_EMOJI[animal.species]||'🐾',resident:false});
+   const {key,...saved}=animal;
+   animals.push({...saved,emoji:ANIMAL_EMOJI[animal.species]||'🐾'});
    ids.add(animal.id);
   }
   return Object.freeze(animals.map(animal=>Object.freeze({
