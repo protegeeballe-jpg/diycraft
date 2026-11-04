@@ -180,7 +180,7 @@
   const leftLift=moving?Math.max(0,Math.cos(tick*pace+phase))*.045:0;
   const rightLift=moving?Math.max(0,-Math.cos(tick*pace+phase))*.045:0;
   const armSwing=-legSwing*.72;
-  root.position.set(finite(pose.x)+.5,finite(pose.y)+bob,finite(pose.z)+.5);
+  root.position.set(finite(pose.x),finite(pose.y)+bob,finite(pose.z));
   root.rotation.y=finite(pose.facing);
   root.visible=!pose.sleeping;
   const limbs=root.userData.limbs;
