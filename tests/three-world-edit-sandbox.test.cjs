@@ -42,6 +42,58 @@ test('changes only the isolated sandbox time mode and rejects invalid values ato
  assert.equal(JSON.stringify(source),before,'Time-mode changes must not mutate the original snapshot.');
  assert.equal(after.sourceUnchanged,true);
 });
+test('crafts all four original recipes and consumes material stacks exactly',()=>{
+ const world=fixture();
+ world.materials=[
+  {id:'wood',count:4,label:''},{id:'seed',count:1,label:''},{id:'stone',count:1,label:''},
+  {id:'bread',count:1,label:''},{id:'apple',count:1,label:''},
+  ...Array.from({length:55},()=>null)
+ ];
+ const before=JSON.stringify(world),edit=sandbox.create(world);
+ assert.deepEqual(sandbox.recipes.map(recipe=>recipe.id),['flowerpot','bench','picture','picnic']);
+ let state=edit.craftRecipe('flowerpot');
+ assert.deepEqual(state.world.materials.slice(0,2),[{id:'wood',count:3,label:''},null]);
+ assert.deepEqual(state.world.crafted[0],{id:'flowerpot',count:1,label:''});
+ state=edit.craftRecipe('bench');
+ assert.deepEqual(state.world.materials[0],{id:'wood',count:1,label:''});
+ assert.deepEqual(state.world.crafted[1],{id:'bench',count:1,label:''});
+ state=edit.craftRecipe('picture');
+ assert.equal(state.world.materials[0],null,'The picture frame consumes the final wood piece.');
+ assert.equal(state.world.materials[2],null);
+ assert.deepEqual(state.world.crafted[2],{id:'picture',count:1,label:''});
+ state=edit.craftRecipe('picnic');
+ assert.deepEqual(state.world.materials.slice(3,5),[null,null]);
+ assert.deepEqual(state.world.crafted[3],{id:'picnic',count:1,label:''});
+ assert.equal(state.sourceUnchanged,true);
+ assert.equal(JSON.stringify(world),before,'Crafting must mutate only the isolated sandbox clone.');
+});
+test('refuses insufficient materials or a full crafted pouch without partial consumption',()=>{
+ const short=fixture();short.materials=[{id:'wood',count:1,label:''},...Array.from({length:59},()=>null)];
+ const edit=sandbox.create(short),before=edit.getState();
+ assert.throws(()=>edit.craftRecipe('flowerpot'),/Collect the listed materials/);
+ assert.deepEqual(edit.getState().world.materials,before.world.materials);
+ assert.equal(edit.getState().revision,before.revision);
+ const full=fixture();
+ full.materials=[{id:'wood',count:2,label:''},...Array.from({length:59},()=>null)];
+ full.crafted=Array.from({length:60},(_,index)=>({id:'item-'+index,count:1,label:''}));
+ const fullEdit=sandbox.create(full),fullBefore=fullEdit.getState();
+ assert.throws(()=>fullEdit.craftRecipe('bench'),/crafted pouch is full/);
+ assert.deepEqual(fullEdit.getState().world.materials,fullBefore.world.materials);
+ assert.deepEqual(fullEdit.getState().world.crafted,fullBefore.world.crafted);
+ assert.equal(fullEdit.getState().revision,fullBefore.revision);
+ assert.throws(()=>fullEdit.craftRecipe('unknown'),/supported recipe/);
+});
+test('stacks crafted outputs to ninety-nine then uses a free slot',()=>{
+ const world=fixture();
+ world.materials=[{id:'wood',count:100,label:''},...Array.from({length:59},()=>null)];
+ world.crafted=[{id:'bench',count:98,label:''},...Array.from({length:59},()=>null)];
+ const edit=sandbox.create(world);
+ let state=edit.craftRecipe('bench');
+ assert.deepEqual(state.world.crafted[0],{id:'bench',count:99,label:''});
+ state=edit.craftRecipe('bench');
+ assert.deepEqual(state.world.crafted[0],{id:'bench',count:99,label:''});
+ assert.deepEqual(state.world.crafted[1],{id:'bench',count:1,label:''});
+});
 test('selects only existing block keys',()=>{
  const edit=sandbox.create(fixture());
  assert.equal(edit.select('block-1').selectedKey,'block-1');

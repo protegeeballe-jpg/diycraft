@@ -500,6 +500,8 @@ function renderSandbox(state){
   sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length,renderedMeshes:renderObjects,renderObjects,instanceBatches,
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps},
   waterCount,fishCount,renderedFishCount,animalCount,residentAnimalCount,totalAnimalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
+  getInventoryStats:()=>{const state=sandbox.getState();return {materials:(state.world.materials||[]).slice(0,60),crafted:(state.world.crafted||[]).slice(0,60),bucket:(state.world.bucket||[]).map(item=>({...item})),recipes:editing.recipes.map(recipe=>({id:recipe.id,name:recipe.name,cost:{...recipe.cost}}))};},
+  inventoryOpen:()=>!inventoryPanel.hidden,
   visualTimeMode:activeVisualMode,
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -728,6 +730,73 @@ function addBeside(){
  if(type==='door'){input.style=document.getElementById('door-style').value;input.orientation='ns';}
  renderSandbox(sandbox.addBlock(input));
 }
+const INVENTORY_META={
+ seed:{name:'Seeds',icon:'🌱'},apple:{name:'Apple',icon:'🍎'},bread:{name:'Bread',icon:'🍞'},milk:{name:'Milk',icon:'🥛'},
+ wood:{name:'Wood pieces',icon:'🪵'},stone:{name:'Stone',icon:'🪨'},grass:{name:'Grass',icon:'🟩'},dirt:{name:'Dirt',icon:'🟫'},
+ leaves:{name:'Leaves',icon:'🌳'},brick:{name:'Brick',icon:'🧱'},glass:{name:'Glass',icon:'🔹'},flower:{name:'Flower',icon:'🌸'},
+ tall_grass:{name:'Tall Grass',icon:'🌿'},sand:{name:'Sand',icon:'🟨'},snow:{name:'Snow',icon:'❄️'},tile:{name:'Decorative tile',icon:'🧩'},
+ custom:{name:'Custom block pieces',icon:'🎨'},paintbrush:{name:'Paintbrush',icon:'🖌️'},wateringcan:{name:'Watering can',icon:'🚿'},
+ flowerpot:{name:'Flower pot',icon:'🪴'},bench:{name:'Garden bench',icon:'🪑'},picture:{name:'Picture frame',icon:'🖼️'},picnic:{name:'Picnic basket',icon:'🧺'}
+};
+const BUCKET_META={water:{name:'Water',icon:'💧'},door:{name:'Door',icon:'🚪'},tile:{name:'Slab / Tile',icon:'▦'},custom:{name:'Custom solid',icon:'🎨'}};
+let inventoryTab='materials';
+const inventoryPanel=document.getElementById('inventory-panel');
+function openInventory(tab='materials'){inventoryTab=['materials','crafted','bucket','recipes'].includes(tab)?tab:'materials';renderInventoryPanel();inventoryPanel.hidden=false;}
+function closeInventory(){inventoryPanel.hidden=true;}
+function appendInventorySlot(root,item,index,isBucket){
+ const slot=isBucket?document.createElement('button'):document.createElement('div');
+ slot.className='inventory-slot'+(item?' item':'')+(isBucket?' bucket':'');
+ if(isBucket){slot.type='button';slot.title='Select this recovered item';}
+ if(item){
+  const meta=isBucket?(BUCKET_META[item.type]||INVENTORY_META[item.type]||{name:item.type,icon:'📦'}):(INVENTORY_META[item.id]||{name:item.id,icon:'📦'});
+  const icon=document.createElement('span');icon.className='inventory-icon';icon.textContent=meta.icon;
+  const name=document.createElement('small');name.textContent=item.label||meta.name;
+  const count=document.createElement('small');count.className='inventory-count';count.textContent=isBucket?(item.color?item.color.toUpperCase():'Recovered'):'×'+(item.count||1);
+  slot.append(icon,name,count);
+  if(isBucket)slot.addEventListener('click',()=>{
+   try{
+    const next=sandbox.selectBucketItem(index),selectedItem=next.selectedBucketItem;
+    const blockType=document.getElementById('block-type');
+    if(Array.from(blockType.options).some(option=>option.value===selectedItem.type))blockType.value=selectedItem.type;
+    renderSandbox(next);closeInventory();
+    status.textContent=meta.name+' selected from your Material Bucket. It stays available for reuse.';
+   }catch(error){document.getElementById('inventory-feedback').textContent=error.message;}
+  });
+ }else{const blank=document.createElement('small');blank.textContent=String(index+1);slot.append(blank);}
+ root.append(slot);
+}
+function renderInventoryPanel(){
+ const state=sandbox.getState(),slotsRoot=document.getElementById('inventory-slots'),recipesRoot=document.getElementById('inventory-recipes');
+ document.querySelectorAll('[data-inventory-tab]').forEach(button=>button.classList.toggle('active',button.dataset.inventoryTab===inventoryTab));
+ slotsRoot.replaceChildren();recipesRoot.replaceChildren();
+ const isRecipes=inventoryTab==='recipes';slotsRoot.hidden=isRecipes;recipesRoot.hidden=!isRecipes;
+ const bucket=Array.isArray(state.world.bucket)?state.world.bucket:[];
+ const resources=(state.world.materials||[]).slice(0,60),crafted=(state.world.crafted||[]).slice(0,60);
+ if(inventoryTab==='materials'||inventoryTab==='crafted'){
+  const arr=inventoryTab==='materials'?resources:crafted,occupied=arr.filter(Boolean).length,total=arr.reduce((sum,item)=>sum+(item?.count||0),0);
+  document.getElementById('inventory-summary').textContent=(inventoryTab==='materials'?'Resources':'Crafted items')+' · '+occupied+' occupied slots · '+total+' items in this pouch';
+  for(let index=0;index<60;index++)appendInventorySlot(slotsRoot,arr[index],index,false);
+ }else if(inventoryTab==='bucket'){
+  document.getElementById('inventory-summary').textContent='Material Bucket · '+bucket.length+' / 120 recovered items. Choose an item to reuse it; it stays in the bucket.';
+  for(let index=0;index<bucket.length;index++)appendInventorySlot(slotsRoot,bucket[index],index,true);
+  if(!bucket.length){const empty=document.createElement('p');empty.className='inventory-help';empty.textContent='Your Material Bucket is empty. Remove a block or dig soil to recover it here.';slotsRoot.append(empty);}
+ }else{
+  document.getElementById('inventory-summary').textContent='Craft peaceful garden items with resources from your Materials pouch.';
+  editing.recipes.forEach(recipe=>{
+   const card=document.createElement('article');card.className='inventory-recipe';
+   const title=document.createElement('strong');title.textContent=recipe.icon+' '+recipe.name;
+   const description=document.createElement('p');description.textContent=recipe.desc+' Materials: '+Object.entries(recipe.cost).map(([id,count])=>(INVENTORY_META[id]?.name||id)+' ×'+count).join(', ');
+   const button=document.createElement('button');button.type='button';button.textContent='Craft '+recipe.name;button.addEventListener('click',()=>{
+    try{
+     const next=sandbox.craftRecipe(recipe.id);renderSandbox(next);renderInventoryPanel();
+     document.getElementById('inventory-feedback').textContent=recipe.name+' crafted.';
+    }catch(error){document.getElementById('inventory-feedback').textContent=error.message;}
+   });
+   card.append(title,description,button);recipesRoot.append(card);
+  });
+ }
+}
+
 document.getElementById('add').addEventListener('click',()=>{try{addBeside();}catch(e){status.textContent=e.message;}});
 document.getElementById('time-mode').addEventListener('change',event=>{
  try{
@@ -741,6 +810,15 @@ document.getElementById('time-mode').addEventListener('change',event=>{
   status.textContent=error.message;
  }
 });
+
+document.getElementById('inventory-open').addEventListener('click',()=>openInventory());
+document.getElementById('inventory-close').addEventListener('click',closeInventory);
+document.querySelectorAll('[data-inventory-tab]').forEach(button=>button.addEventListener('click',()=>{
+ inventoryTab=button.dataset.inventoryTab;document.getElementById('inventory-feedback').textContent='';renderInventoryPanel();
+}));
+inventoryPanel.addEventListener('pointerdown',event=>{if(event.target===inventoryPanel)closeInventory();});
+window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!inventoryPanel.hidden)closeInventory();});
+
 document.getElementById('bucket-item').addEventListener('change',event=>{
  try{
   const value=event.target.value;

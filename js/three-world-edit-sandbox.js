@@ -15,6 +15,12 @@
  const BASE_COLORS={grass:'#70b85a',dirt:'#9a7049',stone:'#9ca6a1',wood:'#a97545',leaves:'#4e9a59',brick:'#c87862',glass:'#a5dce3',flower:'#e9a4c1',sand:'#e8d38b',snow:'#f2f8fa'};
  const TEXTURES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom']);
  const PATTERNS=new Set(['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral']);
+ const CRAFT_RECIPES=Object.freeze([
+  Object.freeze({id:'flowerpot',name:'Flower pot',desc:'A little pot for a bright flower.',icon:'🪴',cost:Object.freeze({wood:1,seed:1})}),
+  Object.freeze({id:'bench',name:'Garden bench',desc:'A comfortable place to sit.',icon:'🪑',cost:Object.freeze({wood:2})}),
+  Object.freeze({id:'picture',name:'Picture frame',desc:'Keep a favorite drawing.',icon:'🖼️',cost:Object.freeze({wood:1,stone:1})}),
+  Object.freeze({id:'picnic',name:'Picnic basket',desc:'A peaceful picnic treat.',icon:'🧺',cost:Object.freeze({bread:1,apple:1})})
+ ]);
  function object(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
  function coord(value){return Number.isInteger(value)&&Math.abs(value)<=MAX_COORD;}
  function clone(value){return JSON.parse(JSON.stringify(value));}
@@ -148,6 +154,29 @@
    const index=slots.findIndex(item=>!item);
    if(index<0)return false;
    slots[index]={id,count:1,label};return true;
+  }
+  function craftRecipe(recipeId){
+   const recipe=CRAFT_RECIPES.find(item=>item.id===recipeId);
+   if(!recipe)throw new TypeError('Choose a supported recipe.');
+   const available=id=>(world.materials||[]).reduce((sum,item)=>sum+(item&&item.id===id?Math.max(0,Number(item.count)||0):0),0);
+   if(!Object.entries(recipe.cost).every(([id,count])=>available(id)>=count))
+    throw new Error('Collect the listed materials first.');
+   if(!canStoreItem(recipe.id,'crafted'))
+    throw new Error('Your crafted pouch is full.');
+   for(const [id,cost] of Object.entries(recipe.cost)){
+    let remaining=cost;
+    for(let index=0;index<world.materials.length&&remaining>0;index++){
+     const item=world.materials[index];
+     if(!item||item.id!==id)continue;
+     const take=Math.min(remaining,item.count);
+     item.count-=take;remaining-=take;
+     if(item.count===0)world.materials[index]=null;
+    }
+    if(remaining>0)throw new Error('Materials changed while crafting. Please try again.');
+   }
+   if(!addItem(recipe.id,'crafted'))throw new Error('Your crafted pouch is full.');
+   revision++;
+   return state();
   }
   function animalStates(timeSeconds){
    if(!protectionApi||typeof protectionApi.animalStates!=='function')return [];
@@ -366,7 +395,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,animalStates,careForAnimal,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
  }
- return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
+ return Object.freeze({create,recipes:CRAFT_RECIPES,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });

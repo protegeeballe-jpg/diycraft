@@ -53,6 +53,29 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .neighbor-color-tools button,.neighbor-color-actions button{padding:8px 10px}
 .neighbor-color-actions{justify-content:space-between;margin-top:8px}
 .neighbor-color-help{font-size:11px;line-height:1.45;color:#718075;margin:9px 0 0}
+/* Isolated 60-slot pouches and crafting panel */
+#inventory-panel[hidden]{display:none!important}
+.inventory-shade{position:fixed;z-index:24;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.56);backdrop-filter:blur(4px)}
+.inventory-panel{width:min(680px,100%);max-height:94vh;overflow:auto;padding:14px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:16px;box-shadow:0 16px 50px #263c3250}
+.inventory-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.inventory-head h2{font:700 18px Georgia,serif;margin:0;color:#405a46}
+.inventory-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px}
+.inventory-tabs button{font-size:11px;padding:7px 9px}
+.inventory-tabs button.active{background:#e4eddf;border-color:#8aaa79}
+.inventory-summary,.inventory-feedback,.inventory-help{font-size:11px;line-height:1.45;color:#718075;margin:7px 0}
+.inventory-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:10px 0}
+.inventory-slot{min-width:0;min-height:67px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#f5f1e7;border:1px solid #e1dccf;border-radius:9px;text-align:center}
+.inventory-slot.item{background:#fffdf8;border-color:#cbd6c1}
+.inventory-slot.bucket{cursor:pointer}
+.inventory-slot small{max-width:100%;overflow-wrap:anywhere;font-size:9px;line-height:1.2;color:#617261}
+.inventory-slot .inventory-icon{font-size:19px;line-height:1.1}
+.inventory-slot .inventory-count{font-size:9px;font-weight:700;color:#405a46}
+.inventory-recipes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.inventory-recipe{padding:10px;background:#f5f1e7;border:1px solid #d9dfd2;border-radius:11px}
+.inventory-recipe strong{display:block;font-size:12px}
+.inventory-recipe p{font-size:11px;line-height:1.4;color:#718075;margin:5px 0 8px}
+.inventory-recipe button{width:100%;font-weight:700}
+@media(max-width:420px){.inventory-panel{padding:10px}.inventory-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.inventory-slot{min-height:62px}.inventory-tabs{gap:4px}.inventory-tabs button{padding:6px;font-size:10px}.inventory-recipes{grid-template-columns:1fr}}
 /* Gentle animal-care interaction */
 #animal-care[hidden],#animal-care-flash[hidden]{display:none!important}
 .animal-care-shade{position:fixed;z-index:22;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
@@ -90,6 +113,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <label for="time-mode">Time <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>
 <select id="block-type" aria-label="Block type"><option value="water">Water</option><option value="grass">Grass</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select>
 <input id="color" type="color" value="#70b85a" aria-label="Custom block color">
+<button id="inventory-open" type="button">Pouches &amp; Crafting</button>
 <button id="add">Place on face</button><button id="remove" disabled>Remove</button>
 <button id="door" disabled>Open / close door</button>
 <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select>
@@ -132,6 +156,22 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
    <div class="neighbor-color-actions"><button id="neighbor-color-reset" type="button">Start this picture again</button><button id="neighbor-color-save" class="primary" type="button">Save our picture</button></div>
    <p class="neighbor-color-help">Tap inside a closed shape to fill it, or choose Brush to color by hand. The neighbor adds a few colors to your shared picture. This activity is saved only in the sandbox copy.</p>
   </div>
+ </div>
+</section>
+<section id="inventory-panel" class="inventory-shade" hidden aria-label="Pouches and crafting">
+ <div class="inventory-panel" role="dialog" aria-modal="true" aria-labelledby="inventory-title">
+  <div class="inventory-head"><h2 id="inventory-title">Your Pouches</h2><button id="inventory-close" type="button">Close ✕</button></div>
+  <div class="inventory-tabs" role="tablist" aria-label="Inventory tabs">
+   <button type="button" data-inventory-tab="materials" class="active">Resources · 60</button>
+   <button type="button" data-inventory-tab="crafted">Crafted · 60</button>
+   <button type="button" data-inventory-tab="bucket">Material Bucket</button>
+   <button type="button" data-inventory-tab="recipes">Crafting</button>
+  </div>
+  <p id="inventory-summary" class="inventory-summary">Your resources and crafted items stay in this sandbox copy.</p>
+  <div id="inventory-slots" class="inventory-grid" aria-live="polite"></div>
+  <div id="inventory-recipes" class="inventory-recipes" hidden></div>
+  <p id="inventory-feedback" class="inventory-feedback" aria-live="polite"></p>
+  <p class="inventory-help">This experimental panel edits only the isolated preview copy. No local saves or live-game inventory are changed.</p>
  </div>
 </section>
 <section id="animal-care" class="animal-care-shade" hidden aria-label="Gentle animal care">

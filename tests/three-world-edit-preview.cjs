@@ -24,6 +24,7 @@ function freshWorld(){
   {id:'protection-dog-2',species:'dog',name:'Guard Buddy Two',x:55.5,z:60.5,facing:0,phase:.4,body:'#c89b6d',accent:'#d0b6a0'}
  ];
  world.animalCare={...world.animalCare,sheep:4,'pet-cat-1':999};
+ world.materials=[{id:'wood',count:4,label:''},{id:'seed',count:1,label:''},{id:'stone',count:1,label:''},{id:'bread',count:1,label:''},{id:'apple',count:1,label:''},...Array.from({length:55},()=>null)];
  const before=JSON.stringify(world),snapshot=adapter.createSnapshot(world);
  assert.equal(snapshot.counts.blocks,world.blocks.length);
  await fs.promises.mkdir('preview-three',{recursive:true});
@@ -39,6 +40,36 @@ function freshWorld(){
   await page.goto('http://127.0.0.1:4176/three-world-edit-preview.html',{waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>5,null,{timeout:30000});
   // Time-of-day selector and painterly sky preserve the original world palette.
+  // Original pouches and recipe costs, kept inside the isolated sandbox.
+  await page.locator('#inventory-open').click();
+  assert.equal(await page.locator('#inventory-panel').isVisible(),true);
+  assert.equal(await page.locator('[data-inventory-tab="materials"]').innerText(),'Resources · 60');
+  assert.equal(await page.locator('#inventory-slots .inventory-slot').count(),60);
+  let inventoryStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getInventoryStats());
+  assert.equal(inventoryStats.materials[0].id,'wood');
+  await page.locator('[data-inventory-tab="recipes"]').click();
+  assert.equal(await page.locator('#inventory-recipes .inventory-recipe').count(),4);
+  await page.locator('#inventory-recipes button').filter({hasText:'Craft Flower pot'}).click();
+  inventoryStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getInventoryStats());
+  assert.deepEqual(inventoryStats.materials.slice(0,2),[{id:'wood',count:3,label:''},null]);
+  assert.deepEqual(inventoryStats.crafted[0],{id:'flowerpot',count:1,label:''});
+  await page.locator('#inventory-recipes button').filter({hasText:'Craft Garden bench'}).click();
+  inventoryStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getInventoryStats());
+  assert.deepEqual(inventoryStats.materials[0],{id:'wood',count:1,label:''});
+  assert.deepEqual(inventoryStats.crafted[1],{id:'bench',count:1,label:''});
+  await page.locator('#inventory-recipes button').filter({hasText:'Craft Picture frame'}).click();
+  await page.locator('#inventory-recipes button').filter({hasText:'Craft Picnic basket'}).click();
+  inventoryStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getInventoryStats());
+  assert.deepEqual(inventoryStats.crafted.slice(0,4).map(item=>item.id),['flowerpot','bench','picture','picnic']);
+  assert.equal(inventoryStats.materials.slice(0,5).filter(Boolean).length,0);
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.sourceUnchanged),true);
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.storageKeys),0);
+  await page.locator('[data-inventory-tab="crafted"]').click();
+  assert.equal(await page.locator('#inventory-slots .inventory-slot').count(),60);
+  await page.locator('[data-inventory-tab="bucket"]').click();
+  assert.equal(await page.locator('#inventory-slots .inventory-slot').count(),0,'The empty bucket does not invent recovered items.');
+  await page.locator('#inventory-close').click();
+
   const initialTimeMode=await page.locator('#time-mode').inputValue();
   assert.ok(['day','sunset','night','auto'].includes(initialTimeMode),'The preview must expose the saved world time mode.');
   await page.locator('#time-mode').selectOption('day');
@@ -120,7 +151,7 @@ function freshWorld(){
   careStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats());
   assert.equal(careStats.count,6);
   assert.match(await page.locator('#animal-care-feedback').innerText(),/Pip the sheep has had a lovely drink/);
-  await page.waitForFunction(()=>!document.getElementById('animal-care-flash').hidden,null,{timeout:1200});
+  await page.waitForFunction(()=>{const el=document.getElementById('animal-care-flash');return !el.hidden&&el.textContent==='💧';},null,{timeout:1200});
   assert.equal(await page.locator('#animal-care-flash').innerText(),'💧',
    'The original 1.9-second care emoji must appear at the original species-specific head height.');
   await page.locator('#animal-care-close').click();
