@@ -13,13 +13,15 @@ function freshWorld(){
  return new Function('emptySlots','return ('+source.slice(start,end+2)+');')(()=>Array.from({length:60},()=>null))();
 }
 (async()=>{
- const world=freshWorld();world.excavations.push([100,100,2]);
+ const world=freshWorld();world.excavations.push([100,100,2],[45,50,1],[55,60,1]);world.waterCells.push([55,60]);
  world.animals=[
   {id:'pet-cat-1',species:'cat',name:'Mittens',x:1.5,z:1.5,facing:.2,phase:.4,body:'#c5c0b6',accent:'#d0b6a0'},
   {id:'pet-cat-2',species:'cat',name:'Buttons',x:2.5,z:1.5,facing:-.4,phase:1.3,body:'#c5c0b6',accent:'#d0b6a0'},
   {id:'pet-dog-1',species:'dog',name:'Buddy',x:3.5,z:1.5,facing:1.1,phase:2.1,body:'#c89b6d',accent:'#d0b6a0'},
   {id:'pet-bird-1',species:'bird',name:'Sunny',x:4.5,z:1.5,facing:0,phase:.9,body:'#e8c96d',accent:'#d0b6a0'},
-  {id:'pet-giraffe-1',species:'giraffe',name:'Tallulah',x:5.5,z:1.5,facing:-.8,phase:1.7,body:'#d9ad55',accent:'#9a643d'}
+  {id:'pet-giraffe-1',species:'giraffe',name:'Tallulah',x:5.5,z:1.5,facing:-.8,phase:1.7,body:'#d9ad55',accent:'#9a643d'},
+  {id:'protection-dog-1',species:'dog',name:'Guard Buddy',x:45.5,z:50.5,facing:0,phase:.2,body:'#c89b6d',accent:'#d0b6a0'},
+  {id:'protection-dog-2',species:'dog',name:'Guard Buddy Two',x:55.5,z:60.5,facing:0,phase:.4,body:'#c89b6d',accent:'#d0b6a0'}
  ];
  const before=JSON.stringify(world),snapshot=adapter.createSnapshot(world);
  assert.equal(snapshot.counts.blocks,world.blocks.length);
@@ -39,14 +41,45 @@ function freshWorld(){
   assert.equal(state.blockCount,world.blocks.length);
   assert.equal(state.sourceUnchanged,true);
   assert.equal(state.storageKeys,0);
-  assert.equal(state.animalCount,5,'The adapter and renderer must retain every valid saved animal.');
-  assert.equal(state.renderedAnimalCount,5,'All test animals fit within the low-end visible-animal cap.');
+  assert.equal(state.animalCount,7,'The adapter and renderer must retain every valid saved animal.');
+  assert.equal(state.renderedAnimalCount,7,'All test animals fit within the low-end visible-animal cap.');
   assert.equal(state.animalBatchCount,4,'Animals with identical species and colours should share one instanced mesh batch.');
   let animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
-  assert.equal(animalStats.animals.length,5);
-  assert.equal(animalStats.rendered,5);
+  assert.equal(animalStats.animals.length,7);
+  assert.equal(animalStats.rendered,7);
   assert.equal(animalStats.batches,4);
   const initialAnimalY=animalStats.firstY;
+  const protectionContext=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getProtectionContext());
+  assert.equal(protectionContext.neighbors.length,7,'Protection must include both individual neighbors and all five family members.');
+  assert.ok(protectionContext.animals.some(a=>a.id==='protection-dog-1'),'Saved animals must contribute to live digging protection.');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(-14,-8)),true,'Fixed neighbor home rectangles must be protected.');
+  const liveNeighbor=protectionContext.neighbors[0],neighborCell={x:Math.floor(liveNeighbor.x),z:Math.floor(liveNeighbor.z)};
+  assert.equal(await page.evaluate(c=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(c.x,c.z),neighborCell),true,'Current neighbor positions must be protected.');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(45,50)),true,'A saved animal within 0.7 blocks must be protected.');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.isProtectedDigCell(100,100)),false,'An unrelated remote cell remains editable.');
+  const protectedRevision=state.revision;
+  await page.locator('#water-x').fill('-14');await page.locator('#water-z').fill('-8');
+  await page.locator('#dig-ground').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.revision,protectedRevision,'Digging inside a neighbor home must not change the world.');
+  assert.match(await page.locator('#status').innerText(),/protected/i);
+  await page.locator('#water-x').fill(String(neighborCell.x));await page.locator('#water-z').fill(String(neighborCell.z));
+  await page.locator('#dig-ground').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.revision,protectedRevision,'Digging next to a moving neighbor must be refused.');
+  await page.locator('#water-x').fill('45');await page.locator('#water-z').fill('50');
+  await page.locator('#water-add').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.water.some(cell=>cell.x===45&&cell.z===50),false,'Water must not be added inside a protected animal area.');
+  await page.locator('#water-x').fill('55');await page.locator('#water-z').fill('60');
+  await page.locator('#water-collect').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.water.some(cell=>cell.x===55&&cell.z===60),true,'Water must not be collected inside a protected animal area.');
+  await page.locator('#block-type').selectOption('stone');
+  await page.locator('#fill-hole').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.water.some(cell=>cell.x===55&&cell.z===60),false,'The original unprotected hole-fill action must still clear its water.');
+
   await page.waitForTimeout(350);
   animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
   assert.ok(Math.abs(animalStats.firstY-initialAnimalY)>.0001,'Animals must retain their idle bobbing animation.');
