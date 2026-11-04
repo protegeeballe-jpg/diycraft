@@ -46,11 +46,11 @@
 - `js/three-world-raycast.js` resolves Three.js intersections to stable block keys for both instanced blocks and ordinary meshes/groups.
 - Regression tests cover valid/invalid placement, occupied cells, removal/reuse, exact custom colors, door orientation/style/swing, tile patterns, immutable state and nearest-hit selection.
 - CI runs the adapter, editing-sandbox and raycast tests independently.
-- `three-world-edit-preview.html` and `three-world-edit-preview.js` provide a separate interactive browser sandbox with real 3D raycast selection, adjacent block placement, removal, door open/close, and tile-pattern changes. It loads the CI-generated production starter-world fixture and uses the painterly material library.
+- `three-world-edit-preview.html` and `three-world-edit-preview.js` provide a separate interactive browser sandbox with real 3D raycast selection, face-normal block placement, removal, door open/close, and tile-pattern changes. Occupied face targets are rejected rather than silently shifted. It loads the CI-generated production starter-world fixture and uses the painterly material library.
 - Browser regression coverage in `tests/three-world-edit-preview.cjs` verifies real projected selection, add/remove, door operation, tile-pattern changes, unchanged source data, and zero browser-storage keys.
 - `tests/three-world-canvas-parity.test.cjs` extracts the actual production Canvas 2D `addBlock()` function and compares its resulting block records with the Three.js sandbox for custom blocks, tiles, doors, styled solids and flowers.
 - Cross-engine checks also cover two-cell door occupancy, excavation depth, the world-height ceiling and duplicate-cell rejection. The migration guard runs these alongside the adapter, sandbox and raycast suites.
-- Remaining before Stage 2 completion: verify face-adjacent placement from raycast face normals, removal/inventory behavior, and special-block interactions. Do not connect production controls or storage.
+- Remaining before Stage 2 completion: verify removal/inventory behavior and broader special-block interactions against Canvas 2D. Do not connect production controls or storage.
 
 ### Stage 3 — Player, physics and animation
 - Port camera modes, movement, collision, flying, jumping, swimming, water-level behavior, plant sway, water motion, animals and NPC navigation in isolated increments.
