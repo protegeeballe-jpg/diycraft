@@ -21,12 +21,12 @@
   return [(n>>16)&255,(n>>8)&255,n&255];
  }
  function mix(a,b,t){return Math.round(a+(b-a)*t);}
- function generateCanvas(hex,seed,kind){
-  const random=seeded(seed),size=256,base=rgb(hex),canvas=document.createElement('canvas');
+ function generateCanvas(hex,seed,kind,quality={}){
+  const random=seeded(seed),size=Math.max(64,Math.min(256,Math.round(quality.textureSize||256))),scale=size/256,pencilScale=Math.max(.4,Math.min(1,quality.pencilScale||1)),base=rgb(hex),canvas=document.createElement('canvas');
   canvas.width=canvas.height=size;
   const c=canvas.getContext('2d');
   c.fillStyle='rgb('+base.join(',')+')';c.fillRect(0,0,size,size);
-  const washCount=kind==='paper'?24:32;
+  const washCount=Math.max(8,Math.round((kind==='paper'?24:32)*scale));
   for(let i=0;i<washCount;i++){
    const x=random()*size,y=random()*size,rx=10+random()*34,ry=7+random()*27;
    const tint=i%3===0?[255,246,224]:i%3===1?base.map(v=>mix(v,255,.17)):base.map(v=>mix(v,0,.12));
@@ -62,7 +62,7 @@
   }
   // Visible colored-pencil hatching with varying stroke length, pressure and direction.
   c.lineCap='round';c.lineJoin='round';
-  const pencilCount=kind==='paper'?1050:840;
+  const pencilCount=Math.max(180,Math.round((kind==='paper'?1050:840)*pencilScale));
   for(let i=0;i<pencilCount;i++){
    const x=random()*size,y=random()*size,len=3+random()*(kind==='grass'?21:18);
    const angle=(random()-.5)*.9+(kind==='grass'?.28:0);
@@ -75,22 +75,22 @@
    c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+dx*.48,y+dy*.48+(random()-.5)*2,x+dx,y+dy);c.stroke();
   }
   // Fine paper tooth: sparse flecks and fibers.
-  for(let i=0;i<1250;i++){
+  for(let i=0;i<Math.max(250,Math.round(1250*pencilScale));i++){
    const x=random()*size,y=random()*size,v=random()>.48?255:48,a=.025+random()*.075;
    c.fillStyle='rgba('+v+','+v+','+v+','+a+')';c.fillRect(x,y,.45+random()*1.1,.35+random()*.8);
   }
   return canvas;
  }
- function create(THREE,renderer){
+ function create(THREE,renderer,quality={}){
   if(!THREE||!renderer)throw new TypeError('Three.js and a renderer are required.');
   const cache=new Map(),textures=new Set();
   function get(hex,kind='surface',options={}){
    const safe=/^#[0-9a-f]{6}$/i.test(hex||'')?hex:'#9ca6a1';
    const key=safe+'|'+kind+'|'+(options.glass?'glass':'solid');
    if(cache.has(key))return cache.get(key);
-   const map=new THREE.CanvasTexture(generateCanvas(safe,hash(key),kind));
+   const map=new THREE.CanvasTexture(generateCanvas(safe,hash(key),kind,quality));
    map.wrapS=map.wrapT=THREE.RepeatWrapping;
-   map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+   map.anisotropy=Math.min(quality.maxAnisotropy||8,renderer.capabilities.getMaxAnisotropy());
    map.encoding=THREE.sRGBEncoding;
    textures.add(map);
    const material=new THREE.MeshStandardMaterial({
