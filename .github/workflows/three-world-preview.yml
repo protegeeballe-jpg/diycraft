@@ -27,6 +27,8 @@ on:
       - three-world-edit-preview.html
       - three-world-edit-preview.js
       - tests/three-world-edit-preview.cjs
+      - js/three-neighbor-coloring.js
+      - tests/three-neighbor-coloring.test.cjs
       - tests/three-world-performance.cjs
       - tests/three-player-physics.test.cjs
       - tests/three-player-camera.test.cjs
