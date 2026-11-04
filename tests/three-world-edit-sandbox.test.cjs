@@ -172,6 +172,37 @@ test('player capsule collision respects the excavated terrain floor and its radi
  assert.equal(edit.playerCollisionAt(80.23,80.5,-.5),false,'Exact-radius tangency at the far excavation edge does not overlap adjacent terrain.');
  assert.equal(edit.playerCollisionAt(80.22,80.5,-.5),true,'The player capsule cannot clip through the vertical edge of the excavation.');
 });
+test('Material Bucket items can be selected, reused with exact appearance and retained until explicitly cleared',()=>{
+ const world=fixture();
+ world.bucket=[
+  {type:'wood',color:'#123456',texture:'brick'},
+  {type:'tile',color:'#ab4567',tilePattern:'spiral'},
+  {type:'door',color:'#56789a',style:'garden',orientation:'ew',swing:-1}
+ ];
+ const edit=sandbox.create(world),before=JSON.stringify(world.bucket);
+ assert.throws(()=>edit.selectBucketItem(-1),/no longer available/);
+ assert.throws(()=>edit.selectBucketItem(99),/no longer available/);
+ const chosen=edit.selectBucketItem(0);
+ assert.deepEqual(chosen.selectedBucketItem,world.bucket[0]);
+ const wood=edit.addBlock({type:'wood',x:30,y:0,z:30});
+ assert.equal(wood.world.blocks.at(-1).color,'#123456');
+ assert.equal(wood.world.blocks.at(-1).texture,'brick');
+ assert.equal(JSON.stringify(wood.world.bucket),before,'Using a recovered item must not consume its Material Bucket entry.');
+ const again=edit.addBlock({type:'wood',x:31,y:0,z:30});
+ assert.deepEqual(again.world.blocks.at(-1).color,wood.world.blocks.at(-1).color);
+ assert.deepEqual(again.world.blocks.at(-1).texture,wood.world.blocks.at(-1).texture);
+ const tileChoice=edit.selectBucketItem(1);
+ const tile=edit.addBlock({type:'tile',x:32,y:0,z:30}).world.blocks.at(-1);
+ assert.deepEqual(tileChoice.selectedBucketItem,world.bucket[1]);
+ assert.equal(tile.color,'#ab4567');assert.equal(tile.tilePattern,'spiral');
+ edit.selectBucketItem(2);
+ const door=edit.addBlock({type:'door',x:33,y:0,z:30}).world.blocks.at(-1);
+ assert.equal(door.color,'#56789a');assert.equal(door.style,'garden');
+ assert.equal(door.orientation,'ew');assert.equal(door.swing,-1);assert.equal(door.open,false);
+ assert.equal(JSON.stringify(edit.getState().world.bucket),before);
+ const cleared=edit.clearBucketSelection();
+ assert.equal(cleared.selectedBucketItem,null);
+});
 test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
  const edit=sandbox.create(fixture());
  assert.throws(()=>edit.addFish(8,8),/Add water/);
