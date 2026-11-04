@@ -28,8 +28,9 @@
   nico:[{x:13.2,z:-7.7,pause:.7,activity:'🏃'},{x:13.6,z:-5.5,pause:.6,activity:'🐕'},{x:14.8,z:-3.9,pause:.9,activity:'⚽'},{x:13.7,z:-2.5,pause:.6,activity:'🌳'},{x:12.8,z:-4.7,pause:.8,activity:'🏃'}]
  });
  const SLEEP_SPOTS=Object.freeze({
-  hyacinth:{x:-10.85,z:-4.85},theo:{x:12.15,z:-14.85},
-  dad:{x:17,z:-7.9},mom:{x:19.1,z:-7.9},lia:{x:17,z:-6.2},maya:{x:19.1,z:-6.2},nico:{x:18.1,z:-8.35}
+  hyacinth:{x:-10.85,z:-4.85,facing:Math.PI/2},theo:{x:12.15,z:-14.85,facing:Math.PI/2},
+  dad:{x:17,z:-7.9,facing:Math.PI/2},mom:{x:19.1,z:-7.9,facing:Math.PI/2},
+  lia:{x:17,z:-6.2,facing:Math.PI/2},maya:{x:19.1,z:-6.2,facing:Math.PI/2},nico:{x:18.1,z:-8.35,facing:Math.PI/2}
  });
  const FAMILY=Object.freeze([
   {id:'dad',name:'Miguel',route:FAMILY_ROUTES.dad,speed:1.12,pace:7.2,phase:1.5,scale:1.10,shirt:'#477b9a',hair:'#392b24',skin:'#c9916d',pants:'#40516c',shoes:'#493b35',eyes:'#302820',hairStyle:'short',outfitStyle:'tee',accessory:'none',homeX:16,homeZ:-9},
