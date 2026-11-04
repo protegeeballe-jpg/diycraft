@@ -148,7 +148,7 @@ test('preserves bounded animal-care counters for default and saved animals',()=>
  assert.deepEqual(snapshot.animalCare,{
   sheep:7,cat_mochi:4,dog_buddy:0,cow_bessie:999,
   horse_spirit:0,bird_chirpy:0,giraffe_raffy:0,
-  saved-pet_1:9
+  'saved-pet_1':9
  });
  assert.ok(Object.isFrozen(snapshot.animalCare));
 });
