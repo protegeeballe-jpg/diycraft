@@ -781,46 +781,71 @@ function painterlySeed(value){
 function drawPainterlySurfaceFinish(c,seed=0,strength=1){
  let state=(seed>>>0)||1;
  const next=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
- const intensity=Math.max(.65,Math.min(1.25,Number(strength)||1));
- c.save();
- c.globalCompositeOperation='source-over';
- c.globalAlpha=intensity;
- // Broader, overlapping watercolor blooms leave recognizable pigment variation
- // while keeping the selected base hue and the original 3D shading intact.
+ const intensity=Math.max(.65,Math.min(1.15,Number(strength)||1));
+ c.save();c.globalCompositeOperation='source-over';c.globalAlpha=intensity;
+ // Gentle, soft-edged pigment pools let the selected color remain the dominant hue.
  const washes=[
-  ['rgba(255,242,210,.34)','rgba(255,242,210,0)'],
-  ['rgba(116,173,170,.25)','rgba(116,173,170,0)'],
-  ['rgba(225,145,157,.23)','rgba(225,145,157,0)'],
-  ['rgba(174,151,205,.22)','rgba(174,151,205,0)'],
-  ['rgba(235,205,143,.20)','rgba(235,205,143,0)']
+  'rgba(255,244,218,.24)','rgba(126,174,166,.18)',
+  'rgba(223,151,160,.17)','rgba(177,157,204,.16)',
+  'rgba(229,199,137,.15)'
  ];
  for(let i=0;i<7;i++){
-  const x=next()*96,y=next()*96,rx=13+next()*22,ry=9+next()*17,angle=next()*Math.PI;
-  const colors=washes[i%washes.length],wash=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.12);
-  wash.addColorStop(0,colors[0]);wash.addColorStop(.58,colors[0]);wash.addColorStop(1,colors[1]);
+  const x=next()*96,y=next()*96,rx=8+next()*13,ry=5+next()*9,angle=next()*Math.PI;
+  const wash=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.2);
+  wash.addColorStop(0,washes[i%washes.length]);wash.addColorStop(.62,washes[i%washes.length]);wash.addColorStop(1,'rgba(255,255,255,0)');
   c.fillStyle=wash;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,Math.PI*2);c.fill();
-  c.strokeStyle='rgba(104,91,78,.17)';c.lineWidth=1.05;
-  c.beginPath();c.ellipse(x+rx*.05,y-ry*.04,rx*.82,ry*.78,angle,0,Math.PI*2);c.stroke();
  }
- // Visible but fine colored-pencil marks: layered short strokes and cross-hatching.
+ // Colored-pencil grain: short directional strokes, not a repeating outline motif.
  c.lineCap='round';c.lineJoin='round';
- for(let i=0;i<44;i++){
-  const x=next()*108-6,y=next()*108-6,len=6+next()*14,drift=(next()-.5)*5;
-  c.strokeStyle=i%4===0?'rgba(255,250,235,.48)':'rgba(48,62,54,.24)';
-  c.lineWidth=1.6+next()*1.1;
-  c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+len*.48,y+drift-1,x+len,y+drift);c.stroke();
+ for(let i=0;i<38;i++){
+  const x=next()*104-4,y=next()*104-4,len=5+next()*10,drift=(next()-.5)*3;
+  c.strokeStyle=i%5===0?'rgba(255,250,235,.42)':'rgba(48,62,54,.23)';
+  c.lineWidth=2.0+next()*.95;
+  c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+len*.48,y+drift,x+len,y+drift);c.stroke();
  }
- for(let i=0;i<20;i++){
-  const x=next()*108-6,y=next()*108-6,len=4+next()*8,drift=(next()-.5)*3;
-  c.strokeStyle=i%3===0?'rgba(255,247,225,.40)':'rgba(65,78,67,.20)';
-  c.lineWidth=.9+next()*.7;
-  c.beginPath();c.moveTo(x,y);c.lineTo(x+drift+len*.35,y+len*.55);c.stroke();
+ for(let i=0;i<14;i++){
+  const x=next()*104-4,y=next()*104-4,len=3+next()*6;
+  c.strokeStyle=i%3===0?'rgba(255,247,225,.34)':'rgba(65,78,67,.17)';
+  c.lineWidth=1.1+next()*.65;
+  c.beginPath();c.moveTo(x,y);c.lineTo(x+len*.45,y+len*.7);c.stroke();
  }
- // Paper tooth is gently visible at normal play size, not just when zoomed in.
- for(let i=0;i<90;i++){
+ // Small paper flecks preserve a tactile finish without obscuring the base color.
+ for(let i=0;i<76;i++){
   const x=next()*96,y=next()*96;
-  c.fillStyle=i%3===0?'rgba(255,250,233,.34)':'rgba(63,69,60,.18)';
-  c.beginPath();c.arc(x,y,.28+next()*.48,0,Math.PI*2);c.fill();
+  c.fillStyle=i%3===0?'rgba(255,250,233,.30)':'rgba(63,69,60,.16)';
+  c.beginPath();c.arc(x,y,.24+next()*.38,0,Math.PI*2);c.fill();
+ }
+ c.restore();
+}
+function drawPainterlyPaperPattern(c,seed=0){
+ let state=(seed>>>0)||1;
+ const next=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+ const size=192;
+ c.save();c.globalCompositeOperation='source-over';
+ // Very light, cloud-soft watercolor blooms spread across the complete paper tile.
+ const pigments=[
+  'rgba(255,244,221,.085)','rgba(132,180,173,.070)',
+  'rgba(225,157,165,.065)','rgba(184,164,207,.060)'
+ ];
+ for(let i=0;i<12;i++){
+  const x=next()*size,y=next()*size,rx=10+next()*18,ry=7+next()*13,angle=next()*Math.PI;
+  const wash=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.35);
+  wash.addColorStop(0,pigments[i%pigments.length]);wash.addColorStop(.65,pigments[i%pigments.length]);wash.addColorStop(1,'rgba(255,255,255,0)');
+  c.fillStyle=wash;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,Math.PI*2);c.fill();
+ }
+ // Fine, irregular pencil strokes provide the paper's hand-worked character.
+ c.lineCap='round';
+ for(let i=0;i<145;i++){
+  const x=next()*size,y=next()*size,len=4+next()*12,dy=(next()-.5)*2.2;
+  c.strokeStyle=i%5===0?'rgba(255,250,236,.20)':'rgba(54,68,60,.115)';
+  c.lineWidth=.55+next()*.42;
+  c.beginPath();c.moveTo(x,y);c.lineTo(x+len,y+dy);c.stroke();
+ }
+ // Sparse paper tooth; small enough to stay gentle at the game's normal zoom.
+ for(let i=0;i<260;i++){
+  const x=next()*size,y=next()*size;
+  c.fillStyle=i%3===0?'rgba(255,250,236,.15)':'rgba(54,68,60,.075)';
+  c.beginPath();c.arc(x,y,.16+next()*.34,0,Math.PI*2);c.fill();
  }
  c.restore();
 }
@@ -829,15 +854,14 @@ const painterlyCanvasPattern=(()=>{
   const paper=document.createElement('canvas');paper.width=paper.height=192;
   const paperContext=paper.getContext('2d');
   if(!paperContext)return null;
-  paperContext.scale(2,2);drawPainterlySurfaceFinish(paperContext,painterlySeed('DIYCraft watercolor colored-pencil paper'),1.05);
+  drawPainterlyPaperPattern(paperContext,painterlySeed('DIYCraft watercolor colored-pencil paper'));
   return ctx.createPattern(paper,'repeat');
  }catch(error){return null;}
 })();
 function paintPainterlyCanvasOverlay(width,height){
  if(!painterlyCanvasPattern)return;
- ctx.save();ctx.globalAlpha=.66;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
+ ctx.save();ctx.globalAlpha=.72;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
 }
-
 const DEFAULT_FLOWER_PETAL_COLOR='#e9a4c1';
 function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
  c.clearRect(0,0,96,96);c.lineCap='round';c.lineJoin='round';
