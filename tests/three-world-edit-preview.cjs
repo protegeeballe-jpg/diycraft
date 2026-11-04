@@ -37,7 +37,8 @@ function freshWorld(){
    await page.evaluate(k=>window.__DIYCRAFT_THREE_EDIT__.pickBlock(k),key);
    await page.waitForTimeout(30);
    state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
-   if(state.selectedKey){selected=true;break;}
+   const canPlace=await page.evaluate(()=>{const d=window.__DIYCRAFT_THREE_EDIT__,s=d.getState(),b=s.world.blocks.find(v=>v.key===s.selectedKey),p=d.lastPlacement;if(!b||!p)return false;const x=b.x+p.step[0],y=b.y+p.step[1],z=b.z+p.step[2];return !s.world.blocks.some(v=>v.x===x&&v.y===y&&v.z===z);});
+   if(state.selectedKey&&canPlace){selected=true;break;}
   }
   assert.ok(selected,'A real projected block click should select a scene object.');
   const selectedBefore=state.selectedKey;
