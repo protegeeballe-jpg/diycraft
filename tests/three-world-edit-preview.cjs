@@ -13,7 +13,7 @@ function freshWorld(){
  return new Function('emptySlots','return ('+source.slice(start,end+2)+');')(()=>Array.from({length:60},()=>null))();
 }
 (async()=>{
- const world=freshWorld();world.excavations.push([100,100,2],[45,50,1],[55,60,1]);world.waterCells.push([55,60]);
+ const world=freshWorld();world.excavations.push([100,100,2],[45,50,1],[55,60,1]);world.waterLevels.push([55,60,1]);
  world.animals=[
   {id:'pet-cat-1',species:'cat',name:'Mittens',x:1.5,z:1.5,facing:.2,phase:.4,body:'#c5c0b6',accent:'#d0b6a0'},
   {id:'pet-cat-2',species:'cat',name:'Buttons',x:2.5,z:1.5,facing:-.4,phase:1.3,body:'#c5c0b6',accent:'#d0b6a0'},
