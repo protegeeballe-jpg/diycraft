@@ -188,7 +188,7 @@
  function normalizeArtworks(source){
   const out=[];
   if(!Array.isArray(source))return out;
-  const validData=/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
+  const validData=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
   for(const item of source.slice(0,MAX_ARTWORKS)){
    if(!isObject(item)||typeof item.data!=='string'||item.data.length>=MAX_ARTWORK_DATA||!validData.test(item.data))continue;
    out.push({name:String(item.name||'Artwork').slice(0,28),data:item.data});
