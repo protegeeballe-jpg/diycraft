@@ -353,6 +353,15 @@ function waterCellInput(){
 document.getElementById('water-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
 document.getElementById('water-collect').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.collectWaterLayer(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
 document.getElementById('fish-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addFish(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
+document.getElementById('fill-hole').addEventListener('click',()=>{
+ try{
+  const cell=waterCellInput(),type=document.getElementById('block-type').value,input={type};
+  if(type==='custom'){input.color=document.getElementById('color').value;input.texture='custom';}
+  if(type==='tile')input.tilePattern=document.getElementById('pattern').value;
+  if(type==='door')input.style=document.getElementById('door-style').value;
+  renderSandbox(sandbox.fillExcavation(cell.x,cell.z,input));
+ }catch(error){status.textContent=error.message;}
+});
 let pointerDown=null;
 canvas.addEventListener('pointerdown',event=>{pointerDown={x:event.clientX,y:event.clientY,id:event.pointerId,moved:false};canvas.setPointerCapture(event.pointerId);});
 canvas.addEventListener('pointermove',event=>{
