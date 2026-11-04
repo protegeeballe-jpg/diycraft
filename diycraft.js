@@ -228,7 +228,7 @@ function validWorld(d){
    return saved;
   });
  }
- if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(a.data)&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
+ if(Array.isArray(d.artworks))w.artworks=d.artworks.slice(0,20).filter(a=>a&&typeof a.data==='string'&&/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(a.data)&&a.data.length<550000).map(a=>({name:String(a.name||'Artwork').slice(0,28),data:a.data}));
  if(d.animalCare&&typeof d.animalCare==='object'){for(const [id,count] of Object.entries(d.animalCare).slice(0,200)){if(/^[a-zA-Z0-9_-]{1,40}$/.test(id))w.animalCare[id]=Math.max(0,Math.min(999,Number(count)||0));}}
  return w;
 }
