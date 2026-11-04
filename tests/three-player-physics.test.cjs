@@ -56,22 +56,22 @@ function runProductionMove(state,controls,environment,dt){
  const run=new Function(
   'world','isStationaryRestActivity','playerActivity','moveX','moveZ','vertical','keys','flying',
   'WORLD_LIMIT','MAX_DIG_DEPTH','nudgePlayerOutOfBlocks','groundDepthAt','PLAYER_GRAVITY',
-  'playerCollisionAt','playerGrounded','jumpVelocity','surfaceHeightAt','save','dt',
+  'playerCollisionAt','playerGrounded','jumpVelocity','surfaceHeightAt','save','saved','dt',
   productionMoveSource+
   '\nmove(dt); return {player:world.player, jumpVelocity, playerGrounded, flying, playerActivity, controls:{moveX,moveZ,vertical,keys},saveRequested:saved};'
  );
  return run(world,isStationaryRestActivity,playerActivity,moveX,moveZ,vertical,keys,flying,
   1000000000,1000000000,nudgePlayerOutOfBlocks,groundDepthAt,14.5,playerCollisionAt,
-  playerGrounded,jumpVelocity,surfaceHeightAt,save,dt);
+  playerGrounded,jumpVelocity,surfaceHeightAt,save,false,dt);
 }
 function runProductionJump(state){
  let playerActivity=state.playerActivity||'',flying=!!state.flying;
  let playerGrounded=!!state.playerGrounded,jumpVelocity=Number.isFinite(state.jumpVelocity)?state.jumpVelocity:0;
  const isStationaryRestActivity=activity=>activity==='sleep'||activity==='bed';
  const showStatus=()=>{};
- const run=new Function('isStationaryRestActivity','playerActivity','flying','playerGrounded','jumpVelocity','showStatus',
+ const run=new Function('isStationaryRestActivity','playerActivity','flying','playerGrounded','jumpVelocity','PLAYER_JUMP_SPEED','showStatus',
   productionJumpSource+'\njump(); return {playerActivity,flying,playerGrounded,jumpVelocity};');
- return run(isStationaryRestActivity,playerActivity,flying,playerGrounded,jumpVelocity,showStatus);
+ return run(isStationaryRestActivity,playerActivity,flying,playerGrounded,jumpVelocity,6.4,showStatus);
 }
 function compareMove(state,controls,dt){
  const {environment}=createEnvironment();
@@ -186,7 +186,9 @@ test('interpolates the shortest yaw arc and clamps alpha',()=>{
  assert.ok(Math.abs(middle.yaw-Math.PI)<1e-9);
  assert.equal(middle.pitch,0);
  assert.deepEqual(physics.interpolate(previous,current,-1),previous);
- assert.deepEqual(physics.interpolate(previous,current,2),current);
+ const end=physics.interpolate(previous,current,2);
+ assert.equal(end.x,current.x);assert.equal(end.y,current.y);assert.equal(end.z,current.z);assert.equal(end.pitch,current.pitch);
+ assert.ok(Math.abs(Math.atan2(Math.sin(end.yaw-current.yaw),Math.cos(end.yaw-current.yaw)))<1e-9,'The final interpolated yaw must be angularly equivalent across the ±π boundary.');
 });
 test('fixed-step clock clamps tab stalls and never exceeds six 60 Hz updates per frame',()=>{
  const clock=physics.createFixedStepper();
