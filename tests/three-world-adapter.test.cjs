@@ -202,3 +202,24 @@ test('rejects a non-object world and tolerates missing optional collections',()=
  assert.equal(s.player.z,7);
 });
 console.log('Three.js world adapter tests complete.');
+
+test('preserves valid saved artwork gallery images and applies the original 20-item, PNG and size limits',()=>{
+ const valid='data:image/png;base64,AAAAAA==';
+ const tooLarge='data:image/png;base64,'+'A'.repeat(550000);
+ const s=adapter.createSnapshot({artworks:[
+  {name:'Garden picture',data:valid},
+  {name:'Wrong format',data:'data:image/jpeg;base64,AAAA'},
+  {name:'Bad base64',data:'data:image/png;base64,***'},
+  {name:'Too large',data:tooLarge},
+  {name:'',data:valid}
+ ]});
+ assert.deepEqual(s.artworks,[
+  {name:'Garden picture',data:valid},
+  {name:'Artwork',data:valid}
+ ]);
+ assert.equal(s.counts.artworks,2);
+ const twentyOne=Array.from({length:21},(_,index)=>({name:'Picture '+index,data:valid}));
+ const capped=adapter.createSnapshot({artworks:twentyOne});
+ assert.equal(capped.artworks.length,20,'The adapter must preserve the original gallery capacity.');
+ assert.equal(adapter.limits.artworks,20);
+});
