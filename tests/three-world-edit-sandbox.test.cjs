@@ -387,3 +387,33 @@ test('water operations reject undug and invalid cells without mutation',()=>{
  assert.equal(edit.getState().revision,before.revision);
 });
 console.log('Three.js editing sandbox tests complete.');
+
+test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomically',()=>{
+ const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world),png='data:image/png;base64,AAAAAA==';
+ const saved=edit.saveArtwork('Cozy cottage',png,'Lia');
+ assert.deepEqual(saved.world.artworks,[{name:'Cozy cottage with Lia',data:png}]);
+ assert.ok(saved.world.crafted.some(item=>item&&item.id==='picture'&&item.count===1&&item.label==='Cozy cottage with Lia'));
+ assert.equal(saved.revision,1);
+ assert.equal(saved.sourceUnchanged,true);
+ assert.equal(JSON.stringify(world),before,'The renderer snapshot passed into the sandbox must remain unchanged.');
+});
+test('refuses invalid PNG data, oversized artwork, a full gallery, or a full crafted pouch without partial writes',()=>{
+ const png='data:image/png;base64,AAAAAA==';
+ const invalid=sandbox.create(fixture()),invalidBefore=invalid.getState();
+ assert.throws(()=>invalid.saveArtwork('Bad image','data:image/jpeg;base64,AAAA','Lia'),/PNG/);
+ assert.equal(invalid.getState().revision,invalidBefore.revision);
+ assert.equal(invalid.getState().world.artworks.length,0);
+ const oversized=sandbox.create(fixture());
+ assert.throws(()=>oversized.saveArtwork('Large image','data:image/png;base64,'+'A'.repeat(550000),'Lia'),/PNG/);
+ const fullGallery=fixture();fullGallery.artworks=Array.from({length:20},(_,i)=>({name:'Art '+i,data:png}));
+ const gallery=sandbox.create(fullGallery),galleryBefore=gallery.getState();
+ assert.throws(()=>gallery.saveArtwork('Another picture',png,'Lia'),/Gallery is full/);
+ assert.deepEqual(gallery.getState().world.artworks,galleryBefore.world.artworks);
+ assert.equal(gallery.getState().world.crafted.filter(item=>item&&item.id==='picture').length,0);
+ const fullCrafted=fixture();fullCrafted.crafted=Array.from({length:60},(_,i)=>({id:'stone',count:1,label:String(i)}));
+ const crafted=sandbox.create(fullCrafted),craftedBefore=crafted.getState();
+ assert.throws(()=>crafted.saveArtwork('Cozy cottage',png,'Lia'),/crafted pouch is full/);
+ assert.deepEqual(crafted.getState().world.artworks,craftedBefore.world.artworks);
+ assert.deepEqual(crafted.getState().world.crafted,craftedBefore.world.crafted);
+ assert.equal(crafted.getState().revision,craftedBefore.revision);
+});
