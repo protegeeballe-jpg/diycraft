@@ -8,7 +8,7 @@
  if(root)root.DIYCraftThreeEditSandbox=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
- const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_BUCKET_ITEMS=120;
+ const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99;
  const HEX=/^#[0-9a-f]{6}$/i;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const SOLID_TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow']);
@@ -121,6 +121,38 @@
    occupied.delete(cellKey(block.x,block.y,block.z));
    if(block.type==='door')occupied.delete(cellKey(block.x,block.y+1,block.z));
    if(selectedKey===key)selectedKey=null;
+   revision++;
+   return state();
+  }
+  function canStoreItem(id,target='materials'){
+   const slots=Array.isArray(world[target])?world[target]:[];
+   return slots.some(item=>item&&item.id===id&&item.count<MAX_STACK)||slots.some(item=>!item);
+  }
+  function addItem(id,target='materials',label=''){
+   if(!Array.isArray(world[target]))world[target]=Array.from({length:MAX_INVENTORY_SLOTS},()=>null);
+   const slots=world[target];
+   const same=slots.find(item=>item&&item.id===id&&item.count<MAX_STACK);
+   if(same){same.count++;return true;}
+   const index=slots.findIndex(item=>!item);
+   if(index<0)return false;
+   slots[index]={id,count:1,label};return true;
+  }
+  function excavateGround(x,z){
+   if(!coord(x)||!coord(z))throw new TypeError('Excavation coordinates must be valid whole-number cells.');
+   const key=x+','+z,currentDepth=depthByCell.get(key)||0;
+   if(waterAt(x,z))return collectWaterLayer(x,z);
+   if(currentDepth>=MAX_DIG_DEPTH)throw new RangeError('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');
+   if(currentDepth===0&&depthByCell.size>=MAX_GROUND_CELLS)throw new RangeError('This world has reached its safe excavation limit.');
+   if(!canStoreItem('dirt','materials'))throw new Error('Your resources pouch is full. Make room before digging.');
+   if(!Array.isArray(world.bucket))world.bucket=[];
+   if(world.bucket.length>=MAX_BUCKET_ITEMS)throw new RangeError('Your Material Bucket is full.');
+   // Both inventory destinations are checked before changing the terrain.
+   world.bucket.push({type:'dirt',color:BASE_COLORS.dirt,texture:'dirt'});
+   depthByCell.set(key,currentDepth+1);
+   world.excavations=Array.from(depthByCell,([position,depth])=>{
+    const [cellX,cellZ]=position.split(',').map(Number);return [cellX,cellZ,depth];
+   });
+   if(!addItem('dirt','materials'))throw new Error('Dirt could not be stored in the materials pouch.');
    revision++;
    return state();
   }
@@ -243,7 +275,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
