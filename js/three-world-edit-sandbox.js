@@ -9,7 +9,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(protectionApi){
  'use strict';
  const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99;
- const HEX=/^#[0-9a-f]{6}$/i;
+ const HEX=/^#[0-9a-f]{6}$/i,PNG_DATA=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const SOLID_TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow']);
  const BASE_COLORS={grass:'#70b85a',dirt:'#9a7049',stone:'#9ca6a1',wood:'#a97545',leaves:'#4e9a59',brick:'#c87862',glass:'#a5dce3',flower:'#e9a4c1',sand:'#e8d38b',snow:'#f2f8fa'};
@@ -33,6 +33,7 @@
    while(slots.length<MAX_INVENTORY_SLOTS)slots.push(null);
    world[target]=slots;
   }
+  if(!Array.isArray(world.artworks))world.artworks=[];
   let revision=0,selectedKey=null,selectedBucketItem=null,selectedBucketItemIndex=null,nextId=world.blocks.length;
   const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
   world.blocks.forEach(block=>{
@@ -147,6 +148,22 @@
    const index=slots.findIndex(item=>!item);
    if(index<0)return false;
    slots[index]={id,count:1,label};return true;
+  }
+  function saveArtwork(name,data,neighborName=''){
+   if(!Array.isArray(world.artworks))world.artworks=[];
+   if(world.artworks.length>=20)throw new RangeError('Gallery is full. Export a backup first.');
+   if(typeof data!=='string'||data.length>=550000||!PNG_DATA.test(data))
+    throw new TypeError('This picture is too detailed or is not a supported PNG image.');
+   const artworkName=String(name||'Artwork').slice(0,28);
+   const label=artworkName+' with '+String(neighborName||'a neighbor');
+   if(!canStoreItem('picture','crafted'))throw new Error('Your crafted pouch is full.');
+   world.artworks.push({name:label,data});
+   if(!addItem('picture','crafted',label)){
+    world.artworks.pop();
+    throw new Error('Your crafted pouch is full.');
+   }
+   revision++;
+   return state();
   }
   function excavateGround(x,z,protectionContext={}){
    if(!coord(x)||!coord(z))throw new TypeError('Excavation coordinates must be valid whole-number cells.');
@@ -320,7 +337,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
