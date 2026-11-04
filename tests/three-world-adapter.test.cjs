@@ -33,6 +33,13 @@ const validWorld={
  waterCells:[[0,0],[1,0],[2,0]],
  waterLevels:[[0,0,2],[1,0,1],[2,0,2]],
  fish:[[0,0],[0,0],[0,0],[0,0],[1,0]],
+ bucket:[
+  {type:'wood',color:'#a97545',texture:'wood'},
+  {type:'tile',color:'#c5a98a',tilePattern:'spiral'},
+  {type:'door',color:'#a97545',style:'garden',orientation:'ew',swing:-1,open:true},
+  {type:'water'},
+  {type:'unknown'}
+ ],
  animals:[
   {id:'pip',species:'sheep',name:'Pip',x:1.5,z:2.5,facing:.7,phase:1.4,body:'#ffffff',accent:'#e9a4c1'},
   {id:'pip',species:'cat',name:'Mochi',x:4,z:-1,facing:0,phase:2},
