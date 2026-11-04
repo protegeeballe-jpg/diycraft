@@ -137,10 +137,15 @@ function freshWorld(){
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   const tile=worldState.world.blocks.at(-1);
   assert.equal(tile.type,'tile');
-  await page.locator('#pattern').selectOption('waves');
-  await page.locator('#apply-pattern').click();
-  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
-  assert.equal(worldState.world.blocks.find(b=>b.key===tile.key).tilePattern,'waves');
+  const expectedPatterns=['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral'];
+  const availablePatterns=await page.locator('#pattern option').evaluateAll(options=>options.map(option=>option.value));
+  assert.deepEqual(availablePatterns,expectedPatterns,'The editor must expose all twenty original tile patterns.');
+  for(const pattern of expectedPatterns){
+   await page.locator('#pattern').selectOption(pattern);
+   await page.locator('#apply-pattern').click();
+   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+   assert.equal(worldState.world.blocks.find(b=>b.key===tile.key).tilePattern,pattern,'Tile pattern must remain editable: '+pattern);
+  }
   await page.locator('#water-x').fill('14');
   await page.locator('#water-z').fill('-5');
   await page.locator('#water-add').click();
