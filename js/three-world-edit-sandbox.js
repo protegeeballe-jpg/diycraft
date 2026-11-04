@@ -27,7 +27,7 @@
   if(!object(snapshot)||!Array.isArray(snapshot.blocks))throw new TypeError('A Three.js world snapshot is required.');
   const sourceBefore=JSON.stringify(snapshot);
   const world=clone(snapshot);
-  let revision=0,selectedKey=null,selectedBucketItem=null,nextId=world.blocks.length;
+  let revision=0,selectedKey=null,selectedBucketItem=null,selectedBucketItemIndex=null,nextId=world.blocks.length;
   const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
   world.blocks.forEach(block=>{
    if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
@@ -40,7 +40,7 @@
   function find(key){return blockIndex.get(key)||null;}
   function state(){
    const copy=clone(world);
-   return freeze({revision,selectedKey,selectedBucketItem:selectedBucketItem?clone(selectedBucketItem):null,world:copy,sourceUnchanged:JSON.stringify(snapshot)===sourceBefore});
+   return freeze({revision,selectedKey,selectedBucketItem:selectedBucketItem?clone(selectedBucketItem):null,selectedBucketItemIndex,world:copy,sourceUnchanged:JSON.stringify(snapshot)===sourceBefore});
   }
   function select(key){
    selectedKey=find(key)?key:null;
@@ -49,10 +49,10 @@
   function selectBucketItem(index){
    if(!Number.isInteger(index)||index<0||!Array.isArray(world.bucket)||!world.bucket[index]||!object(world.bucket[index]))
     throw new RangeError('That Material Bucket item is no longer available.');
-   selectedBucketItem=clone(world.bucket[index]);
+   selectedBucketItem=clone(world.bucket[index]);selectedBucketItemIndex=index;
    return state();
   }
-  function clearBucketSelection(){selectedBucketItem=null;return state();}
+  function clearBucketSelection(){selectedBucketItem=null;selectedBucketItemIndex=null;return state();}
   function addBlock(input){
    if(!object(input)||!coord(input.x)||!Number.isInteger(input.y)||input.y>MAX_Y||!coord(input.z)||input.y<-(depthByCell.get(input.x+','+input.z)||0))
     throw new TypeError('Block coordinates must be valid whole-number cells.');
