@@ -17,7 +17,7 @@
   const c=capabilities&&typeof capabilities==='object'?capabilities:{};
   const cores=positive(c.hardwareConcurrency),memory=positive(c.deviceMemory),texture=positive(c.maxTextureSize);
   const mobile=!!c.mobile,saveData=!!c.saveData,lowTexture=texture!==null&&texture<=2048;
-  if(saveData||lowTexture||(memory!==null&&memory<=3)||(mobile&&cores!==null&&cores<=4))return PROFILES.low;
+  if(saveData||lowTexture||(memory!==null&&memory<=4)||(mobile&&(cores===null||cores<=4||memory===null)))return PROFILES.low;
   if(mobile||(cores!==null&&cores<=6)||(memory!==null&&memory<=6))return PROFILES.balanced;
   return PROFILES.high;
  }
