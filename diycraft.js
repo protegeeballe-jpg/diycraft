@@ -770,6 +770,64 @@ function drawSkyDecorations(cam,w,h,palette){
 const FACES=[{ids:[0,1,2,3],normal:[0,-1,0],shade:.68},{ids:[4,7,6,5],normal:[0,1,0],shade:1.08},{ids:[0,4,5,1],normal:[0,0,-1],shade:.82},{ids:[3,2,6,7],normal:[0,0,1],shade:.90},{ids:[0,3,7,4],normal:[-1,0,0],shade:.76},{ids:[1,5,6,2],normal:[1,0,0],shade:1.0}];
 function cubeVerts(x,y,z,sx=1,sy=1,sz=1){return [{x,y,z},{x:x+sx,y,z},{x:x+sx,y,z:z+sz},{x,y,z:z+sz},{x,y:y+sy,z},{x:x+sx,y:y+sy,z},{x:x+sx,y:y+sy,z:z+sz},{x,y:y+sy,z:z+sz}];}
 function shadeColor(hex,mul){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.max(0,Math.round(((n>>16)&255)*mul))),g=Math.min(255,Math.max(0,Math.round(((n>>8)&255)*mul))),b=Math.min(255,Math.max(0,Math.round((n&255)*mul)));return `rgb(${r},${g},${b})`;}
+// One cached painterly treatment: translucent watercolor pigment, paper grain and
+// fine colored-pencil strokes. It changes rendered pixels only, never saved colors.
+function painterlySeed(value){
+ const source=String(value||'watercolor-pencil');
+ let hash=2166136261;
+ for(let i=0;i<source.length;i++)hash=Math.imul(hash^source.charCodeAt(i),16777619);
+ return hash>>>0;
+}
+function drawPainterlySurfaceFinish(c,seed=0,strength=1){
+ let state=(seed>>>0)||1;
+ const next=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+ c.save();
+ c.globalCompositeOperation='source-over';
+ // Soft, irregular watercolor blooms keep the underlying selected hue visible.
+ const washes=[
+  ['rgba(255,248,226,.20)','rgba(255,248,226,0)'],
+  ['rgba(127,179,176,.13)','rgba(127,179,176,0)'],
+  ['rgba(224,161,162,.10)','rgba(224,161,162,0)'],
+  ['rgba(191,177,215,.09)','rgba(191,177,215,0)']
+ ];
+ for(let i=0;i<5;i++){
+  const x=next()*96,y=next()*96,rx=11+next()*20,ry=7+next()*15,angle=next()*Math.PI;
+  const colors=washes[i%washes.length],wash=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.12);
+  wash.addColorStop(0,colors[0]);wash.addColorStop(.58,colors[0]);wash.addColorStop(1,colors[1]);
+  c.fillStyle=wash;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,Math.PI*2);c.fill();
+  c.strokeStyle='rgba(110,132,119,.055)';c.lineWidth=.75;
+  c.beginPath();c.ellipse(x+rx*.05,y-ry*.04,rx*.82,ry*.78,angle,0,Math.PI*2);c.stroke();
+ }
+ // Short, slightly varied strokes imitate layered colored-pencil pressure.
+ c.lineCap='round';c.lineJoin='round';
+ for(let i=0;i<26;i++){
+  const x=next()*108-6,y=next()*108-6,len=5+next()*13,drift=(next()-.5)*4;
+  c.strokeStyle=i%4===0?'rgba(255,250,235,.34)':'rgba(48,62,54,.17)';
+  c.lineWidth=.55+next()*.55;
+  c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+len*.48,y+drift-1,x+len,y+drift);c.stroke();
+ }
+ // Tiny warm/cool flecks create a quiet watercolor-paper tooth.
+ for(let i=0;i<54;i++){
+  const x=next()*96,y=next()*96;
+  c.fillStyle=i%3===0?'rgba(255,250,233,.25)':'rgba(63,69,60,.12)';
+  c.beginPath();c.arc(x,y,.22+next()*.42,0,Math.PI*2);c.fill();
+ }
+ c.restore();
+}
+const painterlyCanvasPattern=(()=>{
+ try{
+  const paper=document.createElement('canvas');paper.width=paper.height=192;
+  const paperContext=paper.getContext('2d');
+  if(!paperContext)return null;
+  drawPainterlySurfaceFinish(paperContext,painterlySeed('DIYCraft watercolor colored-pencil paper'),1.05);
+  return ctx.createPattern(paper,'repeat');
+ }catch(error){return null;}
+})();
+function paintPainterlyCanvasOverlay(width,height){
+ if(!painterlyCanvasPattern)return;
+ ctx.save();ctx.globalAlpha=.46;ctx.fillStyle=painterlyCanvasPattern;ctx.fillRect(0,0,width,height);ctx.restore();
+}
+
 const DEFAULT_FLOWER_PETAL_COLOR='#e9a4c1';
 function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
  c.clearRect(0,0,96,96);c.lineCap='round';c.lineJoin='round';
@@ -780,6 +838,9 @@ function drawFlowerPlantTexture(c,petalColor=DEFAULT_FLOWER_PETAL_COLOR){
  for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillStyle=shadeColor(petalColor,i%2?.88:1.12);c.beginPath();c.ellipse(cx+Math.cos(a)*12,cy+Math.sin(a)*12,10,6,a,0,Math.PI*2);c.fill();}
  c.fillStyle='#f2cb59';c.beginPath();c.arc(cx,cy,7,0,Math.PI*2);c.fill();
  c.fillStyle='#fff0a0';c.beginPath();c.arc(cx-2,cy-2,2,0,Math.PI*2);c.fill();
+ // The pigment and pencil finish is baked into the cached flower image; the
+ // bloom still uses the exact petal color chosen in the existing color picker.
+ drawPainterlySurfaceFinish(c,painterlySeed(petalColor),.86);
 }
 // Small, locally generated patterns give every material its own tactile surface.
 const TEXTURE_REFERENCE_SIZE=96,TEXTURE_TILE_SIZE=32,TEXTURE_DRAW_SCALE=TEXTURE_TILE_SIZE/TEXTURE_REFERENCE_SIZE;
@@ -852,7 +913,7 @@ function makeTexturePatterns(){
   snow:c=>{for(let i=0;i<12;i++){const x=(i*29+9)%96,y=(i*41+6)%96;c.strokeStyle=i%2?'#9bc6dcaa':'#ffffffdd';c.lineWidth=1.5;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.moveTo(x-3.5,y-3.5);c.lineTo(x+3.5,y+3.5);c.stroke();}for(let i=0;i<25;i++){c.fillStyle='#ffffffdd';c.fillRect((i*17)%96,(i*43)%96,2,2);}},
   custom:c=>{for(let i=0;i<54;i++){c.fillStyle=i%2?'#ffffff66':'#35445a33';c.beginPath();c.arc((i*19)%96,(i*37)%96,1.1+(i%2),0,Math.PI*2);c.fill();}}
  };
- for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(makers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);drawPainterlySurfaceFinish(c,painterlySeed(id),.82);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
  // Direction-aware overlays keep the grass lip on the physical top edge of each side face.
  const faceMakers={
   'grass-side-right':c=>{
@@ -888,7 +949,7 @@ function makeTexturePatterns(){
    c.strokeStyle='#f0d09a99';c.lineWidth=1;c.beginPath();c.arc(cx-1,cy-1,34,.3,2.3);c.stroke();
   }
  };
- for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
+ for(const [id,draw] of Object.entries(faceMakers)){const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);draw(c);drawPainterlySurfaceFinish(c,painterlySeed(id),.82);textureTiles.set(id,tile);texturePatterns.set(id,ctx.createPattern(tile,'repeat'));}
 }
 
 // Original tile surfaces: all twenty are drawn locally at 32×32 pixels.
@@ -918,6 +979,7 @@ function makeTileTexturePatterns(){
  for(const design of TILE_DESIGNS){
   const tile=document.createElement('canvas');tile.width=tile.height=TEXTURE_TILE_SIZE;
   const c=tile.getContext('2d');c.scale(TEXTURE_DRAW_SCALE,TEXTURE_DRAW_SCALE);makers[design.id](c);
+  drawPainterlySurfaceFinish(c,painterlySeed('tile-'+design.id),.68);
   textureTiles.set('tile-'+design.id,tile);
   texturePatterns.set('tile-'+design.id,ctx.createPattern(tile,'repeat'));
  }
@@ -1854,6 +1916,16 @@ function paintWaterFace(poly,time){
  const gradient=poly.waterGradient;
  ctx.fillStyle=gradient||(poly.waterSurface?'#55c5ed':'#168ec5');
  ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
+ // Slow watercolor pigment blooms drift with the existing current, while the
+ // original 3D surface, depth and ripple timing remain untouched.
+ const washPhase=time*.00022+waterX*.31+waterZ*.23;
+ const washPoint=pointAt(.5+Math.sin(washPhase)*.22,.5+Math.cos(washPhase*.81)*.20);
+ const washRadius=Math.max(8,Math.min(24,(maxX-minX)*.25));
+ const pigmentWash=ctx.createRadialGradient(washPoint.x,washPoint.y,1,washPoint.x,washPoint.y,washRadius);
+ pigmentWash.addColorStop(0,'rgba(228,250,255,.17)');
+ pigmentWash.addColorStop(.58,'rgba(145,211,225,.075)');
+ pigmentWash.addColorStop(1,'rgba(145,211,225,0)');
+ ctx.fillStyle=pigmentWash;ctx.fillRect(minX,minY,maxX-minX,maxY-minY);
  if(poly.waterSurface){
   // Cross-current A: broad, slow diagonal swells.
   // Its phase is derived from absolute world X/Z, never from a tile-local seed.
@@ -1869,7 +1941,8 @@ function paintWaterFace(poly,time){
     const p=pointAt(u,worldZ-waterZ);
     if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
    }
-   ctx.strokeStyle='rgba(239,253,255,.22)';ctx.stroke();
+   ctx.strokeStyle='rgba(83,164,190,.10)';ctx.lineWidth=2.2;ctx.stroke();
+   ctx.strokeStyle='rgba(239,253,255,.24)';ctx.lineWidth=1.05;ctx.stroke();
   }
   ctx.restore();
   // Cross-current B: finer ripples travel in a different direction and speed.
@@ -1886,7 +1959,8 @@ function paintWaterFace(poly,time){
     const p=pointAt(worldX-waterX,v);
     if(!started){ctx.moveTo(p.x,p.y);started=true;}else ctx.lineTo(p.x,p.y);
    }
-   ctx.strokeStyle='rgba(176,237,255,.17)';ctx.stroke();
+   ctx.strokeStyle='rgba(93,169,194,.085)';ctx.lineWidth=1.8;ctx.stroke();
+   ctx.strokeStyle='rgba(176,237,255,.19)';ctx.lineWidth=.8;ctx.stroke();
   }
   ctx.restore();
   // Soft moving highlights add depth without drawing tile-shaped borders.
@@ -2068,6 +2142,8 @@ function render(){const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.
  }
  if(performanceHud){performanceMetrics.stageTotals.paint+=performance.now()-stageMark;performanceMetrics.stageSamples++;}
  if(palette.overlay){ctx.save();ctx.fillStyle=palette.overlay;ctx.fillRect(0,0,w,h);ctx.restore();}
+ // A single cached overlay gives every visible surface the same paper-and-pencil finish.
+ paintPainterlyCanvasOverlay(w,h);
  for(const n of neighbors){if(!n.moving&&n.activity){const hp=project({x:n.x,y:2.35,z:n.z},cam,w,h);if(hp){ctx.save();ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillText(n.activity,hp.x,hp.y);ctx.restore();}}}
  if(animalCareFlashUntil>performance.now()){const a=animalPositions().find(v=>v.id===selectedAnimalId);if(a){const hp=project({x:a.x+.22,y:a.species==='giraffe'?1.65:1.12,z:a.z},cam,w,h);if(hp){ctx.save();ctx.font='28px system-ui';ctx.textAlign='center';ctx.fillText(animalCareFlashEmoji,hp.x,hp.y);ctx.restore();}}}
  // Home labels disappear with their anchored homes at a distance.
