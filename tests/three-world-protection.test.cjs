@@ -7,6 +7,11 @@ const start=source.indexOf('function isProtectedDigCell(x,z){');
 const end=source.indexOf('\nfunction canStoreItem',start);
 if(start<0||end<0)throw new Error('Could not extract the production isProtectedDigCell() function.');
 const originalFunction=source.slice(start,end).trim();
+const homesStart=source.indexOf('const PROTECTED_NEIGHBOR_HOMES=');
+const homesEnd=source.indexOf(';',homesStart);
+if(homesStart<0||homesEnd<0)throw new Error('Could not extract original protected neighbor home coordinates.');
+const productionHomes=new Function('return '+source.slice(homesStart+'const PROTECTED_NEIGHBOR_HOMES='.length,homesEnd)+';')();
+
 
 function test(name,fn){
  try{fn();console.log('PASS '+name);}
@@ -19,11 +24,14 @@ function productionCheck(x,z,context){
   originalFunction+'\nreturn isProtectedDigCell;'
  );
  const fn=execute(
-  protection.HOMES,{now:()=>now},()=>({mode:context.mode||'day'}),
+  productionHomes,{now:()=>now},()=>({mode:context.mode||'day'}),
   ()=>context.neighbors||[],()=>context.animals||[]
  );
  return fn(x,z);
 }
+test('uses the exact protected home coordinates authored in Canvas 2D',()=>{
+ assert.deepEqual(protection.HOMES,productionHomes);
+});
 test('protects the same three fixed neighbor-home rectangles as Canvas 2D',()=>{
  const points=[
   [-14,-8,true],[-9,-3,true],[10,-18,true],[14,-13,true],
