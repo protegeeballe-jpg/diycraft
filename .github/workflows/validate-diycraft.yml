@@ -222,8 +222,9 @@ jobs:
             throw new Error('The stationary sleep, Transformer sleep, go-home, set-bed, sit, work, dance and stop activity controls are missing.');
           }
           if (!html.includes('id="offlineReadyNote"')) throw new Error('Persistent offline-ready status is missing.');
-          if (!html.includes("script-src 'unsafe-inline' 'self'") || !html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
-            throw new Error('The same-origin offline worker is not allowed by the content security policy.');
+          if (!html.includes("script-src 'self'") || html.includes("script-src 'unsafe-inline'") ||
+              !html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
+            throw new Error('The game must block inline scripts and allow only same-origin scripts and offline worker resources.');
           }
           const worker = fs.readFileSync('sw.js', 'utf8');
           if (!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)) throw new Error('Expected a versioned DIYCraft offline cache.');
