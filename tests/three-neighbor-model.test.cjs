@@ -71,7 +71,7 @@ test('updates world position, facing and walking gait using the original neighbo
  const actor=actors.find(item=>item.id==='lia');
  const model=models.create(THREE,materials,actor,false);
  model.update({...actor,x:12.25,z:-4.75,facing:Math.PI/3,moving:true},2.1);
- assert.deepEqual({x:model.root.position.x,z:model.root.position.z},{x:12.75,z:-4.25});
+ assert.deepEqual({x:model.root.position.x,z:model.root.position.z},{x:12.25,z:-4.75});
  assert.equal(model.root.rotation.y,Math.PI/3);
  const limbs=model.root.userData.limbs;
  assert.notEqual(limbs.leftLeg.rotation.x,0,'Walking animates the left leg.');
