@@ -21,6 +21,7 @@ on:
       - js/three-player-physics.js
       - js/three-player-camera.js
       - js/three-player-model.js
+      - js/three-world-protection.js
       - js/three-animal-geometry.js
       - three-world-edit-preview.html
       - three-world-edit-preview.js
@@ -28,6 +29,7 @@ on:
       - tests/three-world-performance.cjs
       - tests/three-player-physics.test.cjs
       - tests/three-player-camera.test.cjs
+      - tests/three-world-protection.test.cjs
       - tests/three-performance-profile.test.cjs
       - .github/workflows/three-world-preview.yml
   pull_request:
