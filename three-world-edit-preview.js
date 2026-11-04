@@ -64,7 +64,7 @@ function renderSandbox(state){
  document.getElementById('door').disabled=!selectedBlock||selectedBlock.type!=='door';
  document.getElementById('apply-pattern').disabled=!selectedBlock||selectedBlock.type!=='tile';
  document.getElementById('pattern').value=selectedBlock&&selectedBlock.type==='tile'?selectedBlock.tilePattern||'grid':'grid';
- status.textContent=state.world.name+' · '+state.world.blocks.length+' sandbox blocks · revision '+state.revision+
+ status.textContent=state.world.name+' · '+state.world.blocks.length+' sandbox blocks · revision '+state.revision+' · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
   ' · Original unchanged: '+state.sourceUnchanged;
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,
