@@ -14,6 +14,7 @@ on:
       - tests/three-world-preview.cjs
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
+      - js/three-door-motion.js
       - three-world-edit-preview.html
       - three-world-edit-preview.js
       - tests/three-world-edit-preview.cjs
