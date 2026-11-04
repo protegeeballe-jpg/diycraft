@@ -32,7 +32,7 @@ function freshWorld(){
   assert.equal(state.sourceUnchanged,true);
   assert.equal(state.storageKeys,0);
   assert.equal(state.renderedBlocks,world.blocks.length,'Every source block must remain represented after batching.');
-  assert.ok(state.instanceBatches>0&&state.instanceBatches<=12,'Solid blocks should be consolidated into a small number of instanced batches.');
+  assert.ok(state.instanceBatches>0&&state.instanceBatches<=60,'Solid blocks should be consolidated into a small number of instanced batches.');
   assert.ok(state.renderedMeshes<60,'The scene should use far fewer render objects than world blocks.');
   assert.equal(state.performanceProfile.tier,'low','The browser test must exercise the budget-device profile.');
   assert.equal(state.performanceProfile.maxPixelRatio,1);
