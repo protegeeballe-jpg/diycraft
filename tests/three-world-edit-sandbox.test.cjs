@@ -168,8 +168,8 @@ test('player capsule collision respects the excavated terrain floor and its radi
  const edit=sandbox.create(fixture());
  assert.equal(edit.playerCollisionAt(8.5,8.5,-2.5),true,'The player must not pass below the dug pool floor.');
  assert.equal(edit.playerCollisionAt(8.5,8.5,-1.9),false,'The player may occupy the excavation above its floor.');
- assert.equal(edit.playerCollisionAt(80.23,80.5,-2.5),false,'Exact-radius tangency at the far excavation edge does not overlap adjacent terrain.');
- assert.equal(edit.playerCollisionAt(80.22,80.5,-2.5),true,'The player capsule cannot clip through the edge of the excavation floor.');
+ assert.equal(edit.playerCollisionAt(80.23,80.5,-.5),false,'Exact-radius tangency at the far excavation edge does not overlap adjacent terrain.');
+ assert.equal(edit.playerCollisionAt(80.22,80.5,-.5),true,'The player capsule cannot clip through the vertical edge of the excavation.');
 });
 test('water respects dug depth, stacks by layer, and fish are limited to three per wet cell',()=>{
  const edit=sandbox.create(fixture());
