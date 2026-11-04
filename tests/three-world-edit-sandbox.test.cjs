@@ -58,6 +58,26 @@ test('removes a selected block and frees its cell for reuse',()=>{
  const added=edit.addBlock({type:'stone',x:0,y:0,z:0,color:'#9ca6a1'});
  assert.equal(added.world.blocks.length,3);
 });
+test('removes blocks into the Material Bucket and frees door clearance',()=>{
+ const edit=sandbox.create(fixture());
+ const removedGrass=edit.remove('block-0');
+ assert.equal(removedGrass.world.blocks.length,2);
+ assert.deepEqual(removedGrass.world.bucket[0],{type:'grass',color:'#70b85a',texture:'grass'});
+ const removedDoor=edit.remove('block-1');
+ assert.equal(removedDoor.world.bucket[1].type,'door');
+ assert.equal(removedDoor.world.bucket[1].style,'garden');
+ const added=edit.addBlock({type:'stone',x:1,y:1,z:0});
+ assert.equal(added.world.blocks.at(-1).y,1);
+});
+test('refuses removal when the Material Bucket is full without changing the world',()=>{
+ const world=fixture();world.bucket=Array.from({length:120},()=>({type:'stone'}));
+ const edit=sandbox.create(world),before=edit.getState();
+ assert.throws(()=>edit.remove('block-0'),/Material Bucket is full/);
+ const after=edit.getState();
+ assert.equal(after.world.blocks.length,before.world.blocks.length);
+ assert.equal(after.world.bucket.length,120);
+ assert.equal(after.revision,before.revision);
+});
 test('operates doors only and preserves orientation/style',()=>{
  const edit=sandbox.create(fixture());
  const opened=edit.toggleDoor('block-1');
