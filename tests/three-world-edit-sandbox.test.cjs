@@ -242,7 +242,7 @@ test('excavation prechecks depth, ground-cell count, materials capacity and buck
  const deep=sandbox.create(deepWorld),deepBefore=deep.getState();
  assert.throws(()=>deep.excavateGround(30,30),/safe digging depth/);
  assert.equal(deep.getState().revision,deepBefore.revision);
- const fullGround=fixture();fullGround.excavations=Array.from({length:12000},(_,i)=>[10000+i,0,1]);
+ const fullGround=fixture();fullGround.excavations=Array.from({length:12000},(_,i)=>({x:10000+i,z:0,depth:1}));
  const ground=sandbox.create(fullGround),groundBefore=ground.getState();
  assert.throws(()=>ground.excavateGround(50000,0),/safe excavation limit/);
  assert.equal(ground.getState().revision,groundBefore.revision);
