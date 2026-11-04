@@ -155,7 +155,7 @@
    world.bucket.push({type:'dirt',color:BASE_COLORS.dirt,texture:'dirt'});
    depthByCell.set(key,currentDepth+1);
    world.excavations=Array.from(depthByCell,([position,depth])=>{
-    const [cellX,cellZ]=position.split(',').map(Number);return [cellX,cellZ,depth];
+    const [cellX,cellZ]=position.split(',').map(Number);return {x:cellX,z:cellZ,depth};
    });
    if(!addItem('dirt','materials'))throw new Error('Dirt could not be stored in the materials pouch.');
    revision++;
