@@ -1419,7 +1419,11 @@ function pushAnimalEllipsoid(queue,cam,w,h,a,groundY,cx,cy,cz,rx,ry,rz,color,alp
  }
 }
 function pushAnimalModel(queue,cam,w,h,a,tick){
- const groundY=surfaceHeightAt(a.x,a.z),sp=a.species,phase=a.phase||0;
+ const groundY=surfaceHeightAt(a.x,a.z);
+ // Keep the exact current mesh quality, but reject a whole animal before building
+ // its ellipsoids when even its conservative world-space bounds are off screen.
+ if(!chunkBoundsVisible({minX:a.x-.85,maxX:a.x+.85,minY:groundY,maxY:groundY+2.5,minZ:a.z-.85,maxZ:a.z+.85},cam,w,h,16))return;
+ const sp=a.species,phase=a.phase||0;
  const baseProbe=project({x:a.x,y:groundY,z:a.z},cam,w,h);
  const topProbe=project({x:a.x,y:groundY+1,z:a.z},cam,w,h);
  const screenUnit=baseProbe&&topProbe?Math.hypot(baseProbe.x-topProbe.x,baseProbe.y-topProbe.y):0;
