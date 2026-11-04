@@ -271,7 +271,7 @@
    const bx=Math.floor(x),bz=Math.floor(z),ground=-groundDepthAt(bx,bz);
    let highest=ground;
    for(const block of world.blocks){
-    if(block.x!==bx||block.z!==bz||block.type==='flower'||block.type==='tall_grass')continue;
+    if(block.x!==bx||block.z!==bz||block.type==='door'||block.type==='flower'||block.type==='tall_grass')continue;
     const top=block.type==='tile'?block.y+.02+.13:block.y+1;
     if(top<=atOrBelowY+.18&&top>highest)highest=top;
    }
