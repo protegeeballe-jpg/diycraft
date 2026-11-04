@@ -1,0 +1,52 @@
+name: DIYCraft Three.js actual starter-world preview
+
+on:
+  push:
+    branches:
+      - three-js-migration
+    paths:
+      - diycraft.js
+      - js/three-world-adapter.js
+      - js/three-painterly-materials.js
+      - js/three.js
+      - three-world-preview.html
+      - three-world-preview.js
+      - tests/three-world-preview.cjs
+      - .github/workflows/three-world-preview.yml
+  pull_request:
+    paths:
+      - diycraft.js
+      - js/three-world-adapter.js
+      - js/three-painterly-materials.js
+      - js/three.js
+      - three-world-preview.html
+      - three-world-preview.js
+      - tests/three-world-preview.cjs
+      - .github/workflows/three-world-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-real-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Chromium preview runner
+        run: |
+          npm init -y
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Render and test the real production starter world
+        run: node tests/three-world-preview.cjs
+      - name: Upload real starter-world 3D preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: diycraft-three-actual-starter-world
+          path: preview-three/
+          if-no-files-found: error
+          retention-days: 7
