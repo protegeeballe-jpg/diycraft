@@ -164,7 +164,7 @@ test('matches exact Canvas 2D player capsule collisions for solids, tiles, plant
   [72.5,70.5,0],[73.5,70.5,0],
   [74.5,70.5,0],[74.5,70.5,1],
   [80.5,80.5,-2.5],[80.5,80.5,-1.9],
-  [79.77,80.5,-2.5],[79.78,80.5,-2.5]
+  [80.23,80.5,-2.5],[80.22,80.5,-2.5]
  ];
  for(const [x,z,y] of cases){
   assert.equal(edit.playerCollisionAt(x,z,y),production(x,z,y),
