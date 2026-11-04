@@ -138,6 +138,23 @@ test('plants remain pass-through while closed doors block and open doors release
  assert.equal(edit.isMovementSolidAt(door.x,door.y,door.z),false);
  assert.equal(edit.isMovementSolidAt(23,1,20),false,'The door upper clearance remains non-blocking when open.');
 });
+test('nudges an embedded player to the first safe nearby position without changing height',()=>{
+ const edit=sandbox.create(fixture());
+ const player={x:.5,y:0,z:.5,yaw:.4,pitch:-.1};
+ const moved=edit.nudgePlayerOutOfBlocks(player);
+ assert.equal(moved.moved,true);
+ assert.equal(moved.saveRequested,true);
+ assert.equal(moved.y,player.y);
+ assert.equal(moved.yaw,player.yaw);
+ assert.equal(moved.pitch,player.pitch);
+ assert.equal(edit.playerCollisionAt(moved.x,moved.z,moved.y),false);
+ assert.equal(player.x,.5,'The input player state must remain unchanged.');
+ assert.equal(player.z,.5,'The input player state must remain unchanged.');
+ const safe=edit.nudgePlayerOutOfBlocks({x:10,y:0,z:10,yaw:0});
+ assert.equal(safe.moved,false);
+ assert.equal(safe.saveRequested,false);
+ assert.equal(safe.x,10);assert.equal(safe.z,10);
+});
 test('player capsule collision matches tile step-height, body-height and radius rules',()=>{
  const edit=sandbox.create(fixture());
  assert.equal(edit.playerCollisionAt(.5,.5,0),true,'A player standing inside a full solid block must collide.');
