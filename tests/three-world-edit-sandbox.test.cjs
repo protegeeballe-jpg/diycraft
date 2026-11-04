@@ -1,5 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
+globalThis.DIYCraftThreeWorldProtection=require('../js/three-world-protection.js');
 const sandbox=require('../js/three-world-edit-sandbox.js');
 function test(name,fn){
  try{fn();console.log('PASS '+name);}
