@@ -21,7 +21,7 @@ function freshWorld(){
  const server=spawn('python3',['-m','http.server','4176','--bind','127.0.0.1'],{stdio:'ignore'});
  const browser=await chromium.launch({headless:true,args:['--enable-webgl','--ignore-gpu-blocklist','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  try{
-  const context=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:true,hasTouch:true,serviceWorkers:'block'});
   const page=await context.newPage(),errors=[];
   await page.addInitScript(()=>{try{Object.defineProperty(navigator,'deviceMemory',{configurable:true,value:2});Object.defineProperty(navigator,'hardwareConcurrency',{configurable:true,value:4});}catch(_){}});
   page.on('pageerror',e=>errors.push(e.stack||e.message));
@@ -39,6 +39,7 @@ function freshWorld(){
   assert.equal(state.performanceProfile.maxPixelRatio,1);
   assert.equal(state.performanceProfile.antialias,false);
   assert.equal(state.performanceProfile.shadows,false);
+  assert.ok(state.canvasSize.width<=390&&state.canvasSize.height<=844,'The interactive sandbox must clamp canvas resolution to the phone viewport instead of rendering at 3x device scale.');
   assert.equal(state.performanceProfile.waterAnimationFps,15,'Low-end water animation should use a lighter update cadence.');
   const frameStart=state.frames;
   await page.waitForTimeout(650);
