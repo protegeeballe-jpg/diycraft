@@ -28,15 +28,16 @@
   const sourceBefore=JSON.stringify(snapshot);
   const world=clone(snapshot);
   let revision=0,selectedKey=null,nextId=world.blocks.length;
-  const occupied=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
+  const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
   world.blocks.forEach(block=>{
+   if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
    if(object(block)&&coord(block.x)&&Number.isInteger(block.y)&&coord(block.z)){
     const key=cellKey(block.x,block.y,block.z);
     if(!occupied.has(key))occupied.set(key,block.key);
     if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
    }
   });
-  function find(key){return world.blocks.find(block=>block.key===key)||null;}
+  function find(key){return blockIndex.get(key)||null;}
   function state(){
    const copy=clone(world);
    return freeze({revision,selectedKey,world:copy,sourceUnchanged:JSON.stringify(snapshot)===sourceBefore});
@@ -77,7 +78,7 @@
     if(style){block.color=typeof input.color==='string'&&HEX.test(input.color)?input.color:(style.color||undefined);block.texture=TEXTURES.has(input.texture)?input.texture:(TEXTURES.has(style.texture)?style.texture:input.type);}
     else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
    }else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
-   world.blocks.push(block);occupied.set(position,block.key);
+   world.blocks.push(block);blockIndex.set(block.key,block);occupied.set(position,block.key);
    if(input.type==='door')occupied.set(upperPosition,block.key);
    selectedKey=block.key;revision++;
    return state();
@@ -95,7 +96,7 @@
     if(!item.texture)item.texture=block.type;
    }
    bucket.push(item);
-   world.blocks.splice(index,1);
+   world.blocks.splice(index,1);blockIndex.delete(block.key);
    occupied.delete(cellKey(block.x,block.y,block.z));
    if(block.type==='door')occupied.delete(cellKey(block.x,block.y+1,block.z));
    if(selectedKey===key)selectedKey=null;
@@ -144,11 +145,42 @@
    revision++;
    return state();
   }
+  function circleTouchesCell(x,z,bx,bz,radius){
+   const nearestX=Math.max(bx,Math.min(bx+1,x)),nearestZ=Math.max(bz,Math.min(bz+1,z));
+   const dx=x-nearestX,dz=z-nearestZ;
+   return dx*dx+dz*dz<radius*radius;
+  }
+  function playerCollisionAt(x,z,y){
+   if(!Number.isFinite(x)||!Number.isFinite(z)||!Number.isFinite(y))
+    throw new TypeError('Player collision coordinates must be finite numbers.');
+   const radius=.23,bodyHeight=1.72,stepHeight=.18;
+   const minX=Math.floor(x-radius),maxX=Math.floor(x+radius);
+   const minZ=Math.floor(z-radius),maxZ=Math.floor(z+radius);
+   const minY=Math.max(-1000000000,Math.floor(y)),maxY=Math.min(MAX_Y,Math.floor(y+bodyHeight));
+   const checked=new Set();
+   for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++)for(let by=minY;by<=maxY;by++){
+    const key=cellKey(bx,by,bz),blockKey=occupied.get(key),block=blockKey?find(blockKey):null;
+    if(!block||block.type==='flower'||block.type==='tall_grass'||checked.has(block))continue;
+    checked.add(block);
+    if(block.type==='door'&&block.open)continue;
+    const bottom=block.type==='tile'?block.y+.02:block.y;
+    const top=block.type==='tile'?bottom+.13:block.y+1;
+    if(block.type==='tile'&&top<=y+stepHeight+.001)continue;
+    if(y>=top-.001||y+bodyHeight<=bottom+.001)continue;
+    if(circleTouchesCell(x,z,block.x,block.z,radius))return true;
+   }
+   if(y>=-.001)return false;
+   const head=y+bodyHeight,groundBaseY=-1000000000;
+   for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++){
+    const solidTop=-(depthByCell.get(bx+','+bz)||0);
+    if(y>=solidTop-.001||head<=groundBaseY+.001)continue;
+    if(head<=groundBaseY+.001||y>=solidTop-.001)continue;
+    if(circleTouchesCell(x,z,bx,bz,radius))return true;
+   }
+   return false;
+  }
   function isMovementSolidAt(x,y,z){
-   const block=world.blocks.find(item=>item.x===x&&item.z===z&&
-    (item.y===y||(item.type==='door'&&item.y+1===y)));
-   if(!block||block.type==='flower'||block.type==='tall_grass')return false;
-   return !(block.type==='door'&&block.open);
+   return playerCollisionAt(x+.5,z+.5,y);
   }
   function toggleDoor(key){
    const block=find(key);
@@ -163,7 +195,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,addBlock,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,toggleDoor,setTilePattern,getState:state});
+  return Object.freeze({select,addBlock,remove,addWaterLayer,collectWaterLayer,addFish,isMovementSolidAt,playerCollisionAt,toggleDoor,setTilePattern,getState:state});
  }
  return Object.freeze({create,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
