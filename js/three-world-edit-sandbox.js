@@ -83,8 +83,12 @@
     block.swing=input.swing===-1?-1:1;block.open=false;
    }else if(SOLID_TYPES.has(input.type)){
     const style=object(world.solidStyles)?world.solidStyles[input.type]:null;
-    if(style){block.color=typeof input.color==='string'&&HEX.test(input.color)?input.color:(style.color||undefined);block.texture=TEXTURES.has(input.texture)?input.texture:(TEXTURES.has(style.texture)?style.texture:input.type);}
-    else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
+    const hasExplicitStyle=Array.isArray(world.styledSolidTypes)
+     ?world.styledSolidTypes.includes(input.type):!!style;
+    if(style&&hasExplicitStyle){
+     block.color=typeof input.color==='string'&&HEX.test(input.color)?input.color:(style.color||undefined);
+     block.texture=TEXTURES.has(input.texture)?input.texture:(TEXTURES.has(style.texture)?style.texture:input.type);
+    }else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
    }else if(typeof input.color==='string'&&HEX.test(input.color))block.color=input.color;
    if(selectedBucketItem&&selectedBucketItem.type===input.type){
     for(const field of ['color','texture','tilePattern','style','orientation','swing'])
