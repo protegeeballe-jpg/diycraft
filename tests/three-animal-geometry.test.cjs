@@ -80,6 +80,13 @@ for(const species of animals.species){
  }
 
 
+ if(species!=='bird'){
+  assert.ok(features.ear&&features.earInner,species+' must have an outer ear and visible inner-ear detail.');
+  const earOutsideHead=features.ear.min[0]<features.head.min[0]-.035||
+   features.ear.max[0]>features.head.max[0]+.035||
+   features.ear.max[1]>features.head.max[1]+.025;
+  assert.ok(earOutsideHead,species+' ears must extend outside the head silhouette instead of being buried.');
+ }
 }
 const leftWing=animals.createBirdWingGeometry(THREE,{body:'#75b9df',accent:'#f3bd54',side:-1});
 const rightWing=animals.createBirdWingGeometry(THREE,{body:'#75b9df',accent:'#f3bd54',side:1});
@@ -95,4 +102,10 @@ assert.equal(leftWing.attributes.position.array.length,leftWing.attributes.color
 assert.throws(()=>animals.createBirdWingGeometry(THREE,{side:0}),/side must be -1 or 1/);
 assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);
 assert.throws(()=>animals.createQuadrupedLegGeometry(THREE,{species:'bird'}),/ground-animal species/);
+const gaitTransform={rotation:{order:'XYZ',x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}}};
+assert.equal(animals.applyQuadrupedLegPose(gaitTransform,.73,.31),gaitTransform);
+assert.deepEqual({order:gaitTransform.rotation.order,yaw:gaitTransform.rotation.x,stride:gaitTransform.rotation.y},{
+ order:'YXZ',yaw:.73,stride:.31
+},'Leg stride must rotate around the local hip axis after animal heading is applied.');
+assert.throws(()=>animals.applyQuadrupedLegPose(gaitTransform,NaN,0),/finite animal gait angles/);
 console.log('Three.js recognizable animal geometry tests complete.');

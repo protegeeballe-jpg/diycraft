@@ -55,6 +55,7 @@ const {chromium}=require('playwright');
   const birdVisualAfter=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
   assert.ok(Math.abs(birdVisualAfter.birdFlapAngle-birdVisualBefore.birdFlapAngle)>.03,'Bird wings must flap over time rather than remain a static wobbling body.');
   assert.ok(Math.abs(birdVisualAfter.groundLegSwingAngle-birdVisualBefore.groundLegSwingAngle)>.01,'Ground-animal legs must swing over time instead of remaining rigid pegs.');
+  assert.equal(birdVisualAfter.groundLegRotationOrder,'YXZ','Ground-animal gait must apply stride around the local side-to-side hip axis after heading.');
 
   // Exercise a real build action and wait for the version-1 device save.
   await page.locator('#block-type').selectOption('grass');

@@ -246,3 +246,7 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 - Ground-animal gait refinement: mammal torsos retain four visible hip sockets while the four legs and paws/hooves are separate instanced geometry, pivoted at each hip. Each leg swings in an alternating diagonal gait. Four legs per animal are stored in one instanced mesh per appearance, rather than four draw calls per animal.
 - The browser test checks that each ground animal receives four leg instances and that the swing angle changes over time; geometry tests verify the leg spans the hip-to-ground range and includes a paw or hoof.
+
+
+- Ear visibility correction: cat, dog, sheep, cow, horse and giraffe outer ears now extend beyond the head silhouette, with contrasting inner-ear detail; giraffe ossicones remain separate horns. Geometry tests require ears to exist outside the head rather than merely being present in source.
+- Gait-axis correction: ground-leg transforms use the YXZ Euler order so the animal heading is applied before the local hip swing. This keeps the swing axis attached to the animal's body coordinate frame instead of the global X axis. Browser diagnostics assert the live rotation order.

@@ -24,6 +24,15 @@
   const parts=[(value>>16)&255,(value>>8)&255,value&255].map(channel=>Math.max(0,Math.min(255,Math.round(channel*factor))));
   return '#'+parts.map(channel=>channel.toString(16).padStart(2,'0')).join('');
  }
+ function applyQuadrupedLegPose(target,yaw,stride){
+  if(!target||!target.rotation||typeof target.rotation.set!=='function'||
+     !Number.isFinite(yaw)||!Number.isFinite(stride))
+   throw new TypeError('A Three.js transform and finite animal gait angles are required.');
+  // YXZ composes heading first, then swings the limb about the animal's local X/hip axis.
+  target.rotation.order='YXZ';
+  target.rotation.set(yaw,stride,0);
+  return target;
+ }
  function createQuadrupedLegGeometry(THREE,options={}){
   const species=options.species,layout=quadrupedLayout(species);
   if(!THREE||!THREE.BufferGeometry||!THREE.Float32BufferAttribute||!THREE.Color||!layout)
@@ -157,23 +166,50 @@
     add(spotSphere,'#bf8793',0,muzzleY+.025,muzzleFrontZ+.025,.54,.52,.44,0,0,0,'muzzle');
    }
    if(species==='cat'){
-    for(const x of [-.16,.16])add(earCone,accent,x,headY+.19,headZ-.015,.78,1,.82,0,0,x*.8,'ear');
+    // Upright triangular ears emerge clearly above the skull with a contrasting inner surface.
+    for(const x of [-.205,.205]){
+     add(earCone,body,x,headY+.245,headZ-.055,.92,1.34,.90,0,0,x*.62,'ear');
+     add(earCone,'#d99aa3',x,headY+.255,headZ+.005,.43,.82,.38,0,0,x*.62,'earInner');
+    }
    }else if(species==='dog'){
-    for(const x of [-.19,.19])add(fleeceSphere,accent,x,headY+.035,headZ-.015,.72,1.10,.48,0,0,x*.7,'ear');
+    // Soft floppy ears extend beyond both cheeks rather than being buried in the head.
+    for(const side of [-1,1]){
+     const x=side*.33;
+     add(fleeceSphere,accent,x,headY-.045,headZ-.015,.84,1.42,.62,0,0,side*.22,'ear');
+     add(muzzleSphere,'#b77f78',x+side*.018,headY-.055,headZ+.045,.42,.78,.18,0,0,side*.22,'earInner');
+    }
    }else if(species==='cow'){
-    for(const x of [-.17,.17])add(earCone,'#f0e7d9',x,headY+.12,headZ-.055,.88,.52,1,0,0,x*.9,'horn');
-    for(const x of [-.29,.29])add(earCone,accent,x,headY+.08,headZ-.015,.94,.60,.90,0,0,x*.75,'ear');
+    for(const x of [-.17,.17])add(earCone,'#f0e7d9',x,headY+.30,headZ-.055,.76,.92,.70,0,0,x*.9,'horn');
+    for(const side of [-1,1]){
+     const x=side*.425;
+     add(fleeceSphere,accent,x,headY+.075,headZ-.035,.92,.46,.62,0,0,side*.12,'ear');
+     add(muzzleSphere,'#dca7a3',x+side*.012,headY+.078,headZ+.025,.48,.26,.18,0,0,side*.12,'earInner');
+    }
     add(sphere,'#f0e7d9',0,headY+.055,headZ-.08,.19,.10,.12,0,0,0,'foreheadPatch');
    }else if(species==='horse'){
-    for(const x of [-.11,.11])add(earCone,body,x,headY+.21,headZ-.015,.62,1,.64,0,0,x*.6,'ear');
+    for(const side of [-1,1]){
+     const x=side*.15;
+     add(earCone,body,x,headY+.255,headZ-.045,.72,1.28,.72,0,0,side*.28,'ear');
+     add(earCone,'#d5a69b',x,headY+.265,headZ+.005,.34,.78,.34,0,0,side*.28,'earInner');
+    }
     for(let i=0;i<5;i++)add(fleeceSphere,'#4b372d',0,headY+.12-i*.09,headZ-.20-i*.015,.55,.52,.55,0,0,0,'mane');
    }else if(species==='sheep'){
     for(const [x,y,z] of [[-.24,.78,-.06],[.24,.78,-.06],[-.22,.73,.23],[.22,.73,.23],[0,.89,-.22],[0,.96,-.06]])
      add(fleeceSphere,'#faf7ed',x,y,z,.82,.88,.86,0,0,0,'wool');
-    for(const x of [-.15,.15])add(earCone,'#d6b6aa',x,headY+.03,headZ-.04,.48,.34,.52,0,0,x*.7,'ear');
+    // Broad little ears poke out from the fleece on each side of the face.
+    for(const side of [-1,1]){
+     const x=side*.405;
+     add(fleeceSphere,'#d5b5ad',x,headY+.055,headZ-.025,1.02,.50,.56,0,0,side*.10,'ear');
+     add(muzzleSphere,'#f1d2ca',x+side*.018,headY+.058,headZ+.035,.56,.28,.18,0,0,side*.10,'earInner');
+    }
    }else{
-    // Giraffe ossicones and small ears sit above the long neck.
-    for(const x of [-.10,.10])add(earCone,accent,x,headY+.21,headZ-.025,.52,.85,.56,0,0,x*.7,'horn');
+    // Giraffe ossicones are distinct from the sideways ears.
+    for(const x of [-.10,.10])add(earCone,accent,x,headY+.25,headZ-.025,.52,.90,.56,0,0,x*.7,'horn');
+    for(const side of [-1,1]){
+     const x=side*.325;
+     add(fleeceSphere,accent,x,headY+.045,headZ-.025,.92,.44,.60,0,0,side*.12,'ear');
+     add(muzzleSphere,'#bd8b79',x+side*.012,headY+.05,headZ+.025,.46,.25,.18,0,0,side*.12,'earInner');
+    }
     for(let i=0;i<4;i++)add(spotSphere,accent,(i%2)*.11-.055,1.78+i*.035,.46,.9,1.1,1,0,0,0,'neckSpot');
    }
    // Hip sockets overlap both torso and upper leg; paws/hooves overlap the lower leg.
@@ -228,5 +264,5 @@
   geometry.userData={animalWing:true,wingSide:side,wingSpan:.72,featherCount:5};
   return geometry;
  }
- return Object.freeze({create,createBirdWingGeometry,createQuadrupedLegGeometry,quadrupedLayout,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
+ return Object.freeze({create,createBirdWingGeometry,createQuadrupedLegGeometry,applyQuadrupedLegPose,quadrupedLayout,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
 });
