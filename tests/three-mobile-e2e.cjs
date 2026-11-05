@@ -44,11 +44,21 @@ const {chromium}=require('playwright');
   const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
   const openSettingsPanel=async()=>{if(!(await settingsPanel.isVisible()))await settingsToggle.click();};
   const togglePlayModeFromSettings=async()=>{await openSettingsPanel();await page.locator('#play-mode').click();};
-  assert.equal(await settingsPanel.isVisible(),true,'The organized controls panel must be visible when the world opens.');
-  assert.equal(await settingsToggle.getAttribute('aria-expanded'),'true','The visible panel must be reflected by the toggle.');
+  assert.equal(await settingsPanel.isVisible(),false,'The settings panel must start closed to maximize the world view.');
+  assert.equal(await settingsToggle.getAttribute('aria-expanded'),'false','The closed panel must be reflected by the toggle.');
   assert.equal(await page.locator('#quick-tools').count(),0,'There must be no floating quick-action toolbar.');
   assert.equal(await page.locator('#gesture-guide').count(),0,'Tap and long-press are built-in gestures, not screen controls.');
   assert.equal(await page.locator('#quick-play-toggle').count(),0,'Play Mode belongs in the organized settings panel.');
+  assert.equal(await page.locator('#top-controls button').count(),3,'Exactly three utility icons must appear at the upper right.');
+  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),8,'The compact build toolbar must contain eight requested tools.');
+  assert.equal(await page.locator('#settings-toggle').getAttribute('aria-expanded'),'false');
+  const dpadGrid=await page.evaluate(()=>Object.fromEntries(['forward','left','back','right'].map(key=>{
+   const node=document.querySelector('#player-controls [data-move="'+key+'"]');
+   const style=getComputedStyle(node);return [key,{column:style.gridColumnStart,row:style.gridRowStart}];
+  })));
+  assert.deepEqual(dpadGrid,{forward:{column:'2',row:'1'},left:{column:'1',row:'2'},back:{column:'2',row:'2'},right:{column:'3',row:'2'}},
+   'The movement pad must be a fixed 2-by-3 D-pad: up centered above left/down/right.');
+
   for(const id of ['add','remove','water-add','fill-hole','dig-ground']){
    assert.equal(await page.locator('#'+id).count(),1,'Legacy gesture handler #'+id+' must remain wired.');
    assert.equal(await page.locator('#'+id).isVisible(),false,'Gesture action #'+id+' must not appear as a screen control.');
@@ -169,8 +179,9 @@ const {chromium}=require('playwright');
   await togglePlayModeFromSettings();
   assert.equal(await settingsPanel.isVisible(),true,'The controls panel must remain visible in Play Mode.');
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must appear in Play Mode.');
-  assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump/Fly controls must appear opposite the D-pad.');
+  assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump, Fly, Dance and Sit controls must appear opposite the D-pad.');
   const hudPositions=await page.evaluate(()=>{
+   assert.equal(await page.locator('#player-actions .player-action-button').count(),4,'The action pad must contain Jump, Fly, Dance and Sit.');
    const d=document.getElementById('player-controls').getBoundingClientRect();
    const a=document.getElementById('player-actions').getBoundingClientRect();
    return {dpad:{left:d.left,right:d.right,top:d.top,bottom:d.bottom},
