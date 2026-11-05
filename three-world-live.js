@@ -1670,6 +1670,20 @@ async function drainDeviceFileSave(immediate=false){
   }
  }
 }
+async function rememberPrimaryDeviceFile(handle){
+ try{
+  // Remove a previous pointer first so a failed update cannot reopen the wrong file next time.
+  await deviceFiles.forgetHandle();
+  await deviceFiles.rememberHandle(handle);
+  primaryWorldFileRemembered=true;
+  return true;
+ }catch(error){
+  primaryWorldFileRemembered=false;
+  try{await deviceFiles.forgetHandle();}catch(ignore){}
+  syncDeviceFileControls('File linked for this session, but the browser could not remember its handle: '+String(error.message||error).slice(0,150)+'. Select it again next time.');
+  return false;
+ }
+}
 async function importDeviceWorldText(worldText){
  if(typeof worldText!=='string'||!worldText)throw new Error('The selected world file is empty.');
  adapter.createSnapshot(JSON.parse(worldText));
@@ -1684,33 +1698,68 @@ async function connectDeviceWorldFile(){
    if(!await deviceFiles.permission(primaryWorldFileHandle,'readwrite',true))
     throw new Error('File permission was not granted. The existing file was left unchanged.');
    const text=await deviceFiles.readHandle(primaryWorldFileHandle);
-   if(text)await importDeviceWorldText(text,primaryWorldFileName.replace(/\.diycraft$/i,''));
+   if(text)await importDeviceWorldText(text);
    else await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
-   deviceWorldFileState='connected';await deviceFiles.rememberHandle(primaryWorldFileHandle);
-   syncDeviceFileControls(text?'Reconnected '+primaryWorldFileName+' and reopened its latest world.':'Reconnected '+primaryWorldFileName+'.');return;
+   deviceWorldFileState='connected';
+   await rememberPrimaryDeviceFile(primaryWorldFileHandle);
+   syncDeviceFileControls(text?'Reconnected '+primaryWorldFileName+' and reopened its latest world.':'Reconnected '+primaryWorldFileName+'.');
+   return;
   }
-  // The picker is called directly from this button's user gesture.
+  // Call the file picker directly from this user gesture.
   const handle=await deviceFiles.chooseSaveHandle();
-  if(!await deviceFiles.permission(handle,'readwrite',false)&&!await deviceFiles.permission(handle,'readwrite',true))
+  if(!await deviceFiles.permission(handle,'readwrite',true))
    throw new Error('File permission was not granted. No file was changed.');
+  // Complete any pending save to the previous target before switching handles.
+  if(primaryWorldFileHandle&&deviceWorldFileState==='connected'){
+   pendingDeviceFileWorld=sandbox.getState().world;
+   if(!await drainDeviceFileSave(true))
+    throw new Error('The previous device file could not be updated; its link remains active.');
+  }
   const text=await deviceFiles.readHandle(handle);
-  if(text)await importDeviceWorldText(text,handle.name.replace(/\.diycraft$/i,''));
+  if(text)await importDeviceWorldText(text);
   else await deviceFiles.writeHandle(handle,adapter.toSavedWorld(sandbox.getState().world));
-  primaryWorldFileHandle=handle;primaryWorldFileName=handle.name;deviceWorldFileState='connected';
-  await deviceFiles.rememberHandle(handle);
+  if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
+  pendingDeviceFileWorld=null;
+  primaryWorldFileHandle=handle;primaryWorldFileName=handle.name;deviceWorldFileState='connected';primaryWorldFileRemembered=false;
+  await rememberPrimaryDeviceFile(handle);
   syncDeviceFileControls(text?'Opened and linked '+handle.name+'. Automatic saves are enabled.':'Created '+handle.name+'. Automatic saves are enabled.');
  }catch(error){
   if(error?.name==='AbortError')syncDeviceFileControls('File selection cancelled. Your current world was not changed.');
   else syncDeviceFileControls('Device file not linked: '+String(error.message||error).slice(0,220));
  }finally{deviceFileConnect.disabled=false;}
 }
+async function openImportedPortableWorld(worldText,fileName){
+ if(typeof worldText!=='string'||!worldText)throw new Error('The selected world file is empty.');
+ adapter.createSnapshot(JSON.parse(worldText));
+ const previous={handle:primaryWorldFileHandle,name:primaryWorldFileName,connected:deviceWorldFileState==='connected',remembered:primaryWorldFileRemembered};
+ // Flush the previous target first, then remove its remembered pointer before importing another world.
+ if(previous.handle&&previous.connected){
+  pendingDeviceFileWorld=sandbox.getState().world;
+  if(!await drainDeviceFileSave(true))
+   throw new Error('The previous device file could not be updated. It remains linked and the new world was not opened.');
+ }
+ if(previous.remembered)await deviceFiles.forgetHandle();
+ if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
+ pendingDeviceFileWorld=null;
+ primaryWorldFileHandle=null;primaryWorldFileName='';deviceWorldFileState='unlinked';primaryWorldFileRemembered=false;
+ const imported=await restoreWorldText(worldText,{saveToLinkedFile:false});
+ if(!imported){
+  if(previous.handle){
+   primaryWorldFileHandle=previous.handle;primaryWorldFileName=previous.name;
+   deviceWorldFileState=previous.connected?'connected':'permission-required';primaryWorldFileRemembered=false;
+   if(previous.remembered)await rememberPrimaryDeviceFile(previous.handle);
+  }
+  throw new Error('The selected world was not imported. Your previous world file link was preserved.');
+ }
+ syncDeviceFileControls('Opened '+fileName+'. Choose device file to make this the automatic save target.');
+ return true;
+}
 async function openDeviceWorldFile(){
  deviceFileOpen.disabled=true;
  try{
   if(typeof window.showOpenFilePicker==='function'){
    const handle=await deviceFiles.chooseOpenHandle(),text=await deviceFiles.readHandle(handle,'read');
-   await importDeviceWorldText(text,handle.name.replace(/\.diycraft$/i,''));
-   syncDeviceFileControls('Opened '+handle.name+'. Choose a device file to enable automatic updates.');
+   await openImportedPortableWorld(text,handle.name);
   }else deviceFileFallback.click();
  }catch(error){
   if(error?.name!=='AbortError')syncDeviceFileControls('World file not opened: '+String(error.message||error).slice(0,220));
@@ -1889,7 +1938,7 @@ deviceFileOpen.addEventListener('click',()=>{void openDeviceWorldFile();});
 deviceFileDownload.addEventListener('click',()=>{void downloadDeviceWorldFile();});
 deviceFileFallback.addEventListener('change',async event=>{
  const selectedFile=event.target.files?.[0];if(!selectedFile)return;
- try{const text=await deviceFiles.openFile(selectedFile);await importDeviceWorldText(text,selectedFile.name.replace(/\.diycraft$/i,''));syncDeviceFileControls('Opened '+selectedFile.name+'. Choose a device file to enable automatic updates.');}
+ try{const text=await deviceFiles.openFile(selectedFile);await openImportedPortableWorld(text,selectedFile.name);}
  catch(error){syncDeviceFileControls('World file not opened: '+String(error.message||error).slice(0,220));}
  finally{deviceFileFallback.value='';}
 });
@@ -2018,15 +2067,15 @@ async function start(){
   try{
    const fileSnapshot=adapter.createSnapshot(JSON.parse(remembered.worldText));
    loaded={snapshot:fileSnapshot,source:'device-file',storageReadFailed:false,error:''};
-   primaryWorldFileHandle=remembered.handle;primaryWorldFileName=remembered.fileName||remembered.handle.name;deviceWorldFileState='connected';
+   primaryWorldFileHandle=remembered.handle;primaryWorldFileName=remembered.fileName||remembered.handle.name;deviceWorldFileState='connected';primaryWorldFileRemembered=true;
    const recovered=await storage.restore(deviceStorage,adapter,remembered.worldText);
    if(!recovered.restored)deviceMessage='Device file opened; browser recovery could not be refreshed: '+recovered.error;
   }catch(error){deviceWorldFileState='invalid';deviceMessage='Remembered device file failed validation and was not overwritten.';}
  }else if(remembered?.status==='empty'){
-  primaryWorldFileHandle=remembered.handle;primaryWorldFileName=remembered.fileName||remembered.handle.name;deviceWorldFileState='connected';
+  primaryWorldFileHandle=remembered.handle;primaryWorldFileName=remembered.fileName||remembered.handle.name;deviceWorldFileState='connected';primaryWorldFileRemembered=true;
   deviceMessage='Linked device file is empty. Your current world will be copied into it.';
  }else if(remembered?.status==='permission-required'){
-  primaryWorldFileHandle=remembered.handle;primaryWorldFileName=remembered.fileName||remembered.handle.name;deviceWorldFileState='permission-required';
+  primaryWorldFileHandle=remembered.handle;primaryWorldFileName=remembered.fileName||remembered.handle.name;deviceWorldFileState='permission-required';primaryWorldFileRemembered=true;
   deviceMessage='Your device file is remembered. Reconnect it to grant access and reopen the latest world.';
  }else if(remembered?.status==='invalid'){
   deviceWorldFileState='invalid';deviceMessage='The remembered .diycraft file could not be read. It has not been overwritten.';
