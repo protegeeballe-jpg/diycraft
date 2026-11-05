@@ -519,7 +519,7 @@ test('updates the isolated player appearance while preserving position and every
 
 test('validates all original character style and color options atomically',()=>{
  const world=fixture();
- const edit=sandbox.create(world),before=edit.getState();
+ const sourceBefore=JSON.stringify(world),edit=sandbox.create(world),before=edit.getState();
  for(const value of ['short','bob','long','ponytail','pigtails','curly','buns'])
   assert.equal(edit.setPlayerAppearance({hairStyle:value}).world.player.hairStyle,value);
  for(const value of ['hoodie','sweater','overalls','dress','tee'])
