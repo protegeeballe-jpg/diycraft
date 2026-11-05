@@ -221,3 +221,12 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Sheep/animal face visibility pass: reduced torso height slightly and lifted non-giraffe heads and necks toward the front (+Z) so faces remain separate from the body at the normal isometric camera distance. Head sizes were increased proportionally, while the body widths and one-batch animal geometry budget remain bounded.
+
+
+## 2026-11-05 animal articulation and face-attachment refinement
+
+- Faces are built as small, layered watercolor-colored geometry decals positioned just outside the curved head surface. This avoids eye, pupil, highlight, nose and muzzle geometry being occluded inside the head sphere; no remote textures or network requests are introduced.
+- Four-legged animals use upper-leg sockets that overlap the torso and limb geometry, and their paws/hooves overlap the lower leg. The overlap makes the connections read as joints rather than detached table legs.
+- Bird bodies remain instanced, while left/right feathered wings use separate instanced meshes whose matrices are composed from shoulder pivots each frame. The wing tips flap in opposing local rotations, with a gentle airborne bob and bank. This retains batching rather than creating one Three.js draw call per bird.
+- Existing watercolor + colored-pencil materials are reused on every added feature; no extra texture downloads or shadow-map requirements are introduced.
+- Automated checks cover visible face geometry, joined leg sockets, the mirrored shoulder-wing shapes, airborne height and changing wing angles in the live browser.

@@ -43,13 +43,16 @@ for(const species of animals.species){
  assert.equal(geometry.userData.animalSpecies,species);
  assert.ok(geometry.attributes.position.array.length>0,species+' has visible geometry');
  assert.ok(features.body&&features.head&&features.eye&&features.leg,species+' has body, projected head, eyes and legs');
+ assert.ok(features.legSocket,species+' has visible upper-leg/body sockets that join the limbs to the torso');
  if(species!=='bird'&&species!=='giraffe')assert.ok(features.neck,species+' should have a short connecting neck between body and head');
  assert.ok(features.head.max[2]>features.body.max[2]+.08,species+' head must extend beyond the body silhouette');
  assert.ok(features.eye.max[2]>features.body.max[2],species+' eyes must sit on the visible front of the head');
+ assert.ok(features.eye.min[2]>features.head.max[2]-.055,species+' layered eyes must sit on the head surface rather than inside it');
  assert.ok(features.leg.min[1]<.02&&features.leg.max[1]>.28,species+' legs must reach the ground');
  if(species==='bird')assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'bird feet must be spaced side-to-side');
  else assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
  assert.equal(geometry.attributes.position.array.length,geometry.attributes.color.array.length,species+' vertex colors must align with positions');
+ assert.ok(features.muzzle&&features.muzzle.max[2]>features.head.max[2]+.02,species+' muzzle or nose must project beyond the face');
  const bodyWidth=extent(features.body,0),bodyHeight=extent(features.body,1),bodyDepth=extent(features.body,2);
  assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
  assert.ok(features.head.min[1]>features.body.min[1]+.55,species+' head should sit visibly above the lower body line');
@@ -63,5 +66,17 @@ for(const species of animals.species){
 
 
 }
+const leftWing=animals.createBirdWingGeometry(THREE,{body:'#75b9df',accent:'#f3bd54',side:-1});
+const rightWing=animals.createBirdWingGeometry(THREE,{body:'#75b9df',accent:'#f3bd54',side:1});
+assert.equal(leftWing.userData.animalWing,true);
+assert.equal(rightWing.userData.animalWing,true);
+assert.equal(leftWing.userData.wingSide,-1);
+assert.equal(rightWing.userData.wingSide,1);
+assert.equal(leftWing.userData.featherCount,5);
+assert.equal(rightWing.userData.featherCount,5);
+assert.ok(Math.min(...leftWing.attributes.position.array.filter((_,i)=>i%3===0))<-.65,'Left wing geometry must extend out from its shoulder pivot.');
+assert.ok(Math.max(...rightWing.attributes.position.array.filter((_,i)=>i%3===0))>.65,'Right wing geometry must extend out from its shoulder pivot.');
+assert.equal(leftWing.attributes.position.array.length,leftWing.attributes.color.array.length,'Wing feather colors must align with positions.');
+assert.throws(()=>animals.createBirdWingGeometry(THREE,{side:0}),/side must be -1 or 1/);
 assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);
 console.log('Three.js recognizable animal geometry tests complete.');

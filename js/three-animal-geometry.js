@@ -21,8 +21,8 @@
   const neckCylinder=new THREE.CylinderGeometry(.14,.19,.85,8);
   const earCone=new THREE.ConeGeometry(.10,.25,5),beakCone=new THREE.ConeGeometry(.09,.22,5);
   const fleeceSphere=new THREE.SphereGeometry(.16,8,6),spotSphere=new THREE.SphereGeometry(.055,7,6);
-  const eyeSphere=new THREE.SphereGeometry(.035,8,6),muzzleSphere=new THREE.SphereGeometry(.12,8,6);
-  const sources=[sphere,headSphere,cylinder,neckCylinder,earCone,beakCone,fleeceSphere,spotSphere,eyeSphere,muzzleSphere];
+  const eyeSphere=new THREE.SphereGeometry(.035,8,6),eyeWhiteSphere=new THREE.SphereGeometry(.052,10,8),muzzleSphere=new THREE.SphereGeometry(.12,8,6);
+  const sources=[sphere,headSphere,cylinder,neckCylinder,earCone,beakCone,fleeceSphere,spotSphere,eyeSphere,eyeWhiteSphere,muzzleSphere];
   function add(geometry,color,x,y,z,sx=1,sy=1,sz=1,rx=0,ry=0,rz=0,feature=''){
    const position=geometry.attributes.position,uv=geometry.attributes.uv;
    const object=new THREE.Object3D();
@@ -50,17 +50,21 @@
    cow:[.56,.58,.64],horse:[.54,.57,.69],giraffe:[.50,.62,.55]
   }[species]);
   if(species==='bird'){
+   // The body stays in one static batch; the two wings are separate pivoted instance batches.
    add(sphere,body,0,.62,0,.55,.55,.62,0,0,0,'body');
-   add(sphere,body,-.49,.62,-.01,.30,.16,.40,0,0,-.16,'wing');
-   add(sphere,body,.49,.62,-.01,.30,.16,.40,0,0,.16,'wing');
    add(headSphere,body,0,.89,.52,.21,.19,.21,0,0,0,'head');
-   add(beakCone,'#e8ad56',0,.85,.73,.9,1,1,Math.PI/2,0,0,'beak');
+   const birdEyeFront=.52+.21*.905+.022;
    for(const x of [-.085,.085]){
-    add(eyeSphere,'#302820',x,.91,.695,.78,.92,.7,0,0,0,'eye');
-    add(spotSphere,'#fff8e8',x-.008,.922,.719,.25,.25,.25,0,0,0,'eyeHighlight');
+    add(eyeWhiteSphere,'#fff8ed',x,.91,birdEyeFront,1,1,.42,0,0,0,'eye');
+    add(eyeSphere,'#302820',x+(x<0?.006:-.006),.91,birdEyeFront+.021,.98,.98,.48,0,0,0,'eye');
+    add(spotSphere,'#fff8e8',x-.010,.925,birdEyeFront+.036,.18,.18,.18,0,0,0,'eyeHighlight');
    }
+   add(beakCone,'#e8ad56',0,.85,.76,.9,1,1,Math.PI/2,0,0,'beak');
    add(sphere,body,0,.57,-.52,.20,.12,.24,0,0,0,'tail');
-   for(const x of [-.22,.22])add(cylinder,legColor,x,.15,.06,.72,.72,.72,0,0,0,'leg');
+   for(const x of [-.22,.22]){
+    add(fleeceSphere,body,x,.36,.055,.55,.62,.55,0,0,0,'legSocket');
+    add(cylinder,legColor,x,.15,.06,.72,.72,.72,0,0,0,'leg');
+   }
   }else{
    // A compact body leaves room for the face and all four legs to read clearly.
    add(sphere,body,0,.62,0,bodyShape[0],bodyShape[1],bodyShape[2],0,0,0,'body');
@@ -76,16 +80,26 @@
     species==='horse'?[.32,.27,.30]:[.27,.235,.27];
    if(!giraffe)add(neckCylinder,body,0,headY-.18,headZ-.18,.88,species==='horse'?.92:.82,.88,Math.PI/5,0,0,'neck');
    add(headSphere,body,0,headY,headZ,headShape[0],headShape[1],headShape[2],0,0,0,'head');
-   const eyeY=headY+.015,eyeZ=headZ+.19;
-   for(const x of [-.098,.098]){
-    add(eyeSphere,'#302820',x,eyeY,eyeZ,.95,1,1,0,0,0,'eye');
-    add(spotSphere,'#fff8e8',x-.008,eyeY+.012,eyeZ+.021,.23,.23,.23,0,0,0,'eyeHighlight');
+   // Surface-mounted, layered eyes sit just proud of the curved head instead of being buried inside it.
+   const eyeY=headY+.025,eyeOffset=headShape[0]*.43,eyeFrontZ=headZ+headShape[2]*.905+.022;
+   for(const side of [-1,1]){
+    const x=side*eyeOffset;
+    add(eyeWhiteSphere,'#fff8ed',x,eyeY,eyeFrontZ,1,1,.42,0,0,0,'eye');
+    add(eyeSphere,'#302820',x-side*.006,eyeY,eyeFrontZ+.021,.98,.98,.48,0,0,0,'eye');
+    add(spotSphere,'#fff8e8',x-.010,eyeY+.014,eyeFrontZ+.036,.18,.18,.18,0,0,0,'eyeHighlight');
    }
+   const muzzleY=headY-.085,muzzleFrontZ=headZ+headShape[2]*.96+.045;
    if(species==='dog'||species==='cow'){
-    add(muzzleSphere,species==='cow'?'#e8c9bd':accent,0,headY-.075,headZ+.205,1.05,.72,.92,0,0,0,'muzzle');
-    add(spotSphere,'#59443b',0,headY-.065,headZ+.298,.70,.70,.58,0,0,0,'nose');
+    add(muzzleSphere,species==='cow'?'#e8c9bd':accent,0,muzzleY,muzzleFrontZ+.025,1.08,.78,.92,0,0,0,'muzzle');
+    add(spotSphere,'#59443b',0,muzzleY+.008,muzzleFrontZ+.115,.58,.58,.46,0,0,0,'muzzle');
+   }else if(species==='sheep'){
+    add(muzzleSphere,'#e8c4ba',0,muzzleY,muzzleFrontZ,.72,.62,.58,0,0,0,'muzzle');
+    add(spotSphere,'#70534b',0,muzzleY+.012,muzzleFrontZ+.055,.36,.36,.34,0,0,0,'muzzle');
+   }else if(species==='horse'){
+    add(muzzleSphere,'#a9785d',0,muzzleY,muzzleFrontZ+.015,.84,.66,.72,0,0,0,'muzzle');
+    add(spotSphere,'#49352c',0,muzzleY+.012,muzzleFrontZ+.085,.42,.42,.32,0,0,0,'muzzle');
    }else{
-    add(spotSphere,species==='cat'?'#a77980':'#59443b',0,headY-.045,headZ+.222,.65,.62,.65,0,0,0,'nose');
+    add(spotSphere,'#bf8793',0,muzzleY+.025,muzzleFrontZ+.025,.54,.52,.44,0,0,0,'muzzle');
    }
    if(species==='cat'){
     for(const x of [-.16,.16])add(earCone,accent,x,headY+.19,headZ-.015,.78,1,.82,0,0,x*.8,'ear');
@@ -107,10 +121,14 @@
     for(const x of [-.10,.10])add(earCone,accent,x,headY+.21,headZ-.025,.52,.85,.56,0,0,x*.7,'horn');
     for(let i=0;i<4;i++)add(spotSphere,accent,(i%2)*.11-.055,1.78+i*.035,.46,.9,1.1,1,0,0,0,'neckSpot');
    }
-   const legX=species==='sheep'?.43:species==='cow'?.41:species==='horse'?.40:.38,legZ=species==='sheep'?.42:species==='cow'?.44:species==='horse'?.45:.39;
+   // Hip sockets overlap both torso and upper leg; paws/hooves overlap the lower leg.
+   const legX=species==='sheep'?.34:species==='cat'?.32:species==='dog'?.35:species==='cow'?.38:species==='horse'?.36:.33;
+   const legZ=species==='sheep'?.36:species==='cat'?.31:species==='dog'?.35:species==='cow'?.40:species==='horse'?.43:.34;
    for(const x of [-legX,legX])for(const z of [-legZ,legZ]){
+    add(fleeceSphere,body,x,.39,z,.72,.82,.72,0,0,0,'legSocket');
     add(cylinder,legColor,x,.18,z,.92,1.28,.92,0,0,0,'leg');
-    if(species==='horse'||species==='cow')add(muzzleSphere,'#59463d',x,.012,z,.52,.28,.60,0,0,0,'hoof');
+    if(species==='horse'||species==='cow')add(muzzleSphere,'#59463d',x,.012,z+.025,.52,.28,.60,0,0,0,'hoof');
+    else add(muzzleSphere,legColor,x,.018,z+.025,.42,.28,.48,0,0,0,'paw');
    }
    add(sphere,body,0,.59,-.56,.10,.10,.18,0,0,0,'tail');
    if(species==='horse')add(fleeceSphere,'#4b372d',0,.58,-.68,.10,.30,.10,0,0,0,'tail');
@@ -120,9 +138,45 @@
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.computeVertexNormals();geometry.computeBoundingSphere();
-  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.70,.50,.54]:bodyShape.slice()};
+  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.70,.50,.54]:bodyShape.slice(),animalHasWingRig:species==='bird'};
   sources.forEach(source=>source.dispose());
   return geometry;
  }
- return Object.freeze({create,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
+ function createBirdWingGeometry(THREE,options={}){
+  if(!THREE||typeof THREE.BufferGeometry!=='function'||typeof THREE.Float32BufferAttribute!=='function')
+   throw new TypeError('Three.js buffer geometry support is required for bird wings.');
+  const side=options.side===-1?-1:options.side===1?1:0;
+  if(!side)throw new TypeError('Bird wing side must be -1 or 1.');
+  const body=validColor(options.body,DEFAULTS.bird),accent=validColor(options.accent,'#f3bd54');
+  const positions=[],colors=[],uvs=[];
+  function triangle(points,color){
+   const rgb=new THREE.Color(color);
+   for(let i=0;i<3;i++){
+    positions.push(points[i][0],points[i][1],points[i][2]);
+    colors.push(rgb.r,rgb.g,rgb.b);uvs.push(i===1?1:0,i===2?1:0);
+   }
+  }
+  // Local origin is the shoulder pivot. The wing extends outwards and slightly backward.
+  const root=[0,0,.16],inner=[side*.18,.025,.21],lead=[side*.48,.045,.12];
+  const tip=[side*.72,.015,-.055],trailing=[side*.55,-.01,-.27],innerBack=[side*.15,-.012,-.20];
+  const center=[side*.34,.065,-.015];
+  triangle([root,inner,center],body);
+  triangle([inner,lead,center],body);
+  triangle([lead,tip,center],body);
+  triangle([tip,trailing,center],body);
+  triangle([trailing,innerBack,center],body);
+  triangle([innerBack,root,center],body);
+  for(let i=0;i<5;i++){
+   const start=.17+i*.085,reach=.25+i*.095,back=-.16-i*.018;
+   triangle([[side*start,-.004,back],[side*reach,.002,back-.105],[side*(reach+.055),-.008,back+.005]],i%2?accent:body);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geometry.computeVertexNormals();geometry.computeBoundingSphere();
+  geometry.userData={animalWing:true,wingSide:side,wingSpan:.72,featherCount:5};
+  return geometry;
+ }
+ return Object.freeze({create,createBirdWingGeometry,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
 });

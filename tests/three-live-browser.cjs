@@ -44,6 +44,13 @@ const {chromium}=require('playwright');
   assert.ok(initial.runtimeScripts.includes('./three-world-live.js'));
   assert.ok(!initial.runtimeScripts.some(source=>source.includes('diycraft.js')||source.includes('three-world-edit-preview.js')));
   assert.equal(initial.storageReadFailed,false);
+  const birdVisualBefore=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
+  assert.ok(birdVisualBefore?.birdWingBatches>=1,'The live scene must build a separate pair of pivoted bird wing batches.');
+  assert.ok(birdVisualBefore?.birdWingInstances>=1,'The live bird wings must have per-bird instance transforms.');
+  assert.ok(birdVisualBefore.birdFlightY>.45,'Chirpy should be rendered airborne above the ground.');
+  await page.waitForTimeout(240);
+  const birdVisualAfter=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
+  assert.ok(Math.abs(birdVisualAfter.birdFlapAngle-birdVisualBefore.birdFlapAngle)>.03,'Bird wings must flap over time rather than remain a static wobbling body.');
 
   // Exercise a real build action and wait for the version-1 device save.
   await page.locator('#block-type').selectOption('grass');
