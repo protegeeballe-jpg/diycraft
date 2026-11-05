@@ -70,7 +70,6 @@ const {chromium}=require('playwright');
   await openSettingsPanel();
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),false,'Build Mode can be restored from the same control.');
-  await page.locator('#settings-close').click();
   await settingsToggle.click();
   assert.equal(await settingsPanel.isVisible(),true,'The gear must open the settings dashboard.');
   assert.equal(await settingsToggle.getAttribute('aria-expanded'),'true');
