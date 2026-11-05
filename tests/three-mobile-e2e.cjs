@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
  try{
   const context=await browser.newContext({
    viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,
-   serviceWorkers:'block',acceptDownloads:true
+   serviceWorkers:'allow',acceptDownloads:true
   });
   const page=await context.newPage(),errors=[];
   await page.addInitScript(()=>{
@@ -23,7 +23,11 @@ const {chromium}=require('playwright');
   page.on('pageerror',error=>errors.push(error.stack||error.message));
   page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   await page.goto('http://127.0.0.1:4179/index.html',{waitUntil:'networkidle',timeout:60000});
-  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=5,null,{timeout:45000});
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=5 ||
+   document.getElementById('status')?.textContent.startsWith('DIYCraft could not start:'),null,{timeout:60000});
+  const startupStatus=await page.locator('#status').textContent();
+  assert.ok((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.frames||0))>=5,
+   'Mobile game startup must complete before UI tests. Status: '+startupStatus+' Browser errors: '+errors.join(' | '));
   await page.waitForFunction(()=>!!localStorage.getItem('diycraft_peaceful_voxel_v1'),null,{timeout:20000});
 
   const startup=await page.evaluate(()=>({
@@ -35,6 +39,25 @@ const {chromium}=require('playwright');
   }));
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
+
+  // Compact HUD: the settings dashboard is collapsed by default and retains all controls.
+  const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
+  assert.equal(await settingsPanel.isVisible(),false,'The settings dashboard must start collapsed.');
+  await settingsToggle.click();
+  assert.equal(await settingsPanel.isVisible(),true,'The gear must open the settings dashboard.');
+  assert.equal(await settingsToggle.getAttribute('aria-expanded'),'true');
+  for(const id of ['bucket-item','block-type','inventory-open','character-open','art-open','gallery-open',
+   'solid-design-open','door-design-open','tile-design-open','animal-place','world-name','save-now',
+   'backup-download','backup-restore','status','offline-ready-note']){
+   assert.equal(await page.locator('#'+id).count(),1,'Existing control #'+id+' must remain available exactly once.');
+  }
+  await page.locator('#settings-close').click();
+  assert.equal(await settingsPanel.isVisible(),false,'The close button must collapse settings.');
+  await settingsToggle.click();
+  await page.keyboard.press('Escape');
+  assert.equal(await settingsPanel.isVisible(),false,'Escape must dismiss the settings dashboard.');
+  assert.equal(await settingsToggle.getAttribute('aria-expanded'),'false');
+
   assert.ok(startup.width<=390&&startup.height<=844,
    'Mobile rendering must clamp the drawing buffer to the mobile viewport rather than multiplying by device pixel ratio.');
 
@@ -101,7 +124,28 @@ const {chromium}=require('playwright');
   await page.locator('#gallery-close').click();
 
   // Touch movement: pointer-down must move the player; pointer-cancel must release it.
+  await settingsToggle.click();
   await page.locator('#play-mode').click();
+  assert.equal(await settingsPanel.isVisible(),false,'Entering Play Mode must close the settings dashboard.');
+  assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must appear in Play Mode.');
+  assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump/Fly controls must appear opposite the D-pad.');
+  const hudPositions=await page.evaluate(()=>{
+   const d=document.getElementById('player-controls').getBoundingClientRect();
+   const a=document.getElementById('player-actions').getBoundingClientRect();
+   return {dpad:{left:d.left,right:d.right,top:d.top,bottom:d.bottom},
+    actions:{left:a.left,right:a.right,top:a.top,bottom:a.bottom},viewport:{width:innerWidth,height:innerHeight}};
+  });
+  assert.ok(hudPositions.dpad.left<hudPositions.actions.left &&
+   hudPositions.dpad.right<hudPositions.actions.left,
+   'The D-pad must stay on the left and the Jump/Fly cluster on the right without overlap.');
+  assert.ok(Math.abs(hudPositions.dpad.bottom-hudPositions.actions.bottom)<3,
+   'Both touch clusters must share a common bottom safe-area alignment.');
+  await page.locator('#flight').click();
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().flying),true,
+   'The right-side Fly button must toggle flight on.');
+  await page.locator('#flight').click();
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().flying),false,
+   'The right-side Fly button must toggle flight off.');
   const before=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().player?.z);
   const forward=page.locator('#player-controls [data-move="forward"]');
   await forward.dispatchEvent('pointerdown',{pointerId:21,pointerType:'touch',isPrimary:true,button:0,buttons:1});

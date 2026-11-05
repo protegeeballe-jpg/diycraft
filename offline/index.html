@@ -106,6 +106,27 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 }
 @media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#safety{right:8px;top:auto;bottom:8px;max-width:190px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
 
+/* Compact settings entry point; the full build/save dashboard stays mounted while collapsed. */
+#settings-toggle{position:fixed;z-index:13;left:14px;top:14px;width:44px;height:44px;padding:0;border:1px solid #bdc9b5;border-radius:50%;background:rgba(255,252,244,.96);box-shadow:0 4px 16px #43564a25;font-size:23px;line-height:1;touch-action:manipulation}
+#settings-toggle:focus-visible,#settings-close:focus-visible,.player-action-button:focus-visible{outline:3px solid #789d72;outline-offset:3px}
+#settings-panel{position:fixed;z-index:12;left:14px;top:68px;right:auto;width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 82px);overflow:auto}
+#settings-panel[hidden]{display:none!important}
+.settings-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
+.settings-heading h1{margin:0}
+#settings-close{flex:0 0 auto;padding:6px 9px}
+#player-actions{position:fixed;z-index:4;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;align-items:flex-end;gap:10px;padding:7px;background:rgba(255,252,244,.92);border:1px solid #c9d2bd;border-radius:18px;box-shadow:0 4px 16px #43564a22;touch-action:none}
+#player-actions[hidden]{display:none!important}
+.player-action-button{width:64px;height:64px;min-width:64px;padding:0;border-radius:50%;font-size:13px;font-weight:700;background:#fffdf7;border-color:#aebea6;touch-action:none;user-select:none;-webkit-user-select:none}
+#player-controls{bottom:calc(14px + env(safe-area-inset-bottom));left:calc(14px + env(safe-area-inset-left))}
+@media(max-width:600px){
+ #settings-toggle{left:8px;top:8px}
+ #settings-panel{left:8px;top:60px;width:calc(100vw - 16px);max-height:calc(100dvh - 72px)}
+ #safety{right:8px;top:8px;bottom:auto;max-width:175px}
+ #player-controls{left:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:7px}
+ #player-actions{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));gap:7px;padding:5px}
+ .player-action-button{width:58px;height:58px;min-width:58px;font-size:12px}
+}
+
 /* Isolated Character Studio */
 #character-studio[hidden]{display:none!important}
 .character-shade{position:fixed;z-index:26;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
@@ -172,8 +193,9 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 </style></head>
 <body>
 <canvas id="three-world" aria-label="Three-dimensional DIYCraft world"></canvas>
-<section class="panel">
-<h1>DIYCraft · Peaceful Painterly World</h1>
+<button id="settings-toggle" type="button" aria-label="Open settings and build tools" aria-controls="settings-panel" aria-expanded="false" title="Settings and build tools">⚙</button>
+<section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false" hidden>
+<div class="settings-heading"><h1 id="settings-title">DIYCraft · Peaceful Painterly World</h1><button id="settings-close" type="button" aria-label="Close settings">Close ✕</button></div>
 <div class="sub">Explore, build, paint, and care for your world · Watercolor + colored-pencil texture</div>
 <div class="toolbar">
 <select id="bucket-item" aria-label="Choose a recovered Material Bucket item"><option value="">Bucket: none selected</option></select>
@@ -187,7 +209,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select>
 <button id="apply-pattern" disabled>Apply tile pattern</button>
 <button id="fullscreen-toggle" type="button" aria-label="Toggle full screen">Full screen</button>
-<button id="play-mode">Enter Play Mode</button><button id="camera-mode" disabled>First person</button><button id="jump" disabled>Jump</button><button id="flight" disabled>Flight off</button>
+<button id="play-mode">Enter Play Mode</button><button id="camera-mode" disabled>First person</button>
 <select id="animal-species" aria-label="Animal species"><option value="sheep">Sheep</option><option value="cat">Cat</option><option value="dog">Dog</option><option value="cow">Cow</option><option value="horse">Horse</option><option value="bird">Bird</option><option value="giraffe">Giraffe</option></select><button id="animal-place">Place an animal</button>
 <select id="activity-mode" aria-label="Character activity"><option value="sleep">Sleep here</option><option value="transformer">Transformer sleep</option><option value="sit">Sit</option><option value="work">Work</option><option value="dance">Dance</option><option value="stop">Stop activity</option></select><button id="activity-apply">Start activity</button><button id="set-home-bed">Set home bed</button><button id="go-home">Go home &amp; sleep</button>
 <input id="water-x" type="number" value="14" step="1" aria-label="Water pool X coordinate" style="width:62px"><input id="water-z" type="number" value="-5" step="1" aria-label="Water pool Z coordinate" style="width:62px">
@@ -211,7 +233,11 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-move="back" aria-label="Move backward">↓</button>
   <button type="button" data-move="right" aria-label="Move right">→</button>
  </div>
- <div id="play-instructions">Hold to move · Drag the world to look · Jump with the button</div>
+ <div id="play-instructions">Hold arrows to move · Drag the world to look</div>
+</section>
+<section id="player-actions" hidden aria-label="Touch action controls">
+ <button id="jump" class="player-action-button" type="button" disabled aria-label="Jump">Jump</button>
+ <button id="flight" class="player-action-button" type="button" disabled aria-label="Toggle flight">Fly</button>
 </section>
 <div id="safety">Three.js world renderer · Device autosave · Offline play<br>Drag to look · Scroll to zoom · Tap to build or care</div>
 <section id="neighbor-coloring" class="neighbor-color-shade" hidden aria-label="Color together with a neighbor">
