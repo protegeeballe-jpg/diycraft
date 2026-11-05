@@ -514,6 +514,7 @@ function renderSandbox(state){
    const duplicates=expected.filter(key=>(counts.get(key)||0)>1);
    return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates};
   },
+  getDesignStats:()=>{const state=sandbox.getState().world;return {customBlock:{...state.customBlock},solidStyles:{...state.solidStyles},styledSolidTypes:[...(state.styledSolidTypes||[])],doorDesign:{...state.doorDesign},tileDesign:{...state.tileDesign}};},
   inventoryOpen:()=>!inventoryPanel.hidden,
   characterOpen:()=>!characterPanel.hidden,
   artOpen:()=>!artStudio.hidden,galleryOpen:()=>!galleryPanel.hidden,
@@ -1233,6 +1234,85 @@ async function restoreWorldBackup(file){
 document.getElementById('world-name-apply').addEventListener('click',applyWorldName);
 document.getElementById('backup-download').addEventListener('click',downloadWorldBackup);
 document.getElementById('backup-restore').addEventListener('change',event=>restoreWorldBackup(event.target.files?.[0]));
+const solidDesigner=document.getElementById('solid-designer');
+const doorDesigner=document.getElementById('door-designer');
+const tileDesigner=document.getElementById('tile-designer');
+const SOLID_BASE_COLORS={grass:'#70b85a',dirt:'#9a7049',stone:'#9ca6a1',wood:'#a97545',leaves:'#4e9a59',brick:'#c87862',glass:'#a5dce3',flower:'#e9a4c1',sand:'#e8d38b',snow:'#f2f8fa',custom:'#aa83d8'};
+const SOLID_TEXTURES=['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow','custom'];
+function closeDesigners(){solidDesigner.hidden=true;doorDesigner.hidden=true;tileDesigner.hidden=true;}
+function updateSolidDesignPreview(){
+ const type=document.getElementById('solid-design-type').value,color=document.getElementById('solid-design-color').value,texture=document.getElementById('solid-design-texture').value;
+ document.getElementById('solid-design-chip').style.background=color;
+ document.getElementById('solid-design-name').textContent=type==='custom'?'Custom solid':type.charAt(0).toUpperCase()+type.slice(1);
+ document.getElementById('solid-design-details').textContent=color+' · '+texture+' texture';
+}
+function openSolidDesigner(){
+ const state=sandbox.getState().world,type=document.getElementById('block-type').value;
+ const selectedType=type==='custom'||Object.prototype.hasOwnProperty.call(SOLID_BASE_COLORS,type)?type:'stone';
+ const style=selectedType==='custom'?state.customBlock:state.solidStyles?.[selectedType];
+ document.getElementById('solid-design-type').value=selectedType;
+ document.getElementById('solid-design-color').value=style?.color||SOLID_BASE_COLORS[selectedType];
+ document.getElementById('solid-design-texture').value=SOLID_TEXTURES.includes(style?.texture)?style.texture:(selectedType==='custom'?'custom':selectedType);
+ updateSolidDesignPreview();solidDesigner.hidden=false;
+}
+function updateDoorDesignPreview(){
+ const style=document.getElementById('door-design-style').value,color=document.getElementById('door-design-color').value;
+ document.getElementById('door-design-chip').style.background='linear-gradient(90deg,'+color+',#f2e0b8 48%,'+color+')';
+ document.getElementById('door-design-name').textContent=style.charAt(0).toUpperCase()+style.slice(1)+' door';
+ document.getElementById('door-design-details').textContent=color;
+}
+function openDoorDesigner(){
+ const design=sandbox.getState().world.doorDesign||{color:'#a97545',style:'classic'};
+ document.getElementById('door-design-style').value=design.style||'classic';
+ document.getElementById('door-design-color').value=design.color||'#a97545';
+ updateDoorDesignPreview();doorDesigner.hidden=false;
+}
+function updateTileDesignPreview(){
+ const pattern=document.getElementById('tile-design-pattern').value,color=document.getElementById('tile-design-color').value;
+ document.getElementById('tile-design-chip').style.background='repeating-linear-gradient(45deg,'+color+' 0 9px,#ffffff55 9px 13px)';
+ document.getElementById('tile-design-name').textContent=pattern.charAt(0).toUpperCase()+pattern.slice(1);
+ document.getElementById('tile-design-details').textContent=color+' · '+pattern;
+}
+function openTileDesigner(){
+ const design=sandbox.getState().world.tileDesign||{color:'#c5a98a',pattern:'grid'};
+ document.getElementById('tile-design-pattern').value=design.pattern||'grid';
+ document.getElementById('tile-design-color').value=design.color||'#c5a98a';
+ updateTileDesignPreview();tileDesigner.hidden=false;
+}
+document.getElementById('solid-design-open').addEventListener('click',openSolidDesigner);
+document.getElementById('door-design-open').addEventListener('click',openDoorDesigner);
+document.getElementById('tile-design-open').addEventListener('click',openTileDesigner);
+document.querySelectorAll('.design-shade [data-design-close]').forEach(button=>button.addEventListener('click',closeDesigners));
+[document.getElementById('solid-design-type'),document.getElementById('solid-design-color'),document.getElementById('solid-design-texture')].forEach(input=>input.addEventListener('change',updateSolidDesignPreview));
+[document.getElementById('door-design-style'),document.getElementById('door-design-color')].forEach(input=>input.addEventListener('change',updateDoorDesignPreview));
+[document.getElementById('tile-design-pattern'),document.getElementById('tile-design-color')].forEach(input=>input.addEventListener('change',updateTileDesignPreview));
+document.getElementById('solid-design-apply').addEventListener('click',()=>{
+ try{
+  const type=document.getElementById('solid-design-type').value,design={color:document.getElementById('solid-design-color').value,texture:document.getElementById('solid-design-texture').value};
+  const next=type==='custom'?sandbox.setCustomBlockDesign(design):sandbox.setSolidStyle(type,design);
+  document.getElementById('block-type').value=type;document.getElementById('color').value=design.color;
+  renderSandbox(next);closeDesigners();status.textContent='New '+type+' blocks will use this finish.';
+ }catch(error){status.textContent=error.message;}
+});
+document.getElementById('door-design-apply').addEventListener('click',()=>{
+ try{
+  const design={color:document.getElementById('door-design-color').value,style:document.getElementById('door-design-style').value};
+  const next=sandbox.setDoorDesign(design);document.getElementById('door-style').value=design.style;
+  document.getElementById('block-type').value='door';renderSandbox(next);closeDesigners();status.textContent='Your door design is ready for new doors.';
+ }catch(error){status.textContent=error.message;}
+});
+document.getElementById('tile-design-apply').addEventListener('click',()=>{
+ try{
+  const design={color:document.getElementById('tile-design-color').value,pattern:document.getElementById('tile-design-pattern').value};
+  const next=sandbox.setTileDesign(design);document.getElementById('pattern').value=design.pattern;
+  document.getElementById('block-type').value='tile';renderSandbox(next);closeDesigners();status.textContent='Your tile design is ready for new tiles.';
+ }catch(error){status.textContent=error.message;}
+});
+document.getElementById('bucket-empty').addEventListener('click',()=>{
+ const next=sandbox.clearMaterialBucket();document.getElementById('bucket-item').value='';
+ renderSandbox(next);document.getElementById('inventory-feedback').textContent='Material Bucket emptied in this sandbox copy.';
+});
+[solidDesigner,doorDesigner,tileDesigner].forEach(panel=>panel.addEventListener('pointerdown',event=>{if(event.target===panel)closeDesigners();}));
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
