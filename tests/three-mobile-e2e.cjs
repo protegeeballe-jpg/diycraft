@@ -244,7 +244,7 @@ const {chromium}=require('playwright');
   // The main world canvas restores the original builder controls: tap to build/fill,
   // hold 0.6 seconds to dig/remove. Use real projected positions in the running scene.
   await openSettingsPanel();
-  await page.locator('#block-type').selectOption('grass');
+  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
   await page.locator('#settings-close').click();
   const buildCell=await page.evaluate(()=>{
    const debug=window.__DIYCRAFT_THREE_EDIT__,state=debug.getState(),occupied=new Set(state.world.blocks.map(block=>block.x+','+block.y+','+block.z));
