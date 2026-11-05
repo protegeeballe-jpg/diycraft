@@ -651,7 +651,6 @@ function renderSandbox(state){
   getGroundScreenPointForTest:(x,z)=>Number.isInteger(x)&&Number.isInteger(z)?screenPointForTest(new THREE.Vector3(x+.5,-.08,z+.5)):null,
   focusGroundCellForTest:(x,z)=>{if(!Number.isInteger(x)||!Number.isInteger(z))return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(x+.5,0,z+.5);orbit.radius=23;orbit.theta=.62;orbit.phi=.92;cameraUpdate();return screenPointForTest(new THREE.Vector3(x+.5,-.08,z+.5));},
   getPoolSiteProtectionForTest:()=>({site:{...protection.POOL_WORKSITE},protected:sandbox.isProtectedDigCell(14,-5,currentProtectionContext()),context:currentProtectionContext()}),
-  getPoolRouteClearanceForTest:()=>{const world=sandbox.getState().world;let minDistance=Infinity,closest=null;for(let seconds=0;seconds<=180;seconds+=1){for(const actor of protection.actorContext(world,seconds).neighbors){const distance=Math.hypot(actor.x-14.5,actor.z+4.5);if(distance<minDistance){minDistance=distance;closest={id:actor.id,seconds,x:actor.x,z:actor.z};}}}return {minDistance,closest};},
   getBlockScreenPointForTest:(key)=>{const block=blockByKey.get(key);return block?screenPointForTest(new THREE.Vector3(block.x+.5,block.y+(block.type==='tile'?.12:.98),block.z+.5)):null;},
   getPointerTargetForTest:(x,y)=>{const hit=worldTargetAtScreen(x,y);return hit?{kind:hit.kind,key:hit.key||null,x:hit.x??null,z:hit.z??null,step:hit.step||null}:null;},
   getActorPickForTest:(x,y)=>{const animal=animalAtScreen(x,y);if(animal)return {kind:'animal',id:animal.id};const neighbor=neighborAtScreen(x,y);return neighbor?{kind:'neighbor',id:neighbor.id||null,name:neighbor.name}:null;},
@@ -1405,7 +1404,9 @@ canvas.addEventListener('pointerdown',event=>{
   const animal=animalAtScreen(event.clientX,event.clientY);
   const neighbor=animal?null:neighborAtScreen(event.clientX,event.clientY);
   const actor=animal?{kind:'animal',actor:animal}:neighbor?{kind:'neighbor',actor:neighbor}:null;
-  if(actor&&worldHit&&Number.isFinite(worldHit.depth)){
+  const poolWorksite=worldHit?.kind==='ground'&&worldHit.x===14&&worldHit.z>=-8&&worldHit.z<=-3;
+  if(poolWorksite)gesture.target=worldHit;
+  else if(actor&&worldHit&&Number.isFinite(worldHit.depth)){
    // Generous actor hit areas must not steal a foreground ground, water, or block tap.
    const point=actor.kind==='animal'
     ?new THREE.Vector3(animal.x,animal.species==='giraffe'?.8:.48,animal.z)

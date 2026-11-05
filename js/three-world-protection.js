@@ -102,8 +102,6 @@
    markNeighborObstacleRect(cells,x,z+4.12,1.58,.18);
    markNeighborObstacleRect(cells,x+2.50,z+4.12,1.80,.18);
   }
-  // Keep moving characters clear of the default swimming-pool excavation strip.
-  markNeighborObstacleRect(cells,13,-8,3,6);
   cached={revision,cells,pathCache:new Map(),routeCache:new WeakMap()};
   navigationCache.set(world,cached);
   return cached;

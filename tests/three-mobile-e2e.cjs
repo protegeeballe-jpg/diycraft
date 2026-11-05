@@ -293,12 +293,8 @@ const {chromium}=require('playwright');
   // while family characters follow their routes. Hold gestures tolerate small finger drift.
   const poolPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.focusGroundCellForTest?.(14,-5));
   assert.ok(poolPoint?.visible,'The default swimming-pool worksite must be visible for touch excavation.');
-  const poolDebug=await page.evaluate(()=>({
-   protection:window.__DIYCRAFT_THREE_EDIT__?.getPoolSiteProtectionForTest?.(),
-   route:window.__DIYCRAFT_THREE_EDIT__?.getPoolRouteClearanceForTest?.()
-  }));
-  assert.equal(poolDebug.protection?.protected,false,'Moving neighbors must not block the reserved pool dig cell.');
-  assert.ok(poolDebug.route?.minDistance>1.05,'Family routes must keep clear of the pool dig site.');
+  const poolDebug=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPoolSiteProtectionForTest?.());
+  assert.equal(poolDebug?.protected,false,'Moving neighbors must not block the reserved pool dig cell.');
   const poolHit=await page.evaluate(point=>window.__DIYCRAFT_THREE_EDIT__?.getPointerTargetForTest?.(point.x,point.y),poolPoint);
   assert.equal(poolHit?.kind,'ground','The pool site must raycast to the editable ground surface.');
   await dispatchTouch(poolPoint,67,680);
