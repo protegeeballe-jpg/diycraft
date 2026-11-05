@@ -1626,7 +1626,7 @@ function queueDeviceFileSave(world,immediate=false){
   if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
   void drainDeviceFileSave(true);
  }else if(!deviceFileSaveTimer){
-  deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave(false);},1500);
+  deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave(false);},900);
  }
  return true;
 }
@@ -1666,14 +1666,17 @@ async function drainDeviceFileSave(immediate=false){
   const flushAgain=deviceFileFlushRequested;deviceFileFlushRequested=false;
   if(pendingDeviceFileWorld&&primaryWorldFileHandle&&deviceWorldFileState==='connected'){
    if(flushAgain)void drainDeviceFileSave(true);
-   else if(!deviceFileSaveTimer)deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave(false);},1500);
+   else if(!deviceFileSaveTimer)deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave(false);},900);
   }
  }
 }
 async function rememberPrimaryDeviceFile(handle){
+ try{await deviceFiles.forgetHandle();}
+ catch(error){
+  primaryWorldFileRemembered=false;
+  throw new Error('The previous remembered file link could not be cleared safely. No new automatic file target was selected.');
+ }
  try{
-  // Remove a previous pointer first so a failed update cannot reopen the wrong file next time.
-  await deviceFiles.forgetHandle();
   await deviceFiles.rememberHandle(handle);
   primaryWorldFileRemembered=true;
   return true;
@@ -1720,8 +1723,9 @@ async function connectDeviceWorldFile(){
   else await deviceFiles.writeHandle(handle,adapter.toSavedWorld(sandbox.getState().world));
   if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
   pendingDeviceFileWorld=null;
-  primaryWorldFileHandle=handle;primaryWorldFileName=handle.name;deviceWorldFileState='connected';primaryWorldFileRemembered=false;
+  // Replace the remembered pointer before switching the in-memory active target.
   await rememberPrimaryDeviceFile(handle);
+  primaryWorldFileHandle=handle;primaryWorldFileName=handle.name;deviceWorldFileState='connected';
   syncDeviceFileControls(text?'Opened and linked '+handle.name+'. Automatic saves are enabled.':'Created '+handle.name+'. Automatic saves are enabled.');
  }catch(error){
   if(error?.name==='AbortError')syncDeviceFileControls('File selection cancelled. Your current world was not changed.');
@@ -1732,6 +1736,8 @@ async function openImportedPortableWorld(worldText,fileName){
  if(typeof worldText!=='string'||!worldText)throw new Error('The selected world file is empty.');
  adapter.createSnapshot(JSON.parse(worldText));
  const previous={handle:primaryWorldFileHandle,name:primaryWorldFileName,connected:deviceWorldFileState==='connected',remembered:primaryWorldFileRemembered};
+ if(previous.handle&&!previous.connected)
+  throw new Error('Reconnect or repair the current device file before opening another world, so unsaved changes are not abandoned.');
  // Flush the previous target first, then remove its remembered pointer before importing another world.
  if(previous.handle&&previous.connected){
   pendingDeviceFileWorld=sandbox.getState().world;
