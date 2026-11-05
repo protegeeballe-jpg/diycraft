@@ -533,7 +533,7 @@ function renderSandbox(state){
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
-  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getState:()=>sandbox.getState()};
+  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getPersistenceStats:()=>{const state=sandbox.getState();return {name:state.world.name,sourceUnchanged:state.sourceUnchanged,storageKeys:localStorage.length};},getState:()=>sandbox.getState()};
  updatePlayerDiagnostics();
 }
 function selectedBlock(){
@@ -1166,10 +1166,78 @@ function animate(now){
   window.__DIYCRAFT_THREE_EDIT__.textureCount=renderer.info.memory.textures;
  }
 }
+const MAX_BACKUP_BYTES=32*1024*1024;
+const worldNameInput=document.getElementById('world-name');
+const backupFeedback=document.getElementById('backup-feedback');
+function applyWorldName(){
+ try{
+  const next=sandbox.setWorldName(worldNameInput.value);
+  worldNameInput.value=next.world.name;
+  renderSandbox(next);
+  backupFeedback.textContent='World name updated in this experimental copy.';
+ }catch(error){backupFeedback.textContent='World name was not changed: '+error.message;}
+}
+function downloadWorldBackup(){
+ try{
+  const named=sandbox.setWorldName(worldNameInput.value);
+  worldNameInput.value=named.world.name;
+  renderSandbox(named);
+  const saved=adapter.toSavedWorld(named.world);
+  const blob=new Blob([JSON.stringify(saved,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),anchor=document.createElement('a');
+  const safeName=saved.name.replace(/[^a-z0-9_-]+/gi,'_')||'DIYCraft';
+  anchor.href=url;anchor.download=safeName+'.json';anchor.style.display='none';
+  document.body.append(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  backupFeedback.textContent='Version-1 JSON backup prepared: '+safeName+'.json. No device storage was written.';
+ }catch(error){backupFeedback.textContent='Backup was not created: '+error.message;}
+}
+async function restoreWorldBackup(file){
+ if(!file)return;
+ try{
+  if(file.size>MAX_BACKUP_BYTES)throw new RangeError('Backup file exceeds the 32 MB safety limit.');
+  const parsed=JSON.parse(await file.text());
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||!Array.isArray(parsed.blocks)||
+     !parsed.player||typeof parsed.player!=='object'||Array.isArray(parsed.player))
+   throw new TypeError('Choose a valid DIYCraft world JSON backup.');
+  // Build and validate the replacement fully before touching the current sandbox.
+  const restoredSnapshot=adapter.createSnapshot(parsed);
+  const normalizedBackup=adapter.toSavedWorld(restoredSnapshot);
+  const replacement=editing.create(restoredSnapshot);
+  const replacementState=replacement.getState();
+  const player={...restoredSnapshot.player};
+  const floor=replacement.surfaceHeightAt(player.x,player.z,player.y);
+  const grounded=Math.abs(player.y-floor)<=.18;
+  const replacementPhysics={player,jumpVelocity:0,playerGrounded:grounded,flying:false,playerActivity:''};
+  // Commit the restore atomically inside this preview only.
+  closeNeighborColoring();closeInventory();closeCharacterStudio();closeArtStudio();closeGallery();
+  animalCareShade.hidden=true;animalCareSelection=null;animalCareFlash.hidden=true;
+  if(playerModelRoot)playerModelFactory.dispose(playerModelRoot);
+  sandbox=replacement;sourceSnapshot=restoredSnapshot;originalJson=JSON.stringify(normalizedBackup);
+  playerPhysicsState=replacementPhysics;playerPlayMode=false;playerCameraMode='third';
+  playerModelRoot=playerModelFactory.create(THREE,materials,playerPhysicsState.player,performanceProfile.shadows);
+  scene.add(playerModelRoot);updatePlayerModel();
+  target.set(player.x,Math.max(1,player.y+1),player.z);
+  setPlayerPlayMode(false);
+  renderSandbox(replacementState);
+  updateNeighborModels(performance.now());cameraUpdate();
+  worldNameInput.value=normalizedBackup.name;
+  backupFeedback.textContent='World backup restored into the experimental sandbox. Live storage was not changed.';
+  status.textContent='Restored: '+normalizedBackup.name+' · '+normalizedBackup.blocks.length+' blocks.';
+ }catch(error){
+  backupFeedback.textContent='Backup not restored. Your current sandbox remains unchanged. '+error.message;
+ }finally{
+  document.getElementById('backup-restore').value='';
+ }
+}
+document.getElementById('world-name-apply').addEventListener('click',applyWorldName);
+document.getElementById('backup-download').addEventListener('click',downloadWorldBackup);
+document.getElementById('backup-restore').addEventListener('change',event=>restoreWorldBackup(event.target.files?.[0]));
 async function start(){
  const response=await fetch('./preview-three/starter-world.json',{cache:'no-store'});
  if(!response.ok)throw new Error('Starter-world fixture unavailable ('+response.status+').');
  const raw=await response.json();originalJson=JSON.stringify(raw);sourceSnapshot=adapter.createSnapshot(raw);
+ worldNameInput.value=sourceSnapshot.name;
  sandbox=editing.create(sourceSnapshot);buildNeighborModels();
  const blocks=sourceSnapshot.blocks;
  if(blocks.length){const xs=blocks.map(b=>b.x),zs=blocks.map(b=>b.z);target.set((Math.min(...xs)+Math.max(...xs)+1)/2,1,(Math.min(...zs)+Math.max(...zs)+1)/2);}

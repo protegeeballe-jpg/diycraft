@@ -141,6 +141,15 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .gallery-card strong{display:block;overflow-wrap:anywhere;margin-top:7px;font-size:11px;color:#526b55}
 .gallery-empty{padding:20px 10px;text-align:center;font-size:12px;color:#718075;background:#f5f1e7;border-radius:10px}
 @media(max-width:560px){.art-panel,.gallery-panel{padding:11px;max-height:96vh}.art-head h2,.gallery-head h2{font-size:17px}.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.art-name-row{align-items:stretch;flex-direction:column;gap:4px}#art-canvas{max-height:48vh}}
+
+/* JSON backup / restore controls */
+.backup-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:8px 0;background:#f3f1e7;border:1px solid #dce2d4;border-radius:10px}
+.backup-controls label{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;color:#586b58}
+#world-name{width:min(230px,45vw);min-width:110px;padding:7px;border:1px solid #cdd5c8;border-radius:7px;background:#fffdf8;color:#435244}
+#backup-restore{max-width:170px;font-size:10px}
+#backup-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:4px 2px 8px}
+.backup-controls button{min-height:34px}
+@media(max-width:560px){.backup-controls{gap:6px;padding:8px}.backup-controls label{flex:1 1 100%}#world-name{width:100%;flex:1}#backup-restore{max-width:100%}.backup-controls button{flex:1 1 46%}}
 </style></head>
 <body>
 <canvas id="three-world" aria-label="Interactive Three.js editing sandbox"></canvas>
@@ -162,6 +171,13 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <input id="water-x" type="number" value="14" step="1" aria-label="Water pool X coordinate" style="width:62px"><input id="water-z" type="number" value="-5" step="1" aria-label="Water pool Z coordinate" style="width:62px">
 <button id="water-add">Add water</button><button id="water-collect">Collect water</button><button id="fish-add">Add fish</button><button id="fill-hole">Fill hole</button><button id="dig-ground">Dig ground</button>
 </div>
+<div class="backup-controls" aria-label="World name and backup controls">
+ <label for="world-name">World name <input id="world-name" maxlength="30" value="My Peaceful World"></label>
+ <button id="world-name-apply" type="button">Set name</button>
+ <button id="backup-download" type="button">Download JSON backup</button>
+ <label for="backup-restore">Restore JSON <input id="backup-restore" type="file" accept=".json,application/json"></label>
+</div>
+<div id="backup-feedback" aria-live="polite">Backups are downloaded as original DIYCraft version-1 JSON. This preview does not save to device storage.</div>
 <div id="status">Loading the isolated starter-world copy…</div>
 </section>
 <section id="player-controls" hidden aria-label="Touch movement controls">

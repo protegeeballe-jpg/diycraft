@@ -601,6 +601,48 @@ function freshWorld(){
   assert.equal(galleryStats.artworks.length,2);
   await page.locator('#gallery-close').click();
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.galleryOpen()),false);
+  // Downloaded backups must be original version-1 JSON and restore atomically in this sandbox.
+  await page.locator('#world-name').fill('Onnea Garden Backup');
+  await page.locator('#world-name-apply').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.name,'Onnea Garden Backup');
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('#backup-download').click();
+  const backupDownload=await downloadPromise;
+  assert.equal(backupDownload.suggestedFilename(),'Onnea_Garden_Backup.json');
+  const backupPath=await backupDownload.path();
+  const savedBackup=JSON.parse(fs.readFileSync(backupPath,'utf8'));
+  assert.equal(savedBackup.version,1);
+  assert.equal(savedBackup.name,'Onnea Garden Backup');
+  assert.ok(Array.isArray(savedBackup.blocks)&&Array.isArray(savedBackup.waterCells)&&Array.isArray(savedBackup.waterLevels));
+  assert.equal(savedBackup.source,undefined);
+  assert.equal(savedBackup.counts,undefined);
+  assert.equal(savedBackup.blocks.some(block=>'key' in block),false);
+  assert.equal(savedBackup.animals.some(animal=>'key' in animal),false);
+  assert.equal(savedBackup.artworks.length,2,'The downloaded backup must include both saved PNG artworks.');
+  const savedBackupJson=JSON.stringify(savedBackup);
+  await page.locator('#world-name').fill('Temporary name');
+  await page.locator('#world-name-apply').click();
+  await page.locator('#backup-restore').setInputFiles({name:'Onnea_Garden_Backup.json',mimeType:'application/json',buffer:Buffer.from(savedBackupJson)});
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__.getState().world.name==='Onnea Garden Backup',null,{timeout:5000});
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.artworks.length,2);
+  assert.equal(worldState.world.player.hairStyle,'curly');
+  assert.equal(worldState.world.player.shirt,'#765432');
+  const beforeInvalidRestore=await page.evaluate(()=>{
+   const state=window.__DIYCRAFT_THREE_EDIT__.getState();
+   return {name:state.world.name,blocks:state.world.blocks.length,artworks:state.world.artworks.length,player:{...state.world.player}};
+  });
+  await page.locator('#backup-restore').setInputFiles({name:'broken.json',mimeType:'application/json',buffer:Buffer.from('{invalid json')});
+  await page.waitForFunction(()=>document.getElementById('backup-feedback').textContent.includes('Backup not restored'),null,{timeout:3000});
+  const afterInvalidRestore=await page.evaluate(()=>{
+   const state=window.__DIYCRAFT_THREE_EDIT__.getState();
+   return {name:state.world.name,blocks:state.world.blocks.length,artworks:state.world.artworks.length,player:{...state.world.player}};
+  });
+  assert.deepEqual(afterInvalidRestore,beforeInvalidRestore,'A malformed backup must leave the current world untouched.');
+  const persistenceStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPersistenceStats());
+  assert.equal(persistenceStats.storageKeys,0,'Backup download and restore must not write localStorage.');
+
 
 
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
