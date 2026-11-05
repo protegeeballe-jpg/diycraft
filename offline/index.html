@@ -208,17 +208,109 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .design-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .inventory-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:9px}
 @media(max-width:560px){.design-panel{padding:11px;max-height:96vh}.design-head h2{font-size:16px}.design-fields{grid-template-columns:1fr}}
+
+/* Compact tap-first HUD */
+#top-controls{position:fixed;z-index:35;top:calc(10px + env(safe-area-inset-top));right:12px;display:flex;gap:7px}
+.hud-icon-button{width:36px;height:36px;min-width:36px;padding:0;display:grid;place-items:center;border:1px solid #bdc9b5;border-radius:11px;background:rgba(255,252,244,.96);box-shadow:0 3px 12px #43564a22;font-size:17px;line-height:1;touch-action:manipulation}
+.hud-icon-button:focus-visible,.hud-tool:focus-visible,.hud-action:focus-visible{outline:3px solid #789d72;outline-offset:2px}
+#settings-panel{position:fixed;z-index:34;left:auto;right:10px;top:calc(54px + env(safe-area-inset-top));width:min(560px,calc(100vw - 20px));max-height:min(72dvh,calc(100dvh - 70px));}
+#settings-panel[hidden]{display:none!important}
+#settings-panel .settings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#settings-panel .settings-section>summary{font-size:13px;padding:9px 11px}
+#settings-panel .settings-section-controls{gap:7px;padding:8px 10px}
+#settings-panel .backup-controls{display:flex;flex-wrap:wrap;gap:7px}
+#settings-panel details.settings-section:first-child>summary{border-top:0}
+#hud-dismiss[hidden],#sleep-menu[hidden],#view-menu[hidden],#quick-picker[hidden]{display:none!important}
+#hud-dismiss{position:fixed;z-index:30;inset:0;background:transparent}
+.hud-popover{position:fixed;z-index:36;top:calc(54px + env(safe-area-inset-top));right:12px;width:min(260px,calc(100vw - 24px));padding:10px;background:rgba(255,252,244,.98);border:1px solid #c9d2bd;border-radius:13px;box-shadow:0 8px 28px #263c3233;display:grid;gap:7px}
+.hud-popover button,.hud-picker-button{min-height:36px;padding:8px 10px;text-align:left;font-size:12px}
+#quick-picker{position:fixed;z-index:37;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(420px,calc(100vw - 24px));max-height:min(48dvh,420px);overflow:auto;padding:12px;background:rgba(255,252,244,.98);border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 8px 28px #263c3233}
+.hud-picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.hud-picker-head strong{font:700 14px Georgia,serif;color:#405a46}
+.hud-picker-head button{width:30px;height:30px;padding:0}
+.hud-picker-grid,.hud-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
+.hud-picker-grid button,.hud-choice-button{min-height:36px;padding:7px 8px;font-size:11px}
+.hud-choice-group{display:grid;gap:5px;min-width:0}
+.hud-choice-title{font-size:11px;font-weight:700;color:#60725f}
+.hud-choice-button.active,.hud-picker-grid button.active{background:#e4eddf;border-color:#8aaa79;box-shadow:inset 0 0 0 1px #8aaa79}
+.hud-native-choice{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important}
+.hud-color-choice{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;font-size:12px}
+.hud-color-choice input{width:48px;height:34px;padding:2px}
+.hud-picker-primary{width:100%;margin-top:8px;text-align:center!important;font-weight:700!important;background:#e4eddf!important}
+.hud-picker-note{font-size:11px;line-height:1.4;color:#718075;margin:8px 0 0}
+#build-toolbar{position:fixed;z-index:28;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 7px;background:rgba(255,252,244,.94);border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 4px 16px #43564a22;max-width:calc(100vw - 24px);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+#build-toolbar::-webkit-scrollbar{display:none}
+.hud-tool{width:34px;height:34px;min-width:34px;padding:0;display:grid;place-items:center;border-radius:9px;font-size:17px;line-height:1;touch-action:manipulation}
+#player-controls{z-index:29;left:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:6px;border-radius:12px}
+#player-controls .dpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px);gap:3px}
+#player-controls .dpad button{font-size:16px;min-width:36px;min-height:34px}
+#player-controls .dpad button[data-move="forward"]{grid-column:2;grid-row:1}
+#player-controls .dpad button[data-move="left"]{grid-column:1;grid-row:2}
+#player-controls .dpad button[data-move="back"]{grid-column:2;grid-row:2}
+#player-controls .dpad button[data-move="right"]{grid-column:3;grid-row:2}
+#play-instructions{display:none}
+#player-actions{z-index:29;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,42px);gap:4px;padding:5px;border-radius:12px}
+.player-action-button{width:42px;height:36px;min-width:42px;padding:3px;font-size:10px;line-height:1.1}
+#dance,#sit{font-size:10px}
+@media(max-width:700px){
+ #top-controls{top:calc(8px + env(safe-area-inset-top));right:8px;gap:5px}
+ .hud-icon-button{width:34px;height:34px;min-width:34px;font-size:16px}
+ #settings-panel{top:calc(50px + env(safe-area-inset-top));right:8px;width:calc(100vw - 16px);max-height:64dvh}
+ #build-toolbar{bottom:calc(102px + env(safe-area-inset-bottom));width:calc(100vw - 16px);justify-content:flex-start}
+ #player-controls{left:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:5px}
+ #player-actions{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));gap:3px;padding:4px}
+ #quick-picker{bottom:calc(148px + env(safe-area-inset-bottom));max-height:42dvh}
+}
+@media(max-height:520px) and (orientation:landscape){
+ #build-toolbar{bottom:calc(8px + env(safe-area-inset-bottom));left:50%;width:auto;max-width:42vw}
+ #player-controls,#player-actions{bottom:calc(8px + env(safe-area-inset-bottom))}
+ #quick-picker{bottom:calc(64px + env(safe-area-inset-bottom));max-height:58dvh}
+}
+
 </style></head>
 <body>
 <canvas id="three-world" aria-label="Three-dimensional DIYCraft world: tap to build or fill a hole, press and hold for 0.6 seconds to dig or remove a block, drag to look around" title="Tap to build or fill · Hold 0.6s to dig or remove · Drag to look around"></canvas>
 <div id="world-feedback" role="status" aria-live="polite" hidden></div>
-<button id="settings-toggle" type="button" aria-label="Hide controls panel" aria-controls="settings-panel" aria-expanded="true" title="Hide controls panel">⚙</button>
+<div id="top-controls" aria-label="World controls">
+ <button id="settings-toggle" class="hud-icon-button" type="button" aria-label="Open setup settings" aria-controls="settings-panel" aria-expanded="false" title="Setup settings">⚙</button>
+ <button id="sleep-toggle" class="hud-icon-button" type="button" aria-label="Sleeping options" aria-controls="sleep-menu" aria-expanded="false" title="Sleeping options">☾</button>
+ <button id="view-toggle" class="hud-icon-button" type="button" aria-label="Viewing options" aria-controls="view-menu" aria-expanded="false" title="Viewing options">◉</button>
+</div>
+<div id="hud-dismiss" hidden aria-hidden="true"></div>
+<div id="sleep-menu" class="hud-popover" hidden aria-label="Sleeping options">
+ <button type="button" data-sleep-action="sleep">Sleep here</button>
+ <button type="button" data-sleep-action="transformer">Transformer sleep</button>
+ <button type="button" data-sleep-action="set-bed">Set home bed</button>
+ <button type="button" data-sleep-action="go-home">Go home and sleep</button>
+</div>
+<div id="view-menu" class="hud-popover" hidden aria-label="Viewing options">
+ <button type="button" data-view-mode="build">Build view</button>
+ <button type="button" data-view-mode="third">Third-person view</button>
+ <button type="button" data-view-mode="first">First-person view</button>
+ <button type="button" data-view-mode="fullscreen">Full screen</button>
+</div>
+<section id="quick-picker" hidden aria-label="Quick selection panel">
+ <div class="hud-picker-head"><strong id="quick-picker-title">Choose an option</strong><button id="quick-picker-close" type="button" aria-label="Close options">✕</button></div>
+ <div id="quick-picker-content"></div>
+</section>
+<nav id="build-toolbar" aria-label="Building toolbar">
+ <button class="hud-tool" type="button" data-hud-tool="inventory" aria-label="Inventory backpack" title="Inventory">🎒</button>
+ <button class="hud-tool" type="button" data-hud-tool="tiles" aria-label="Tile designs" title="Tiles">▦</button>
+ <button class="hud-tool" type="button" data-hud-tool="green" aria-label="Grass and leaves" title="Grass and leaves">🟩</button>
+ <button class="hud-tool" type="button" data-hud-tool="stone" aria-label="Stone design" title="Stone">🟪</button>
+ <button class="hud-tool" type="button" data-hud-tool="dirt" aria-label="Dirt and soil" title="Dirt">🟫</button>
+ <button class="hud-tool" type="button" data-hud-tool="water" aria-label="Water" title="Water">🟦</button>
+ <button class="hud-tool" type="button" data-hud-tool="flower" aria-label="Flower colors" title="Flowers">🌸</button>
+ <button class="hud-tool" type="button" data-hud-tool="animal" aria-label="Choose animal" title="Animals">🐾</button>
+</nav>
 
-<section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false">
+
+
+<section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false" hidden>
 <div class="settings-heading"><h1 id="settings-title">DIYCraft · Peaceful Painterly World</h1><button id="settings-close" type="button" aria-label="Close settings">Close ✕</button></div>
 <div class="sub">Explore, build, paint, and care for your world · Watercolor + colored-pencil texture</div>
  <div class="toolbar">
-<details class="settings-section" open><summary>Build &amp; Materials</summary><div class="settings-section-controls">
+<details class="settings-section"><summary>Build &amp; Materials</summary><div class="settings-section-controls">
 <label for="block-type">Material <select id="block-type"><option value="grass">Grass</option><option value="water">Water</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select></label>
 <label for="color">Custom color <input id="color" type="color" value="#70b85a" aria-label="Custom block color"></label><label for="door-style">Door style <select id="door-style"><option value="classic">Classic door</option><option value="window">Window door</option><option value="garden">Garden door</option></select></label>
 <button id="add" type="button">Place on face</button><button id="door" disabled>Open / close door</button>
@@ -264,6 +356,8 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <section id="player-actions" hidden aria-label="Touch action controls">
  <button id="jump" class="player-action-button" type="button" disabled aria-label="Jump">Jump</button>
  <button id="flight" class="player-action-button" type="button" disabled aria-label="Toggle flight">Fly</button>
+  <button id="dance" class="player-action-button" type="button" aria-label="Dance">Dance</button>
+  <button id="sit" class="player-action-button" type="button" aria-label="Sit">Sit</button>
 </section>
 
 <section id="neighbor-coloring" class="neighbor-color-shade" hidden aria-label="Color together with a neighbor">
@@ -419,5 +513,5 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <div id="animal-care-flash" hidden aria-hidden="true"></div>
 <script src="../js/three.js"></script><script src="../js/three-performance-profile.js"></script><script src="../js/three-world-adapter.js"></script><script src="../js/three-world-storage.js"></script><script src="../js/three-world-starter.js"></script><script src="../js/three-door-model.js"></script>
 <script src="../js/three-painterly-materials.js"></script><script src="../js/three-plant-geometry.js"></script><script src="../js/three-animal-geometry.js"></script><script src="../js/three-world-protection.js"></script><script src="../js/three-world-time.js"></script><script src="../js/three-world-edit-sandbox.js"></script>
-<script src="../js/three-world-raycast.js"></script><script src="../js/three-door-motion.js"></script><script src="../js/three-player-physics.js"></script><script src="../js/three-player-camera.js"></script><script src="../js/three-player-model.js"></script><script src="../js/three-neighbor-model.js"></script><script src="../js/three-neighbor-coloring.js"></script><script src="../three-world-live.js"></script>
+<script src="../js/three-world-raycast.js"></script><script src="../js/three-door-motion.js"></script><script src="../js/three-player-physics.js"></script><script src="../js/three-player-camera.js"></script><script src="../js/three-player-model.js"></script><script src="../js/three-neighbor-model.js"></script><script src="../js/three-neighbor-coloring.js"></script><script src="../js/three-compact-hud.js"></script><script src="../three-world-live.js"></script>
 </body></html>
