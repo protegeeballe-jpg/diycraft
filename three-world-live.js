@@ -878,6 +878,7 @@ function clickAt(x,y){
 function buildInputAt(x,y,z){
  const type=document.getElementById('block-type').value,input={type,x,y,z};
  if(type==='custom'){input.color=document.getElementById('color').value;input.texture='custom';}
+ const quickColor=window.DIYCraftQuickMaterialColors?.[type];if(quickColor&&/^#[0-9a-f]{6}$/i.test(quickColor))input.color=quickColor;
  if(type==='tile')input.tilePattern=document.getElementById('pattern').value;
  if(type==='door')input.style=document.getElementById('door-style').value;
  return input;
