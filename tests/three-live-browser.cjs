@@ -245,6 +245,16 @@ const {chromium}=require('playwright');
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);
   }
+  // A versioned legacy-engine URL must use its canonical precached key while offline.
+  await context.setOffline(true);
+  const versionedEngineFallback=await page.evaluate(async()=>{
+   const response=await fetch('./diycraft.js?offline-cache-audit=1',{cache:'no-store'});
+   return {ok:response.ok,status:response.status,bytes:(await response.arrayBuffer()).byteLength};
+  });
+  assert.ok(versionedEngineFallback.ok&&versionedEngineFallback.bytes>0,
+   'The offline worker must serve the canonical diycraft.js cache for a query-suffixed same-origin request.');
+  await context.setOffline(false);
+
   await page.screenshot({path:'three-live-main.png',fullPage:false});
   const flowerFocus=await page.evaluate(()=>{
    const panel=document.getElementById('settings-panel'),toggle=document.getElementById('settings-toggle');

@@ -63,8 +63,10 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Cache every same-origin production script for reliable offline startup.
-  if (request.destination === 'script') {
+  const gameScriptUrl = new URL('diycraft.js', self.registration.scope);
+
+  // Preserve the canonical cache key for query-suffixed legacy-engine URLs.
+  if (request.destination === 'script' && url.pathname !== gameScriptUrl.pathname) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       try {
@@ -81,7 +83,6 @@ self.addEventListener('fetch', event => {
 
   // The game engine is a shared same-origin asset used by both entry pages.
   // Serve the precached copy first so offline play works after installation.
-  const gameScriptUrl = new URL('diycraft.js', self.registration.scope);
   if (url.pathname === gameScriptUrl.pathname) {
     // Prefer the latest published engine while online. Use the cached engine only
     // when offline, so an older installed worker cannot pin the game to stale code.

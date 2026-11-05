@@ -20,7 +20,7 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 ## Neighbors and animals
 - The player collides with solid blocks and slides along walls. Open doors are walkable; closed doors block the doorway, and thin tiles remain step-up friendly.
 - Neighbors use local obstacle-aware paths around cottage walls and player-built blocks. At night (including the automatic night cycle), they go indoors and sleep; little Zzz signs appear above their homes.
-- Mira, Theo, and the Santos family are kind, non-verbal neighbors with individual walking routes and homes.
+- Hyacinth, Theo, Miguel, Ana, Lia, Maya and Nico are kind, non-verbal neighbors with individual walking routes and homes.
 - Tap a neighbor to open a quiet shared coloring activity.
 - Tap an animal to open snack, water, brushing, and play activities. Animals cannot be attacked or removed.
 
@@ -28,7 +28,7 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 
 - The live game and its `/offline/` entry point use the same local Three.js/WebGL renderer. Canvas 2D is reserved for the Art Studio, shared coloring canvas, and locally generated surface textures.
 - The first online visit caches the Three.js runtime and its local modules for offline startup. Keep the page open until the offline-ready note confirms setup.
-- The first time, open DIYCraft while the device is online and wait for the **“Offline play is ready”** message.
+- The first time, open DIYCraft while the device is online and wait for the **“Offline game engine is ready on this device.”** message.
 - A same-origin service worker then caches the main game, the /offline/ page, and every local Three.js runtime module. Its versioned cache is refreshed when a new offline worker is installed.
 - After the ready message, DIYCraft can be reopened from the same browser on that device without an internet connection.
 - The game has no remote scripts, images, external game servers, analytics, ads, chat, or gameplay network requests. Only the service worker fetches the two game pages from the same site when refreshing its offline copies.

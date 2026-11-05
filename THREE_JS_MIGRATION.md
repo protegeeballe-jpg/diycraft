@@ -1,22 +1,25 @@
-# DIYCraft: staged Three.js migration
+# DIYCraft: Three.js production architecture and migration history
 
-## Current architecture
+## Current production architecture (2026-11-06)
 
-- `diycraft.js` is the production Canvas 2D engine. It owns movement, collision, world editing, UI, animation, world validation, autosave, backup/restore and offline behavior.
-- `js/three.js` is the repository's bundled Three.js r128 library.
-- `js/script.js` is an early Three.js proof-of-concept, not a complete replacement for the current game.
-- `three-painterly-preview.html/js` is an isolated visual study. It proves local WebGL rendering and procedural watercolor/pencil texture generation, but it does not yet render the user's saved world or implement the production controls.
-- `js/three-world-adapter.js` is the first migration boundary. It converts an already validated world object into an immutable, renderer-only snapshot.
+- `index.html` and `offline/index.html` are the live production entry points. Both load the same local Three.js r128/WebGL game runtime and are kept in parity apart from relative asset paths.
+- `three-world-live.js` coordinates the production scene, player, animals, world editing, HUD, time-of-day visuals and rendering loop.
+- `js/three-world-adapter.js` maps validated version-1 world data into renderer state. `js/three-world-storage.js` owns the approved persistence boundary and preserves the original `diycraft_peaceful_voxel_v1` save key and schema.
+- `js/three-viewport.js` sizes the drawing buffer and camera from the actual canvas dimensions, including orientation and viewport changes.
+- `js/three.js` is the pinned, bundled Three.js r128 library. Production scripts and assets are same-origin; the service worker caches production pages and local runtime modules.
+- Canvas 2D remains in use for the Art Studio, shared coloring and locally generated painterly textures, not for the 3D world.
+- `diycraft.js` is retained as the legacy Canvas 2D engine and parity/reference source; it is not loaded by current production entry points. `offline/classic-isometric.html` is a separate legacy standalone page.
+- `three-world-preview*`, `three-world-edit-preview*` and `three-painterly-preview*` are development/visual-QA routes, not the live game. `js/script.js` is an early prototype used only by archived material.
 
-## Non-negotiable safety rules
+## Non-negotiable production safety rules
 
-1. Canvas 2D remains the production renderer and the known-good rollback path during migration.
-2. The Three.js renderer receives a read-only snapshot. It must never mutate `world`, write `localStorage`, or change the backup format.
-3. Do not recolor or normalize saved user hex values. A rendering material may derive textures from a color, but the saved value remains exact.
-4. Never replace or delete saved fields merely because the new renderer does not understand them yet. Preserve the existing `validWorld`, save, import, export and gzip paths until parity tests prove otherwise.
-5. Feature work lands in small, independently testable commits on this branch. No direct edits to `main`; do not make Three.js the default until the migration gate is met.
-6. Include the local Three.js library and required rendering modules in offline-cache planning before any production route is enabled. No third-party CDN dependency.
-7. Do not optimize by removing visible detail or disabling existing interactions. Use measured chunking, geometry batching, instancing and texture reuse.
+1. Keep all world writes behind `js/three-world-storage.js` and serialization through the version-1 adapter. Do not introduce a parallel save key or schema without an explicit migration plan.
+2. Preserve unknown/legacy saved fields and exact user-selected color strings. Rendering defaults must never be written back as user choices.
+3. Keep `index.html` and `offline/index.html` functionally identical; update their asset-relative paths together and validate parity.
+4. Keep production dependencies local. When adding/changing runtime modules, update `sw.js` and its cache version, then verify online and offline startup.
+5. Keep previews isolated from production saves. Preview diagnostics and fixtures must not become game behavior or write user storage.
+6. Preserve touch, keyboard, block editing, animal care, backup/restore and watercolor detail while improving performance.
+7. Treat CI/software-WebGL success as regression evidence, not physical-device certification. Continue checking representative low-end phones and tablet/laptop viewports.
 
 ## Migration stages
 
@@ -41,8 +44,8 @@
 - CI validation passed: https://github.com/protegeeballe-jpg/diycraft/actions/runs/41767639398
 - Screenshot artifact: `diycraft-three-actual-starter-world` (retained for 7 days by CI).
 
-### Stage 2 — Editing parity in a sandbox
-**Status: In progress — block editing, doors, all tile patterns, animals, water/fish, Material Bucket reuse, ground digging/refilling, player collision and home/neighbor/animal protection have isolated regression coverage; production remains untouched**
+### Stage 2 — World editing and sandbox parity
+**Status: Implemented in the live production renderer; unit and browser regression coverage remains active.**
 - `js/three-world-edit-sandbox.js` clones the immutable renderer snapshot into private in-memory state and exposes selection, validated block placement/removal, door toggling, tile-pattern changes, stacked water-layer addition/collection and fish placement. Removal recovers the original block appearance into a bounded 120-item Material Bucket and refuses destructive edits when the bucket is full.
 - Water edits follow the production rules: only excavated cells can be filled, each cell is capped at its recorded depth, collection recovers a water item into the Material Bucket, and collecting the final layer removes fish in that cell. A wet cell accepts up to three fish.
 - Terrain editing now covers both directions. `excavateGround()` adds one layer per dig, creates the matching dirt Material Bucket item, increments a stackable dirt entry in the 60-slot materials pouch, and enforces the production 99-item stack, 120-item Bucket, 12,000 ground-cell and safe-depth limits. If the targeted cell contains water, digging collects a water layer instead. `fillExcavation()` prechecks the full cell range, fills all underground layers with the selected block, then clears the excavation, water and fish together without altering the Bucket. Both use normalized `{x,z,depth}` records inside the sandbox.
@@ -65,7 +68,7 @@
 - Remaining before Stage 2 completion: continue terrain/door interaction checks, verify the complete editing flow on representative low-cost Android devices, and finish the remaining visual/input/UI parity. Do not connect production controls or storage.
 
 ### Stage 3 — Player, physics and animation
-**Status: In progress — player movement, jumping, flight, camera modes, collision recovery, obstacle-aware NPC routes, seven neighbor models, seven default roaming animal models and animal-care interactions are implemented in the isolated sandbox; the original game has no swimming mechanic to port**
+**Status: Implemented in the live production renderer; continued cross-device testing remains part of maintenance. The game has no swimming mechanic.**
 - `js/three-player-physics.js` ports the original 60 Hz player movement step: keyboard/touch direction normalization, yaw transforms, independent X/Z collision sliding, step-height/floor behavior, gravity/falling/landing, flight controls, world bounds and sleep/bed activity rules. The fixed-step accumulator clamps long frame stalls and never exceeds six physics updates per rendered frame.
 - `js/three-player-camera.js` reproduces the original first-person eye offset and third-person follow pose. `js/three-player-model.js` renders the saved player character colors with a lightweight reusable geometry set.
 - `js/three-world-protection.js` also exposes the seven original neighbor/family presentation states. These are compared field-by-field against production `currentNeighbors()`, including all seven active route schedules, appearance colors, hair/outfit/accessory choices, pace, scale, activity markers, sleep positions and facing.
@@ -79,6 +82,7 @@
 - Remaining: continue full world-rendering and UI/input parity checks, then verify movement and frame stability on representative low-cost Android devices. NPC tap selection now has an explicit source-parity helper/test, while the mobile browser flow continues to verify real resident taps and coloring. Swimming should not be invented unless the production game gains that mechanic through a separate, deliberate design change. Keep every addition isolated and test-driven.
 
 ### Stage 4 — UI, inventory and persistence parity
+**Status: Implemented in the live production renderer, including the version-1 save/backup boundary.**
 - The isolated editing preview now renders the original day/sunset/night palettes and auto-cycle boundaries using a single vertex-colored sky dome, one celestial mesh, and one 44-point star mesh. Palette changes reuse existing geometry/materials; no new watercolor texture is generated for a time transition. A time selector changes only the sandbox clone and never persists to browser storage.
 - The world-time palette helper preserves the exact original Canvas 2D sky, ground and sun colors/overlays. Automated tests compare static colors and auto-cycle thresholds; browser checks cover the selector, actual light/sky updates, night stars, and automatic transition states.
 
@@ -89,6 +93,7 @@
 - Test offline reload with the local Three.js and adapter assets cached by the service worker.
 
 ### Stage 5 — Performance, visual QA and controlled cutover
+**Status: Production cutover complete. Automated regression and responsive-browser checks pass; physical low-end Android validation remains a separate device-specific QA item.**
 - Use the capability-based profiles in `js/three-performance-profile.js`: low-end devices use a 30 FPS render cap, 1× pixel ratio, no realtime shadows or antialiasing, 128 px painterly textures and reduced procedural stroke count; balanced devices use 45 FPS / 1.2× / 192 px; higher-capability devices use up to 60 FPS / 1.5× / 256 px.
 - Compatible solid meshes are grouped by 16×16 world chunk and material, while plants use one vertex-colored painterly mesh each. Chunk-level frustum culling, cached materials and bounded texture anisotropy are part of the performance baseline.
 - Browser CI exercises both the real starter world and a synthetic 2,032-block world in a 390×844 mobile viewport at 3× device scale factor, with low-end hardware signals. Both the read-only renderer and the interactive editing sandbox are measured. The editor stress pass checks representation coverage, batch/render-object counts, draw calls, geometry and texture counts, storage isolation, unchanged source data and actual canvas pixel dimensions after the 1× cap. The normal interactive editing test also runs as a touch-enabled phone viewport.
@@ -98,16 +103,15 @@
 - Verify no new console errors, lost save data, changed color values, broken controls or missing offline assets.
 - Ship a deliberate renderer switch only after all acceptance tests pass and a tested rollback route exists.
 
-## Acceptance gate before cutover
+## Ongoing production maintenance gate
 
-- All existing world-schema and backup tests pass.
-- Existing saves load without rewrite or migration loss.
-- All block types, custom textures, doors and tile patterns render and remain editable.
-- Player movement, camera modes, collision, water, animals, plants and other animations work.
-- Color picker spectrum and stored color strings are unchanged.
-- Mobile touch controls and offline play pass browser tests.
-- Performance is measured against the current Canvas 2D baseline on representative devices.
-- Canvas 2D remains available as an explicit rollback until the new renderer has proven stable.
+- Keep all version-1 save, backup, restore, corruption-preservation and round-trip tests green.
+- Preserve existing user saves and the original local storage key; do not silently rewrite user data.
+- Keep editing, animals, plants, character activities, inventory, art/coloring tools and time-of-day behavior covered by unit/browser tests.
+- Keep portrait phone, landscape phone, tablet and laptop aspect-ratio/orientation checks green.
+- Keep main/offline page parity, strict same-origin dependencies and service-worker cache coverage green.
+- Measure browser performance and retain the existing low-end pixel-ratio/FPS limits. CI software-WebGL results are not physical-phone certification.
+- Keep the legacy `diycraft.js` engine as reference/rollback material, but do not accidentally load it alongside the current production Three.js renderer.
 
 ## How to run adapter tests
 
@@ -118,7 +122,7 @@ node tests/three-world-adapter.test.cjs
 The adapter has no dependency on Three.js, the DOM, canvas or browser storage. This is intentional: data compatibility is tested independently from rendering.
 
 
-## 2026-11-05 repository audit and migration checkpoint
+## 2026-11-05 earlier repository audit and migration checkpoint (historical; superseded by production cutover)
 
 - Audited all 65 tracked repository files: source modules, production and offline HTML, the service worker, CI workflows, previews, tests, documentation, the SVG icon, the two PNG icon assets, and the empty Pages metadata file. Binary app icons were verified as PNG assets; they are not source files to rewrite.
 - The live entry point remains deliberately unchanged: `index.html` loads `diycraft.js`, the existing Canvas 2D engine. The offline entry point does the same. Three.js work remains isolated in the migration previews/sandbox; do not switch production rendering until the full acceptance gate and rollback checks pass.
@@ -259,3 +263,14 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Diagonal-heading gait check: a numerical regression test rotates the local foot displacement into world space and back, proving that a diagonally facing animal retains forward/back stride with no local lateral component.
+
+
+## 2026-11-06 whole-repository audit and production regression pass
+
+- The current Git tree contains 84 tracked files. The inventory covered production and offline HTML, runtime modules, service worker, manifest, legacy and preview pages, CI workflows, tests, documentation and app icons. Active source/configuration/test files were scanned for missing DOM references, duplicate IDs, non-local script references, stale production/offline page differences, TODO markers, dynamic HTML/code sinks, unreviewed network calls and event/timer usage. The bundled Three.js r128 vendor file and PNG binaries were treated as third-party/binary assets rather than hand-edited source.
+- Production DOM cross-reference checks found 127 unique runtime/HUD element IDs, all present in live HTML, with no duplicate HTML IDs. Main and offline pages match after expected relative-path substitutions; both load 22 local scripts.
+- GitHub Actions passed the production validator, migration/security/parity guard, live browser integration, mobile touch/save/frame-pacing suite, viewport sizing tests and Pages deployment on the current production revision.
+- The viewport regression suite covers portrait phone (390×844), landscape phone (844×390), laptop (1366×768), tablet (1024×768), orientation changes, ResizeObserver updates and visual-viewport changes.
+- Fixed service-worker route ordering so query-suffixed requests for the legacy `diycraft.js` engine reach its canonical offline cache fallback before the generic script handler. Added a browser regression check that requests a versioned engine URL while offline.
+- Updated project/offline documentation to reflect the live Three.js production renderer, current resident names and the actual offline-ready status message.
+- Remaining non-automatable QA: test WebGL context loss/recovery and sustained memory/frame pacing on representative physical low-cost Android devices. Browser CI is not physical-device certification.
