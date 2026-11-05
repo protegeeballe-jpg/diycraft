@@ -3,6 +3,7 @@ name: DIYCraft Three.js migration guard
 on:
   push:
     branches:
+      - main
       - three-js-migration
     paths:
       - js/three-world-adapter.js
