@@ -105,8 +105,14 @@ assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);
 assert.throws(()=>animals.createQuadrupedLegGeometry(THREE,{species:'bird'}),/ground-animal species/);
 const gaitTransform={rotation:{order:'XYZ',x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}}};
 assert.equal(animals.applyQuadrupedLegPose(gaitTransform,.73,.31),gaitTransform);
-assert.deepEqual({order:gaitTransform.rotation.order,yaw:gaitTransform.rotation.x,stride:gaitTransform.rotation.y},{
- order:'YXZ',yaw:.73,stride:.31
-},'Leg stride must rotate around the local hip axis after animal heading is applied.');
+assert.deepEqual({order:gaitTransform.rotation.order,strideX:gaitTransform.rotation.x,headingY:gaitTransform.rotation.y,rollZ:gaitTransform.rotation.z},{
+ order:'YXZ',strideX:.31,headingY:.73,rollZ:0
+},'Leg stride must occupy the local X/fore-aft swing axis while animal heading occupies Y.');
+// A vertical lower leg (-Y) rotated around local X moves along local Z (forward/back),
+// whereas a Y-axis rotation would pull it sideways along X.
+const stride=.31,length=.42;
+const localFootZ=-Math.sin(stride)*length;
+const localFootX=0;
+assert.ok(localFootZ<0&&Math.abs(localFootX)<1e-12,'Hip stride must move the foot in the animal local forward/back plane, not sideways.');
 assert.throws(()=>animals.applyQuadrupedLegPose(gaitTransform,NaN,0),/finite animal gait angles/);
 console.log('Three.js recognizable animal geometry tests complete.');

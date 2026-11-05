@@ -28,9 +28,10 @@
   if(!target||!target.rotation||typeof target.rotation.set!=='function'||
      !Number.isFinite(yaw)||!Number.isFinite(stride))
    throw new TypeError('A Three.js transform and finite animal gait angles are required.');
-  // YXZ composes heading first, then swings the limb about the animal's local X/hip axis.
+  // In YXZ, Euler X is the local fore/aft hip swing and Euler Y is the animal heading.
+  // Keep stride on X and heading on Y; swapping these values makes feet sweep sideways.
   target.rotation.order='YXZ';
-  target.rotation.set(yaw,stride,0);
+  target.rotation.set(stride,yaw,0);
   return target;
  }
  function createQuadrupedLegGeometry(THREE,options={}){

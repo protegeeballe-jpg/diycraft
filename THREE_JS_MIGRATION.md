@@ -253,3 +253,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Live UI event-listener audit: removed duplicate world-name apply, backup-download and backup-restore registrations. Browser tests now count registrations for these controls and assert that a single backup click produces exactly one download.
+
+
+- Corrected local gait-axis assignment: the previous helper had mistakenly assigned animal heading to Euler X and stride to Euler Y. The live transform now assigns stride to Euler X and heading to Euler Y under YXZ order. A vertical leg consequently swings forward/back along local Z instead of sweeping inward/outward along local X. Unit tests now assert the specific Euler components and the expected local foot displacement; live browser diagnostics expose both components for verification.
