@@ -252,7 +252,16 @@ const {chromium}=require('playwright');
   assert.equal(blockTarget?.key,builtBlock.key);
   assert.equal(blockTarget?.step?.[1],1,'A tap on the top face must build one block above the target.');
   await dispatchTouch(builtBlock.point,62);
-  await page.waitForFunction(({x,z})=>(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[]).some(block=>block.x===x&&block.y===1&&block.z===z&&block.type==='grass'),{x:buildCell.x,z:buildCell.z},{timeout:10000});
+  try{
+   await page.waitForFunction(({x,z})=>(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[]).some(block=>block.x===x&&block.y===1&&block.z===z&&block.type==='grass'),{x:buildCell.x,z:buildCell.z},{timeout:10000});
+  }catch(error){
+   const diagnostics=await page.evaluate(({x,z,point})=>{
+    const debug=window.__DIYCRAFT_THREE_EDIT__,world=debug?.getState?.().world;
+    return {blocks:world?.blocks?.filter(block=>block.x===x&&block.z===z),target:debug?.getPointerTargetForTest?.(point.x,point.y),
+     actor:debug?.getActorPickForTest?.(point.x,point.y),status:document.getElementById('status')?.textContent};
+   },{x:buildCell.x,z:buildCell.z,point:builtBlock.point});
+   throw new Error('Tap on the block did not stack another grass block: '+JSON.stringify(diagnostics)+'; '+error.message);
+  }
   const upperBlock=await page.evaluate(({x,z})=>{
    const debug=window.__DIYCRAFT_THREE_EDIT__,block=debug.getState().world.blocks.find(item=>item.x===x&&item.y===1&&item.z===z&&item.type==='grass');
    return block?{key:block.key,point:debug.getBlockScreenPointForTest(block.key)}:null;

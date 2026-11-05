@@ -902,10 +902,18 @@ function worldTargetAtScreen(clientX,clientY){
  return null;
 }
 function tapWorldAt(clientX,clientY,target){
- const animal=animalAtScreen(clientX,clientY);
- if(animal){lastPlacement=null;openAnimalCare(animal);return;}
- const neighbor=neighborAtScreen(clientX,clientY);
- if(neighbor){lastPlacement=null;openNeighborColoring(neighbor.name);return;}
+ if(target?.kind==='animal'){
+  lastPlacement=null;openAnimalCare(target.actor);return;
+ }
+ if(target?.kind==='neighbor'){
+  lastPlacement=null;openNeighborColoring(target.actor.name);return;
+ }
+ if(!target){
+  const animal=animalAtScreen(clientX,clientY);
+  if(animal){lastPlacement=null;openAnimalCare(animal);return;}
+  const neighbor=neighborAtScreen(clientX,clientY);
+  if(neighbor){lastPlacement=null;openNeighborColoring(neighbor.name);return;}
+ }
  if(animalPlacementSpecies&&placeAnimalAtScreen(clientX,clientY))return;
  const hit=target||worldTargetAtScreen(clientX,clientY);
  if(!hit){status.textContent='Tap a place in the world to build.';return;}
@@ -1382,8 +1390,11 @@ canvas.addEventListener('pointerdown',event=>{
  const gesture={id:event.pointerId,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,holdTriggered:false,target:null,holdTimer:null};
  if(!playerPlayMode){
   const animal=animalAtScreen(event.clientX,event.clientY);
-  const neighbor=animal?null:neighborAtScreen(event.clientX,event.clientY);
-  gesture.target=animal||neighbor?{kind:'actor'}:worldTargetAtScreen(event.clientX,event.clientY);
+  if(animal)gesture.target={kind:'animal',actor:animal};
+  else{
+   const neighbor=neighborAtScreen(event.clientX,event.clientY);
+   gesture.target=neighbor?{kind:'neighbor',actor:neighbor}:worldTargetAtScreen(event.clientX,event.clientY);
+  }
   if(gesture.target&&['block','ground','water'].includes(gesture.target.kind)){
    gesture.holdTimer=setTimeout(()=>{
     if(pointerGesture!==gesture||gesture.moved||gesture.holdTriggered)return;
