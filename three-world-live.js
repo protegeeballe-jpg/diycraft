@@ -1515,7 +1515,7 @@ function applyPlayerActivity(){
   let player={...playerPhysicsState.player};
   if(activity==='stop'){
    playerPhysicsState={...playerPhysicsState,playerActivity:''};
-   if(playerModelRoot){playerModelRoot.scale.set(1,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;}
+   if(playerModelRoot){playerModelRoot.scale.set(playerModelFactory.proportions.widthScale,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;}
    status.textContent='Standing up. Ready to explore!';
   }else{
    if(activity==='sleep'||activity==='transformer'){
@@ -1571,12 +1571,12 @@ function animatePlayerActivity(now){
  if(!playerModelRoot||!playerPhysicsState)return;
  const activity=playerPhysicsState.playerActivity;
  playerModelRoot.position.y=playerPhysicsState.player.y+(activity==='sit'?-.08:0);
- playerModelRoot.scale.set(1,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;
+ playerModelRoot.scale.set(playerModelFactory.proportions.widthScale,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;
  if(activity==='sit')playerModelRoot.scale.y=.82;
  else if(activity==='work')playerModelRoot.rotation.z=-.055;
  else if(activity==='dance')playerModelRoot.rotation.z=Math.sin(now*.0042)*.13;
  else if(activity==='sleep'||activity==='bed'){playerModelRoot.scale.y=.72;playerModelRoot.rotation.x=1.34;}
- else if(activity==='transformer')playerModelRoot.scale.set(1.04,1.04,1.04);
+ else if(activity==='transformer')playerModelRoot.scale.set(playerModelFactory.proportions.widthScale*1.04,1.04,1.04);
 }
 function animate(now){
  requestAnimationFrame(animate);
