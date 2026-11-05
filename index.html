@@ -1,360 +1,370 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; manifest-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#9bc7d8">
+<meta name="theme-color" content="#f3ecdc">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/svg+xml" href="./diycraft-icon.svg">
 <link rel="apple-touch-icon" sizes="192x192" href="./diycraft-icon-192.png">
-<title>DIYCraft — Peaceful Voxel World</title>
+<title>DIYCraft — Peaceful Painterly World</title>
 <style>
-:root{--ink:#263c32;--green:#39784e;--green2:#dff0df;--cream:#fffdf4;--line:#d8e2d6;--shadow:0 8px 26px #203b3026}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc7d8;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;overscroll-behavior:none}button,input,select{font:inherit}button{border:1px solid #cbd9cb;border-radius:13px;background:#fffdf4;color:#294235;font-weight:750;padding:9px 12px;box-shadow:0 2px 0 #29423512;touch-action:manipulation;cursor:pointer}button:active{transform:translateY(1px);background:#e5f0df}button:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}.primary{background:#39784e;color:white;border-color:#39784e}.soft{background:#e2f0df}.app{position:fixed;inset:0;background:#9bc7d8}.world{position:absolute;inset:0;overflow:hidden;touch-action:none}.world canvas{display:block;width:100%;height:100%;touch-action:none;outline:0}.top-hud{position:absolute;z-index:5;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.hud-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}.brand{background:#fffdf0e8;border:1px solid #fff;border-radius:15px;padding:6px 11px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}.brand .flower{font-size:22px}.brand strong{font-size:15px;letter-spacing:.3px}.hud-actions{flex-wrap:wrap;justify-content:flex-end}.hud-actions button{font-size:12px;padding:9px 11px;background:#fffdf0ed}.hud-actions .primary{background:#39784e;color:#fff}.crosshair{position:absolute;left:50%;top:50%;z-index:3;width:13px;height:13px;transform:translate(-50%,-50%);pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#fff;border:1px solid #243d30;opacity:.9;border-radius:2px}.crosshair:before{width:13px;height:2px;left:0;top:5px}.crosshair:after{height:13px;width:2px;left:5px;top:0}.top-hint{position:absolute;z-index:2;left:50%;top:calc(max(9px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);max-width:92%;border-radius:999px;padding:6px 10px;background:#fffdf0bd;color:#3b5947;font-size:11px;white-space:nowrap;pointer-events:none}.hotbar{position:absolute;z-index:5;left:50%;bottom:max(9px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#fffffff0;border:1px solid #ffffff;border-radius:16px;box-shadow:var(--shadow);max-width:95vw;overflow-x:auto}.hotbar button{width:42px;height:46px;flex:0 0 42px;padding:2px;display:grid;place-items:center;gap:0;border-radius:10px;background:#f9fbf5}.hotbar button.active{outline:3px solid #4b9660;background:#e1f0df}.hotbar .emoji{font-size:19px;line-height:1}.hotbar small{font-size:8px;color:#5c6c5e;line-height:1}.touch-controls{position:absolute;z-index:5;inset:0;pointer-events:none}.dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:112px;height:104px;display:grid;grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,31px);gap:3px;pointer-events:auto}.dpad button,.action-pad button{padding:0;background:#fffdf0d9;border:1px solid #fff;box-shadow:0 3px 12px #29423526;backdrop-filter:blur(6px);font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad [data-move="0,-1"]{grid-column:2;grid-row:1}.dpad [data-move="-1,0"]{grid-column:1;grid-row:2}.dpad [data-move="0,1"]{grid-column:2;grid-row:2}.dpad [data-move="1,0"]{grid-column:3;grid-row:2}.dpad [data-move="up"]{grid-column:2;grid-row:3;font-size:12px}.action-pad{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,56px);grid-template-rows:repeat(4,38px);gap:5px;pointer-events:auto}.action-pad button{font-size:12px;font-weight:800}.action-pad #flyDownBtn{background:#edf5ffed}.action-pad #flyUpBtn{background:#edf5ffed}.action-pad #jumpBtn{background:#39784ee8;color:white;font-size:13px}.show-controls{position:absolute;z-index:7;left:10px;bottom:10px;display:none;background:#fffdf4ed}.status{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 15px;border-radius:999px;background:#263f31;color:white;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}.status.show{opacity:1}.focus-exit{position:absolute;z-index:8;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:none}.focus-mode .top-hud{display:none}.focus-mode .top-hint{display:none}.focus-mode .focus-exit{display:block}.controllers-hidden .touch-controls{display:none}.controllers-hidden .show-controls{display:block}.menu-shade{position:absolute;z-index:9;inset:0;background:#1d34294b;display:none;align-items:center;justify-content:center;padding:14px}.menu-shade.open{display:flex}.menu{width:min(440px,96vw);max-height:88dvh;overflow:auto;background:#fffdf4;border:1px solid white;border-radius:22px;padding:18px;box-shadow:0 20px 70px #1735244c}.menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.menu-head h2{margin:0;font-size:20px}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{min-height:49px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#617165;margin:9px 0}.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink)}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button.active{background:#dff0df;border-color:#73a581}.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.slot{min-height:57px;border:1px dashed #cad9c8;border-radius:10px;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;gap:2px}.slot .ico{font-size:18px}.slot small{font-size:9px;text-align:center;line-height:1.1;overflow-wrap:anywhere}.recipe{padding:11px;margin:7px 0;border:1px solid var(--line);border-radius:12px;background:#fff}.recipe strong{font-size:13px}.recipe p{font-size:11px;color:#647466;margin:4px 0 8px}.draw-canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:12px;touch-action:none}.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note{font-size:11px;color:#647466;line-height:1.45}.hidden{display:none!important}.focus-mode .hotbar{bottom:max(5px,env(safe-area-inset-bottom))}.focus-mode .dpad,.focus-mode .action-pad{bottom:max(8px,env(safe-area-inset-bottom))}.portrait-note{display:none}
-
-.texture-note{font-size:11px;color:#637466;line-height:1.45;margin:8px 0 0}
-.color-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
-.color-template{padding:8px!important;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:132px;background:#fff!important}
-.color-template img{display:block;width:100%;height:94px;object-fit:contain;background:#fffdf8;border-radius:9px}
-.color-template span{font-size:12px;font-weight:800}
-.coloring-menu{width:min(560px,97vw)}
-.color-work-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0;font-size:13px}
-.color-work-head button{font-size:11px;padding:7px 9px}
-.coloring-canvas{max-height:48vh;object-fit:contain;background:#fffdf8;touch-action:none}
-.coloring-tools{align-items:center}
-.coloring-tools label{display:flex;align-items:center;gap:5px}
-.coloring-tools input[type=color]{width:42px;height:34px;border:0;background:transparent;padding:0}
-.color-template:focus-visible{outline:3px solid #7ab58b;outline-offset:2px}
-@media(max-width:420px){.color-template-grid{gap:7px}.color-template img{height:78px}.color-template{min-height:112px}}
-
-@media(max-width:720px){.top-hint{display:none}.brand{padding:5px 8px}.brand strong{font-size:13px}.hud-actions{gap:4px}.hud-actions button{padding:8px 9px;font-size:11px}.top-hint{top:calc(max(9px,env(safe-area-inset-top)) + 48px);font-size:10px}.hotbar{gap:3px;padding:4px}.hotbar button{width:37px;height:42px;flex-basis:37px}.dpad{transform:scale(.88);transform-origin:bottom left;left:max(5px,env(safe-area-inset-left));bottom:max(7px,env(safe-area-inset-bottom))}.action-pad{transform:scale(.9);transform-origin:bottom right;right:max(5px,env(safe-area-inset-right));bottom:max(7px,env(safe-area-inset-bottom))}.slots{grid-template-columns:repeat(5,minmax(0,1fr))}}
-@media(max-width:420px){.brand .flower{font-size:18px}.brand strong{font-size:12px}.hud-actions button{padding:7px 8px;font-size:10px}.action-pad{grid-template-columns:repeat(2,52px);grid-template-rows:repeat(4,38px)}.dpad{transform:scale(.8)}}
-
-/* DIYCraft touch-safe additions */
-.color-canvas-wrap{position:relative;width:100%}
-.neighbor-brush-cursor{position:absolute;left:0;top:0;width:22px;height:22px;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 7px #263c3299;pointer-events:none;transform:translate(-50%,-50%);opacity:0;transition:opacity .15s, left .25s, top .25s;z-index:2}
-.neighbor-brush-cursor.active{opacity:1}
-.neighbor-live{display:flex;align-items:center;gap:10px;margin:9px 0 12px;padding:10px 12px;background:#eaf4e6;border:1px solid #cfdfc8;border-radius:14px}
-.neighbor-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:13px;display:grid;place-items:center;background:#fffdf4;font-size:25px}
-.neighbor-live-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
-.neighbor-live-copy strong{font-size:12px}
-.neighbor-live-copy small{font-size:10px;color:#657465;line-height:1.3}
-.neighbor-progress{height:5px;background:#d4e2d0;border-radius:99px;overflow:hidden;margin-top:3px}
-.neighbor-progress span{display:block;width:0;height:100%;background:#6b9b67;border-radius:99px;transition:width .35s}
-.care-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
-.care-grid button{min-height:58px}
-.care-feedback{padding:12px;border-radius:12px;background:#eaf4e6;color:#31543c;font-size:13px;font-weight:750;min-height:44px}
-.hold-clear{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;background:#fff2e8!important;border-color:#e3b5a0!important}
-.hold-clear.holding{background:#f9d7c8!important;outline:3px solid #d98c6d;outline-offset:2px}
-@media(max-width:430px){.neighbor-live{padding:8px}.neighbor-avatar{width:36px;height:36px;flex-basis:36px}.care-grid button{font-size:12px;padding:8px 6px}}
-
-/* Custom block designer */
-.custom-block-menu{width:min(570px,97vw)}
-.custom-preview-wrap{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff;margin:8px 0 14px}
-#customPreview{width:112px;height:76px;flex:0 0 112px;border-radius:10px;border:1px solid #dce5d8;background:#f8faf4}
-.custom-preview-copy{font-size:12px;line-height:1.45;color:#536557}
-.custom-block-menu h3{font-size:13px;margin:14px 0 7px}
-.texture-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-.texture-choice{min-height:58px;padding:6px 4px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#fff!important;border:1px solid #d6e2d5!important;font-size:11px}
-.texture-choice .texture-emoji{font-size:19px;line-height:1.1}
-.texture-choice.selected{outline:2px solid #4b9660;background:#e5f2e1!important;border-color:#4b9660!important}
-.custom-color-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
-.custom-color-fields .field{margin:5px 0}
-.custom-color-fields input[type=color]{width:100%;height:43px;padding:3px;border:1px solid var(--line);border-radius:10px;background:white}
-.custom-color-fields input[type=text]{width:100%;min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);text-transform:uppercase}
-.spectrum-picker{display:grid;gap:9px;width:100%;min-width:0}
-.spectrum-sv{position:relative;width:100%;height:132px;overflow:hidden;border:1px solid #cbd9cb;border-radius:10px;background-color:#a080d8;background-image:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent);cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
-.spectrum-cursor{position:absolute;left:50%;top:50%;width:17px;height:17px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #263c32,0 1px 4px #0009;transform:translate(-50%,-50%);pointer-events:none}
-.spectrum-hue-row{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:8px;font-size:11px;color:#617165}
-.spectrum-picker input.spectrum-hue{width:100%;height:18px!important;margin:0;padding:0!important;border:0!important;border-radius:999px!important;appearance:none;-webkit-appearance:none;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);cursor:pointer;box-shadow:inset 0 0 0 1px #263c3233}
-.spectrum-picker input.spectrum-hue::-webkit-slider-thumb{width:18px;height:18px;appearance:none;-webkit-appearance:none;border:2px solid #fff;border-radius:50%;background:#334b39;box-shadow:0 0 0 1px #263c32}
-.spectrum-picker input.spectrum-hue::-moz-range-thumb{width:14px;height:14px;border:2px solid #fff;border-radius:50%;background:#334b39;box-shadow:0 0 0 1px #263c32}
-.native-color-proxy{display:none!important}
-@media(max-width:430px){.spectrum-sv{height:116px}}
-.color-swatch-row{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px}
-.color-swatch{width:27px;height:27px;padding:0!important;border-radius:50%!important;border:2px solid #fff!important;outline:1px solid #cbd8ca;box-shadow:none!important}
-.color-swatch:focus-visible{outline:3px solid #39784e}
-.custom-apply{width:100%;margin-top:8px}
-@media(max-width:430px){.texture-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.custom-block-menu{padding:14px}.custom-preview-wrap{gap:8px}}
-
-/* Character studio */
-.character-menu{width:min(540px,97vw)}
-.character-preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0 12px}
-.character-preset{display:flex;align-items:center;gap:8px;text-align:left;padding:8px!important;background:#fff!important;min-height:52px}
-.character-preset .look-icon{font-size:24px;line-height:1}
-.character-preset small{display:block;color:#718073;font-weight:500;font-size:10px}
-.character-preset.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
-.character-preview-card{display:flex;align-items:center;gap:12px;background:#f1f6ec;border:1px solid #dce8d9;border-radius:14px;padding:9px;margin:10px 0}
-#characterPreview{width:128px;height:142px;flex:0 0 128px;border-radius:10px;background:#dcecf0;border:1px solid #d2e0da}
-.character-preview-copy{font-size:11px;line-height:1.45;color:#586a5b}
-.character-preview-copy strong{font-size:13px;color:#304b38}
-.character-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
-.character-field-grid .field{min-width:0}
-.character-field-grid input[type=color]{width:100%;height:38px;padding:3px}
-.character-section-title{font-size:12px;font-weight:800;color:#49664d;margin:13px 0 5px}
-@media(max-width:380px){.character-preview-card{align-items:flex-start}.character-preview-copy{font-size:10px}.character-preset{gap:5px}.character-preset .look-icon{font-size:20px}}
-.door-preview-card{display:flex;align-items:center;gap:14px;background:#f1f6ec;border:1px solid #dce8d9;border-radius:14px;padding:12px;margin:10px 0}
-.door-preview-visual{--door-preview:#a97545;width:76px;height:116px;flex:0 0 76px;position:relative;border:7px solid #65442f;border-radius:5px 5px 0 0;background:var(--door-preview);box-shadow:inset 0 0 0 3px #e3b77d,inset 0 0 0 7px #70492f}
-.door-preview-visual:before{content:"";position:absolute;left:13px;right:13px;top:13px;bottom:13px;border:3px solid #e0b67b;box-shadow:inset 0 0 0 2px #70492f}
-.door-preview-visual:after{content:"";position:absolute;right:7px;top:55px;width:7px;height:7px;border-radius:50%;background:#f1d17a;box-shadow:0 0 0 2px #795431}
-.door-style-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0 12px}
-.door-style-choice{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:10px 5px!important;font-size:23px;background:#fff!important}
-.door-style-choice strong{font-size:12px}.door-style-choice small{font-size:10px;font-weight:500;color:#718073}
-.door-style-choice.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
-.door-style-grid+.field input[type=color]{width:100%;height:40px;padding:3px}
-.tile-menu{width:min(620px,97vw)}
-.tile-preview-card{display:flex;align-items:center;gap:12px;background:#f1f6ec;border:1px solid #dce8d9;border-radius:14px;padding:10px;margin:10px 0}
-#tilePreview{width:180px;height:112px;max-width:48%;border-radius:9px;border:1px solid #d2dfd2;background:#fff;image-rendering:pixelated}
-.tile-choice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:8px 0 12px}
-.tile-choice{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:6px!important;background:#fff!important;text-align:center}
-.tile-choice canvas{width:100%;height:44px;border:1px solid #d2dfd2;border-radius:7px}
-.tile-choice small{font-size:10px;line-height:1.2;font-weight:700}
-.tile-choice.selected{outline:2px solid #5c9d69;border-color:#5c9d69;background:#eaf5e7!important}
-@media(max-width:420px){.tile-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.tile-choice canvas{height:40px}.tile-preview-card{align-items:flex-start}.tile-preview-card .character-preview-copy{font-size:10px}}
-/* Unified control system: same controls and grouping on every device. */
-.top-hud .hud-actions{gap:7px}
-.top-hud .hud-actions button{min-width:42px;height:40px;padding:7px 10px;font-size:14px}
-.top-hud #menuBtn,.top-hud #viewBtn{border-radius:13px;font-size:16px}
-.hotbar{gap:5px;padding:6px;max-width:min(96vw,560px);justify-content:center}
-.material-category{width:72px;height:54px;flex:0 0 72px;padding:3px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#f9fbf5!important}
-.material-category .emoji{font-size:22px;line-height:1}
-.material-category small{font-size:9px;font-weight:800;line-height:1.1}
-.material-category.active{outline:2px solid #4b9660;background:#e1f0df!important}
-.dpad{width:86px;height:86px;grid-template-columns:repeat(3,26px);grid-template-rows:repeat(3,26px);gap:3px;bottom:max(12px,env(safe-area-inset-bottom))}
-.dpad button{width:26px;height:26px;font-size:14px;border-radius:9px}
-.action-pad{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,68px);grid-auto-rows:40px;gap:5px}
-.action-pad button{font-size:11px;border-radius:11px}
-.action-pad #jumpBtn{grid-column:auto}
-.action-pad #flyBtn{grid-column:auto;background:#e7f1e6;color:#294235}
-.action-pad #flyUpBtn,#flyDownBtn{background:#edf5ffed}
-.bucket-item{min-height:62px;cursor:pointer}
-.bucket-item:active{background:#e1f0df}
-#solidPickerChoices{margin-top:10px}
-#solidPickerChoices button{min-height:46px}
+:root{color-scheme:light;--paper:#f6f0e3;--ink:#43564a;--muted:#718075}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--paper);font-family:Arial,sans-serif;color:var(--ink)}
+#three-world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.panel{position:absolute;z-index:2;left:14px;top:14px;max-width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:12px 14px;background:rgba(255,252,244,.94);border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 5px 22px #43564a18}
+h1{font:700 15px Georgia,serif;margin:0 0 5px}.sub{font-size:11px;color:var(--muted);line-height:1.4}
+.toolbar{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;align-items:center}
+button,select,input{font:12px Arial,sans-serif;color:var(--ink);background:#fffdf7;border:1px solid #bdc9b5;border-radius:8px;padding:7px 9px}
+button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+#color{width:35px;height:32px;padding:2px}#status{font:11px/1.45 Arial,sans-serif;color:var(--muted);margin-top:8px;max-width:390px}
+#safety{position:absolute;right:14px;top:14px;max-width:230px;padding:10px 12px;background:#fffdf0df;border:1px solid #d6d0b7;border-radius:12px;font:11px/1.45 Arial,sans-serif;color:#65715e;text-align:right}
+#player-controls{position:absolute;z-index:3;left:14px;bottom:14px;padding:10px;background:#fffdf0e8;border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 4px 16px #43564a22;touch-action:none}
+#player-controls[hidden]{display:none}.dpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,46px);gap:5px}
+.dpad button{font-size:18px;font-weight:700;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}
+.dpad button[data-move="forward"]{grid-column:2;grid-row:1}.dpad button[data-move="left"]{grid-column:1;grid-row:2}.dpad button[data-move="back"]{grid-column:2;grid-row:2}.dpad button[data-move="right"]{grid-column:3;grid-row:2}
+#play-instructions{font-size:10px;line-height:1.35;color:var(--muted);margin-top:6px;max-width:150px}
+/* Shared neighbor coloring activity */
+#neighbor-coloring[hidden]{display:none!important}
+.neighbor-color-shade{position:fixed;z-index:20;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.neighbor-color-panel{width:min(820px,100%);max-height:94vh;overflow:auto;padding:16px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:18px;box-shadow:0 16px 50px #263c3250}
+.neighbor-color-head,.neighbor-color-page-head,.neighbor-color-tools,.neighbor-color-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.neighbor-color-head{justify-content:space-between;margin-bottom:8px}
+.neighbor-color-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.neighbor-color-note{font-size:12px;line-height:1.45;color:#718075;margin:6px 0 12px}
+.neighbor-color-templates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.neighbor-color-template{min-width:0;padding:8px;background:#f5f1e7;border:1px solid #d9dfd2;border-radius:12px;text-align:left}
+.neighbor-color-template img{display:block;width:100%;aspect-ratio:640/460;object-fit:contain;background:#fffdf8;border:1px solid #e8e2d5;border-radius:8px}
+.neighbor-color-template span{display:block;margin-top:6px;font-size:12px;font-weight:700}
+.neighbor-color-work[hidden]{display:none!important}
+.neighbor-color-page-head{justify-content:space-between;margin:8px 0}
+.neighbor-color-page-title{font-size:13px;font-weight:700}
+.neighbor-color-canvas-wrap{position:relative;width:100%;max-width:760px;margin:0 auto;background:#fffdf8;border:1px solid #e4ddce;border-radius:12px;overflow:hidden}
+#neighbor-color-canvas{display:block;width:100%;height:auto;touch-action:none;background:#fffdf8}
+#neighbor-color-cursor{position:absolute;left:0;top:0;width:16px;height:16px;border:2px solid white;border-radius:50%;box-shadow:0 0 0 2px #54684d88;pointer-events:none;opacity:0;transform:translate(-50%,-50%);transition:opacity .12s}
+#neighbor-color-cursor.active{opacity:1}
+.neighbor-color-live{display:flex;align-items:center;gap:10px;margin:10px 0;padding:9px 11px;background:#edf4e8;border:1px solid #dce7d5;border-radius:12px}
+.neighbor-color-avatar{font-size:25px}
+.neighbor-color-live-copy{flex:1;min-width:0}
+.neighbor-color-live-copy strong{display:block;font-size:12px}
+.neighbor-color-live-copy small{display:block;color:#657563;font-size:11px;line-height:1.4;margin-top:2px}
+.neighbor-color-progress{height:6px;margin-top:7px;background:#d9e3d3;border-radius:8px;overflow:hidden}
+#neighbor-color-progress-fill{display:block;width:0;height:100%;background:#8aaa79;transition:width .2s}
+.neighbor-color-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.neighbor-color-tools label{display:flex;align-items:center;gap:5px;font-size:11px;color:#657563}
+#neighbor-color-color{width:36px;height:32px;padding:2px}
+#neighbor-color-brush{width:105px}
+.neighbor-color-tools button,.neighbor-color-actions button{padding:8px 10px}
+.neighbor-color-actions{justify-content:space-between;margin-top:8px}
+.neighbor-color-help{font-size:11px;line-height:1.45;color:#718075;margin:9px 0 0}
+/* Isolated 60-slot pouches and crafting panel */
+#inventory-panel[hidden]{display:none!important}
+.inventory-shade{position:fixed;z-index:24;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.56);backdrop-filter:blur(4px)}
+.inventory-panel{width:min(680px,100%);max-height:94vh;overflow:auto;padding:14px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:16px;box-shadow:0 16px 50px #263c3250}
+.inventory-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.inventory-head h2{font:700 18px Georgia,serif;margin:0;color:#405a46}
+.inventory-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px}
+.inventory-tabs button{font-size:11px;padding:7px 9px}
+.inventory-tabs button.active{background:#e4eddf;border-color:#8aaa79}
+.inventory-summary,.inventory-feedback,.inventory-help{font-size:11px;line-height:1.45;color:#718075;margin:7px 0}
+.inventory-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:10px 0}
+.inventory-slot{min-width:0;min-height:67px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#f5f1e7;border:1px solid #e1dccf;border-radius:9px;text-align:center}
+.inventory-slot.item{background:#fffdf8;border-color:#cbd6c1}
+.inventory-slot.bucket{cursor:pointer}
+.inventory-slot small{max-width:100%;overflow-wrap:anywhere;font-size:9px;line-height:1.2;color:#617261}
+.inventory-slot .inventory-icon{font-size:19px;line-height:1.1}
+.inventory-slot .inventory-count{font-size:9px;font-weight:700;color:#405a46}
+.inventory-recipes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.inventory-recipe{padding:10px;background:#f5f1e7;border:1px solid #d9dfd2;border-radius:11px}
+.inventory-recipe strong{display:block;font-size:12px}
+.inventory-recipe p{font-size:11px;line-height:1.4;color:#718075;margin:5px 0 8px}
+.inventory-recipe button{width:100%;font-weight:700}
+@media(max-width:420px){.inventory-panel{padding:10px}.inventory-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.inventory-slot{min-height:62px}.inventory-tabs{gap:4px}.inventory-tabs button{padding:6px;font-size:10px}.inventory-recipes{grid-template-columns:1fr}}
+/* Gentle animal-care interaction */
+#animal-care[hidden],#animal-care-flash[hidden]{display:none!important}
+.animal-care-shade{position:fixed;z-index:22;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.animal-care-panel{width:min(420px,100%);padding:17px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:18px;box-shadow:0 16px 50px #263c3250}
+.animal-care-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.animal-care-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.animal-care-note{font-size:12px;line-height:1.5;color:#718075;margin:12px 0}
+.animal-care-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.animal-care-grid button{min-height:58px;padding:9px;font-size:13px;font-weight:700}
+.animal-care-feedback{padding:12px;border-radius:12px;background:#eaf4e6;color:#31543c;font-size:13px;font-weight:750;min-height:44px}
+.animal-care-help{font-size:11px;line-height:1.45;color:#718075;margin:10px 0 0}
+#animal-care-flash{position:fixed;z-index:5;pointer-events:none;transform:translate(-50%,-100%);font:30px/1 Arial,sans-serif;filter:drop-shadow(0 2px 4px #263c3266)}
+@media(max-width:600px){.animal-care-shade{padding:8px}.animal-care-panel{padding:13px;border-radius:15px}.animal-care-head h2{font-size:17px}.animal-care-grid button{font-size:12px;padding:8px 5px}}
 @media(max-width:600px){
- .top-hud{align-items:flex-start}
- .top-hud .hud-actions button{min-width:38px;height:38px;padding:6px 8px}
- .hotbar{max-width:96vw;overflow-x:auto;justify-content:flex-start;left:50%;bottom:max(6px,env(safe-area-inset-bottom))}
- .material-category{width:62px;height:49px;flex-basis:62px}
- .material-category .emoji{font-size:20px}
- .material-category small{font-size:8px}
- .dpad{left:max(8px,env(safe-area-inset-left));bottom:max(72px,calc(env(safe-area-inset-bottom) + 64px))}
- .action-pad{right:max(8px,env(safe-area-inset-right));bottom:max(72px,calc(env(safe-area-inset-bottom) + 64px))}
+ .neighbor-color-shade{padding:7px}
+ .neighbor-color-panel{max-height:96vh;padding:11px;border-radius:14px}
+ .neighbor-color-templates{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .neighbor-color-template{padding:6px}
+ .neighbor-color-template span{font-size:11px}
+ .neighbor-color-head h2{font-size:16px}
+ .neighbor-color-tools{gap:6px}
+ .neighbor-color-tools label{font-size:10px}
+ .neighbor-color-tools button,.neighbor-color-actions button{padding:7px 8px;font-size:11px}
 }
-@media(max-width:380px){
- .material-category{width:56px;flex-basis:56px}
- .action-pad{grid-template-columns:repeat(2,58px)}
- .dpad{transform:scale(.92);transform-origin:bottom left}
-}
-</style>
-</head>
+@media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#safety{right:8px;top:auto;bottom:8px;max-width:190px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
+
+/* Isolated Character Studio */
+#character-studio[hidden]{display:none!important}
+.character-shade{position:fixed;z-index:26;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.character-panel{width:min(680px,100%);max-height:95vh;overflow:auto;padding:15px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:17px;box-shadow:0 16px 50px #263c3250}
+.character-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.character-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.character-note{font-size:11px;line-height:1.45;color:#718075;margin:8px 0 12px}
+.character-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.character-preset{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px;background:#f5f1e7;text-align:left;min-width:0}
+.character-preset.active{background:#e8f0e3;border-color:#8aaa79;box-shadow:inset 0 0 0 1px #8aaa79}
+.character-preset strong{font-size:11px}.character-preset small{font-size:9px;color:#718075;line-height:1.3}.character-preset .look-icon{font-size:20px}
+.character-preview-card{display:flex;align-items:center;gap:12px;padding:10px;margin:12px 0;background:#eef3e8;border:1px solid #dce6d4;border-radius:12px}
+#character-preview{display:block;width:112px;height:124px;flex:0 0 112px;border:1px solid #d2e0da;border-radius:9px;background:#dcecf0}
+.character-preview-copy{font-size:12px;line-height:1.5}.character-preview-copy strong{font-size:13px}.character-preview-copy small{display:block;color:#718075}
+.character-section{font:700 12px Georgia,serif;color:#526b55;margin:13px 0 7px}
+.character-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.character-fields label{display:flex;flex-direction:column;gap:4px;font-size:10px;color:#657563}
+.character-fields select{width:100%;min-width:0}.character-fields input[type=color]{width:100%;height:34px;padding:2px}
+.character-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.character-actions button{min-width:120px}
+#character-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:8px 0 0}
+@media(max-width:560px){.character-panel{padding:11px;max-height:96vh}.character-head h2{font-size:17px}.character-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.character-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.character-preview-card{gap:9px}#character-preview{width:92px;height:104px;flex-basis:92px}}
+
+/* Art Studio and saved gallery */
+#art-studio[hidden],#gallery-panel[hidden]{display:none!important}
+.art-shade{position:fixed;z-index:27;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.art-panel,.gallery-panel{width:min(760px,100%);max-height:95vh;overflow:auto;padding:15px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:17px;box-shadow:0 16px 50px #263c3250}
+.art-head,.gallery-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.art-head h2,.gallery-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.art-note,.gallery-note{font-size:11px;line-height:1.45;color:#718075;margin:8px 0 12px}
+.art-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}.art-tools label{display:flex;align-items:center;gap:6px;font-size:11px;color:#657563}
+#art-paint-color{width:38px;height:33px;padding:2px}#art-brush-size{width:125px}
+#art-canvas{display:block;width:100%;height:auto;max-height:56vh;object-fit:contain;border:1px solid #e1dccf;border-radius:10px;background:#fffdf8;touch-action:none;cursor:crosshair}
+.art-name-row{display:flex;align-items:center;gap:8px;margin:10px 0}.art-name-row label{font-size:11px;color:#657563;flex:0 0 auto}.art-name-row input{flex:1;min-width:0}
+.art-actions{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:10px}.art-actions button{min-height:36px}
+#art-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:7px 0 0}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.gallery-card{min-width:0;padding:8px;background:#f5f1e7;border:1px solid #d9dfd2;border-radius:12px}
+.gallery-card img{display:block;width:100%;aspect-ratio:640/390;object-fit:contain;background:#fffdf8;border:1px solid #e8e2d5;border-radius:8px}
+.gallery-card strong{display:block;overflow-wrap:anywhere;margin-top:7px;font-size:11px;color:#526b55}
+.gallery-empty{padding:20px 10px;text-align:center;font-size:12px;color:#718075;background:#f5f1e7;border-radius:10px}
+@media(max-width:560px){.art-panel,.gallery-panel{padding:11px;max-height:96vh}.art-head h2,.gallery-head h2{font-size:17px}.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.art-name-row{align-items:stretch;flex-direction:column;gap:4px}#art-canvas{max-height:48vh}}
+
+/* JSON backup / restore controls */
+.backup-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:8px 0;background:#f3f1e7;border:1px solid #dce2d4;border-radius:10px}
+.backup-controls label{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;color:#586b58}
+#world-name{width:min(230px,45vw);min-width:110px;padding:7px;border:1px solid #cdd5c8;border-radius:7px;background:#fffdf8;color:#435244}
+#backup-restore{max-width:170px;font-size:10px}
+#backup-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:4px 2px 8px}
+.backup-controls button{min-height:34px}
+@media(max-width:560px){.backup-controls{gap:6px;padding:8px}.backup-controls label{flex:1 1 100%}#world-name{width:100%;flex:1}#backup-restore{max-width:100%}.backup-controls button{flex:1 1 46%}}
+
+.design-shade[hidden]{display:none!important}
+.design-shade{position:fixed;z-index:29;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.design-panel{width:min(520px,100%);max-height:94vh;overflow:auto;padding:15px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:16px;box-shadow:0 16px 50px #263c3250}
+.design-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.design-head h2{font:700 18px Georgia,serif;margin:0;color:#405a46}
+.design-note{font-size:11px;line-height:1.45;color:#718075;margin:8px 0 12px}
+.design-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.design-fields label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#657563}
+.design-fields input[type=color]{width:100%;height:38px;padding:2px}.design-fields select{width:100%}
+.design-preview{display:flex;align-items:center;gap:12px;margin:10px 0;padding:10px;background:#eef3e8;border:1px solid #dce6d4;border-radius:10px}
+.design-chip{width:64px;height:54px;flex:0 0 64px;border:2px solid #fff;border-radius:8px;box-shadow:0 1px 4px #0002}
+.design-preview-copy{font-size:11px;line-height:1.5}.design-preview-copy strong{display:block;font-size:12px}
+.design-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.inventory-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:9px}
+@media(max-width:560px){.design-panel{padding:11px;max-height:96vh}.design-head h2{font-size:16px}.design-fields{grid-template-columns:1fr}}
+</style></head>
 <body>
-<div class="app" id="app">
-  <div class="world" id="world"><canvas id="game" aria-label="Peaceful first-person block building world"></canvas></div>
-  <div class="crosshair" id="crosshair"></div>
-  <div class="top-hud">
-    <div class="brand"><span class="flower">🌼</span><strong>DIYCraft</strong></div>
-    <div class="hud-actions">
-      <button id="expandBtn" class="primary" title="Full screen">⛶</button>
-      <button id="menuBtn" title="Settings" aria-label="Settings">⚙</button>
-      <button id="viewBtn" title="Switch camera view" aria-label="View">👁 1st</button>
-      <button id="activityBtn" title="Sleep, sit, work or dance" aria-label="Character activities">🎭</button>
-    </div>
-  </div>
-  <div class="top-hint" id="topHint">Tap to build or fill · Hold 0.6s to dig or remove</div>
-  <div class="hotbar" id="hotbar" aria-label="Material selection"></div>
-  <div class="touch-controls" id="touchControls">
-    <div class="dpad" aria-label="Movement controls">
-      <button data-move="0,-1" aria-label="Move forward">▲</button><button data-move="-1,0" aria-label="Move left">◀</button><button data-move="0,1" aria-label="Move back">▼</button><button data-move="1,0" aria-label="Move right">▶</button>
-    </div>
-    <div class="action-pad" aria-label="Jump and flight controls">
-      <button id="jumpBtn" aria-label="Jump">⬆ JUMP</button>
-      <button id="flyBtn" aria-label="Toggle flight">🕊 FLY: OFF</button>
-      <button id="flyUpBtn" class="hidden" aria-label="Fly up">↑ UP</button>
-      <button id="flyDownBtn" class="hidden" aria-label="Fly down">↓ DOWN</button>
-    </div>
-  </div>
-  <button class="show-controls" id="showControls">Show controllers</button>
-  <button class="focus-exit" id="focusExit">✕ Exit full view</button>
-  <div class="status" id="status"></div>
-  <div class="menu-shade" id="menuShade">
-    <div class="menu" id="menuContent"><div class="menu-head"><h2>🌿 DIYCraft settings</h2><button data-close>Close ✕</button></div>
-      <label class="field">World name<input id="worldName" maxlength="30" value="My Peaceful World"></label>
-      <label class="field">Time of day
-        <select id="timeOfDay">
-          <option value="day">☀️ Daytime</option>
-          <option value="sunset">🌇 Sunset</option>
-          <option value="night">🌙 Night</option>
-          <option value="auto">🔄 Automatic day/night cycle</option>
-        </select>
-      </label>
-      <div class="field">Choose any block color
-        <div class="spectrum-picker" role="group" aria-label="Custom block color spectrum">
-          <div class="spectrum-sv" id="globalBlockSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
-          <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="globalBlockHue" type="range" min="0" max="359" value="270" aria-label="Color hue"></div>
-        </div>
-        <input id="customColor" class="native-color-proxy" type="color" value="#aa83d8" aria-hidden="true" tabindex="-1">
-      </div><button id="useCustomColor" class="soft">Use this color for new blocks</button>
-      <div class="menu-grid">
-        <button id="menuInventory">🪣 Material Bucket & pouches</button><button id="craftBtn">🧺 Crafting settings</button><button id="artBtn">🎨 Art studio</button><button id="coloringBtn">🖍 Artwork with a neighbor</button><button id="characterBtn">🧑 Profile & appearance</button><button id="doorDesignBtn">🚪 Door design</button><button id="tileDesignBtn">▦ Slab / tile design</button><button id="fishModeToggle">🐟 Fish placement: Off</button><button id="controlsBtn">Hide movement controls</button><button id="saveBtn">💾 Save world</button><button id="backupBtn">⬇ Backup world</button>
-        <label class="file-label">⬆ Restore backup<input id="restoreInput" type="file" accept="application/json,.json,.gz,.diycraft.gz"></label><button id="clearBtn" class="hold-clear" aria-label="Press and hold to clear placed blocks">Hold to clear builds</button><button id="neighborsBtn" title="Return to the neighborhood if you get lost">👋 Visit neighbors</button><button id="animalCareBtn">🐾 Gentle animal care</button>
-      </div>
-      <p class="note">Every material has its own built-in surface texture. Textures appear automatically when you build; there is no separate texture menu.</p><p class="note" id="offlineReadyNote">Offline setup is starting. Connect this device once and keep the game open until the local copy is ready.</p><p class="note">Your world saves on this device. Use Backup world to move it to another device, and keep periodic backups in case browser storage is cleared. Backups use lossless compression when the browser supports it; older JSON backups remain restorable.</p><p class="note">Peaceful Creative Mode: no enemies, weapons, combat, chat, multiplayer, advertising, analytics, or external content. Gameplay is local and uses no external game servers. Built-in coloring pages and textures are original local artwork made from visible vector shapes; no third-party images or hidden text are loaded.</p>
-    </div>
-  </div>
-  <div class="menu-shade" id="activityShade">
-    <div class="menu">
-      <div class="menu-head"><h2>🎭 Character activities</h2><button data-close>Close ✕</button></div>
-      <p class="note">Rest anywhere, keep the silly Transformer slide, or go straight home to your saved bed. If no home bed has been saved yet, Go Home &amp; Sleep makes a temporary bed where you are.</p>
-      <div class="menu-grid">
-        <button type="button" data-player-activity="sleep">😴 Sleep Here (Stationary)</button>
-        <button type="button" data-player-activity="transformer">😂 Transformer Sleep (Keep Moving)</button>
-        <button type="button" data-player-activity="bed">🛏️ Go Home &amp; Sleep</button>
-        <button type="button" data-player-activity="set-bed">📍 Set My Bed Here</button>
-        <button type="button" data-player-activity="sit">🪑 Sit</button>
-        <button type="button" data-player-activity="work">🛠️ Work</button>
-        <button type="button" data-player-activity="dance">💃 Dance</button>
-        <button type="button" data-player-activity="stop">🧍 Stand / Stop</button>
-      </div>
-    </div>
-  </div>
-  <div class="menu-shade" id="customBlockShade">
-    <div class="menu custom-block-menu">
-      <div class="menu-head"><h2 id="solidDesignerTitle">🎨 Design a solid block</h2><button data-close>Close ✕</button></div>
-      <p class="note">Choose a solid material, then customize its color and surface texture. Each placed block keeps the finish it was given.</p>
-      <label class="field">Solid material type<select id="solidDesignType"><option value="stone">Stone</option><option value="wood">Wood</option><option value="brick">Brick</option><option value="dirt">Dirt</option><option value="grass">Grass</option><option value="leaves">Leaves</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Custom solid</option></select></label>
-      <div class="custom-preview-wrap">
-        <canvas id="customPreview" width="224" height="152" aria-label="Custom block preview"></canvas>
-        <div class="custom-preview-copy"><strong id="customPreviewName">Custom block</strong><br><span id="customPreviewDetails">Purple · Speckled</span><br>Each block keeps its own saved design.</div>
-      </div>
-      <h3>1. Choose a texture</h3>
-      <div class="texture-choice-grid" id="customTextureChoices"></div>
-      <h3>2. Choose any color</h3>
-      <div class="custom-color-fields">
-        <div class="field"><span id="customColorCaption">Full color spectrum</span>
-          <div class="spectrum-picker" role="group" aria-label="Custom solid color spectrum">
-            <div class="spectrum-sv" id="customBlockSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
-            <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="customBlockHue" type="range" min="0" max="359" value="270" aria-label="Color hue"></div>
-          </div>
-          <input id="customBlockColor" class="native-color-proxy" type="color" value="#aa83d8" aria-hidden="true" tabindex="-1">
-        </div>
-        <label class="field">HEX color code<input id="customBlockHex" type="text" value="#AA83D8" maxlength="7" spellcheck="false" aria-label="Hex color code"></label>
-      </div>
-      <div class="note">Quick color choices</div>
-      <div class="color-swatch-row" id="customColorSwatches"></div>
-      <button id="applyCustomBlock" class="primary custom-apply">Use this custom block</button>
-    </div>
-  </div>
-  <div class="menu-shade" id="doorShade">
-    <div class="menu custom-block-menu">
-      <div class="menu-head"><h2>🚪 Design your door</h2><button data-close>Close ✕</button></div>
-      <p class="note">Choose a color and a door style. Then select Door in the building bar and place it where you want an entrance.</p>
-      <div class="door-preview-card"><div class="door-preview-visual" id="doorPreview"></div><div class="character-preview-copy"><strong>Your door</strong><br><span id="doorPreviewDetails">Classic wooden door</span><br>Tap a finished door in your world to open or close it.</div></div>
-      <div class="character-section-title">Choose a style</div>
-      <div class="door-style-grid">
-        <button type="button" class="door-style-choice selected" data-door-style="classic">🚪<strong>Classic</strong><small>Cozy panels</small></button>
-        <button type="button" class="door-style-choice" data-door-style="window">🪟<strong>Window</strong><small>Bright glass</small></button>
-        <button type="button" class="door-style-choice" data-door-style="garden">🌸<strong>Garden</strong><small>Flower detail</small></button>
-      </div>
-      <label class="field">Door color<input id="doorColor" type="color" value="#a97545" aria-label="Choose the door color"></label>
-      <button id="applyDoorDesign" class="primary custom-apply">Use this door design</button>
-    </div>
-  </div>
-  <div class="menu-shade" id="tileShade">
-    <div class="menu tile-menu">
-      <div class="menu-head"><h2>🧩 Tile Design Studio</h2><button data-close>Close ✕</button></div>
-      <p class="note">Choose one of 20 original patterns, then pick any color from the full spectrum. Every tile you place keeps its own design and color.</p>
-      <div class="tile-preview-card">
-        <canvas id="tilePreview" width="180" height="112" aria-label="Tile pattern preview"></canvas>
-        <div class="character-preview-copy"><strong id="tilePreviewName">Classic Grid</strong><br><span id="tilePreviewDetails">#C5A98A</span><br>Mix different patterns and colors in the same floor or wall.</div>
-      </div>
-      <div class="character-section-title">Choose a tile pattern · 20 designs</div>
-      <div class="tile-choice-grid" id="tileChoices"></div>
-      <div class="character-section-title">Choose any color</div>
-      <div class="custom-color-fields">
-        <div class="field">Full color spectrum
-          <div class="spectrum-picker" role="group" aria-label="Tile color spectrum">
-            <div class="spectrum-sv" id="tileSpectrum" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="spectrum-cursor" aria-hidden="true"></span></div>
-            <div class="spectrum-hue-row"><span>Hue</span><input class="spectrum-hue" id="tileHue" type="range" min="0" max="359" value="30" aria-label="Color hue"></div>
-          </div>
-          <input id="tileColor" class="native-color-proxy" type="color" value="#c5a98a" aria-hidden="true" tabindex="-1">
-        </div>
-        <label class="field">HEX color code<input id="tileHex" type="text" value="#C5A98A" maxlength="7" spellcheck="false" aria-label="Tile HEX color code"></label>
-      </div>
-      <div class="note">Quick color choices</div>
-      <div class="color-swatch-row" id="tileColorSwatches"></div>
-      <button id="applyTileDesign" class="primary custom-apply">Use this tile design</button>
-    </div>
-  </div>
-  <div class="menu-shade" id="solidPickerShade"><div class="menu"><div class="menu-head"><h2>🧱 Solid blocks</h2><button data-close>Close ✕</button></div><p class="note">Choose the solid material to build with. Choose Custom to create a full-spectrum colored and textured solid block.</p><div class="menu-grid" id="solidPickerChoices"></div><button id="flowerColorBtn" class="soft" style="width:100%;margin-top:10px">🌸 Customize Flower Color</button><button id="solidCustomizeBtn" class="soft" style="width:100%;margin-top:8px">🎨 Customize color and texture</button></div></div>
-  <div class="menu-shade" id="inventoryShade"><div class="menu"><div class="menu-head"><h2>🪣 Material Bucket & pouches</h2><button data-close>Close ✕</button></div>
-    <div class="tabs"><button class="active" data-tab="bucket">Material Bucket</button><button data-tab="materials">Resources · 60</button><button data-tab="crafted">Crafted · 60</button></div><button id="clearBucketBtn" class="soft" style="width:100%;margin:0 0 10px">Empty Material Bucket</button><div class="slots" id="slots"></div><p class="note" id="bucketNote">Recovered blocks stay here and can be selected and reused without being consumed. Bucket capacity: 120 recovered pieces.</p></div></div>
-  <div class="menu-shade" id="craftShade"><div class="menu"><div class="menu-head"><h2>🧺 Peaceful crafting</h2><button data-close>Close ✕</button></div><div id="recipes"></div><p class="note">Recipes are for helpful, decorative things only. There are no weapons or harmful tools.</p></div></div>
-  <div class="menu-shade" id="artShade"><div class="menu"><div class="menu-head"><h2>🎨 Art studio</h2><button data-close>Close ✕</button></div><button id="inviteArtBtn" class="soft">Invite a neighbor to color a picture</button><div class="draw-tools"><label class="note">Color <input id="paintColor" type="color" value="#4c8d59"></label><label class="note">Brush <input id="brushSize" type="range" min="2" max="28" value="7"></label><button id="clearArt">Clear</button></div><canvas class="draw-canvas" id="artCanvas" width="640" height="390"></canvas><label class="field">Name your artwork<input id="artName" maxlength="28" value="My picture"></label><button class="primary" id="saveArt">Save to crafted pouch</button><p class="note">Artwork stays on this device. A parent should review drawings saved to the gallery.</p></div></div>
-  <div class="menu-shade" id="coloringShade"><div class="menu coloring-menu"><div class="menu-head"><h2>🖍 Color together</h2><button data-close>Close ✕</button></div>
-    <p class="note" id="colorNeighborNote">A kind neighbor is sitting with you for a quiet coloring activity. No talking is needed.</p>
-    <div class="color-template-grid" id="colorTemplateGrid" aria-label="Choose a coloring picture"></div>
-    <div id="colorWorkspace" class="hidden">
-      <div class="color-work-head"><strong id="colorPageTitle">My coloring page</strong><button id="colorBackBtn">Choose another picture</button></div>
-      <div class="color-canvas-wrap"><canvas class="draw-canvas coloring-canvas" id="colorCanvas" width="640" height="460" aria-label="Shared coloring page"></canvas><div id="neighborBrushCursor" class="neighbor-brush-cursor" aria-hidden="true"></div></div><div class="neighbor-live" id="neighborLive"><div class="neighbor-avatar">🧑‍🎨</div><div class="neighbor-live-copy"><strong id="neighborPainterTitle">Your neighbor is ready to color</strong><small id="neighborPainterStatus">Their colors will appear on this same shared picture.</small><div class="neighbor-progress"><span id="neighborProgress"></span></div></div></div>
-      <div class="draw-tools coloring-tools">
-        <label class="note">Color <input id="coloringColor" type="color" value="#f3a45c"></label>
-        <label class="note">Brush <input id="coloringBrush" type="range" min="4" max="34" value="13"></label>
-        <button id="bucketTool" class="primary">🪣 Fill</button><button id="brushTool">🖌 Brush</button><button id="colorUndo">↶ Undo</button>
-      </div>
-      <div class="draw-tools"><button id="resetColoring">Start this picture again</button><button id="saveColoring" class="primary">Save our picture</button></div>
-      <p class="note">Tap inside a closed shape to fill it, or choose Brush to color by hand. The picture and your colors stay on this device.</p>
-    </div>
-  </div></div>
-  <div class="menu-shade" id="animalCareShade"><div class="menu"><div class="menu-head"><h2 id="animalCareTitle">🐾 Animal care</h2><button data-close>Close ✕</button></div><p class="note" id="animalCareNote">Choose a gentle way to care for your animal friend.</p><div class="care-grid"><button data-care="snack">🍎 Offer a snack</button><button data-care="water">💧 Fresh water</button><button data-care="brush">🪮 Gentle brushing</button><button data-care="play">🧶 Play together</button></div><p class="care-feedback" id="animalCareFeedback" aria-live="polite">Your animal friend is happy to see you.</p><p class="note">No animal can be hurt, attacked, or removed. These are care-only activities.</p></div></div>
-  <div class="menu-shade" id="characterShade">
-    <div class="menu character-menu">
-      <div class="menu-head"><h2>✨ Character Studio</h2><button data-close>Close ✕</button></div>
-      <p class="note">Create a character that feels like you. Start with a look, then change the hair, clothes, accessories and every color.</p>
-      <div class="character-section-title">Choose a starter look</div>
-      <div class="character-preset-grid">
-        <button type="button" class="character-preset" data-look="explorer"><span class="look-icon">🧥</span><span><strong>Garden Explorer</strong><small>Red hoodie · teal pants</small></span></button>
-        <button type="button" class="character-preset" data-look="sunshine"><span class="look-icon">🌻</span><span><strong>Golden Sunshine</strong><small>Golden hair · bright overalls</small></span></button>
-        <button type="button" class="character-preset" data-look="artist"><span class="look-icon">🎨</span><span><strong>Cozy Artist</strong><small>Soft sweater · flower clip</small></span></button>
-        <button type="button" class="character-preset" data-look="garden"><span class="look-icon">🌸</span><span><strong>Garden Princess</strong><small>Long hair · pretty dress</small></span></button>
-      </div>
-      <div class="character-preview-card">
-        <canvas id="characterPreview" width="256" height="284" aria-label="Live preview of your character"></canvas>
-        <div class="character-preview-copy"><strong id="characterPreviewName">Your character</strong><br><span id="characterPreviewDescription">Your style, your colors, your little world.</span><br><span class="note">The preview updates as you customize.</span></div>
-      </div>
-      <div class="character-section-title">Hair, outfit and accessories</div>
-      <div class="character-field-grid">
-        <label class="field">Hairstyle
-          <select id="hairStyle">
-            <option value="short">Short</option><option value="bob">Bob</option><option value="long">Long</option><option value="ponytail">Ponytail</option><option value="pigtails">Pigtails</option><option value="curly">Curly</option><option value="buns">Buns</option>
-          </select>
-        </label>
-        <label class="field">Outfit
-          <select id="outfitStyle">
-            <option value="hoodie">Hoodie</option><option value="sweater">Sweater</option><option value="overalls">Overalls</option><option value="dress">Dress</option><option value="tee">T-shirt</option>
-          </select>
-        </label>
-        <label class="field">Accessory
-          <select id="accessory">
-            <option value="none">None</option><option value="bow">Bow</option><option value="flower">Flower clip</option><option value="glasses">Glasses</option><option value="cap">Cap</option>
-          </select>
-        </label>
-        <label class="field">Accessory color<input id="accessoryColor" type="color" value="#f4a8bb"></label>
-      </div>
-      <div class="character-section-title">Choose your colors</div>
-      <div class="character-field-grid">
-        <label class="field">Hair color<input id="hairColor" type="color" value="#503523"></label>
-        <label class="field">Skin tone<input id="skinColor" type="color" value="#efc39d"></label>
-        <label class="field">Top color<input id="shirtColor" type="color" value="#d94b3d"></label>
-        <label class="field">Bottom color<input id="pantsColor" type="color" value="#397d8f"></label>
-        <label class="field">Shoe color<input id="shoesColor" type="color" value="#bd4540"></label>
-        <label class="field">Eye color<input id="eyeColor" type="color" value="#302820"></label>
-      </div>
-      <button class="primary" id="applyCharacter" style="width:100%;margin-top:8px">Save my character</button>
-    </div>
-  </div>
+<canvas id="three-world" aria-label="Interactive Three.js editing sandbox"></canvas>
+<section class="panel">
+<h1>DIYCraft · Peaceful Painterly World</h1>
+<div class="sub">Explore, build, paint, and care for your world · Watercolor + colored-pencil texture</div>
+<div class="toolbar">
+<select id="bucket-item" aria-label="Choose a recovered Material Bucket item"><option value="">Bucket: none selected</option></select>
+<select id="door-style" aria-label="Door style"><option value="classic">Classic door</option><option value="window">Window door</option><option value="garden">Garden door</option></select>
+<label for="time-mode">Time <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>
+<select id="block-type" aria-label="Block type"><option value="water">Water</option><option value="grass">Grass</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select>
+<input id="color" type="color" value="#70b85a" aria-label="Custom block color">
+<button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button><button id="art-open" type="button">Art Studio</button><button id="gallery-open" type="button">Gallery</button><button id="solid-design-open" type="button">Solid designer</button><button id="door-design-open" type="button">Door design</button><button id="tile-design-open" type="button">Tile design</button><button id="clear-placed" type="button">Clear placed blocks</button>
+<button id="add">Place on face</button><button id="remove" disabled>Remove</button>
+<button id="door" disabled>Open / close door</button>
+<select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select>
+<button id="apply-pattern" disabled>Apply tile pattern</button>
+<button id="play-mode">Enter Play Mode</button><button id="camera-mode" disabled>First person</button><button id="jump" disabled>Jump</button><button id="flight" disabled>Flight off</button>
+<select id="animal-species" aria-label="Animal species"><option value="sheep">Sheep</option><option value="cat">Cat</option><option value="dog">Dog</option><option value="cow">Cow</option><option value="horse">Horse</option><option value="bird">Bird</option><option value="giraffe">Giraffe</option></select><button id="animal-place">Place an animal</button>
+<select id="activity-mode" aria-label="Character activity"><option value="sleep">Sleep here</option><option value="transformer">Transformer sleep</option><option value="sit">Sit</option><option value="work">Work</option><option value="dance">Dance</option><option value="stop">Stop activity</option></select><button id="activity-apply">Start activity</button><button id="set-home-bed">Set home bed</button><button id="go-home">Go home &amp; sleep</button>
+<input id="water-x" type="number" value="14" step="1" aria-label="Water pool X coordinate" style="width:62px"><input id="water-z" type="number" value="-5" step="1" aria-label="Water pool Z coordinate" style="width:62px">
+<button id="water-add">Add water</button><button id="water-collect">Collect water</button><button id="fish-add">Add fish</button><button id="fill-hole">Fill hole</button><button id="dig-ground">Dig ground</button>
 </div>
-<script src="./diycraft.js"></script>
-</body>
-</html>
+<div class="backup-controls" aria-label="World name and backup controls">
+ <label for="world-name">World name <input id="world-name" maxlength="30" value="My Peaceful World"></label>
+ <button id="world-name-apply" type="button">Set name</button>
+ <button id="save-now" type="button" class="primary">Save now</button>
+ <button id="backup-download" type="button">Download backup</button>
+ <label for="backup-restore">Restore backup <input id="backup-restore" type="file" accept=".json,.gz,.diycraft.gz,application/json,application/gzip"></label>
+</div>
+<div id="backup-feedback" aria-live="polite">Your world is saved locally on this device. Use Download backup to keep a portable copy.</div>
+<div id="offline-ready-note" aria-live="polite">Preparing offline game files…</div>
+<div id="status">Loading the isolated starter-world copy…</div>
+</section>
+<section id="player-controls" hidden aria-label="Touch movement controls">
+ <div class="dpad">
+  <button type="button" data-move="forward" aria-label="Move forward">↑</button>
+  <button type="button" data-move="left" aria-label="Move left">←</button>
+  <button type="button" data-move="back" aria-label="Move backward">↓</button>
+  <button type="button" data-move="right" aria-label="Move right">→</button>
+ </div>
+ <div id="play-instructions">Hold to move · Drag the world to look · Jump with the button</div>
+</section>
+<div id="safety">Three.js world renderer · Device autosave · Offline play<br>Drag to look · Scroll to zoom · Tap to build or care</div>
+<section id="neighbor-coloring" class="neighbor-color-shade" hidden aria-label="Color together with a neighbor">
+ <div class="neighbor-color-panel" role="dialog" aria-modal="true" aria-labelledby="neighbor-color-title">
+  <div class="neighbor-color-head"><h2 id="neighbor-color-title">🖍 Color together</h2><button id="neighbor-color-close" type="button">Close ✕</button></div>
+  <p id="neighbor-color-note" class="neighbor-color-note">A kind neighbor is sitting with you for a quiet coloring activity. No talking is needed.</p>
+  <div id="neighbor-color-templates" class="neighbor-color-templates" aria-label="Choose a coloring picture"></div>
+  <div id="neighbor-color-work" class="neighbor-color-work" hidden>
+   <div class="neighbor-color-page-head"><strong id="neighbor-color-page-title" class="neighbor-color-page-title">My coloring page</strong><button id="neighbor-color-back" type="button">Choose another picture</button></div>
+   <div class="neighbor-color-canvas-wrap">
+    <canvas id="neighbor-color-canvas" width="640" height="460" aria-label="Shared coloring page"></canvas>
+    <div id="neighbor-color-cursor" aria-hidden="true"></div>
+   </div>
+   <div class="neighbor-color-live"><div class="neighbor-color-avatar">🧑‍🎨</div><div class="neighbor-color-live-copy"><strong id="neighbor-color-neighbor-title">Your neighbor is ready to color</strong><small id="neighbor-color-status">Their colors will appear on this same shared picture.</small><div class="neighbor-color-progress"><span id="neighbor-color-progress-fill"></span></div></div></div>
+   <div class="neighbor-color-tools">
+    <label>Color <input id="neighbor-color-color" type="color" value="#f3a45c"></label>
+    <label>Brush <input id="neighbor-color-brush" type="range" min="4" max="34" value="13"></label>
+    <button id="neighbor-color-fill" class="primary" type="button">🪣 Fill</button>
+    <button id="neighbor-color-brush-tool" type="button">🖌 Brush</button>
+    <button id="neighbor-color-undo" type="button">↶ Undo</button>
+   </div>
+   <div class="neighbor-color-actions"><button id="neighbor-color-reset" type="button">Start this picture again</button><button id="neighbor-color-save" class="primary" type="button">Save our picture</button></div>
+   <p class="neighbor-color-help">Tap inside a closed shape to fill it, or choose Brush to color by hand. The neighbor adds a few colors to your shared picture. This activity is saved only in the sandbox copy.</p>
+  </div>
+ </div>
+</section>
+<section id="inventory-panel" class="inventory-shade" hidden aria-label="Pouches and crafting">
+ <div class="inventory-panel" role="dialog" aria-modal="true" aria-labelledby="inventory-title">
+  <div class="inventory-head"><h2 id="inventory-title">Your Pouches</h2><button id="inventory-close" type="button">Close ✕</button></div>
+  <div class="inventory-tabs" role="tablist" aria-label="Inventory tabs">
+   <button type="button" data-inventory-tab="materials" class="active">Resources · 60</button>
+   <button type="button" data-inventory-tab="crafted">Crafted · 60</button>
+   <button type="button" data-inventory-tab="bucket">Material Bucket</button>
+   <button type="button" data-inventory-tab="recipes">Crafting</button>
+  </div>
+  <p id="inventory-summary" class="inventory-summary">Your resources and crafted items stay in this sandbox copy.</p>
+  <div id="inventory-slots" class="inventory-grid" aria-live="polite"></div>
+  <div id="inventory-recipes" class="inventory-recipes" hidden></div>
+  <p id="inventory-feedback" class="inventory-feedback" aria-live="polite"></p>
+  <div class="inventory-actions"><button id="bucket-empty" type="button">Empty Material Bucket</button></div>
+  <p class="inventory-help">This experimental panel edits only the isolated preview copy. No local saves or live-game inventory are changed.</p>
+ </div>
+</section>
+<section id="character-studio" class="character-shade" hidden aria-label="Character Studio">
+ <div class="character-panel" role="dialog" aria-modal="true" aria-labelledby="character-title">
+  <div class="character-head"><h2 id="character-title">Character Studio</h2><button id="character-close" type="button">Close ✕</button></div>
+  <p class="character-note">Choose a starter look, then make the hair, outfit, accessories and colors your own. Changes apply only to this experimental world copy.</p>
+  <div class="character-section">Starter looks</div>
+  <div class="character-presets">
+   <button type="button" class="character-preset" data-character-look="explorer"><span class="look-icon">🧥</span><strong>Garden Explorer</strong><small>Red hoodie · teal pants</small></button>
+   <button type="button" class="character-preset" data-character-look="sunshine"><span class="look-icon">🌻</span><strong>Golden Sunshine</strong><small>Golden hair · bright overalls</small></button>
+   <button type="button" class="character-preset" data-character-look="artist"><span class="look-icon">🎨</span><strong>Cozy Artist</strong><small>Soft sweater · flower clip</small></button>
+   <button type="button" class="character-preset" data-character-look="garden"><span class="look-icon">🌸</span><strong>Garden Princess</strong><small>Long hair · pretty dress</small></button>
+  </div>
+  <div class="character-preview-card">
+   <canvas id="character-preview" width="256" height="284" aria-label="Character appearance preview"></canvas>
+   <div class="character-preview-copy"><strong>Your character</strong><small id="character-preview-description">Your style, your colors, your little world.</small><small>Preview updates as you customize.</small></div>
+  </div>
+  <div class="character-section">Hair, outfit and accessories</div>
+  <div class="character-fields">
+   <label>Hairstyle<select id="character-hair-style"><option value="short">Short</option><option value="bob">Bob</option><option value="long">Long</option><option value="ponytail">Ponytail</option><option value="pigtails">Pigtails</option><option value="curly">Curly</option><option value="buns">Buns</option></select></label>
+   <label>Outfit<select id="character-outfit-style"><option value="hoodie">Hoodie</option><option value="sweater">Sweater</option><option value="overalls">Overalls</option><option value="dress">Dress</option><option value="tee">T-shirt</option></select></label>
+   <label>Accessory<select id="character-accessory"><option value="none">None</option><option value="bow">Bow</option><option value="flower">Flower clip</option><option value="glasses">Glasses</option><option value="cap">Cap</option></select></label>
+   <label>Accessory color<input id="character-accessory-color" type="color" value="#f4a8bb"></label>
+  </div>
+  <div class="character-section">Choose your colors</div>
+  <div class="character-fields">
+   <label>Hair color<input id="character-hair-color" type="color" value="#493127"></label>
+   <label>Skin tone<input id="character-skin-color" type="color" value="#efc39d"></label>
+   <label>Top color<input id="character-shirt-color" type="color" value="#d94b3d"></label>
+   <label>Bottom color<input id="character-pants-color" type="color" value="#397d8f"></label>
+   <label>Shoe color<input id="character-shoes-color" type="color" value="#bd4540"></label>
+   <label>Eye color<input id="character-eyes-color" type="color" value="#302820"></label>
+  </div>
+  <p id="character-feedback" aria-live="polite">Your appearance changes stay in this sandbox.</p>
+  <div class="character-actions"><button id="character-apply" class="primary" type="button">Apply to this world</button></div>
+ </div>
+</section>
+<section id="art-studio" class="art-shade" hidden aria-label="Art Studio">
+ <div class="art-panel" role="dialog" aria-modal="true" aria-labelledby="art-title">
+  <div class="art-head"><h2 id="art-title">Art Studio</h2><button id="art-close" type="button">Close ✕</button></div>
+  <p class="art-note">Draw with your mouse or finger. Your picture is saved as a PNG in this sandbox gallery.</p>
+  <div class="art-tools">
+   <label>Color <input id="art-paint-color" type="color" value="#4c8d59"></label>
+   <label>Brush <input id="art-brush-size" type="range" min="2" max="28" value="7"></label>
+   <button id="art-clear" type="button">Clear drawing</button>
+   <button id="art-invite" type="button">Invite a neighbor to color</button>
+  </div>
+  <canvas id="art-canvas" width="640" height="390" aria-label="Drawing canvas"></canvas>
+  <div class="art-name-row"><label for="art-name">Name your artwork</label><input id="art-name" maxlength="28" value="My picture"></div>
+  <div class="art-actions"><button id="art-save" class="primary" type="button">Save to crafted pouch</button><button id="art-view-gallery" type="button">View Gallery</button></div>
+  <p id="art-feedback" aria-live="polite">Pictures are stored only in this experimental sandbox copy.</p>
+ </div>
+</section>
+<section id="gallery-panel" class="art-shade" hidden aria-label="Saved artwork gallery">
+ <div class="gallery-panel" role="dialog" aria-modal="true" aria-labelledby="gallery-title">
+  <div class="gallery-head"><h2 id="gallery-title">My Gallery</h2><button id="gallery-close" type="button">Close ✕</button></div>
+  <p id="gallery-note" class="gallery-note">Your saved PNG pictures · up to 20 artworks</p>
+  <div id="gallery-artworks" class="gallery-grid" aria-live="polite"></div>
+ </div>
+</section>
+<section id="solid-designer" class="design-shade" hidden aria-label="Solid block designer">
+ <div class="design-panel" role="dialog" aria-modal="true" aria-labelledby="solid-design-title">
+  <div class="design-head"><h2 id="solid-design-title">Solid Block Designer</h2><button type="button" data-design-close>Close ✕</button></div>
+  <p class="design-note">Choose a solid material, color and surface finish. New blocks will use this design; existing blocks keep their own finish.</p>
+  <div class="design-preview"><div class="design-chip" id="solid-design-chip"></div><div class="design-preview-copy"><strong id="solid-design-name">Stone</strong><span id="solid-design-details">#9ca6a1 · stone texture</span></div></div>
+  <div class="design-fields">
+   <label>Material<select id="solid-design-type"><option value="stone">Stone</option><option value="wood">Wood</option><option value="brick">Brick</option><option value="dirt">Dirt</option><option value="grass">Grass</option><option value="leaves">Leaves</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Custom solid</option></select></label>
+   <label>Color<input id="solid-design-color" type="color" value="#9ca6a1"></label>
+   <label>Texture<select id="solid-design-texture"><option value="stone">Stone</option><option value="wood">Wood grain</option><option value="grass">Grass</option><option value="dirt">Earth</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Speckled custom</option></select></label>
+  </div>
+  <div class="design-actions"><button type="button" data-design-close>Cancel</button><button id="solid-design-apply" class="primary" type="button">Use this solid finish</button></div>
+ </div>
+</section>
+<section id="door-designer" class="design-shade" hidden aria-label="Door designer">
+ <div class="design-panel" role="dialog" aria-modal="true" aria-labelledby="door-design-title">
+  <div class="design-head"><h2 id="door-design-title">Door Design Studio</h2><button type="button" data-design-close>Close ✕</button></div>
+  <p class="design-note">Choose one of the original door styles and a color. New doors use your saved design.</p>
+  <div class="design-preview"><div class="design-chip" id="door-design-chip"></div><div class="design-preview-copy"><strong id="door-design-name">Classic door</strong><span id="door-design-details">#a97545</span></div></div>
+  <div class="design-fields">
+   <label>Door style<select id="door-design-style"><option value="classic">Classic</option><option value="window">Window</option><option value="garden">Garden</option></select></label>
+   <label>Door color<input id="door-design-color" type="color" value="#a97545"></label>
+  </div>
+  <div class="design-actions"><button type="button" data-design-close>Cancel</button><button id="door-design-apply" class="primary" type="button">Use this door design</button></div>
+ </div>
+</section>
+<section id="tile-designer" class="design-shade" hidden aria-label="Tile designer">
+ <div class="design-panel" role="dialog" aria-modal="true" aria-labelledby="tile-design-title">
+  <div class="design-head"><h2 id="tile-design-title">Tile Design Studio</h2><button type="button" data-design-close>Close ✕</button></div>
+  <p class="design-note">Choose one of the original 20 tile patterns and any color. Every placed tile keeps its own design.</p>
+  <div class="design-preview"><div class="design-chip" id="tile-design-chip"></div><div class="design-preview-copy"><strong id="tile-design-name">Classic grid</strong><span id="tile-design-details">#c5a98a</span></div></div>
+  <div class="design-fields">
+   <label>Pattern<select id="tile-design-pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select></label>
+   <label>Tile color<input id="tile-design-color" type="color" value="#c5a98a"></label>
+  </div>
+  <div class="design-actions"><button type="button" data-design-close>Cancel</button><button id="tile-design-apply" class="primary" type="button">Use this tile design</button></div>
+ </div>
+</section>
+<section id="animal-care" class="animal-care-shade" hidden aria-label="Gentle animal care">
+ <div class="animal-care-panel" role="dialog" aria-modal="true" aria-labelledby="animal-care-title">
+  <div class="animal-care-head"><h2 id="animal-care-title">🐾 Animal care</h2><button id="animal-care-close" type="button">Close ✕</button></div>
+  <p id="animal-care-note" class="animal-care-note">Choose a gentle way to care for your animal friend.</p>
+  <div class="animal-care-grid">
+   <button type="button" data-animal-care="snack">🍎 Offer a snack</button>
+   <button type="button" data-animal-care="water">💧 Fresh water</button>
+   <button type="button" data-animal-care="brush">🪮 Gentle brushing</button>
+   <button type="button" data-animal-care="play">🧶 Play together</button>
+  </div>
+  <p id="animal-care-feedback" class="animal-care-feedback" aria-live="polite">Your animal friend is happy to see you.</p>
+  <p class="animal-care-help">No animal can be hurt, attacked, or removed. These are care-only activities. Care counts stay in this experimental sandbox copy.</p>
+ </div>
+</section>
+<div id="animal-care-flash" hidden aria-hidden="true"></div>
+<script src="./js/three.js"></script><script src="./js/three-performance-profile.js"></script><script src="./js/three-world-adapter.js"></script><script src="./js/three-world-storage.js"></script><script src="./js/three-world-starter.js"></script><script src="./js/three-door-model.js"></script>
+<script src="./js/three-painterly-materials.js"></script><script src="./js/three-plant-geometry.js"></script><script src="./js/three-animal-geometry.js"></script><script src="./js/three-world-protection.js"></script><script src="./js/three-world-time.js"></script><script src="./js/three-world-edit-sandbox.js"></script>
+<script src="./js/three-world-raycast.js"></script><script src="./js/three-door-motion.js"></script><script src="./js/three-player-physics.js"></script><script src="./js/three-player-camera.js"></script><script src="./js/three-player-model.js"></script><script src="./js/three-neighbor-model.js"></script><script src="./js/three-neighbor-coloring.js"></script><script src="./three-world-live.js"></script>
+</body></html>

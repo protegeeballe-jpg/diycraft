@@ -1169,6 +1169,64 @@ canvas.addEventListener('pointercancel',()=>{pointerDown=null;});
 canvas.addEventListener('wheel',event=>{event.preventDefault();if(playerPlayMode)return;orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));});
 let frame=0;
+function applyPlayerActivity(){
+ const activity=document.getElementById('activity-mode').value;
+ if(!playerPhysicsState||!sandbox)return;
+ try{
+  let player={...playerPhysicsState.player};
+  if(activity==='stop'){
+   playerPhysicsState={...playerPhysicsState,playerActivity:''};
+   if(playerModelRoot){playerModelRoot.scale.set(1,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;}
+   status.textContent='Standing up. Ready to explore!';
+  }else{
+   if(activity==='sleep'||activity==='transformer'){
+    player.y=sandbox.surfaceHeightAt(player.x,player.z,player.y);
+    playerPhysicsState={...playerPhysicsState,player,playerGrounded:true,jumpVelocity:0,flying:false,playerActivity:activity};
+   }else playerPhysicsState={...playerPhysicsState,playerActivity:activity};
+   status.textContent=activity==='sleep'?'Resting here. Sweet dreams!':
+    activity==='transformer'?'Transformer sleep selected.':
+    activity.charAt(0).toUpperCase()+activity.slice(1)+' activity selected.';
+  }
+  clearPlayerInputs();setPlayerPlayMode(false);
+  const next=sandbox.setPlayerPose({x:playerPhysicsState.player.x,y:playerPhysicsState.player.y,z:playerPhysicsState.player.z,yaw:playerPhysicsState.player.yaw,pitch:playerPhysicsState.player.pitch});
+  renderSandbox(next);lastPosePersisted={...playerPhysicsState.player};cameraUpdate();updatePlayerModel();
+ }catch(error){status.textContent='Activity could not be applied: '+error.message;}
+}
+function setHomeBed(){
+ if(!sandbox||!playerPhysicsState)return;
+ try{
+  const player=playerPhysicsState.player,floor=sandbox.surfaceHeightAt(player.x,player.z,player.y);
+  const bed={x:Math.round(player.x*100)/100,y:floor,z:Math.round(player.z*100)/100,yaw:player.yaw||0};
+  const next=sandbox.setPlayerPose({bed});
+  playerPhysicsState={...playerPhysicsState,player:{...player,bed},playerActivity:''};
+  renderSandbox(next);status.textContent='Your home bed is saved. Use Go home & sleep anytime.';
+ }catch(error){status.textContent='Home bed was not set: '+error.message;}
+}
+function goHomeAndSleep(){
+ if(!sandbox||!playerPhysicsState)return;
+ const bed=playerPhysicsState.player.bed;
+ if(!bed){status.textContent='No home bed saved yet. Set your home bed first.';return;}
+ try{
+  const player={...playerPhysicsState.player,x:bed.x,y:bed.y,z:bed.z,yaw:bed.yaw||0};
+  playerPhysicsState={...playerPhysicsState,player,playerGrounded:true,jumpVelocity:0,flying:false,playerActivity:'bed'};
+  const next=sandbox.setPlayerPose({x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch,bed});
+  renderSandbox(next);setPlayerPlayMode(false);cameraUpdate();status.textContent='Back home in bed. Sweet dreams!';
+  lastPosePersisted={...player};lastPosePersistAt=performance.now();
+ }catch(error){status.textContent='Could not return home: '+error.message;}
+}
+document.getElementById('activity-apply').addEventListener('click',applyPlayerActivity);
+document.getElementById('set-home-bed').addEventListener('click',setHomeBed);
+document.getElementById('go-home').addEventListener('click',goHomeAndSleep);
+function animatePlayerActivity(now){
+ if(!playerModelRoot||!playerPhysicsState)return;
+ const activity=playerPhysicsState.playerActivity;
+ playerModelRoot.scale.set(1,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;
+ if(activity==='sit'){playerModelRoot.scale.y=.82;playerModelRoot.position.y-=.08;}
+ else if(activity==='work')playerModelRoot.rotation.z=-.055;
+ else if(activity==='dance')playerModelRoot.rotation.z=Math.sin(now*.0042)*.13;
+ else if(activity==='sleep'){playerModelRoot.scale.y=.72;playerModelRoot.rotation.x=1.34;}
+ else if(activity==='transformer')playerModelRoot.scale.set(1.04,1.04,1.04);
+}
 function animate(now){
  requestAnimationFrame(animate);
  if(!frameGate.shouldRender(now))return;
@@ -1183,7 +1241,7 @@ function animate(now){
   syncPlayerPoseToWorld(now,false);
  }else lastPlayerPhysicsTime=now;
  applyWorldTime(now*.001);skyDome.position.copy(camera.position);celestialGroup.position.copy(camera.position);
- updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);updateAnimalCareFlash(now);updateNeighborModels(now);
+ updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);updateAnimalCareFlash(now);updateNeighborModels(now);animatePlayerActivity(now);
  for(const item of animatedPlants){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;
   else item.object.rotation.z=Math.sin(now*.0018+item.phase)*.11;
