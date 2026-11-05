@@ -556,6 +556,41 @@ test('sets a trimmed 30-character world name only inside the editing clone',()=>
  assert.equal(edit.getState().revision,named.revision,'Rejected world names must not mutate or increment revision.');
 });
 
+test('stores solid, custom block, door and tile designs for future placements only',()=>{
+ const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world);
+ const originalBlock=edit.getState().world.blocks[0];
+ edit.setCustomBlockDesign({color:'#9876ba',texture:'custom'});
+ edit.setSolidStyle('stone',{color:'#b56ec4',texture:'leaves'});
+ edit.setDoorDesign({color:'#bd7a4b',style:'garden'});
+ edit.setTileDesign({color:'#a1b2c3',pattern:'spiral'});
+ const custom=edit.addBlock({x:90,y:0,z:90,type:'custom'}).world.blocks.at(-1);
+ const solid=edit.addBlock({x:91,y:0,z:90,type:'stone'}).world.blocks.at(-1);
+ const door=edit.addBlock({x:92,y:0,z:90,type:'door'}).world.blocks.at(-1);
+ const tile=edit.addBlock({x:93,y:0,z:90,type:'tile'}).world.blocks.at(-1);
+ assert.deepEqual({color:custom.color,texture:custom.texture},{color:'#9876ba',texture:'custom'});
+ assert.deepEqual({color:solid.color,texture:solid.texture},{color:'#b56ec4',texture:'leaves'});
+ assert.deepEqual({color:door.color,style:door.style},{color:'#bd7a4b',style:'garden'});
+ assert.deepEqual({color:tile.color,tilePattern:tile.tilePattern},{color:'#a1b2c3',tilePattern:'spiral'});
+ assert.deepEqual(edit.getState().world.blocks[0],originalBlock,'Existing blocks retain their prior finish.');
+ assert.equal(JSON.stringify(world),before,'Design changes stay inside the editing clone.');
+});
+test('rejects invalid design settings and clears only the sandbox Material Bucket',()=>{
+ const world=fixture();world.bucket=[{type:'stone'},{type:'door',style:'garden'}];
+ const before=JSON.stringify(world),edit=sandbox.create(world),initial=edit.getState();
+ assert.throws(()=>edit.setCustomBlockDesign({color:'purple',texture:'custom'}),/valid color/);
+ assert.throws(()=>edit.setCustomBlockDesign({color:'#123456',texture:'noise'}),/supported texture/);
+ assert.throws(()=>edit.setSolidStyle('water',{color:'#123456',texture:'stone'}),/supported solid/);
+ assert.throws(()=>edit.setSolidStyle('stone',{color:'#12',texture:'stone'}),/valid color/);
+ assert.throws(()=>edit.setDoorDesign({color:'#123456',style:'barn'}),/supported style/);
+ assert.throws(()=>edit.setTileDesign({color:'#123456',pattern:'noise'}),/supported pattern/);
+ assert.equal(edit.getState().revision,initial.revision);
+ const cleared=edit.clearMaterialBucket();
+ assert.deepEqual(cleared.world.bucket,[]);
+ assert.equal(cleared.selectedBucketItem,null);
+ assert.equal(cleared.revision,initial.revision+1);
+ assert.equal(JSON.stringify(world),before);
+});
+
 console.log('Three.js editing sandbox tests complete.');
 
 test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomically',()=>{

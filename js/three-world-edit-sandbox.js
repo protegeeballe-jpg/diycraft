@@ -387,6 +387,37 @@
    block.open=!block.open;revision++;
    return state();
   }
+  function setCustomBlockDesign(design){
+   if(!object(design)||typeof design.color!=='string'||!HEX.test(design.color)||!TEXTURES.has(design.texture))
+    throw new TypeError('Custom block design needs a valid color and supported texture.');
+   world.customBlock={color:design.color.toLowerCase(),texture:design.texture};revision++;return state();
+  }
+  function setSolidStyle(type,design){
+   if(!SOLID_TYPES.has(type))throw new TypeError('Choose a supported solid material.');
+   if(!object(design)||typeof design.color!=='string'||!HEX.test(design.color)||!TEXTURES.has(design.texture))
+    throw new TypeError('Solid finish needs a valid color and supported texture.');
+   world.solidStyles=object(world.solidStyles)?world.solidStyles:{};
+   world.solidStyles[type]={color:design.color.toLowerCase(),texture:design.texture};
+   world.styledSolidTypes=Array.isArray(world.styledSolidTypes)?world.styledSolidTypes:[];
+   if(!world.styledSolidTypes.includes(type))world.styledSolidTypes.push(type);
+   revision++;return state();
+  }
+  function setDoorDesign(design){
+   if(!object(design)||typeof design.color!=='string'||!HEX.test(design.color)||!['classic','window','garden'].includes(design.style))
+    throw new TypeError('Door design needs a valid color and supported style.');
+   world.doorDesign={color:design.color.toLowerCase(),style:design.style};revision++;return state();
+  }
+  function setTileDesign(design){
+   if(!object(design)||typeof design.color!=='string'||!HEX.test(design.color)||!PATTERNS.has(design.pattern))
+    throw new TypeError('Tile design needs a valid color and supported pattern.');
+   world.tileDesign={color:design.color.toLowerCase(),pattern:design.pattern};revision++;return state();
+  }
+  function clearMaterialBucket(){
+   const hadItems=Array.isArray(world.bucket)&&world.bucket.length>0;
+   if(hadItems){world.bucket=[];revision++;}
+   selectedBucketItem=null;selectedBucketItemIndex=null;
+   return state();
+  }
   function setPlayerAppearance(appearance){
    if(!object(appearance))throw new TypeError('Character appearance must be an object.');
    const changes={};
@@ -427,7 +458,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,setCustomBlockDesign,setSolidStyle,setDoorDesign,setTileDesign,clearMaterialBucket,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
  }
  return Object.freeze({create,recipes:CRAFT_RECIPES,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
