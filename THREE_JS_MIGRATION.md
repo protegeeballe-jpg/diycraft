@@ -250,3 +250,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 - Ear visibility correction: cat, dog, sheep, cow, horse and giraffe outer ears now extend beyond the head silhouette, with contrasting inner-ear detail; giraffe ossicones remain separate horns. Geometry tests require ears to exist outside the head rather than merely being present in source.
 - Gait-axis correction: ground-leg transforms use the YXZ Euler order so the animal heading is applied before the local hip swing. This keeps the swing axis attached to the animal's body coordinate frame instead of the global X axis. Browser diagnostics assert the live rotation order.
+
+
+- Live UI event-listener audit: removed duplicate world-name apply, backup-download and backup-restore registrations. Browser tests now count registrations for these controls and assert that a single backup click produces exactly one download.

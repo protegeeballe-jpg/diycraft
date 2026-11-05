@@ -1459,9 +1459,6 @@ document.getElementById('backup-download').addEventListener('click',downloadWorl
 document.getElementById('backup-restore').addEventListener('change',event=>restoreWorldBackup(event.target.files?.[0]));
 document.getElementById('save-now').addEventListener('click',()=>{void saveWorldNow();});
 
-document.getElementById('world-name-apply').addEventListener('click',applyWorldName);
-document.getElementById('backup-download').addEventListener('click',downloadWorldBackup);
-document.getElementById('backup-restore').addEventListener('change',event=>restoreWorldBackup(event.target.files?.[0]));
 const solidDesigner=document.getElementById('solid-designer');
 const doorDesigner=document.getElementById('door-designer');
 const tileDesigner=document.getElementById('tile-designer');

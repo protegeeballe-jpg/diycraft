@@ -1,6 +1,12 @@
 'use strict';
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const liveRuntimeSource=fs.readFileSync('three-world-live.js','utf8');
+for(const id of ['world-name-apply','backup-download','backup-restore']){
+ const count=(liveRuntimeSource.match(new RegExp("getElementById\\('"+id+"'\\)\\.addEventListener\\(",'g'))||[]).length;
+ assert.equal(count,1,'Production control #'+id+' must register exactly one event handler.');
+}
+
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright');
@@ -139,7 +145,11 @@ const {chromium}=require('playwright');
   },savedAnimalCount,{timeout:12000});
 
   // Downloaded backup must be original version-1 JSON, not renderer-only data.
+  let backupDownloadCount=0;
+  page.on('download',()=>{backupDownloadCount++;});
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#backup-download').click()]);
+  await page.waitForTimeout(80);
+  assert.equal(backupDownloadCount,1,'One backup-button click must produce exactly one download.');
   const downloadPath=await download.path();
   assert.ok(downloadPath,'Backup download must produce a file.');
   const backup=JSON.parse(fs.readFileSync(downloadPath,'utf8'));
