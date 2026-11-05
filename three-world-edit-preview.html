@@ -101,6 +101,27 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  .neighbor-color-tools button,.neighbor-color-actions button{padding:7px 8px;font-size:11px}
 }
 @media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#safety{right:8px;top:auto;bottom:8px;max-width:190px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
+
+/* Isolated Character Studio */
+#character-studio[hidden]{display:none!important}
+.character-shade{position:fixed;z-index:26;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.character-panel{width:min(680px,100%);max-height:95vh;overflow:auto;padding:15px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:17px;box-shadow:0 16px 50px #263c3250}
+.character-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.character-head h2{font:700 19px Georgia,serif;margin:0;color:#405a46}
+.character-note{font-size:11px;line-height:1.45;color:#718075;margin:8px 0 12px}
+.character-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.character-preset{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px;background:#f5f1e7;text-align:left;min-width:0}
+.character-preset.active{background:#e8f0e3;border-color:#8aaa79;box-shadow:inset 0 0 0 1px #8aaa79}
+.character-preset strong{font-size:11px}.character-preset small{font-size:9px;color:#718075;line-height:1.3}.character-preset .look-icon{font-size:20px}
+.character-preview-card{display:flex;align-items:center;gap:12px;padding:10px;margin:12px 0;background:#eef3e8;border:1px solid #dce6d4;border-radius:12px}
+#character-preview{display:block;width:112px;height:124px;flex:0 0 112px;border:1px solid #d2e0da;border-radius:9px;background:#dcecf0}
+.character-preview-copy{font-size:12px;line-height:1.5}.character-preview-copy strong{font-size:13px}.character-preview-copy small{display:block;color:#718075}
+.character-section{font:700 12px Georgia,serif;color:#526b55;margin:13px 0 7px}
+.character-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.character-fields label{display:flex;flex-direction:column;gap:4px;font-size:10px;color:#657563}
+.character-fields select{width:100%;min-width:0}.character-fields input[type=color]{width:100%;height:34px;padding:2px}
+.character-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.character-actions button{min-width:120px}
+#character-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:8px 0 0}
+@media(max-width:560px){.character-panel{padding:11px;max-height:96vh}.character-head h2{font-size:17px}.character-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.character-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.character-preview-card{gap:9px}#character-preview{width:92px;height:104px;flex-basis:92px}}
 </style></head>
 <body>
 <canvas id="three-world" aria-label="Interactive Three.js editing sandbox"></canvas>
@@ -113,7 +134,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <label for="time-mode">Time <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>
 <select id="block-type" aria-label="Block type"><option value="water">Water</option><option value="grass">Grass</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select>
 <input id="color" type="color" value="#70b85a" aria-label="Custom block color">
-<button id="inventory-open" type="button">Pouches &amp; Crafting</button>
+<button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button>
 <button id="add">Place on face</button><button id="remove" disabled>Remove</button>
 <button id="door" disabled>Open / close door</button>
 <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select>
@@ -172,6 +193,41 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
   <div id="inventory-recipes" class="inventory-recipes" hidden></div>
   <p id="inventory-feedback" class="inventory-feedback" aria-live="polite"></p>
   <p class="inventory-help">This experimental panel edits only the isolated preview copy. No local saves or live-game inventory are changed.</p>
+ </div>
+</section>
+<section id="character-studio" class="character-shade" hidden aria-label="Character Studio">
+ <div class="character-panel" role="dialog" aria-modal="true" aria-labelledby="character-title">
+  <div class="character-head"><h2 id="character-title">Character Studio</h2><button id="character-close" type="button">Close ✕</button></div>
+  <p class="character-note">Choose a starter look, then make the hair, outfit, accessories and colors your own. Changes apply only to this experimental world copy.</p>
+  <div class="character-section">Starter looks</div>
+  <div class="character-presets">
+   <button type="button" class="character-preset" data-character-look="explorer"><span class="look-icon">🧥</span><strong>Garden Explorer</strong><small>Red hoodie · teal pants</small></button>
+   <button type="button" class="character-preset" data-character-look="sunshine"><span class="look-icon">🌻</span><strong>Golden Sunshine</strong><small>Golden hair · bright overalls</small></button>
+   <button type="button" class="character-preset" data-character-look="artist"><span class="look-icon">🎨</span><strong>Cozy Artist</strong><small>Soft sweater · flower clip</small></button>
+   <button type="button" class="character-preset" data-character-look="garden"><span class="look-icon">🌸</span><strong>Garden Princess</strong><small>Long hair · pretty dress</small></button>
+  </div>
+  <div class="character-preview-card">
+   <canvas id="character-preview" width="256" height="284" aria-label="Character appearance preview"></canvas>
+   <div class="character-preview-copy"><strong>Your character</strong><small id="character-preview-description">Your style, your colors, your little world.</small><small>Preview updates as you customize.</small></div>
+  </div>
+  <div class="character-section">Hair, outfit and accessories</div>
+  <div class="character-fields">
+   <label>Hairstyle<select id="character-hair-style"><option value="short">Short</option><option value="bob">Bob</option><option value="long">Long</option><option value="ponytail">Ponytail</option><option value="pigtails">Pigtails</option><option value="curly">Curly</option><option value="buns">Buns</option></select></label>
+   <label>Outfit<select id="character-outfit-style"><option value="hoodie">Hoodie</option><option value="sweater">Sweater</option><option value="overalls">Overalls</option><option value="dress">Dress</option><option value="tee">T-shirt</option></select></label>
+   <label>Accessory<select id="character-accessory"><option value="none">None</option><option value="bow">Bow</option><option value="flower">Flower clip</option><option value="glasses">Glasses</option><option value="cap">Cap</option></select></label>
+   <label>Accessory color<input id="character-accessory-color" type="color" value="#f4a8bb"></label>
+  </div>
+  <div class="character-section">Choose your colors</div>
+  <div class="character-fields">
+   <label>Hair color<input id="character-hair-color" type="color" value="#493127"></label>
+   <label>Skin tone<input id="character-skin-color" type="color" value="#efc39d"></label>
+   <label>Top color<input id="character-shirt-color" type="color" value="#d94b3d"></label>
+   <label>Bottom color<input id="character-pants-color" type="color" value="#397d8f"></label>
+   <label>Shoe color<input id="character-shoes-color" type="color" value="#bd4540"></label>
+   <label>Eye color<input id="character-eyes-color" type="color" value="#302820"></label>
+  </div>
+  <p id="character-feedback" aria-live="polite">Your appearance changes stay in this sandbox.</p>
+  <div class="character-actions"><button id="character-apply" class="primary" type="button">Apply to this world</button></div>
  </div>
 </section>
 <section id="animal-care" class="animal-care-shade" hidden aria-label="Gentle animal care">

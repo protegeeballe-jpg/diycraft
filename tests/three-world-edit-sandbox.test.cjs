@@ -139,7 +139,7 @@ test('removes blocks into the Material Bucket and frees door clearance',()=>{
 });
 test('refuses removal when the Material Bucket is full without changing the world',()=>{
  const world=fixture();world.bucket=Array.from({length:120},()=>({type:'stone'}));
- const edit=sandbox.create(world),before=edit.getState();
+ const sourceBefore=JSON.stringify(world),edit=sandbox.create(world),before=edit.getState();
  assert.throws(()=>edit.remove('block-0'),/Material Bucket is full/);
  const after=edit.getState();
  assert.equal(after.world.blocks.length,before.world.blocks.length);
@@ -538,7 +538,7 @@ test('validates all original character style and color options atomically',()=>{
  assert.throws(()=>edit.setPlayerAppearance({}),/at least one/);
  assert.equal(edit.getState().revision,current.revision,'Invalid changes must not increment the revision.');
  assert.deepEqual(edit.getState().world.player,current.world.player,'Invalid changes must not partially update the player.');
- assert.equal(JSON.stringify(world),JSON.stringify(world),'The source fixture remains valid after rejected changes.');
+ assert.equal(JSON.stringify(world),sourceBefore,'Rejected character changes must never mutate the source fixture.');
  assert.equal(before.sourceUnchanged,true);
 });
 

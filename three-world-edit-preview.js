@@ -515,6 +515,8 @@ function renderSandbox(state){
    return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates};
   },
   inventoryOpen:()=>!inventoryPanel.hidden,
+  characterOpen:()=>!characterPanel.hidden,
+  getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -831,6 +833,104 @@ document.querySelectorAll('[data-inventory-tab]').forEach(button=>button.addEven
 }));
 inventoryPanel.addEventListener('pointerdown',event=>{if(event.target===inventoryPanel)closeInventory();});
 window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!inventoryPanel.hidden)closeInventory();});
+
+const characterPanel=document.getElementById('character-studio');
+const CHARACTER_PRESETS={
+ explorer:{hairStyle:'short',outfitStyle:'hoodie',accessory:'none',hair:'#493127',skin:'#efc39d',shirt:'#d94b3d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',accessoryColor:'#f4a8bb'},
+ sunshine:{hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',hair:'#efbd43',skin:'#f2cda9',shirt:'#48a78b',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',accessoryColor:'#ec83ba'},
+ artist:{hairStyle:'bob',outfitStyle:'sweater',accessory:'flower',hair:'#754c3c',skin:'#e8b995',shirt:'#9b79b7',pants:'#48617a',shoes:'#6b527c',eyes:'#302820',accessoryColor:'#ef82a4'},
+ garden:{hairStyle:'long',outfitStyle:'dress',accessory:'bow',hair:'#5a3827',skin:'#f0c7a3',shirt:'#e98eae',pants:'#68a96d',shoes:'#d45b80',eyes:'#302820',accessoryColor:'#f4c6dc'}
+};
+const CHARACTER_INPUTS={
+ hairStyle:'character-hair-style',outfitStyle:'character-outfit-style',accessory:'character-accessory',
+ accessoryColor:'character-accessory-color',hair:'character-hair-color',skin:'character-skin-color',
+ shirt:'character-shirt-color',pants:'character-pants-color',shoes:'character-shoes-color',eyes:'character-eyes-color'
+};
+function characterFormValues(){
+ return Object.fromEntries(Object.entries(CHARACTER_INPUTS).map(([field,id])=>[field,document.getElementById(id).value]));
+}
+function setCharacterFormValues(player){
+ for(const [field,id] of Object.entries(CHARACTER_INPUTS)){
+  const defaults=CHARACTER_PRESETS.explorer;
+  const fallback=defaults[field]||'#302820';
+  document.getElementById(id).value=player[field]||fallback;
+ }
+ document.querySelectorAll('[data-character-look]').forEach(button=>button.classList.remove('active'));
+ updateCharacterPreview();
+}
+function updateCharacterPreview(){
+ const p=characterFormValues(),canvas=document.getElementById('character-preview'),ctx=canvas.getContext('2d');
+ const w=canvas.width,h=canvas.height;
+ ctx.clearRect(0,0,w,h);
+ const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#d4e9ed');bg.addColorStop(1,'#eff2d8');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);ctx.fillStyle='#94bd78';ctx.fillRect(0,232,w,52);ctx.fillStyle='#6e9d57';ctx.fillRect(0,232,w,5);
+ ctx.fillStyle=p.shoes;ctx.fillRect(81,244,42,18);ctx.fillRect(136,244,42,18);
+ ctx.fillStyle=p.pants;ctx.fillRect(86,190,32,58);ctx.fillRect(141,190,32,58);
+ ctx.fillStyle=p.shirt;ctx.fillRect(67,111,122,83);ctx.fillRect(45,120,26,70);ctx.fillRect(185,120,26,70);
+ ctx.fillStyle=p.skin;ctx.fillRect(45,184,26,20);ctx.fillRect(185,184,26,20);
+ if(p.outfitStyle==='dress'){
+  ctx.fillStyle=p.shirt;ctx.beginPath();ctx.moveTo(67,168);ctx.lineTo(189,168);ctx.lineTo(205,221);ctx.lineTo(51,221);ctx.closePath();ctx.fill();
+ }else if(p.outfitStyle==='overalls'){
+  ctx.fillStyle=p.pants;ctx.fillRect(93,126,70,75);ctx.fillRect(91,110,16,59);ctx.fillRect(149,110,16,59);
+  ctx.fillStyle='#f0dda7';ctx.fillRect(121,151,14,12);
+ }else if(p.outfitStyle==='hoodie'){ctx.fillStyle='#00000018';ctx.fillRect(112,169,32,8);}
+ ctx.fillStyle=p.skin;ctx.fillRect(111,91,34,24);ctx.fillRect(87,35,82,68);
+ ctx.fillStyle=p.hair;ctx.fillRect(82,27,92,24);
+ if(p.hairStyle==='bob'){ctx.fillRect(78,44,18,63);ctx.fillRect(160,44,18,63);}
+ if(p.hairStyle==='long'){ctx.fillRect(77,42,20,125);ctx.fillRect(160,42,20,125);}
+ if(p.hairStyle==='ponytail'){ctx.fillRect(159,35,29,56);ctx.fillRect(171,72,18,65);}
+ if(p.hairStyle==='pigtails'){ctx.fillRect(70,48,23,56);ctx.fillRect(158,48,23,56);ctx.fillRect(68,88,24,30);ctx.fillRect(160,88,24,30);}
+ if(p.hairStyle==='curly'){for(const [x,y] of [[82,24],[105,14],[130,14],[151,24],[72,43],[166,43]])ctx.fillRect(x,y,27,28);}
+ if(p.hairStyle==='buns'){ctx.fillRect(65,18,35,34);ctx.fillRect(157,18,35,34);}
+ ctx.fillStyle=p.hair;ctx.fillRect(83,46,34,15);ctx.fillRect(118,35,54,15);
+ ctx.fillStyle=p.eyes;ctx.fillRect(105,71,8,7);ctx.fillRect(145,71,8,7);ctx.fillStyle='#9b6959';ctx.fillRect(124,83,13,4);
+ if(p.accessory==='bow'){ctx.fillStyle=p.accessoryColor;ctx.fillRect(69,30,19,13);ctx.fillRect(90,30,19,13);ctx.fillRect(85,32,9,10);}
+ if(p.accessory==='flower'){ctx.fillStyle=p.accessoryColor;ctx.fillRect(75,31,19,19);ctx.fillStyle='#f6d36b';ctx.fillRect(81,37,8,8);}
+ if(p.accessory==='glasses'){ctx.strokeStyle=p.accessoryColor;ctx.lineWidth=5;ctx.strokeRect(96,65,27,20);ctx.strokeRect(137,65,27,20);ctx.beginPath();ctx.moveTo(123,74);ctx.lineTo(137,74);ctx.stroke();}
+ if(p.accessory==='cap'){ctx.fillStyle=p.accessoryColor;ctx.fillRect(78,15,100,18);ctx.fillRect(78,30,115,9);}
+ document.getElementById('character-preview-description').textContent=p.hairStyle+' hair · '+p.outfitStyle+' · '+p.accessory;
+}
+function openCharacterStudio(){
+ const player=sandbox.getState().world.player||{};
+ setCharacterFormValues(player);
+ characterPanel.hidden=false;
+}
+function closeCharacterStudio(){characterPanel.hidden=true;}
+function applyCharacterStudio(){
+ const appearance=characterFormValues();
+ try{
+  const next=sandbox.setPlayerAppearance(appearance);
+  playerPhysicsState={...playerPhysicsState,player:{...playerPhysicsState.player,...appearance}};
+  if(playerModelRoot)playerModelFactory.dispose(playerModelRoot);
+  playerModelRoot=playerModelFactory.create(THREE,materials,playerPhysicsState.player,performanceProfile.shadows);
+  scene.add(playerModelRoot);
+  updatePlayerModel();
+  if(playerPlayMode)updatePlayerCamera();
+  renderSandbox(next);
+  updatePlayerDiagnostics();
+  closeCharacterStudio();
+  status.textContent='Character updated in this experimental world copy.';
+ }catch(error){
+  document.getElementById('character-feedback').textContent=error.message;
+ }
+}
+document.getElementById('character-open').addEventListener('click',openCharacterStudio);
+document.getElementById('character-close').addEventListener('click',closeCharacterStudio);
+document.getElementById('character-apply').addEventListener('click',applyCharacterStudio);
+characterPanel.addEventListener('pointerdown',event=>{if(event.target===characterPanel)closeCharacterStudio();});
+document.querySelectorAll('[data-character-look]').forEach(button=>button.addEventListener('click',()=>{
+ const preset=CHARACTER_PRESETS[button.dataset.characterLook];if(!preset)return;
+ setCharacterFormValues(preset);
+ document.querySelectorAll('[data-character-look]').forEach(item=>item.classList.toggle('active',item===button));
+}));
+for(const id of Object.values(CHARACTER_INPUTS))document.getElementById(id).addEventListener('input',()=>{
+ document.querySelectorAll('[data-character-look]').forEach(button=>button.classList.remove('active'));
+ updateCharacterPreview();
+});
+document.getElementById('character-preview').setAttribute('width','256');
+updateCharacterPreview();
+document.getElementById('character-studio').addEventListener('keydown',event=>{if(event.key==='Escape')closeCharacterStudio();});
+
 
 document.getElementById('bucket-item').addEventListener('change',event=>{
  try{

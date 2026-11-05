@@ -547,6 +547,33 @@ function freshWorld(){
    'The original addItem() behavior merges by item ID and retains the existing stack label.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborColoringStats().open),false,
    'Saving should close the shared coloring panel.');
+  // Character Studio must use the original appearance controls/presets while changing
+  // only the sandbox player's appearance and keeping its one-mesh renderer budget.
+  await page.locator('#character-open').click();
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__.characterOpen(),null,{timeout:3000});
+  await page.locator('[data-character-look="sunshine"]').click();
+  assert.equal(await page.locator('#character-hair-style').inputValue(),'pigtails');
+  assert.equal(await page.locator('#character-outfit-style').inputValue(),'overalls');
+  assert.equal(await page.locator('#character-accessory').inputValue(),'glasses');
+  await page.locator('#character-hair-style').selectOption('curly');
+  await page.locator('#character-outfit-style').selectOption('tee');
+  await page.locator('#character-accessory').selectOption('cap');
+  await page.locator('#character-hair-color').fill('#123456');
+  await page.locator('#character-shirt-color').fill('#765432');
+  await page.locator('#character-accessory-color').fill('#abcdef');
+  await page.locator('#character-apply').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.player.hairStyle,'curly');
+  assert.equal(worldState.world.player.outfitStyle,'tee');
+  assert.equal(worldState.world.player.accessory,'cap');
+  assert.equal(worldState.world.player.hair,'#123456');
+  assert.equal(worldState.world.player.shirt,'#765432');
+  assert.equal(worldState.world.player.accessoryColor,'#abcdef');
+  const characterStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getCharacterStats());
+  assert.equal(characterStats.meshCount,1,'Character Studio must rebuild only one painterly player mesh.');
+  assert.ok(characterStats.vertexCount>0,'The updated player appearance must have renderable merged geometry.');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.characterOpen()),false);
+
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.sourceUnchanged,true,'Sandbox operations must not mutate the renderer snapshot.');
   assert.equal(state.storageKeys,0,'Sandbox must not access browser storage.');
