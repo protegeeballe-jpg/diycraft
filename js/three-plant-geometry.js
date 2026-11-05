@@ -13,7 +13,7 @@
   const shape={
    plantType:block.type,petalCount:0,leafCount:0,raisedPetalRidges:false,raisedLeafVeins:false,
    petalYRange:null,petalProfiles:[],petalRise:0,petalCupDepth:0,flowerCenterY:0,flowerVolume:false,petalCrossSectionSegments:0,petalLongitudinalRings:0,
-   petalThickness:0,stalkVolume:false,stalkRadialSegments:0,basalLeavesVolume:false,leafThickness:0
+   petalThickness:0,stalkVolume:false,stalkRadialSegments:0,basalLeavesVolume:false,leafThickness:0,grassBaseColor:null,grassColors:[]
   };
   let petalMinY=Infinity,petalMaxY=-Infinity;
   function vertex(point,color,uv){
@@ -145,7 +145,9 @@
    shape.flowerVolume=true;shape.petalCrossSectionSegments=8;shape.petalLongitudinalRings=7;shape.petalThickness=.03;
    shape.basalLeavesVolume=true;shape.leafThickness=.078*.24;
   }else{
-   const grassColors=['#4e9850','#5eaa58','#78b568','#a4c374'];
+   const grassBaseColor=typeof block.color==='string'&&/^#[0-9a-f]{6}$/i.test(block.color)?block.color:'#61a65a';
+   const grassColors=[shade(grassBaseColor,.72),shade(grassBaseColor,.88),grassBaseColor,shade(grassBaseColor,1.16)];
+   shape.grassBaseColor=grassBaseColor;shape.grassColors=grassColors.slice();
    for(let i=0;i<7;i++){
     const angle=i*2.399,r=.04+(i%3)*.025,ca=Math.cos(angle),sa=Math.sin(angle);
     const side=[-sa,0,ca],normal=[0,1,0],centers=[],widths=[],thicknesses=[],height=.66+(i%3)*.07;
