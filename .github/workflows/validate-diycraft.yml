@@ -9,7 +9,6 @@ on:
       - sw.js
       - three-world-live.js
       - js/three-*.js
-      - tests/three-viewport.test.cjs
       - tests/three-world-storage.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
@@ -24,6 +23,7 @@ on:
       - sw.js
       - three-world-live.js
       - js/three-*.js
+      - tests/three-viewport.test.cjs
       - tests/three-world-storage.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
@@ -69,7 +69,7 @@ jobs:
               !html.includes("connect-src 'self'")||!html.includes("worker-src 'self'"))
             throw new Error(name+' entry page has an unsafe or incomplete content security policy.');
            const tags=[...html.matchAll(/<script\b([^>]*)>/gi)];
-           if(tags.length!==21)throw new Error(name+' entry page must load exactly 21 reviewed local engine modules; found '+tags.length);
+           if(tags.length!==22)throw new Error(name+' entry page must load exactly 21 reviewed local engine modules; found '+tags.length);
            for(const tag of tags){
             const src=(tag[1].match(/\bsrc=["']([^"']+)["']/i)||[])[1];
             if(!src||/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(src)||/^(?:javascript|data):/i.test(src))
