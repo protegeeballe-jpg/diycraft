@@ -10,7 +10,7 @@ class Geometry{
  constructor(points){this.attributes={position:new Attribute(points.flat(),3),uv:new Attribute(points.flatMap(()=>[0,0]),2)};this.index=null;this.disposed=false;}
  dispose(){this.disposed=true;}
 }
-class SphereGeometry extends Geometry{constructor(){super([[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]);}}
+class SphereGeometry extends Geometry{constructor(radius=1){super([[radius,0,0],[-radius,0,0],[0,radius,0],[0,-radius,0],[0,0,radius],[0,0,-radius]]);}}
 class CylinderGeometry extends Geometry{
  constructor(top,bottom,height){super([[top,height/2,0],[-top,height/2,0],[0,height/2,top],[bottom,-height/2,0],[-bottom,-height/2,0],[0,-height/2,bottom]]);}
 }
