@@ -67,6 +67,11 @@ const {chromium}=require('playwright');
   assert.ok(Number.isFinite(birdVisualAfter.groundLegRotationY),
    'The live leg transform must retain the animal heading on Euler Y.');
 
+  const togglePlayModeFromSettings=async()=>{
+   if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
+   await togglePlayModeFromSettings();
+  };
+
   // Exercise a real build action and wait for the version-1 device save.
   await page.locator('#block-type').selectOption('grass');
   await page.locator('#add').click();
