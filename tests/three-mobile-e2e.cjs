@@ -289,6 +289,29 @@ const {chromium}=require('playwright');
    return !(world.excavations||[]).some(cell=>cell.x===x&&cell.z===z)&&world.blocks.some(block=>block.x===x&&block.y===-1&&block.z===z&&block.type==='grass');
   },{x:buildCell.x,z:buildCell.z},{timeout:10000});
 
+  // Pool worksite regression: the default pool cell must remain diggable even
+  // while family characters follow their routes. Hold gestures tolerate small finger drift.
+  const poolPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.focusGroundCellForTest?.(14,-5));
+  assert.ok(poolPoint?.visible,'The default swimming-pool worksite must be visible for touch excavation.');
+  const poolDebug=await page.evaluate(()=>({
+   protection:window.__DIYCRAFT_THREE_EDIT__?.getPoolSiteProtectionForTest?.(),
+   route:window.__DIYCRAFT_THREE_EDIT__?.getPoolRouteClearanceForTest?.()
+  }));
+  assert.equal(poolDebug.protection?.protected,false,'Moving neighbors must not block the reserved pool dig cell.');
+  assert.ok(poolDebug.route?.minDistance>1.05,'Family routes must keep clear of the pool dig site.');
+  const poolHit=await page.evaluate(point=>window.__DIYCRAFT_THREE_EDIT__?.getPointerTargetForTest?.(point.x,point.y),poolPoint);
+  assert.equal(poolHit?.kind,'ground','The pool site must raycast to the editable ground surface.');
+  await dispatchTouch(poolPoint,67,680);
+  await page.waitForFunction(()=>(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.excavations||[])
+   .some(cell=>cell.x===14&&cell.z===-5&&cell.depth===1),null,{timeout:10000});
+  const poolResult=await page.evaluate(()=>({
+   excavation:window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.excavations?.find(cell=>cell.x===14&&cell.z===-5),
+   dirt:window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.bucket?.some(item=>item.type==='dirt'),
+   feedback:document.getElementById('world-feedback')?.textContent
+  }));
+  assert.equal(poolResult.excavation?.depth,1,'A long-press must excavate the swimming-pool cell.');
+  assert.equal(poolResult.dirt,true,'Pool digging must recover dirt into the Material Bucket.');
+
   // Measure real frame pacing on the emulated low-end mobile profile.
   const pacing=await page.evaluate(async()=>{
    const start=window.__DIYCRAFT_THREE_EDIT__?.frames||0,begin=performance.now();

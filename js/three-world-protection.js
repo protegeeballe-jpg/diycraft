@@ -63,6 +63,7 @@
   return ['day','sunset','night'].includes(timeMode)?timeMode:'day';
  }
  const NAV_CELL_SCALE=2,NAV_NEIGHBOR_RADIUS=.23,NAV_NEIGHBOR_HEIGHT=2.16;
+ const POOL_WORKSITE=Object.freeze({x:14.5,z:-5,width:1,length:6});
  const NAV_STEPS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
  const navigationCache=new WeakMap();
  function navCellKey(x,z){return x+','+z;}
@@ -101,6 +102,8 @@
    markNeighborObstacleRect(cells,x,z+4.12,1.58,.18);
    markNeighborObstacleRect(cells,x+2.50,z+4.12,1.80,.18);
   }
+  // Keep moving characters clear of the default swimming-pool excavation strip.
+  markNeighborObstacleRect(cells,13,-8,3,6);
   cached={revision,cells,pathCache:new Map(),routeCache:new WeakMap()};
   navigationCache.set(world,cached);
   return cached;
@@ -319,13 +322,14 @@
   for(const home of HOMES){
    if(cx>=home.x-.75&&cx<=home.x+5.05&&cz>=home.z-.75&&cz<=home.z+5.05)return true;
   }
+  const poolWorksite=cx===POOL_WORKSITE.x&&cz>=POOL_WORKSITE.z-POOL_WORKSITE.length/2&&cz<=POOL_WORKSITE.z+POOL_WORKSITE.length/2;
   for(const neighbor of Array.isArray(context.neighbors)?context.neighbors:[]){
-   if(neighbor&&finite(neighbor.x)&&finite(neighbor.z)&&Math.hypot(cx-neighbor.x,cz-neighbor.z)<1.05)return true;
+   if(!poolWorksite&&neighbor&&finite(neighbor.x)&&finite(neighbor.z)&&Math.hypot(cx-neighbor.x,cz-neighbor.z)<1.05)return true;
   }
   for(const animal of Array.isArray(context.animals)?context.animals:[]){
    if(animal&&finite(animal.x)&&finite(animal.z)&&Math.hypot(cx-animal.x,cz-animal.z)<.7)return true;
   }
   return false;
  }
- return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,RESIDENTS,modeAt,routePosition,animalStates,pickAnimalAtScreen,pickNeighborAtScreen,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
+ return Object.freeze({HOMES,NEIGHBOR_ROUTES,FAMILY_ROUTES,FAMILY,ROUTE_ACTORS,RESIDENTS,POOL_WORKSITE,modeAt,routePosition,animalStates,pickAnimalAtScreen,pickNeighborAtScreen,actorContext,characterStates,isProtectedCell,createNavigationState,findNeighborPath,neighborPathLength});
 });

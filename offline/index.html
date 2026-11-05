@@ -12,6 +12,8 @@
 :root{color-scheme:light;--paper:#f6f0e3;--ink:#43564a;--muted:#718075}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--paper);font-family:Arial,sans-serif;color:var(--ink)}
 #three-world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#world-feedback{position:fixed;z-index:11;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(90vw,440px);padding:10px 15px;border:1px solid #b8c9b2;border-radius:12px;background:rgba(48,68,52,.95);box-shadow:0 5px 20px #233a2b38;color:#fffdf5;font:600 13px/1.4 Arial,sans-serif;text-align:center;pointer-events:none}
+#world-feedback[hidden]{display:none!important}
 .panel{position:absolute;z-index:2;left:14px;top:14px;max-width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:12px 14px;background:rgba(255,252,244,.94);border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 5px 22px #43564a18}
 h1{font:700 15px Georgia,serif;margin:0 0 5px}.sub{font-size:11px;color:var(--muted);line-height:1.4}
 .toolbar{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;align-items:center}
@@ -193,6 +195,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 </style></head>
 <body>
 <canvas id="three-world" aria-label="Three-dimensional DIYCraft world: tap to build or fill a hole, press and hold for 0.6 seconds to dig or remove a block, drag to look around" title="Tap to build or fill · Hold 0.6s to dig or remove · Drag to look around"></canvas>
+<div id="world-feedback" role="status" aria-live="polite" hidden></div>
 <button id="settings-toggle" type="button" aria-label="Open settings and build tools" aria-controls="settings-panel" aria-expanded="false" title="Settings and build tools">⚙</button>
 <section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false" hidden>
 <div class="settings-heading"><h1 id="settings-title">DIYCraft · Peaceful Painterly World</h1><button id="settings-close" type="button" aria-label="Close settings">Close ✕</button></div>

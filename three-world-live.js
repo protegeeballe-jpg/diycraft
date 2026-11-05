@@ -7,6 +7,15 @@ const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoo
 const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels,coloring=window.DIYCraftThreeNeighborColoring,protection=window.DIYCraftThreeWorldProtection;
 const timeVisuals=window.DIYCraftThreeWorldTime;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
+let worldFeedbackTimer=0;
+function showWorldFeedback(message){
+ status.textContent=String(message);
+ const feedback=document.getElementById('world-feedback');
+ if(!feedback)return;
+ feedback.textContent=String(message);feedback.hidden=false;
+ if(worldFeedbackTimer)clearTimeout(worldFeedbackTimer);
+ worldFeedbackTimer=setTimeout(()=>{feedback.hidden=true;worldFeedbackTimer=0;},2400);
+}
 const settingsPanel=document.getElementById('settings-panel'),settingsToggle=document.getElementById('settings-toggle'),settingsClose=document.getElementById('settings-close');
 function setSettingsPanelOpen(open,restoreFocus=true){
  const expanded=!!open;
@@ -640,6 +649,9 @@ function renderSandbox(state){
   getProtectionContext:()=>currentProtectionContext(),isProtectedDigCell:(x,z)=>isProtectedTarget(x,z),
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
   getGroundScreenPointForTest:(x,z)=>Number.isInteger(x)&&Number.isInteger(z)?screenPointForTest(new THREE.Vector3(x+.5,-.08,z+.5)):null,
+  focusGroundCellForTest:(x,z)=>{if(!Number.isInteger(x)||!Number.isInteger(z))return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(x+.5,0,z+.5);orbit.radius=23;orbit.theta=.62;orbit.phi=.92;cameraUpdate();return screenPointForTest(new THREE.Vector3(x+.5,-.08,z+.5));},
+  getPoolSiteProtectionForTest:()=>({site:{...protection.POOL_WORKSITE},protected:sandbox.isProtectedDigCell(14,-5,currentProtectionContext()),context:currentProtectionContext()}),
+  getPoolRouteClearanceForTest:()=>{const world=sandbox.getState().world;let minDistance=Infinity,closest=null;for(let seconds=0;seconds<=180;seconds+=1){for(const actor of protection.actorContext(world,seconds).neighbors){const distance=Math.hypot(actor.x-14.5,actor.z+4.5);if(distance<minDistance){minDistance=distance;closest={id:actor.id,seconds,x:actor.x,z:actor.z};}}}return {minDistance,closest};},
   getBlockScreenPointForTest:(key)=>{const block=blockByKey.get(key);return block?screenPointForTest(new THREE.Vector3(block.x+.5,block.y+(block.type==='tile'?.12:.98),block.z+.5)):null;},
   getPointerTargetForTest:(x,y)=>{const hit=worldTargetAtScreen(x,y);return hit?{kind:hit.kind,key:hit.key||null,x:hit.x??null,z:hit.z??null,step:hit.step||null}:null;},
   getActorPickForTest:(x,y)=>{const animal=animalAtScreen(x,y);if(animal)return {kind:'animal',id:animal.id};const neighbor=neighborAtScreen(x,y);return neighbor?{kind:'neighbor',id:neighbor.id||null,name:neighbor.name}:null;},
@@ -888,7 +900,7 @@ function worldTargetAtScreen(clientX,clientY){
  for(const hit of intersections){
   if(hit.object.userData?.selectionOutline)continue;
   if(waterMesh&&hit.object===waterMesh)
-   return {kind:'water',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z)};
+   return {kind:'water',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z),depth:hit.point.clone().project(camera).z};
   const key=raycastKeys.resolve([hit]),block=key?blockByKey.get(key):null;
   if(key&&block&&hit.face){
    const normal=hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
@@ -897,7 +909,7 @@ function worldTargetAtScreen(clientX,clientY){
    return {kind:'block',key,block,step,depth:hit.point.clone().project(camera).z};
   }
   if(hit.object===floor)
-   return {kind:'ground',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z)};
+   return {kind:'ground',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z),depth:hit.point.clone().project(camera).z};
  }
  return null;
 }
@@ -955,23 +967,23 @@ function tapWorldAt(clientX,clientY,target){
  }catch(error){status.textContent=error.message;}
 }
 function digWorldTarget(target){
- if(!target)return;
+ if(!target){showWorldFeedback('Aim at the ground or a block, then hold for 0.6 seconds to dig.');return;}
  try{
   if(target.kind==='block'){
    const block=blockByKey.get(target.key);
    if(!block)return;
    renderSandbox(sandbox.remove(target.key,currentProtectionContext()));
-   status.textContent=(block.type==='door'?'Door':block.type.replace(/_/g,' '))+' removed · Recovered in your Material Bucket.';
+   showWorldFeedback((block.type==='door'?'Door':block.type.replace(/_/g,' '))+' removed · Recovered in your Material Bucket.');
    return;
   }
   if(target.kind==='water'){
    renderSandbox(sandbox.collectWaterLayer(target.x,target.z,currentProtectionContext()));
-   status.textContent='Water layer collected.';
+   showWorldFeedback('Water layer collected.');
    return;
   }
   if(target.kind==='ground'){
    renderSandbox(sandbox.excavateGround(target.x,target.z,currentProtectionContext()));
-   status.textContent='Ground excavated · Dirt recovered in your Material Bucket.';
+   showWorldFeedback('Ground excavated · Dirt recovered in your Material Bucket.');
   }
  }catch(error){status.textContent=error.message;}
 }
@@ -1373,7 +1385,7 @@ function neighborScreenPoint(id){
 }
 canvas.addEventListener('contextmenu',event=>event.preventDefault());
 let pointerGesture=null;
-const HOLD_TO_DIG_MS=600;
+const HOLD_TO_DIG_MS=600,TOUCH_DRAG_THRESHOLD=18,MOUSE_DRAG_THRESHOLD=5;
 function clearPointerHold(gesture){
  if(gesture&&gesture.holdTimer!==null){clearTimeout(gesture.holdTimer);gesture.holdTimer=null;}
 }
@@ -1387,15 +1399,14 @@ canvas.addEventListener('pointerdown',event=>{
  }
  if(event.pointerType==='mouse'&&event.button!==0)return;
  event.preventDefault();
- const gesture={id:event.pointerId,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,holdTriggered:false,target:null,holdTimer:null};
+ const gesture={id:event.pointerId,pointerType:event.pointerType,startedAt:performance.now(),startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,holdTriggered:false,target:null,holdTimer:null};
  if(!playerPlayMode){
   const worldHit=worldTargetAtScreen(event.clientX,event.clientY);
   const animal=animalAtScreen(event.clientX,event.clientY);
   const neighbor=animal?null:neighborAtScreen(event.clientX,event.clientY);
   const actor=animal?{kind:'animal',actor:animal}:neighbor?{kind:'neighbor',actor:neighbor}:null;
-  if(actor&&worldHit?.kind==='block'){
-   // Actors are screen-picked because their instanced meshes are not part of the block raycast.
-   // Compare projected depth so a nearby character cannot steal a tap on a foreground block.
+  if(actor&&worldHit&&Number.isFinite(worldHit.depth)){
+   // Generous actor hit areas must not steal a foreground ground, water, or block tap.
    const point=actor.kind==='animal'
     ?new THREE.Vector3(animal.x,animal.species==='giraffe'?.8:.48,animal.z)
     :new THREE.Vector3(neighbor.x+Math.sin(neighbor.facing||0)*.38,1.18,neighbor.z+Math.cos(neighbor.facing||0)*.38);
@@ -1415,7 +1426,8 @@ canvas.addEventListener('pointerdown',event=>{
 canvas.addEventListener('pointermove',event=>{
  const gesture=pointerGesture;if(!gesture||gesture.id!==event.pointerId)return;
  const dx=event.clientX-gesture.lastX,dy=event.clientY-gesture.lastY;
- if(Math.abs(event.clientX-gesture.startX)+Math.abs(event.clientY-gesture.startY)>5){
+ const dragThreshold=gesture.pointerType==='touch'?TOUCH_DRAG_THRESHOLD:MOUSE_DRAG_THRESHOLD;
+ if(Math.hypot(event.clientX-gesture.startX,event.clientY-gesture.startY)>dragThreshold){
   if(!gesture.moved){gesture.moved=true;clearPointerHold(gesture);}
  }
  gesture.lastX=event.clientX;gesture.lastY=event.clientY;
@@ -1428,12 +1440,16 @@ canvas.addEventListener('pointermove',event=>{
 });
 canvas.addEventListener('pointerup',event=>{
  const gesture=pointerGesture;if(!gesture||gesture.id!==event.pointerId)return;
- if(Math.abs(event.clientX-gesture.startX)+Math.abs(event.clientY-gesture.startY)>5){
+ const dragThreshold=gesture.pointerType==='touch'?TOUCH_DRAG_THRESHOLD:MOUSE_DRAG_THRESHOLD;
+ if(Math.hypot(event.clientX-gesture.startX,event.clientY-gesture.startY)>dragThreshold){
   if(!gesture.moved){gesture.moved=true;clearPointerHold(gesture);}
  }
  clearPointerHold(gesture);
- if(!playerPlayMode&&!gesture.moved&&!gesture.holdTriggered)
-  tapWorldAt(event.clientX,event.clientY,gesture.target);
+ if(!playerPlayMode&&!gesture.moved){
+  const heldFor=performance.now()-gesture.startedAt;
+  if(gesture.holdTriggered||heldFor>=HOLD_TO_DIG_MS)digWorldTarget(gesture.target);
+  else tapWorldAt(event.clientX,event.clientY,gesture.target);
+ }
  endPointerGesture();
 });
 for(const eventName of ['pointercancel','lostpointercapture'])canvas.addEventListener(eventName,()=>{
