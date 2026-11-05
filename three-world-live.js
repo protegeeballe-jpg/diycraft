@@ -644,6 +644,21 @@ function renderSandbox(state){
    return {plantCount:plants.length,flowerCount:flowers.filter(item=>item.type==='flower').length,flowers};
   },
   getDesignStats:()=>{const state=sandbox.getState().world;return {customBlock:{...state.customBlock},solidStyles:{...state.solidStyles},styledSolidTypes:[...(state.styledSolidTypes||[])],doorDesign:{...state.doorDesign},tileDesign:{...state.tileDesign}};},
+  getBlockVisualStats:(key)=>{
+   const block=blockByKey.get(key);if(!block)return null;
+   if(block.type==='flower'||block.type==='tall_grass'){
+    const root=group.children.find(item=>item.userData.blockKey===key),mesh=root?.children.find(item=>item.isMesh),shape=mesh?.geometry?.userData?.plantShape;
+    return {type:block.type,color:block.color||null,plantBaseColor:shape?.grassBaseColor||block.color||null,hasGeometry:!!mesh};
+   }
+   const kind=block.type==='tile'?'tile-'+(block.tilePattern||'grid'):(block.texture||block.type),material=mat(block),image=material.map?.image,context=image?.getContext?.('2d');
+   let signature=0;
+   if(context&&image.width&&image.height){
+    const data=context.getImageData(0,0,image.width,image.height).data;
+    for(let i=0;i<data.length;i+=16)signature=Math.imul(signature^data[i],16777619)>>>0;
+   }
+   return {type:block.type,color:block.color||null,texture:block.texture||null,tilePattern:block.tilePattern||null,
+    materialKind:kind,hasCanvasMap:!!context,textureWidth:image?.width||0,textureHeight:image?.height||0,textureSignature:signature};
+  },
   inventoryOpen:()=>!inventoryPanel.hidden,
   characterOpen:()=>!characterPanel.hidden,
   artOpen:()=>!artStudio.hidden,galleryOpen:()=>!galleryPanel.hidden,
