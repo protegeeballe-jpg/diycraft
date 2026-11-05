@@ -86,7 +86,7 @@ jobs:
         with:
           node-version: 24
       - name: Fetch untouched production main for save compatibility checks
-        run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+        run: git fetch --no-tags --depth=1 origin +main:refs/remotes/origin/main
       - name: Run Three.js migration security guard
         run: node tests/three-security-guard.cjs
       - name: Run read-only world adapter regression tests
