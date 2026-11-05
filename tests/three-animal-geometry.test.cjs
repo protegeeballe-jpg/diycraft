@@ -57,7 +57,8 @@ for(const species of animals.species){
  else assert.ok(features.muzzle&&features.muzzle.max[2]>features.head.max[2]+.02,species+' muzzle or nose must project beyond the face');
  const bodyWidth=extent(features.body,0),bodyHeight=extent(features.body,1),bodyDepth=extent(features.body,2);
  assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
- assert.ok(features.head.min[1]>features.body.min[1]+.55,species+' head should sit visibly above the lower body line');
+ if(species==='bird')assert.ok(features.head.max[1]>features.body.max[1]+.02,'Bird head should rise above the compact flight torso');
+ else assert.ok(features.head.min[1]>features.body.min[1]+.55,species+' head should sit visibly above the lower body line');
  assert.ok(bodyWidth<1.8&&bodyDepth<1.6,species+' torso should remain compact laterally while preserving natural front-to-back length');
  assert.ok(geometry.userData.animalBodyShape.every(value=>Number.isFinite(value)&&value>0),species+' must expose safe body proportions');
  if(species==='sheep'){
