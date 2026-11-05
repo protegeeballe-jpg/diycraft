@@ -297,13 +297,14 @@ function freshWorld(){
   assert.ok(playerState.playerGrounded&&Math.abs(playerState.player.y)<.02,'The player must land back on the ground after a complete jump.');
   const beforeFlight=playerState.player.y;
   await page.locator('#flight').click();
+  await page.evaluate(()=>{document.activeElement?.blur();});
   await page.keyboard.down('Space');
-  await page.waitForTimeout(200);
+  await page.waitForFunction(start=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState().player.y>start+.5,beforeFlight,{timeout:2200});
   await page.keyboard.up('Space');
   playerState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
   assert.ok(playerState.flying&&playerState.player.y>beforeFlight+.5,'Flight mode must move the player upward while Space is held.');
   await page.locator('#flight').click();
-  await page.waitForTimeout(900);
+  await page.waitForFunction(()=>{const state=window.__DIYCRAFT_THREE_EDIT__.getPlayerState();return !state.flying&&state.playerGrounded&&Math.abs(state.player.y)<.02;},null,{timeout:3500});
   playerState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
   assert.ok(!playerState.flying&&playerState.playerGrounded&&Math.abs(playerState.player.y)<.02,'Turning flight off must return normal gravity and ground contact.');
   const touchForward=await page.locator('[data-move="forward"]').boundingBox();
