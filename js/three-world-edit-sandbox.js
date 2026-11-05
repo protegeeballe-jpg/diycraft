@@ -408,6 +408,12 @@
    revision++;
    return state();
   }
+  function setWorldName(name){
+   if(typeof name!=='string')throw new TypeError('World name must be text.');
+   const value=name.trim().slice(0,30);
+   if(value&&world.name!==value){world.name=value;revision++;}
+   return state();
+  }
   function setTimeMode(mode){
    if(!['day','sunset','night','auto'].includes(mode))
     throw new TypeError('Choose day, sunset, night, or automatic time.');
@@ -421,7 +427,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
  }
  return Object.freeze({create,recipes:CRAFT_RECIPES,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });

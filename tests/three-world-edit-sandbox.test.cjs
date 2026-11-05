@@ -542,6 +542,20 @@ test('validates all original character style and color options atomically',()=>{
  assert.equal(before.sourceUnchanged,true);
 });
 
+test('sets a trimmed 30-character world name only inside the editing clone',()=>{
+ const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world),initial=edit.getState();
+ const named=edit.setWorldName('  Onnea garden world with a long name beyond thirty  ');
+ assert.equal(named.world.name,'Onnea garden world with a long');
+ assert.equal(named.revision,initial.revision+1);
+ assert.equal(named.sourceUnchanged,true);
+ assert.equal(JSON.stringify(world),before,'Changing a sandbox world name must not mutate the source snapshot.');
+ const unchanged=edit.setWorldName('   ');
+ assert.equal(unchanged.world.name,'Onnea garden world with a long');
+ assert.equal(unchanged.revision,named.revision,'Blank names retain the prior world name like production save().');
+ assert.throws(()=>edit.setWorldName(42),/must be text/);
+ assert.equal(edit.getState().revision,named.revision,'Rejected world names must not mutate or increment revision.');
+});
+
 console.log('Three.js editing sandbox tests complete.');
 
 test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomically',()=>{
