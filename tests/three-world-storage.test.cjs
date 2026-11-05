@@ -46,6 +46,12 @@ function makeStorage(initial=null){
  assert.equal((await storageApi.load(restoreStorage,adapter,freshWorld())).source,'device');
  const corruptBefore=restoreStorage.inspect(),failedRestore=await storageApi.restore(restoreStorage,adapter,'{"blocks":');
  assert.equal(failedRestore.restored,false);assert.equal(restoreStorage.inspect(),corruptBefore);
+ const supersededStorage=makeStorage(JSON.stringify(fresh));
+ const supersededBefore=supersededStorage.inspect();
+ const superseded=await storageApi.save(supersededStorage,adapter,snapshot,{isCurrent:()=>false});
+ assert.equal(superseded.saved,false);
+ assert.equal(superseded.superseded,true);
+ assert.equal(supersededStorage.inspect(),supersededBefore,'An outdated async snapshot must not overwrite a newer save.');
  const quota={getItem(){return null;},setItem(){throw new Error('quota exceeded');}};
  const failedSave=await storageApi.save(quota,adapter,snapshot);assert.equal(failedSave.saved,false);assert.match(failedSave.reason,/quota exceeded/);
  const denied={getItem(){throw new Error('storage denied');}};

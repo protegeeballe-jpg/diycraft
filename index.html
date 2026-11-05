@@ -171,7 +171,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:560px){.design-panel{padding:11px;max-height:96vh}.design-head h2{font-size:16px}.design-fields{grid-template-columns:1fr}}
 </style></head>
 <body>
-<canvas id="three-world" aria-label="Interactive Three.js editing sandbox"></canvas>
+<canvas id="three-world" aria-label="Three-dimensional DIYCraft world"></canvas>
 <section class="panel">
 <h1>DIYCraft · Peaceful Painterly World</h1>
 <div class="sub">Explore, build, paint, and care for your world · Watercolor + colored-pencil texture</div>
@@ -233,7 +233,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
     <button id="neighbor-color-undo" type="button">↶ Undo</button>
    </div>
    <div class="neighbor-color-actions"><button id="neighbor-color-reset" type="button">Start this picture again</button><button id="neighbor-color-save" class="primary" type="button">Save our picture</button></div>
-   <p class="neighbor-color-help">Tap inside a closed shape to fill it, or choose Brush to color by hand. The neighbor adds a few colors to your shared picture. This activity is saved only in the sandbox copy.</p>
+   <p class="neighbor-color-help">Tap inside a closed shape to fill it, or choose Brush to color by hand. The neighbor adds a few colors to your shared picture. Your shared picture is saved with your world on this device.</p>
   </div>
  </div>
 </section>
@@ -246,18 +246,18 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
    <button type="button" data-inventory-tab="bucket">Material Bucket</button>
    <button type="button" data-inventory-tab="recipes">Crafting</button>
   </div>
-  <p id="inventory-summary" class="inventory-summary">Your resources and crafted items stay in this sandbox copy.</p>
+  <p id="inventory-summary" class="inventory-summary">Your resources, recovered materials, and crafted items are saved with your world.</p>
   <div id="inventory-slots" class="inventory-grid" aria-live="polite"></div>
   <div id="inventory-recipes" class="inventory-recipes" hidden></div>
   <p id="inventory-feedback" class="inventory-feedback" aria-live="polite"></p>
   <div class="inventory-actions"><button id="bucket-empty" type="button">Empty Material Bucket</button></div>
-  <p class="inventory-help">This experimental panel edits only the isolated preview copy. No local saves or live-game inventory are changed.</p>
+  <p class="inventory-help">These tools change your current world and save locally on this device.</p>
  </div>
 </section>
 <section id="character-studio" class="character-shade" hidden aria-label="Character Studio">
  <div class="character-panel" role="dialog" aria-modal="true" aria-labelledby="character-title">
   <div class="character-head"><h2 id="character-title">Character Studio</h2><button id="character-close" type="button">Close ✕</button></div>
-  <p class="character-note">Choose a starter look, then make the hair, outfit, accessories and colors your own. Changes apply only to this experimental world copy.</p>
+  <p class="character-note">Choose a starter look, then make the hair, outfit, accessories and colors your own. Changes apply to your world and save automatically.</p>
   <div class="character-section">Starter looks</div>
   <div class="character-presets">
    <button type="button" class="character-preset" data-character-look="explorer"><span class="look-icon">🧥</span><strong>Garden Explorer</strong><small>Red hoodie · teal pants</small></button>
@@ -285,14 +285,14 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
    <label>Shoe color<input id="character-shoes-color" type="color" value="#bd4540"></label>
    <label>Eye color<input id="character-eyes-color" type="color" value="#302820"></label>
   </div>
-  <p id="character-feedback" aria-live="polite">Your appearance changes stay in this sandbox.</p>
+  <p id="character-feedback" aria-live="polite">Your appearance changes are saved with your player.</p>
   <div class="character-actions"><button id="character-apply" class="primary" type="button">Apply to this world</button></div>
  </div>
 </section>
 <section id="art-studio" class="art-shade" hidden aria-label="Art Studio">
  <div class="art-panel" role="dialog" aria-modal="true" aria-labelledby="art-title">
   <div class="art-head"><h2 id="art-title">Art Studio</h2><button id="art-close" type="button">Close ✕</button></div>
-  <p class="art-note">Draw with your mouse or finger. Your picture is saved as a PNG in this sandbox gallery.</p>
+  <p class="art-note">Draw with your mouse or finger. Your picture is saved as a PNG in your world gallery.</p>
   <div class="art-tools">
    <label>Color <input id="art-paint-color" type="color" value="#4c8d59"></label>
    <label>Brush <input id="art-brush-size" type="range" min="2" max="28" value="7"></label>
@@ -302,7 +302,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
   <canvas id="art-canvas" width="640" height="390" aria-label="Drawing canvas"></canvas>
   <div class="art-name-row"><label for="art-name">Name your artwork</label><input id="art-name" maxlength="28" value="My picture"></div>
   <div class="art-actions"><button id="art-save" class="primary" type="button">Save to crafted pouch</button><button id="art-view-gallery" type="button">View Gallery</button></div>
-  <p id="art-feedback" aria-live="polite">Pictures are stored only in this experimental sandbox copy.</p>
+  <p id="art-feedback" aria-live="polite">Pictures are saved in your world gallery on this device.</p>
  </div>
 </section>
 <section id="gallery-panel" class="art-shade" hidden aria-label="Saved artwork gallery">
@@ -360,7 +360,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
    <button type="button" data-animal-care="play">🧶 Play together</button>
   </div>
   <p id="animal-care-feedback" class="animal-care-feedback" aria-live="polite">Your animal friend is happy to see you.</p>
-  <p class="animal-care-help">No animal can be hurt, attacked, or removed. These are care-only activities. Care counts stay in this experimental sandbox copy.</p>
+  <p class="animal-care-help">No animal can be hurt, attacked, or removed. These are care-only activities. Care counts are saved with each animal in this world.</p>
  </div>
 </section>
 <div id="animal-care-flash" hidden aria-hidden="true"></div>

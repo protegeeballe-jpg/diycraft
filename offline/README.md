@@ -24,9 +24,12 @@ A self-contained, peaceful voxel-style creative building game. This is an origin
 - Tap a neighbor to open a quiet shared coloring activity.
 - Tap an animal to open snack, water, brushing, and play activities. Animals cannot be attacked or removed.
 
-## Offline play
+## Three.js renderer and offline play
+
+- The live game and its `/offline/` entry point use the same local Three.js/WebGL renderer. Canvas 2D is reserved for the Art Studio, shared coloring canvas, and locally generated surface textures.
+- The first online visit caches the Three.js runtime and its local modules for offline startup. Keep the page open until the offline-ready note confirms setup.
 - The first time, open DIYCraft while the device is online and wait for the **“Offline play is ready”** message.
-- A same-origin service worker then caches both the main game and the /offline/ page. Its versioned cache is refreshed when a new offline worker is installed.
+- A same-origin service worker then caches the main game, the /offline/ page, and every local Three.js runtime module. Its versioned cache is refreshed when a new offline worker is installed.
 - After the ready message, DIYCraft can be reopened from the same browser on that device without an internet connection.
 - The game has no remote scripts, images, external game servers, analytics, ads, chat, or gameplay network requests. Only the service worker fetches the two game pages from the same site when refreshing its offline copies.
 - Offline caching requires a modern browser with service-worker support and a secure HTTPS page. If browser/site data is cleared, connect again once to rebuild the cache.

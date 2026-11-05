@@ -104,8 +104,12 @@
   try{
    if(!storage||typeof storage.setItem!=='function')throw new TypeError('Browser storage is unavailable.');
    const encoded=await encode(adapter.toSavedWorld(snapshot));
+   // A newer queued save or page-exit flush can supersede this asynchronous compression.
+   // Check immediately before the only write so an older snapshot can never win a race.
+   if(typeof options.isCurrent==='function'&&!options.isCurrent())
+    return Object.freeze({saved:false,protected:false,superseded:true,reason:'A newer world snapshot replaced this save.'});
    storage.setItem(STORE_KEY,encoded.value);
-   return Object.freeze({saved:true,protected:false,format:encoded.format,bytes:encoded.bytes});
+   return Object.freeze({saved:true,protected:false,superseded:false,format:encoded.format,bytes:encoded.bytes});
   }catch(error){return Object.freeze({saved:false,protected:false,reason:String(error.message||error).slice(0,240)});}
  }
  function saveSync(storage,adapter,snapshot,options={}){
