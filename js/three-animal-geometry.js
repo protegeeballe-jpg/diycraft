@@ -12,6 +12,58 @@
  const DEFAULTS={sheep:'#f0eee6',cat:'#c5c0b6',dog:'#c89b6d',cow:'#f2eee5',horse:'#8a6347',bird:'#e8c96d',giraffe:'#d9ad55'};
  const SPECIES=new Set(Object.keys(DEFAULTS));
  function validColor(value,fallback){return typeof value==='string'&&HEX.test(value)?value:fallback;}
+ function quadrupedLayout(species){
+  const layouts={
+   sheep:{legX:.30,legZ:.36},cat:{legX:.28,legZ:.31},dog:{legX:.31,legZ:.35},
+   cow:{legX:.35,legZ:.40},horse:{legX:.34,legZ:.43},giraffe:{legX:.30,legZ:.34}
+  };
+  return layouts[species]||null;
+ }
+ function shadeColor(hex,factor){
+  const value=parseInt(String(hex).slice(1),16);
+  const parts=[(value>>16)&255,(value>>8)&255,value&255].map(channel=>Math.max(0,Math.min(255,Math.round(channel*factor))));
+  return '#'+parts.map(channel=>channel.toString(16).padStart(2,'0')).join('');
+ }
+ function createQuadrupedLegGeometry(THREE,options={}){
+  const species=options.species,layout=quadrupedLayout(species);
+  if(!THREE||!THREE.BufferGeometry||!THREE.Float32BufferAttribute||!THREE.Color||!layout)
+   throw new TypeError('A supported ground-animal species and Three.js are required for a leg rig.');
+  const legColor=species==='horse'?'#594337':'#775941';
+  const footColor=species==='horse'||species==='cow'?'#59463d':legColor;
+  const positions=[],colors=[],uvs=[];
+  function vertex(point,color,uv){
+   const c=new THREE.Color(color);
+   positions.push(point[0],point[1],point[2]);colors.push(c.r,c.g,c.b);uvs.push(uv[0],uv[1]);
+  }
+  function triangle(a,b,c,color){
+   vertex(a,color,[0,0]);vertex(b,color,[1,0]);vertex(c,color,[1,1]);
+  }
+  function box(cx,cy,cz,width,height,depth,color){
+   const x0=cx-width/2,x1=cx+width/2,y0=cy-height/2,y1=cy+height/2,z0=cz-depth/2,z1=cz+depth/2;
+   const faces=[
+    [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],
+    [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]],
+    [[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]],
+    [[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]],
+    [[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]],
+    [[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]]
+   ];
+   const shades=[1,.82,.93,.88,1.08,.72];
+   faces.forEach((face,index)=>{
+    const tone=shadeColor(color,shades[index]);
+    triangle(face[0],face[1],face[2],tone);triangle(face[0],face[2],face[3],tone);
+   });
+  }
+  box(0,-.175,0,.125,.34,.13,legColor);
+  box(0,-.365,.045,.205,.11,.225,footColor);
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geometry.computeVertexNormals();geometry.computeBoundingSphere();
+  geometry.userData={animalLimb:'quadruped-leg',species,footKind:species==='horse'||species==='cow'?'hoof':'paw',legLayout:{...layout},pivotY:.41,groundY:-.42};
+  return geometry;
+ }
  function create(THREE,animal){
   if(!THREE||!animal||!SPECIES.has(animal.species))throw new TypeError('A supported animal and Three.js are required.');
   const species=animal.species,body=validColor(animal.body,DEFAULTS[species]),accent=validColor(animal.accent,'#d0b6a0');
@@ -125,14 +177,9 @@
     for(let i=0;i<4;i++)add(spotSphere,accent,(i%2)*.11-.055,1.78+i*.035,.46,.9,1.1,1,0,0,0,'neckSpot');
    }
    // Hip sockets overlap both torso and upper leg; paws/hooves overlap the lower leg.
-   const legX=species==='sheep'?.30:species==='cat'?.28:species==='dog'?.31:species==='cow'?.35:species==='horse'?.34:.30;
-   const legZ=species==='sheep'?.36:species==='cat'?.31:species==='dog'?.35:species==='cow'?.40:species==='horse'?.43:.34;
-   for(const x of [-legX,legX])for(const z of [-legZ,legZ]){
+   const layout=quadrupedLayout(species);
+   for(const x of [-layout.legX,layout.legX])for(const z of [-layout.legZ,layout.legZ])
     add(fleeceSphere,body,x,.39,z,.72,.82,.72,0,0,0,'legSocket');
-    add(cylinder,legColor,x,.18,z,.92,1.28,.92,0,0,0,'leg');
-    if(species==='horse'||species==='cow')add(muzzleSphere,'#59463d',x,.012,z+.025,.52,.28,.60,0,0,0,'hoof');
-    else add(muzzleSphere,legColor,x,.018,z+.025,.42,.28,.48,0,0,0,'paw');
-   }
    add(sphere,body,0,.59,-.56,.10,.10,.18,0,0,0,'tail');
    if(species==='horse')add(fleeceSphere,'#4b372d',0,.58,-.68,.10,.30,.10,0,0,0,'tail');
   }
@@ -141,7 +188,7 @@
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.computeVertexNormals();geometry.computeBoundingSphere();
-  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.43,.40,.58]:bodyShape.slice(),animalHasWingRig:species==='bird'};
+  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.43,.40,.58]:bodyShape.slice(),animalHasWingRig:species==='bird',animalLegLayout:quadrupedLayout(species)};
   sources.forEach(source=>source.dispose());
   return geometry;
  }
@@ -181,5 +228,5 @@
   geometry.userData={animalWing:true,wingSide:side,wingSpan:.72,featherCount:5};
   return geometry;
  }
- return Object.freeze({create,createBirdWingGeometry,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
+ return Object.freeze({create,createBirdWingGeometry,createQuadrupedLegGeometry,quadrupedLayout,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
 });

@@ -44,17 +44,26 @@ for(const species of animals.species){
  if(species==='bird')assert.deepEqual(geometry.userData.animalBodyShape,[.43,.40,.58],'Bird torso should stay compact so the wings and head define its silhouette.');
  if(species!=='bird')assert.ok(geometry.userData.animalBodyShape[0]<=.50,species+' torso should stay narrow across the shoulders and hips.');
  assert.ok(geometry.attributes.position.array.length>0,species+' has visible geometry');
- assert.ok(features.body&&features.head&&features.eye&&features.leg,species+' has body, projected head, eyes and legs');
- assert.ok(features.legSocket,species+' has visible upper-leg/body sockets that join the limbs to the torso');
+ assert.ok(features.body&&features.head&&features.eye,species+' has body, projected head and eyes');
+ if(species!=='bird')assert.ok(features.legSocket,species+' has visible upper-leg/body sockets that join the limbs to the torso');
  if(species!=='bird'&&species!=='giraffe')assert.ok(features.neck,species+' should have a short connecting neck between body and head');
  assert.ok(features.head.max[2]>features.body.max[2]+.08,species+' head must extend beyond the body silhouette');
  assert.ok(features.eye.max[2]>features.body.max[2],species+' eyes must sit on the visible front of the head');
  if(species==='bird'){
   assert.ok(features.eye.min[0]<features.head.min[0]-.015&&features.eye.max[0]>features.head.max[0]+.015,'Bird has a separate visible eye on both sides of its head.');
  }else assert.ok(features.eye.min[2]>features.head.max[2]-.055,species+' layered eyes must sit on the head surface rather than inside it');
- assert.ok(features.leg.min[1]<.02&&features.leg.max[1]>.28,species+' legs must reach the ground');
- if(species==='bird')assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'bird feet must be spaced side-to-side');
- else assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
+ if(species==='bird'){
+  assert.ok(features.leg&&features.leg.min[1]<.02&&features.leg.max[1]>.28,'Bird ground feet remain attached to its body mesh.');
+  assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'Bird feet must be spaced side-to-side.');
+ }else{
+  const limb=animals.createQuadrupedLegGeometry(THREE,{species}),points=limb.attributes.position.array;
+  const minY=Math.min(...points.filter((_,i)=>i%3===1)),maxY=Math.max(...points.filter((_,i)=>i%3===1));
+  assert.equal(limb.userData.animalLimb,'quadruped-leg');
+  assert.equal(limb.userData.footKind,species==='horse'||species==='cow'?'hoof':'paw');
+  assert.equal(limb.userData.legLayout.legX,geometry.userData.animalLegLayout.legX);
+  assert.ok(minY<=-.41&&maxY>=-.005,species+' pivoted leg should run from hip to ground.');
+  assert.ok(points.length>=180,species+' leg geometry should include a three-dimensional foot block.');
+ }
  assert.equal(geometry.attributes.position.array.length,geometry.attributes.color.array.length,species+' vertex colors must align with positions');
  if(species==='bird')assert.ok(features.beak&&features.beak.max[2]>features.head.max[2]+.02,'Bird beak must project beyond the face');
  else assert.ok(features.muzzle&&features.muzzle.max[2]>features.head.max[2]+.02,species+' muzzle or nose must project beyond the face');
@@ -85,4 +94,5 @@ assert.ok(Math.max(...rightWing.attributes.position.array.filter((_,i)=>i%3===0)
 assert.equal(leftWing.attributes.position.array.length,leftWing.attributes.color.array.length,'Wing feather colors must align with positions.');
 assert.throws(()=>animals.createBirdWingGeometry(THREE,{side:0}),/side must be -1 or 1/);
 assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);
+assert.throws(()=>animals.createQuadrupedLegGeometry(THREE,{species:'bird'}),/ground-animal species/);
 console.log('Three.js recognizable animal geometry tests complete.');

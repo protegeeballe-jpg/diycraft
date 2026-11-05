@@ -242,3 +242,7 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Bird face visibility: the two eye assemblies now sit on opposing side/front surfaces of the head rather than only on the front plane. The bird can maintain its flight heading and still show the near-side eye as it turns. Eye whites and pupils were enlarged slightly across the animal set for readability at normal gameplay scale.
+
+
+- Ground-animal gait refinement: mammal torsos retain four visible hip sockets while the four legs and paws/hooves are separate instanced geometry, pivoted at each hip. Each leg swings in an alternating diagonal gait. Four legs per animal are stored in one instanced mesh per appearance, rather than four draw calls per animal.
+- The browser test checks that each ground animal receives four leg instances and that the swing angle changes over time; geometry tests verify the leg spans the hip-to-ground range and includes a paw or hoof.
