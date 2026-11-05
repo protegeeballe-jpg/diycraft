@@ -46,7 +46,7 @@
   }
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
   if(species==='bird'){
-   add(sphere,body,0,.58,0,.76,.48,.58,0,0,0,'body');
+   add(sphere,body,0,.60,0,.70,.50,.54,0,0,0,'body');
    add(sphere,body,-.49,.62,-.01,.30,.16,.40,0,0,-.16,'wing');
    add(sphere,body,.49,.62,-.01,.30,.16,.40,0,0,.16,'wing');
    add(headSphere,body,0,.89,.52,.21,.19,.21,0,0,0,'head');
@@ -59,7 +59,11 @@
    for(const x of [-.22,.22])add(cylinder,legColor,x,.15,.06,.72,.72,.72,0,0,0,'leg');
   }else{
    // A compact body leaves room for the face and all four legs to read clearly.
-   add(sphere,body,0,.62,0,.95,.55,.65,0,0,0,'body');
+   const bodyShape={
+    sheep:[.78,.60,.56],cat:[.70,.54,.51],dog:[.78,.56,.58],
+    cow:[.85,.60,.59],horse:[.88,.58,.54],giraffe:[.70,.53,.52]
+   }[species];
+   add(sphere,body,0,.62,0,bodyShape[0],bodyShape[1],bodyShape[2],0,0,0,'body');
    const giraffe=species==='giraffe',headY=giraffe?1.62:.83,headZ=giraffe?.57:.61;
    if(giraffe){
     add(neckCylinder,body,0,1.24,.28,.88,1,1,0,0,0,'neck');
@@ -109,7 +113,7 @@
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.computeVertexNormals();geometry.computeBoundingSphere();
-  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds};
+  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.70,.50,.54]:bodyShape.slice()};
   sources.forEach(source=>source.dispose());
   return geometry;
  }

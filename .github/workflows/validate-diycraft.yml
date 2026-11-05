@@ -12,6 +12,8 @@ on:
       - tests/three-world-storage.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
+      - tests/three-animal-geometry.test.cjs
+      - tests/three-plant-geometry.test.cjs
       - .github/workflows/validate-diycraft.yml
   pull_request:
     paths:
@@ -102,3 +104,7 @@ jobs:
         run: node tests/three-world-starter.test.cjs
       - name: Run Three.js editing, protection and save-safety tests
         run: node tests/three-world-edit-sandbox.test.cjs
+      - name: Run dimensional animal and flower geometry tests
+        run: |
+          node tests/three-animal-geometry.test.cjs
+          node tests/three-plant-geometry.test.cjs

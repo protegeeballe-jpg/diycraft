@@ -49,6 +49,11 @@ for(const species of animals.species){
  if(species==='bird')assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'bird feet must be spaced side-to-side');
  else assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
  assert.equal(geometry.attributes.position.array.length,geometry.attributes.color.array.length,species+' vertex colors must align with positions');
+ const bodyWidth=extent(features.body,0),bodyHeight=extent(features.body,1),bodyDepth=extent(features.body,2);
+ assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
+ assert.ok(bodyWidth<1.8&&bodyDepth<1.25,species+' body dimensions must stay compact around the legs and head');
+ assert.ok(geometry.userData.animalBodyShape.every(value=>Number.isFinite(value)&&value>0),species+' must expose safe body proportions');
+
 }
 assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);
 console.log('Three.js recognizable animal geometry tests complete.');

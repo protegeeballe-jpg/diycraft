@@ -25,6 +25,7 @@ on:
       - tests/three-door-model.test.cjs
       - tests/three-performance-profile.test.cjs
       - tests/three-animal-geometry.test.cjs
+      - tests/three-plant-geometry.test.cjs
       - tests/three-player-physics.test.cjs
       - tests/three-player-camera.test.cjs
       - tests/three-neighbor-model.test.cjs
@@ -108,6 +109,8 @@ jobs:
         run: node tests/three-performance-profile.test.cjs
       - name: Run recognizable animal geometry tests
         run: node tests/three-animal-geometry.test.cjs
+      - name: Run dimensional flower and tall-grass geometry tests
+        run: node tests/three-plant-geometry.test.cjs
       - name: Run deterministic player physics parity tests
         run: node tests/three-player-physics.test.cjs
       - name: Run first-person and third-person camera parity tests

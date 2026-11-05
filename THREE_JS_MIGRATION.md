@@ -198,3 +198,11 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - The service worker cache is versioned and precaches all Three.js production modules. Same-origin script requests use network-first caching with a cache fallback, so the Three.js app can start after a first successful online install when offline.
 - Canvas elements remain only for Art Studio, neighbor coloring, and local texture generation; the 3D world itself is rendered by WebGL/Three.js. This is the permanent renderer direction.
 - Automated production-browser and offline-cache checks are being moved from the retired Canvas 2D expectations to the new live Three.js entry point. Physical low-cost Android validation remains important for final device-specific WebGL support and memory/frame-time behavior.
+
+
+## 2026-11-05 animal and flower shape refinement
+
+- Animal body ellipsoids now use compact species-specific proportions instead of one broad generic body. Head, legs, species markings, instance batching and painterly surface material remain unchanged.
+- Flowers now use eight folded, cupped petals with raised ridges, a raised center and two dimensional leaves. The flower remains one merged mesh per plant, preserving the low-draw-call strategy.
+- Tall grass blades use folded two-facet geometry to retain visible volume from multiple camera angles.
+- Dedicated tests check animal body width/height and flower petal relief, color/UV alignment, normals, and the geometry budget.
