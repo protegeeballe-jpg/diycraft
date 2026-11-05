@@ -47,5 +47,10 @@ assert.equal(grass.userData.plantShape.plantType,'tall_grass');
 assert.equal(grass.userData.plantShape.petalCount,0);
 assert.ok(grass.attributes.position.count>0,'Tall grass should retain merged blade geometry.');
 assert.ok(grass.attributes.position.count<500,'Tall grass should remain a compact merged low-poly mesh.');
+assert.equal(grass.userData.plantShape.grassBaseColor,'#61a65a','Tall grass should expose its default material color.');
+const customGrass=plants.createGeometry(THREE,{type:'tall_grass',color:'#25a85c'});
+assert.equal(customGrass.userData.plantShape.grassBaseColor,'#25a85c','A selected grass color must reach the plant geometry.');
+assert.notDeepEqual(Array.from(customGrass.attributes.color.array),Array.from(grass.attributes.color.array),
+ 'Custom tall-grass colors must change the rendered vertex colors, not only saved block metadata.');
 assert.throws(()=>plants.createGeometry(THREE,{type:'stone'}),/flower or tall-grass/);
 console.log('Three.js dimensional plant geometry tests complete.');
