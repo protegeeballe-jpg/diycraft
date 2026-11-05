@@ -1732,7 +1732,8 @@ function openSolidDesigner(){
  const selectedType=type==='custom'||Object.prototype.hasOwnProperty.call(SOLID_BASE_COLORS,type)?type:'stone';
  const style=selectedType==='custom'?state.customBlock:state.solidStyles?.[selectedType];
  document.getElementById('solid-design-type').value=selectedType;
- document.getElementById('solid-design-color').value=style?.color||SOLID_BASE_COLORS[selectedType];
+ const quickColor=window.DIYCraftQuickMaterialColors?.[selectedType];
+ document.getElementById('solid-design-color').value=quickColor||style?.color||SOLID_BASE_COLORS[selectedType];
  document.getElementById('solid-design-texture').value=SOLID_TEXTURES.includes(style?.texture)?style.texture:(selectedType==='custom'?'custom':selectedType);
  updateSolidDesignPreview();solidDesigner.hidden=false;
 }
