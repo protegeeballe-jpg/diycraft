@@ -67,12 +67,16 @@ const {chromium}=require('playwright');
   assert.ok(Number.isFinite(birdVisualAfter.groundLegRotationY),
    'The live leg transform must retain the animal heading on Euler Y.');
 
-  const togglePlayModeFromSettings=async()=>{
+  const openSettingsPanel=async()=>{
    if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
+  };
+  const togglePlayModeFromSettings=async()=>{
+   await openSettingsPanel();
    await page.locator('#play-mode').click();
   };
 
   // Exercise a real build action and wait for the version-1 device save.
+  await openSettingsPanel();
   await page.locator('#block-type').selectOption('grass');
   await page.locator('#add').click();
   const immediateBuild=await page.evaluate(()=>({
@@ -130,6 +134,7 @@ const {chromium}=require('playwright');
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1')));
    return (world.animals||[]).length;
   });
+  await openSettingsPanel();
   await page.locator('#animal-species').selectOption('cat');
   await page.locator('#animal-place').click();
   const canvas=page.locator('#three-world'),bounds=await canvas.boundingBox();
@@ -154,6 +159,7 @@ const {chromium}=require('playwright');
   },savedAnimalCount,{timeout:12000});
 
   // Downloaded backup must be original version-1 JSON, not renderer-only data.
+  await openSettingsPanel();
   let backupDownloadCount=0;
   page.on('download',()=>{backupDownloadCount++;});
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#backup-download').click()]);

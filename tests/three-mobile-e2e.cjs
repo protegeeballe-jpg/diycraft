@@ -42,6 +42,8 @@ const {chromium}=require('playwright');
 
   // Compact HUD: the settings dashboard is collapsed by default and retains all controls.
   const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
+  const openSettingsPanel=async()=>{if(!(await settingsPanel.isVisible()))await settingsToggle.click();};
+  const togglePlayModeFromSettings=async()=>{await openSettingsPanel();await page.locator('#play-mode').click();};
   assert.equal(await settingsPanel.isVisible(),false,'The settings dashboard must start collapsed.');
   await settingsToggle.click();
   assert.equal(await settingsPanel.isVisible(),true,'The gear must open the settings dashboard.');
@@ -62,6 +64,7 @@ const {chromium}=require('playwright');
    'Mobile rendering must clamp the drawing buffer to the mobile viewport rather than multiplying by device pixel ratio.');
 
   // Inventory: all four tabs must open and populate without changing the world.
+  await openSettingsPanel();
   await page.locator('#inventory-open').click();
   assert.equal(await page.locator('#inventory-panel').isVisible(),true);
   for(const tab of ['materials','crafted','bucket','recipes']){
@@ -72,6 +75,7 @@ const {chromium}=require('playwright');
   await page.locator('#inventory-close').click();
 
   // Character studio: preset application updates the actual player model and save state.
+  await openSettingsPanel();
   await page.locator('#character-open').click();
   await page.locator('[data-character-look="artist"]').click();
   await page.locator('#character-apply').click();
@@ -80,18 +84,21 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#character-studio').isVisible(),false);
 
   // All three designers must apply valid state into the same world sandbox.
+  await openSettingsPanel();
   await page.locator('#solid-design-open').click();
   await page.locator('#solid-design-type').selectOption('stone');
   await page.locator('#solid-design-color').fill('#8b91a0');
   await page.locator('#solid-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().solidStyles?.stone?.color)),'#8b91a0');
 
+  await openSettingsPanel();
   await page.locator('#door-design-open').click();
   await page.locator('#door-design-style').selectOption('window');
   await page.locator('#door-design-color').fill('#6d9f8a');
   await page.locator('#door-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().doorDesign?.style)),'window');
 
+  await openSettingsPanel();
   await page.locator('#tile-design-open').click();
   await page.locator('#tile-design-pattern').selectOption('herringbone');
   await page.locator('#tile-design-color').fill('#c48b72');
@@ -99,6 +106,7 @@ const {chromium}=require('playwright');
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().tileDesign?.pattern)),'herringbone');
 
   // Art Studio: draw with touch-style PointerEvents, save PNG, and render it in Gallery.
+  await openSettingsPanel();
   await page.locator('#art-open').click();
   const artBefore=await page.locator('#art-canvas').evaluate(canvas=>canvas.toDataURL('image/png'));
   await page.locator('#art-name').fill('Mobile meadow');
@@ -118,14 +126,14 @@ const {chromium}=require('playwright');
   const gallery=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getGalleryStats?.());
   assert.equal(gallery?.artworks?.length,1);
   assert.equal(gallery?.artworks?.[0]?.name,'Mobile meadow');
+  await openSettingsPanel();
   await page.locator('#gallery-open').click();
   assert.equal(await page.locator('#gallery-panel').isVisible(),true);
   assert.equal(await page.locator('#gallery-artworks .gallery-card').count(),1);
   await page.locator('#gallery-close').click();
 
   // Touch movement: pointer-down must move the player; pointer-cancel must release it.
-  await settingsToggle.click();
-  await page.locator('#play-mode').click();
+  await togglePlayModeFromSettings();
   assert.equal(await settingsPanel.isVisible(),false,'Entering Play Mode must close the settings dashboard.');
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must appear in Play Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump/Fly controls must appear opposite the D-pad.');
@@ -159,9 +167,10 @@ const {chromium}=require('playwright');
   const afterRelease=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().player?.z);
   assert.ok(Math.abs(afterRelease-released)<.06,
    'A cancelled touch gesture must release movement and must not leave the player walking.');
-  await page.locator('#play-mode').click();
+  await togglePlayModeFromSettings();
 
   // Persist the combined changes and verify a clean reload reconstructs them.
+  await openSettingsPanel();
   await page.locator('#save-now').click();
   await page.waitForFunction(()=>document.getElementById('backup-feedback').textContent.includes('Saved successfully'),null,{timeout:15000});
   const saved=await page.evaluate(async()=>{
