@@ -203,9 +203,9 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 ## 2026-11-05 animal and flower shape refinement
 
 - Animal body ellipsoids now use compact species-specific proportions instead of one broad generic body. Head, legs, species markings, instance batching and painterly surface material remain unchanged.
-- Flowers use eight closed, individually swept petal volumes with eight-sided cross-sections, a closed golden center, a tapered radial stalk and two thick basal leaves with raised midribs. All flower parts are merged into one indexed mesh per plant to preserve the low-draw-call strategy.
+- Flowers use eight individually swept, solid petals that rise outward from a recessed golden heart to form a clearly cupped blossom (a minimum 0.20-unit petal rise and measured cup depth), plus a tapered stalk and two thick basal leaves with raised midribs. The petals are kept visually distinct with narrow gaps. All flower parts remain merged into one indexed mesh per plant to preserve the low-draw-call strategy.
 - Tall grass blades use folded two-facet geometry to retain visible volume from multiple camera angles.
-- Dedicated tests check animal body width/height and flower petal volume, multi-ring cross-sections, stalk/leaf thickness, color/UV alignment, normals, bounds, and the geometry budget.
+- Dedicated tests check animal body width/height and flower petal volume and bowl-shaped side profile, multi-ring cross-sections, stalk/leaf thickness, color/UV alignment, normals, bounds, and the geometry budget.
 
 
 - Autosave timing refinement: completed world edits (placement, removal, inventory/care/design changes) now begin the save immediately; continuous player movement/camera pose remains debounced. The page-exit synchronous writer still supersedes any older in-flight compressed snapshot.

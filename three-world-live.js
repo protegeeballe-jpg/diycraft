@@ -608,7 +608,7 @@ function renderSandbox(state){
     const mesh=root.children.find(child=>child.isMesh&&child.geometry?.userData?.plantShape),shape=mesh.geometry.userData.plantShape;
     return {type:shape.plantType,petalCount:shape.petalCount,leafCount:shape.leafCount,flowerVolume:shape.flowerVolume,
      petalCrossSectionSegments:shape.petalCrossSectionSegments,petalLongitudinalRings:shape.petalLongitudinalRings,
-     petalThickness:shape.petalThickness,stalkVolume:shape.stalkVolume,basalLeavesVolume:shape.basalLeavesVolume,
+     petalThickness:shape.petalThickness,petalRise:shape.petalRise,petalCupDepth:shape.petalCupDepth,flowerCenterY:shape.flowerCenterY,petalProfiles:shape.petalProfiles,stalkVolume:shape.stalkVolume,basalLeavesVolume:shape.basalLeavesVolume,
      leafThickness:shape.leafThickness,vertexCount:mesh.geometry.attributes.position.count,indexCount:mesh.geometry.index?.count||0};
    });
    return {plantCount:plants.length,flowerCount:flowers.filter(item=>item.type==='flower').length,flowers};

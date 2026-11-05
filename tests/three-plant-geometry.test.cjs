@@ -31,7 +31,13 @@ assert.equal(shape.stalkVolume,true,'The flower stalk must be a tapered 3D volum
 assert.ok(shape.stalkRadialSegments>=6,'The stalk must have a rounded radial cross-section.');
 assert.equal(shape.basalLeavesVolume,true,'Basal leaves must have closed three-dimensional volume.');
 assert.ok(shape.leafThickness>.015,'Leaves must have measurable thickness.');
-assert.ok(shape.petalYRange.max-shape.petalYRange.min>=.12,'Petals should have real vertical relief, not one horizontal plane.');
+assert.ok(shape.petalYRange.max-shape.petalYRange.min>=.20,'Petals should have a clearly raised bowl profile, not one horizontal plane.');
+assert.equal(shape.petalProfiles.length,8,'Each flower petal must have an independently tracked upward profile.');
+assert.ok(shape.petalProfiles.every(profile=>profile.rise>=.20),'Every petal must rise visibly from its base toward its tip.');
+assert.ok(shape.petalProfiles.every(profile=>profile.tipY>shape.flowerCenterY+.14),'The petal rim must stand clearly above the recessed flower heart.');
+assert.ok(shape.petalProfiles.every(profile=>profile.radialExtent>.38),'Petals must extend outward from the stem into a flower-shaped crown.');
+assert.ok(shape.petalCupDepth>.14,'The flower must have a measurable cupped side profile.');
+assert.ok(shape.petalCupDepth<.25,'The flower center must remain nested within the blossom rather than buried below it.');
 assert.ok(flower.attributes.position.count>0);
 assert.equal(flower.attributes.position.count,flower.attributes.color.count,'Painterly vertex colors should align with geometry.');
 assert.equal(flower.attributes.position.count,flower.attributes.uv.count,'Texture UVs should align with geometry.');

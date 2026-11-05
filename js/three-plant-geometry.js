@@ -12,7 +12,7 @@
   const positions=[],colors=[],uvs=[],indices=[];
   const shape={
    plantType:block.type,petalCount:0,leafCount:0,raisedPetalRidges:false,raisedLeafVeins:false,
-   petalYRange:null,flowerVolume:false,petalCrossSectionSegments:0,petalLongitudinalRings:0,
+   petalYRange:null,petalProfiles:[],petalRise:0,petalCupDepth:0,flowerCenterY:0,flowerVolume:false,petalCrossSectionSegments:0,petalLongitudinalRings:0,
    petalThickness:0,stalkVolume:false,stalkRadialSegments:0,basalLeavesVolume:false,leafThickness:0
   };
   let petalMinY=Infinity,petalMaxY=-Infinity;
@@ -80,25 +80,37 @@
    const centers=[],widths=[],depths=[],ringCount=6;
    for(let i=0;i<ringCount;i++){
     const t=i/(ringCount-1);
-    centers.push([.008*Math.sin(t*Math.PI),.02+.91*t,0]);
+    centers.push([.008*Math.sin(t*Math.PI),.02+.86*t,0]);
     const radius=.043-.014*t;widths.push(radius);depths.push(radius*.94);
    }
    addSweep(centers,[1,0,0],[0,0,1],widths,depths,'#47834d',7);
    shape.stalkVolume=true;shape.stalkRadialSegments=7;
   }
-  function addPetal(angle,color){
-   const axis=normalize([Math.cos(angle),.14,Math.sin(angle)]);
+  function addPetal(angle,color,index){
+   // Each petal leaves the recessed flower heart and sweeps outward AND upward.
+   // The upward radial arc creates a visible bowl profile instead of a flat rosette disc.
+   const axis=normalize([Math.cos(angle),.72,Math.sin(angle)]);
    const side=[-Math.sin(angle),0,Math.cos(angle)];
    const normal=normalize(cross(side,axis));
    const centers=[],widths=[],thicknesses=[],ringCount=7;
+   const petalScale=index%2?.94:1;
    for(let i=0;i<ringCount;i++){
-    const t=.025+(i/(ringCount-1))*.95,radial=.035+.315*t;
-    centers.push([Math.cos(angle)*radial,.905+.045*Math.sin(Math.PI*t)+.018*t,Math.sin(angle)*radial]);
+    const t=.02+(i/(ringCount-1))*.96;
+    const radial=.04+.37*petalScale*t;
+    const rise=petalScale*(.255*t+.055*Math.sin(Math.PI*t));
+    const y=.875+rise;
+    centers.push([Math.cos(angle)*radial,y,Math.sin(angle)*radial]);
     const fullness=Math.pow(Math.max(.001,Math.sin(Math.PI*t)),.72);
-    widths.push(.082*fullness+.0025);thicknesses.push(.032*fullness+.003);
+    // Keep visible gaps between individual petals; each ring is a solid rounded cross-section.
+    widths.push(.064*fullness+.0025);
+    thicknesses.push(.026*fullness+.004);
    }
    addSweep(centers,side,normal,widths,thicknesses,color,8);
-   for(const center of centers){petalMinY=Math.min(petalMinY,center[1]-.035);petalMaxY=Math.max(petalMaxY,center[1]+.035);}
+   const baseY=centers[0][1],tipY=centers[centers.length-1][1];
+   const profile={angle,baseY,tipY,rise:tipY-baseY,radialExtent:Math.hypot(centers[centers.length-1][0],centers[centers.length-1][2])};
+   shape.petalProfiles.push(profile);
+   shape.petalRise=Math.max(shape.petalRise,profile.rise);
+   for(const center of centers){petalMinY=Math.min(petalMinY,center[1]-.03);petalMaxY=Math.max(petalMaxY,center[1]+.03);}
   }
   function addLeaf(start,end,width,color){
    const direction=normalize([end[0]-start[0],end[1]-start[1],end[2]-start[2]]);
@@ -119,15 +131,18 @@
    addStem();
    addLeaf([0,.22,0],[-.33,.43,.055],.078,leafColor);
    addLeaf([0,.34,0],[.29,.57,-.06],.073,shade(leafColor,1.08));
-   for(let i=0;i<8;i++)addPetal(i*Math.PI/4,i%2?shade(petal,.93):petal);
-   ellipsoid([0,.982,0],[.105,.067,.105],gold,12,8);
+   for(let i=0;i<8;i++)addPetal(i*Math.PI/4,i%2?shade(petal,.93):petal,i);
+   // Recess the heart into the cup; the stem meets its underside instead of supporting a flat plate.
+   shape.flowerCenterY=.948;
+   ellipsoid([0,shape.flowerCenterY,0],[.086,.055,.086],gold,12,8);
    for(let i=0;i<7;i++){
-    const angle=i*Math.PI*2/7,r=.052;
-    ellipsoid([Math.cos(angle)*r,1.038,Math.sin(angle)*r],[.014,.012,.014],i%2?'#f8dfa0':'#f3cd78',6,4);
+    const angle=i*Math.PI*2/7,r=.043;
+    ellipsoid([Math.cos(angle)*r,1.002,Math.sin(angle)*r],[.013,.011,.013],i%2?'#f8dfa0':'#f3cd78',6,4);
    }
    shape.petalCount=8;shape.leafCount=2;shape.raisedPetalRidges=true;shape.raisedLeafVeins=true;
-   shape.petalYRange={min:petalMinY,max:petalMaxY};shape.flowerVolume=true;
-   shape.petalCrossSectionSegments=8;shape.petalLongitudinalRings=7;shape.petalThickness=.035;
+   shape.petalYRange={min:petalMinY,max:petalMaxY};
+   shape.petalCupDepth=Math.min(...shape.petalProfiles.map(profile=>profile.tipY))-shape.flowerCenterY;
+   shape.flowerVolume=true;shape.petalCrossSectionSegments=8;shape.petalLongitudinalRings=7;shape.petalThickness=.03;
    shape.basalLeavesVolume=true;shape.leafThickness=.078*.24;
   }else{
    const grassColors=['#4e9850','#5eaa58','#78b568','#a4c374'];

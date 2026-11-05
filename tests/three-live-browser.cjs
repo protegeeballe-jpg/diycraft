@@ -51,6 +51,12 @@ const {chromium}=require('playwright');
    assert.equal(flower.petalCrossSectionSegments,8);
    assert.equal(flower.petalLongitudinalRings,7);
    assert.ok(flower.petalThickness>=.03);
+   assert.ok(flower.petalRise>=.20,'Live flower petals must climb upward around the flower heart.');
+   assert.ok(flower.petalCupDepth>.14&&flower.petalCupDepth<.25,
+    'Live blossom must have a visibly cupped side profile, not a flat disk.');
+   assert.equal(flower.petalProfiles.length,8);
+   assert.ok(flower.petalProfiles.every(profile=>profile.tipY>flower.flowerCenterY+.14),
+    'Every petal rim must stand above the recessed flower center.');
    assert.equal(flower.stalkVolume,true);
    assert.equal(flower.basalLeavesVolume,true);
    assert.ok(flower.leafThickness>.015);
