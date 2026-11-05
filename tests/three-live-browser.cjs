@@ -69,7 +69,7 @@ const {chromium}=require('playwright');
 
   const togglePlayModeFromSettings=async()=>{
    if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
-   await togglePlayModeFromSettings();
+   await page.locator('#play-mode').click();
   };
 
   // Exercise a real build action and wait for the version-1 device save.
@@ -113,7 +113,7 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>document.getElementById('backup-feedback').textContent.includes('Saved successfully'),null,{timeout:10000});
 
   // Confirm that position changes in Play Mode are persisted to the same player record.
-  await page.locator('#play-mode').click();
+  await togglePlayModeFromSettings();
   const beforeMove=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState().player.z);
   await page.keyboard.down('w');
   await page.waitForTimeout(650);
@@ -123,7 +123,7 @@ const {chromium}=require('playwright');
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(stored));
    return Math.abs(world.player.z-before)>.12;
   },beforeMove,{timeout:12000});
-  await page.locator('#play-mode').click();
+  await togglePlayModeFromSettings();
 
   // Animal placement is part of the actual UI and does not change the build mode.
   const savedAnimalCount=await page.evaluate(async()=>{
