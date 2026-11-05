@@ -9,6 +9,7 @@ on:
       - sw.js
       - three-world-live.js
       - js/three-*.js
+      - tests/three-viewport.test.cjs
       - tests/three-world-storage.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
@@ -98,6 +99,8 @@ jobs:
           node --check sw.js
           node --check three-world-live.js
           for file in $(grep -oE 'src="[^"]+"' index.html | cut -d '"' -f2); do node --check "$file"; done
+      - name: Verify cross-device Three.js viewport proportions
+        run: node tests/three-viewport.test.cjs
       - name: Run original version-1 world storage compatibility tests
         run: node tests/three-world-storage.test.cjs
       - name: Verify canonical starter-world parity

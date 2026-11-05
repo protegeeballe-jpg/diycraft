@@ -5,7 +5,7 @@ const THREE=window.THREE,adapter=window.DIYCraftThreeWorldAdapter,storage=window
 const painterly=window.DIYCraftPainterlyMaterials,editing=window.DIYCraftThreeEditSandbox;
 const raycastKeys=window.DIYCraftThreeRaycast,doorMotion=window.DIYCraftThreeDoorMotion,performanceProfiles=window.DIYCraftThreePerformanceProfile,plantGeometryFactory=window.DIYCraftThreePlantGeometry,doorModels=window.DIYCraftThreeDoorModel,animalGeometryFactory=window.DIYCraftThreeAnimalGeometry;
 const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCraftThreePlayerCamera,playerModelFactory=window.DIYCraftThreePlayerModel,neighborModelFactory=window.DIYCraftThreeNeighborModels,coloring=window.DIYCraftThreeNeighborColoring,protection=window.DIYCraftThreeWorldProtection;
-const timeVisuals=window.DIYCraftThreeWorldTime;
+const timeVisuals=window.DIYCraftThreeWorldTime,viewportSizing=window.DIYCraftThreeViewport;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
 let worldFeedbackTimer=0;
 function showWorldFeedback(message){
@@ -33,13 +33,13 @@ settingsClose.addEventListener('click',()=>setSettingsPanelOpen(false));
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'&&!settingsPanel.hidden){event.preventDefault();setSettingsPanelOpen(false);}
 });
-if(!THREE||!adapter||!storage||!starterWorld||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen||!timeVisuals)throw new Error('A required local Three.js game dependency did not load.');
+if(!THREE||!adapter||!storage||!starterWorld||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen||!timeVisuals||!viewportSizing)throw new Error('A required local Three.js game dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
 const camera=new THREE.PerspectiveCamera(48,1,.1,150);
 const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches),4096,false);
 const performanceProfile=performanceProfiles.select(deviceSignals),frameGate=performanceProfiles.createFrameGate(performanceProfile.fpsCap);
 const renderer=new THREE.WebGLRenderer({canvas,antialias:performanceProfile.antialias,powerPreference:'low-power'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));renderer.setSize(innerWidth,innerHeight,false);
+const viewportController=viewportSizing.create(canvas,camera,renderer,window,{maxPixelRatio:performanceProfile.maxPixelRatio});
 renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
 renderer.shadowMap.enabled=performanceProfile.shadows;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const hemisphere=new THREE.HemisphereLight(0xfff7e9,0x788b70,.86);scene.add(hemisphere);
@@ -623,7 +623,7 @@ function renderSandbox(state){
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),renderedMeshes:renderObjects,renderObjects,instanceBatches,
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps},
-  waterCount,fishCount,renderedFishCount,animalCount,residentAnimalCount,totalAnimalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
+  waterCount,fishCount,renderedFishCount,animalCount,residentAnimalCount,totalAnimalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},viewport:viewportController.getSize(),cameraAspect:camera.aspect,
   getInventoryStats:()=>{const state=sandbox.getState();return {materials:(state.world.materials||[]).slice(0,60),crafted:(state.world.crafted||[]).slice(0,60),bucket:(state.world.bucket||[]).map(item=>({...item})),recipes:editing.recipes.map(recipe=>({id:recipe.id,name:recipe.name,cost:{...recipe.cost}}))};},
   getBlockRepresentationStats:()=>{
    const current=sandbox.getState(),counts=new Map();
@@ -1501,7 +1501,7 @@ for(const eventName of ['pointercancel','lostpointercapture'])canvas.addEventLis
  if(pointerGesture)endPointerGesture();
 });
 canvas.addEventListener('wheel',event=>{event.preventDefault();if(playerPlayMode)return;orbit.radius=Math.max(14,Math.min(60,orbit.radius+event.deltaY*.02));cameraUpdate();},{passive:false});
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,performanceProfile.maxPixelRatio));});
+
 let frame=0;
 function applyPlayerActivity(){
  const activity=document.getElementById('activity-mode').value;

@@ -37,6 +37,26 @@ const {chromium}=require('playwright');
    revision:THREE.REVISION,
    storageReadFailed:window.__DIYCRAFT_THREE_EDIT__?.storageReadFailed
   }));
+  // The live camera must track the actual canvas dimensions on tall and wide screens.
+  const viewportCases=[{width:390,height:844},{width:844,height:390},{width:1366,height:768},{width:1024,height:768}];
+  for(const size of viewportCases){
+   await page.setViewportSize(size);
+   await page.waitForFunction(({width,height})=>{
+    const debug=window.__DIYCRAFT_THREE_EDIT__,canvas=document.getElementById('three-world');
+    const rect=canvas?.getBoundingClientRect(),expected=width/height;
+    return !!debug&&Math.abs(debug.cameraAspect-expected)<.002&&
+     Math.abs((rect?.width||0)-width)<1&&Math.abs((rect?.height||0)-height)<1;
+   },size,{timeout:10000});
+   const measured=await page.evaluate(()=>({aspect:window.__DIYCRAFT_THREE_EDIT__?.cameraAspect,
+    width:document.getElementById('three-world').clientWidth,height:document.getElementById('three-world').clientHeight}));
+   assert.ok(Math.abs(measured.aspect-size.width/size.height)<.002,
+    'Camera aspect must match '+size.width+'x'+size.height+' screens; got '+JSON.stringify(measured));
+   assert.equal(measured.width,size.width,'Canvas width must match the visible game viewport.');
+   assert.equal(measured.height,size.height,'Canvas height must match the visible game viewport.');
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForFunction(()=>Math.abs((window.__DIYCRAFT_THREE_EDIT__?.cameraAspect||0)-(390/844))<.002,null,{timeout:10000});
+
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
 
