@@ -70,6 +70,8 @@ jobs:
         run: node tests/three-player-physics.test.cjs
       - name: Run first-person and third-person camera parity tests
         run: node tests/three-player-camera.test.cjs
+      - name: Run single-draw-call player appearance model tests
+        run: node tests/three-player-model.test.cjs
       - name: Run painterly neighbor character model tests
         run: node tests/three-neighbor-model.test.cjs
       - name: Run cooperative neighbor coloring tests
