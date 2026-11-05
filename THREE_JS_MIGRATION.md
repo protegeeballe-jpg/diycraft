@@ -180,3 +180,11 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - Added profile regression assertions so visual strength cannot silently fall back to the earlier reduced low-end pencil settings.
 - Rebuilt animal proportions: smaller body ellipsoids, heads projected beyond the body front, visible eyes/muzzles/species details, and four separated legs reaching the ground. Animal species and colors continue to use the same instanced one-mesh path. A geometry regression suite checks the head/body silhouette, eye placement, leg reach/separation and vertex-color alignment for all seven species.
 - This is a Three.js migration increment, not the production cutover. The live index.html and offline entry point still require a completed live-storage bridge and full interaction/save parity before they can stop loading the Canvas 2D renderer. The migration branch remains isolated until those gates pass; do not merge or publish a half-migrated app.
+
+
+## 2026-11-05 production save bridge groundwork
+
+- Added a dedicated Three.js world-storage adapter for the original `diycraft_peaceful_voxel_v1` key and version-1 JSON schema. It reads legacy plain JSON and the lossless gzip-prefixed save representation already introduced on the production branch; it serializes renderer snapshots only through `adapter.toSavedWorld()`.
+- Startup distinguishes a missing save from an unreadable save. A corrupt or inaccessible existing save is preserved, reported as recovery-required, and blocks ordinary renderer writes. The explicit restore path parses, validates, normalizes and serializes the replacement before its single storage write; invalid restores leave the existing key untouched.
+- Storage write permission is isolated to `js/three-world-storage.js`. The security guard explicitly reviews this one module and continues to reject browser-storage writes in every other Three.js renderer module.
+- The adapter is tested against the actual production `freshWorld()` and the existing renderer adapter, including old JSON, compressed JSON, exact version-1 export, corruption preservation, restore rollback, storage-denial and quota errors. This is groundwork only: the live entry point is not yet connected to this module, and the Canvas 2D scene remains active pending the full Three.js runtime and feature-parity cutover.

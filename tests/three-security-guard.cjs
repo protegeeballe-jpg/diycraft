@@ -6,6 +6,7 @@ const fs = require('node:fs');
 
 const runtimeFiles = [
   'js/three-world-adapter.js',
+  'js/three-world-storage.js',
   'js/three-world-edit-sandbox.js',
   'js/three-world-protection.js',
   'js/three-world-raycast.js',
@@ -57,11 +58,16 @@ for (const path of runtimeFiles) {
   for (const [pattern, label] of forbiddenPatterns) {
     assert.doesNotMatch(source, pattern, path + ' contains a prohibited or manually reviewed construct: ' + label);
   }
-  assert.doesNotMatch(
-    source,
-    /\b(?:localStorage|sessionStorage)\s*\.\s*(?:setItem|removeItem|clear)\s*\(/,
-    path + ' must not write browser storage from the isolated migration renderer.'
-  );
+  if (path === 'js/three-world-storage.js') {
+    assert.match(source, /\bstorage\s*\.\s*setItem\s*\(/, 'The dedicated storage adapter must own the only reviewed save write.');
+    assert.doesNotMatch(source, /\bstorage\s*\.\s*(?:removeItem|clear)\s*\(/, 'The storage adapter must never delete stored worlds.');
+  } else {
+    assert.doesNotMatch(
+      source,
+      /\b(?:localStorage|sessionStorage)\s*\.\s*(?:setItem|removeItem|clear)\s*\(/,
+      path + ' must not write browser storage outside the dedicated save adapter.'
+    );
+  }
 }
 
 const fetchAllowlist = new Map([

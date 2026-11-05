@@ -6,6 +6,7 @@ on:
       - three-js-migration
     paths:
       - js/three-world-adapter.js
+      - js/three-world-storage.js
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
       - js/three-door-motion.js
@@ -30,6 +31,7 @@ on:
       - tests/three-world-protection.test.cjs
       - tests/three-world-time.test.cjs
       - tests/three-world-adapter.test.cjs
+      - tests/three-world-storage.test.cjs
       - js/three-world-protection.js
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-world-raycast.test.cjs
@@ -84,6 +86,8 @@ jobs:
         run: node tests/three-security-guard.cjs
       - name: Run read-only world adapter regression tests
         run: node tests/three-world-adapter.test.cjs
+      - name: Run persistent save bridge compatibility tests
+        run: node tests/three-world-storage.test.cjs
       - name: Run original DIYCraft backup schema compatibility tests
         run: node tests/three-world-save-format.test.cjs
       - name: Run isolated editing sandbox regression tests
