@@ -63,6 +63,7 @@ const {chromium}=require('playwright');
   await page.locator('#inventory-open').click();
   assert.equal(await page.locator('#inventory-panel').isVisible(),true,'Inventory remains accessible from its Settings group.');
   await page.locator('#inventory-close').click();
+  await openSettingsPanel();
   await page.locator('details.settings-section').filter({hasText:'Characters & Animals'}).locator('summary').click();
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),true,'Play Mode remains available from its organized Settings group.');
