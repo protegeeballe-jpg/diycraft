@@ -154,7 +154,7 @@ const {chromium}=require('playwright');
 
   // Verify the save button does a direct, successful save.
   await page.locator('#save-now').click();
-  await page.waitForFunction(()=>document.getElementById('backup-feedback').textContent.includes('Saved successfully'),null,{timeout:10000});
+  await page.waitForFunction(()=>/Saved to browser recovery|Saved to .* and browser recovery/.test(document.getElementById('backup-feedback').textContent),null,{timeout:10000});
 
   // Confirm that position changes in Play Mode are persisted to the same player record.
   await togglePlayModeFromSettings();
