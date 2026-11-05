@@ -21,6 +21,7 @@ on:
       - tests/three-door-motion.test.cjs
       - tests/three-door-model.test.cjs
       - tests/three-performance-profile.test.cjs
+      - tests/three-animal-geometry.test.cjs
       - tests/three-player-physics.test.cjs
       - tests/three-player-camera.test.cjs
       - tests/three-neighbor-model.test.cjs
@@ -36,6 +37,7 @@ on:
       - THREE_JS_MIGRATION.md
       - js/three.js
       - js/three-animal-geometry.js
+      - tests/three-animal-geometry.test.cjs
       - js/three-painterly-materials.js
       - js/three-player-model.js
       - three-world-preview.html
@@ -94,6 +96,8 @@ jobs:
         run: node tests/three-door-model.test.cjs
       - name: Run mobile performance profile tests
         run: node tests/three-performance-profile.test.cjs
+      - name: Run recognizable animal geometry tests
+        run: node tests/three-animal-geometry.test.cjs
       - name: Run deterministic player physics parity tests
         run: node tests/three-player-physics.test.cjs
       - name: Run first-person and third-person camera parity tests

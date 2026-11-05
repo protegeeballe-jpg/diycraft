@@ -12,6 +12,7 @@ on:
       - three-world-preview.html
       - three-world-preview.js
       - tests/three-world-preview.cjs
+      - tests/three-animal-geometry.test.cjs
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
       - js/three-door-motion.js
