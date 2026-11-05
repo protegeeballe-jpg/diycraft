@@ -261,8 +261,11 @@ function freshWorld(){
   await page.locator('#play-mode').click();
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.playerMode,true,'The isolated Play Mode must activate.');
+  await page.evaluate(()=>{if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur();});
+  assert.equal(await page.evaluate(()=>document.activeElement===document.body),true,
+   'Keyboard movement starts with page focus, not a form control that intentionally consumes WASD.');
   await page.keyboard.down('w');
-  await page.waitForTimeout(260);
+  await page.waitForFunction(startZ=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState().player.z<startZ-.35,playerStartZ,{timeout:1600});
   await page.keyboard.up('w');
   playerState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
   assert.ok(playerState.player.z<playerStartZ-.35,'Keyboard movement must advance the player forward at the production walk speed.');
