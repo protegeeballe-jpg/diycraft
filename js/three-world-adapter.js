@@ -82,7 +82,10 @@
      !integer(block.y)||block.y< -MAX_DIG_DEPTH||block.y>64)return null;
   if(block.type==='custom'&&!(typeof block.color==='string'&&HEX.test(block.color)))return null;
   const type=block.type;
-  const out={key:'block-'+index,type,x:block.x,y:block.y,z:block.z};
+  const savedFields={};
+  if(color(block.color,null))savedFields.color=block.color;
+  if(TEXTURES.has(block.texture))savedFields.texture=block.texture;
+  const out={key:'block-'+index,type,x:block.x,y:block.y,z:block.z,savedFields};
   if(type==='custom'){
    out.color=block.color;
    out.texture=TEXTURES.has(block.texture)?block.texture:'custom';
@@ -226,6 +229,117 @@
   }
   return out;
  }
+
+ function toSavedWorld(snapshot){
+  if(!isObject(snapshot)||snapshot.source!=='diycraft-world-v1')
+   throw new TypeError('A DIYCraft renderer snapshot is required for backup export.');
+  for(const field of ['blocks','excavations','water','fish','animals','bucket','materials','crafted','artworks'])
+   if(!Array.isArray(snapshot[field]))throw new TypeError('The renderer snapshot is missing '+field+'.');
+  if(!isObject(snapshot.player))throw new TypeError('The renderer snapshot is missing its player.');
+  const blocks=snapshot.blocks.map(block=>{
+   if(!isObject(block)||!TYPES.has(block.type)||!inWorld(block.x)||!inWorld(block.z)||!integer(block.y))
+    throw new TypeError('The renderer snapshot contains an invalid block.');
+   const record={x:block.x,y:block.y,z:block.z,type:block.type};
+   if(block.type==='custom'){
+    if(!HEX.test(block.color||''))throw new TypeError('A custom block is missing its saved color.');
+    record.color=block.color;
+    record.texture=TEXTURES.has(block.texture)?block.texture:'custom';
+   }else if(block.type==='door'){
+    record.color=color(block.color,'#a97545');
+    record.style=DOOR_STYLES.has(block.style)?block.style:'classic';
+    record.orientation=block.orientation==='ew'?'ew':'ns';
+    record.swing=block.swing===-1?-1:1;
+    record.open=!!block.open;
+   }else if(block.type==='tile'){
+    record.color=color(block.color,'#c5a98a');
+    record.tilePattern=TILE_PATTERNS.has(block.tilePattern)?block.tilePattern:'grid';
+   }else{
+    const saved=isObject(block.savedFields)?block.savedFields:block;
+    if(color(saved.color,null))record.color=saved.color;
+    if(TEXTURES.has(saved.texture))record.texture=saved.texture;
+   }
+   return record;
+  });
+  const water=snapshot.water.map(cell=>{
+   if(!isObject(cell)||!inWorld(cell.x)||!inWorld(cell.z)||!integer(cell.level)||cell.level<1)
+    throw new TypeError('The renderer snapshot contains an invalid water layer.');
+   return [cell.x,cell.z,cell.level];
+  });
+  const player=snapshot.player,bed=isObject(player.bed)?{
+   x:player.bed.x,y:player.bed.y,z:player.bed.z,yaw:player.bed.yaw
+  }:null;
+  const savedPlayer={
+   x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch,bed,
+   shirt:player.shirt,hair:player.hair,skin:player.skin,pants:player.pants,
+   shoes:player.shoes,eyes:player.eyes,hairStyle:player.hairStyle,
+   outfitStyle:player.outfitStyle,accessory:player.accessory,accessoryColor:player.accessoryColor
+  };
+  const animals=snapshot.animals.map(animal=>{
+   if(!isObject(animal)||!ANIMALS.has(animal.species)||!finite(animal.x)||!finite(animal.z))
+    throw new TypeError('The renderer snapshot contains an invalid saved animal.');
+   const record={id:animal.id,species:animal.species,name:animal.name,x:animal.x,z:animal.z,
+    facing:animal.facing,phase:animal.phase};
+   if(color(animal.body,null))record.body=animal.body;
+   if(color(animal.accent,null))record.accent=animal.accent;
+   return record;
+  });
+  const bucket=snapshot.bucket.map(item=>{
+   if(!isObject(item)||![...TYPES,'water'].includes(item.type))
+    throw new TypeError('The renderer snapshot contains an invalid Material Bucket item.');
+   const record={type:item.type};
+   if(color(item.color,null))record.color=item.color;
+   if(TEXTURES.has(item.texture))record.texture=item.texture;
+   if(TILE_PATTERNS.has(item.tilePattern))record.tilePattern=item.tilePattern;
+   if(DOOR_STYLES.has(item.style))record.style=item.style;
+   if(item.orientation==='ew'||item.orientation==='ns')record.orientation=item.orientation;
+   if(item.type==='door'){record.open=false;record.swing=item.swing===-1?-1:1;}
+   return record;
+  });
+  const inventory=items=>items.map(item=>item?{
+   id:item.id,count:item.count,label:typeof item.label==='string'?item.label.slice(0,28):''
+  }:null);
+  const solidStyles={};
+  for(const type of snapshot.styledSolidTypes){
+   if(SOLID_TYPES.includes(type)&&isObject(snapshot.solidStyles[type])){
+    solidStyles[type]={
+     color:color(snapshot.solidStyles[type].color,BASE_COLORS[type]),
+     texture:TEXTURES.has(snapshot.solidStyles[type].texture)?snapshot.solidStyles[type].texture:type
+    };
+   }
+  }
+  const artworks=snapshot.artworks.map(item=>{
+   if(!isObject(item)||typeof item.name!=='string'||typeof item.data!=='string'||
+      item.data.length>=MAX_ARTWORK_DATA||!/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.data))
+    throw new TypeError('The renderer snapshot contains an invalid gallery artwork.');
+   return {name:item.name.slice(0,28),data:item.data};
+  });
+  const excavations=snapshot.excavations.map(cell=>{
+   if(!isObject(cell)||!inWorld(cell.x)||!inWorld(cell.z)||!integer(cell.depth)||cell.depth<1||cell.depth>MAX_DIG_DEPTH)
+    throw new TypeError('The renderer snapshot contains an invalid excavation.');
+   return [cell.x,cell.z,cell.depth];
+  });
+  const fish=snapshot.fish.map(item=>{
+   if(!isObject(item)||!inWorld(item.x)||!inWorld(item.z))
+    throw new TypeError('The renderer snapshot contains an invalid fish.');
+   return [item.x,item.z];
+  });
+  return {
+   version:integer(snapshot.version)?snapshot.version:1,
+   name:safeName(snapshot.name,'My Peaceful World',30),
+   blocks,excavations,
+   waterCells:water.map(([x,z])=>[x,z]),waterLevels:water,
+   fish,animals,savedPlayer,player:savedPlayer,
+   bucket,materials:inventory(snapshot.materials),crafted:inventory(snapshot.crafted),
+   customBlock:{color:color(snapshot.customBlock?.color,'#aa83d8'),
+    texture:TEXTURES.has(snapshot.customBlock?.texture)?snapshot.customBlock.texture:'custom'},
+   doorDesign:{color:color(snapshot.doorDesign?.color,'#a97545'),
+    style:DOOR_STYLES.has(snapshot.doorDesign?.style)?snapshot.doorDesign.style:'classic'},
+   tileDesign:{color:color(snapshot.tileDesign?.color,'#c5a98a'),
+    pattern:TILE_PATTERNS.has(snapshot.tileDesign?.pattern)?snapshot.tileDesign.pattern:'grid'},
+   solidStyles,timeMode:TIME_MODES.has(snapshot.timeMode)?snapshot.timeMode:'day',
+   artworks,animalCare:{...snapshot.animalCare}
+  };
+ }
  function createSnapshot(world){
   if(!isObject(world))throw new TypeError('A validated DIYCraft world object is required.');
   const doorSource=isObject(world.doorDesign)?world.doorDesign:{};
@@ -273,6 +387,7 @@
  }
  return Object.freeze({
   createSnapshot,
+  toSavedWorld,
   limits:Object.freeze({world:WORLD_LIMIT,blocks:MAX_BLOCKS,groundCells:MAX_GROUND_CELLS,fish:MAX_FISH,animals:MAX_ANIMALS,artworks:MAX_ARTWORKS,artworkData:MAX_ARTWORK_DATA})
  });
 });
