@@ -72,7 +72,7 @@ jobs:
               !html.includes("connect-src 'self'")||!html.includes("worker-src 'self'"))
             throw new Error(name+' entry page has an unsafe or incomplete content security policy.');
            const tags=[...html.matchAll(/<script\b([^>]*)>/gi)];
-           if(tags.length!==22)throw new Error(name+' entry page must load exactly 22 reviewed local engine modules; found '+tags.length);
+           if(tags.length!==23)throw new Error(name+' entry page must load exactly 23 reviewed local engine modules; found '+tags.length);
            for(const tag of tags){
             const src=(tag[1].match(/\bsrc=["']([^"']+)["']/i)||[])[1];
             if(!src||/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(src)||/^(?:javascript|data):/i.test(src))
@@ -81,10 +81,11 @@ jobs:
             if(!fs.existsSync(target))throw new Error(name+' entry is missing local script '+src);
            }
           }
-          for(const id of ['sleep-toggle','view-toggle','build-toolbar','dance','sit','fullscreen-toggle','animal-place','animal-species','save-now','backup-download','backup-restore','play-mode','camera-mode','jump','flight','activity-apply','set-home-bed','go-home','inventory-open','character-open','art-open','gallery-open','solid-design-open','door-design-open','tile-design-open'])
+          for(const id of ['sleep-toggle','view-toggle','build-toolbar','dance','sit','fullscreen-toggle','animal-place','animal-species','save-now','backup-download','backup-restore','device-file-connect','device-file-open','device-file-download','play-mode','camera-mode','jump','flight','activity-apply','set-home-bed','go-home','inventory-open','character-open','art-open','gallery-open','solid-design-open','door-design-open','tile-design-open'])
            if(!main.includes('id="'+id+'"'))throw new Error('Missing live game UI control: '+id);
           const runtime=fs.readFileSync('three-world-live.js','utf8');
           if(!runtime.includes('storage.load(deviceStorage,adapter,starterWorld.create())')||
+   !runtime.includes('deviceFiles.loadRemembered()')||!runtime.includes('deviceFiles.writeHandle(primaryWorldFileHandle')||
              !runtime.includes('storage.save(deviceStorage,adapter,snapshot')||
              !runtime.includes('storage.saveSync(deviceStorage,adapter,world')||
              runtime.includes('preview-three/starter-world.json')||/\bfetch\s*\(/.test(runtime))
@@ -94,7 +95,8 @@ jobs:
           if(!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)||
              !worker.includes("request.destination === 'script'")||
              !worker.includes("new URL('three-world-live.js', root).href")||
-             !worker.includes("new URL('js/three-world-starter.js', root).href"))
+             !worker.includes("new URL('js/three-world-starter.js', root).href")||
+   !worker.includes("new URL('js/three-world-file-save.js', root).href"))
            throw new Error('The service worker must version and cache all live Three.js modules.');
           NODE
       - name: Syntax-check all live production scripts and the offline worker
@@ -106,6 +108,8 @@ jobs:
         run: node tests/three-viewport.test.cjs
       - name: Run original version-1 world storage compatibility tests
         run: node tests/three-world-storage.test.cjs
+      - name: Verify compressed .diycraft device-file round trips and integrity guards
+        run: node tests/three-world-file-save.test.cjs
       - name: Verify canonical starter-world parity
         run: node tests/three-world-starter.test.cjs
       - name: Run Three.js editing, protection and save-safety tests
