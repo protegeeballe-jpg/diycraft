@@ -553,6 +553,15 @@ test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomi
  assert.equal(saved.sourceUnchanged,true);
  assert.equal(JSON.stringify(world),before,'The renderer snapshot passed into the sandbox must remain unchanged.');
 });
+test('saves a standalone Art Studio picture with the production gallery name and blank crafted label',()=>{
+ const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world),png='data:image/png;base64,AAAAAA==';
+ const saved=edit.saveArtwork('My picture',png);
+ assert.deepEqual(saved.world.artworks,[{name:'My picture',data:png}]);
+ assert.deepEqual(saved.world.crafted[0],{id:'picture',count:1,label:''});
+ assert.equal(saved.revision,1);
+ assert.equal(saved.sourceUnchanged,true);
+ assert.equal(JSON.stringify(world),before,'Art Studio saving must mutate only the sandbox clone.');
+});
 test('refuses invalid PNG data, oversized artwork, a full gallery, or a full crafted pouch without partial writes',()=>{
  const png='data:image/png;base64,AAAAAA==';
  const invalid=sandbox.create(fixture()),invalidBefore=invalid.getState();

@@ -516,6 +516,9 @@ function renderSandbox(state){
   },
   inventoryOpen:()=>!inventoryPanel.hidden,
   characterOpen:()=>!characterPanel.hidden,
+  artOpen:()=>!artStudio.hidden,galleryOpen:()=>!galleryPanel.hidden,
+  getGalleryStats:()=>({artworks:sandbox.getState().world.artworks.map(artwork=>({name:artwork.name,dataLength:artwork.data.length})),imageCount:galleryRoot.querySelectorAll('img').length}),
+
   getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count}),
@@ -930,6 +933,82 @@ for(const id of Object.values(CHARACTER_INPUTS))document.getElementById(id).addE
 document.getElementById('character-preview').setAttribute('width','256');
 updateCharacterPreview();
 document.getElementById('character-studio').addEventListener('keydown',event=>{if(event.key==='Escape')closeCharacterStudio();});
+
+const artStudio=document.getElementById('art-studio'),galleryPanel=document.getElementById('gallery-panel');
+const artCanvas=document.getElementById('art-canvas'),artContext=artCanvas.getContext('2d');
+const galleryRoot=document.getElementById('gallery-artworks');
+let artDrawing=false,artLastPoint=null;
+function clearArtCanvas(){
+ artContext.fillStyle='#fffdf8';artContext.fillRect(0,0,artCanvas.width,artCanvas.height);
+ artContext.strokeStyle='#eee8da';artContext.lineWidth=1;
+ for(let x=24;x<artCanvas.width;x+=24){artContext.beginPath();artContext.moveTo(x,0);artContext.lineTo(x,artCanvas.height);artContext.stroke();}
+ for(let y=24;y<artCanvas.height;y+=24){artContext.beginPath();artContext.moveTo(0,y);artContext.lineTo(artCanvas.width,y);artContext.stroke();}
+}
+function artPoint(event){
+ const rect=artCanvas.getBoundingClientRect();
+ return {x:(event.clientX-rect.left)*artCanvas.width/rect.width,y:(event.clientY-rect.top)*artCanvas.height/rect.height};
+}
+function renderGallery(){
+ const artworks=sandbox.getState().world.artworks||[];
+ galleryRoot.replaceChildren();
+ document.getElementById('gallery-note').textContent=artworks.length+' / 20 saved pictures · Original PNG artwork';
+ if(!artworks.length){
+  const empty=document.createElement('div');empty.className='gallery-empty';empty.textContent='Your gallery is waiting for its first picture. Visit Art Studio and create something lovely.';
+  galleryRoot.append(empty);return;
+ }
+ artworks.forEach((artwork,index)=>{
+  const card=document.createElement('article');card.className='gallery-card';card.dataset.galleryIndex=String(index);
+  const image=document.createElement('img');image.src=artwork.data;image.alt=artwork.name||'Saved artwork';image.loading='lazy';
+  const title=document.createElement('strong');title.textContent=artwork.name||'Artwork';
+  card.append(image,title);galleryRoot.append(card);
+ });
+}
+function openArtStudio(){artStudio.hidden=false;document.getElementById('art-feedback').textContent='Draw with your mouse or finger. Save your PNG to the sandbox gallery.';}
+function closeArtStudio(){artStudio.hidden=true;artDrawing=false;artLastPoint=null;}
+function openGallery(){renderGallery();galleryPanel.hidden=false;}
+function closeGallery(){galleryPanel.hidden=true;}
+artCanvas.addEventListener('pointerdown',event=>{
+ if(event.button!==0)return;
+ artDrawing=true;artLastPoint=artPoint(event);
+ try{artCanvas.setPointerCapture(event.pointerId);}catch(_){}
+});
+artCanvas.addEventListener('pointermove',event=>{
+ if(!artDrawing||!artLastPoint)return;
+ const next=artPoint(event);
+ artContext.strokeStyle=document.getElementById('art-paint-color').value;
+ artContext.lineWidth=Number(document.getElementById('art-brush-size').value);
+ artContext.lineCap='round';artContext.lineJoin='round';
+ artContext.beginPath();artContext.moveTo(artLastPoint.x,artLastPoint.y);artContext.lineTo(next.x,next.y);artContext.stroke();
+ artLastPoint=next;
+});
+for(const eventName of ['pointerup','pointercancel','lostpointercapture']){
+ artCanvas.addEventListener(eventName,()=>{artDrawing=false;artLastPoint=null;});
+}
+document.getElementById('art-clear').addEventListener('click',clearArtCanvas);
+document.getElementById('art-save').addEventListener('click',()=>{
+ try{
+  const name=document.getElementById('art-name').value.slice(0,28)||'My picture';
+  const data=artCanvas.toDataURL('image/png');
+  const next=sandbox.saveArtwork(name,data);
+  renderSandbox(next);
+  closeArtStudio();clearArtCanvas();
+  status.textContent='Artwork saved to your sandbox gallery and crafted pouch.';
+ }catch(error){document.getElementById('art-feedback').textContent=error.message;}
+});
+document.getElementById('art-open').addEventListener('click',openArtStudio);
+document.getElementById('art-close').addEventListener('click',closeArtStudio);
+document.getElementById('art-view-gallery').addEventListener('click',()=>{closeArtStudio();openGallery();});
+document.getElementById('gallery-open').addEventListener('click',openGallery);
+document.getElementById('gallery-close').addEventListener('click',closeGallery);
+artStudio.addEventListener('pointerdown',event=>{if(event.target===artStudio)closeArtStudio();});
+galleryPanel.addEventListener('pointerdown',event=>{if(event.target===galleryPanel)closeGallery();});
+document.getElementById('art-invite').addEventListener('click',()=>{
+ const actor=sandbox.characterStates(performance.now()/1000).find(item=>!item.sleeping);
+ if(!actor){document.getElementById('art-feedback').textContent='A neighbor will join when one is nearby.';return;}
+ closeArtStudio();openNeighborColoring(actor.name);
+});
+clearArtCanvas();
+
 
 
 document.getElementById('bucket-item').addEventListener('change',event=>{

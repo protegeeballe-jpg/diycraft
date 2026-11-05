@@ -573,6 +573,32 @@ function freshWorld(){
   assert.equal(characterStats.meshCount,1,'Character Studio must rebuild only one painterly player mesh.');
   assert.ok(characterStats.vertexCount>0,'The updated player appearance must have renderable merged geometry.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.characterOpen()),false);
+  // Art Studio saves production-compatible PNG data and the Gallery reads the saved artwork.
+  await page.locator('#art-open').click();
+  await page.locator('#art-name').fill('Onnea flower');
+  const artBounds=await page.locator('#art-canvas').boundingBox();
+  await page.mouse.move(artBounds.x+70,artBounds.y+70);
+  await page.mouse.down();
+  await page.mouse.move(artBounds.x+190,artBounds.y+125,{steps:6});
+  await page.mouse.up();
+  await page.locator('#art-save').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.artworks.length,2,'Art Studio must append one PNG to the saved gallery.');
+  assert.equal(worldState.world.artworks[1].name,'Onnea flower');
+  assert.match(worldState.world.artworks[1].data,/^data:image\/png;base64,/);
+  const pictureStack=worldState.world.crafted.find(item=>item&&item.id==='picture');
+  assert.equal(pictureStack.count,3,'Art Studio must increment the existing crafted picture stack.');
+  assert.equal(pictureStack.label,'','Standalone Art Studio pictures use the original blank crafted-item label.');
+  await page.locator('#gallery-open').click();
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__.galleryOpen(),null,{timeout:3000});
+  assert.equal(await page.locator('#gallery-artworks .gallery-card').count(),2);
+  assert.equal(await page.locator('#gallery-artworks img').count(),2);
+  assert.equal(await page.locator('#gallery-artworks .gallery-card strong').nth(1).innerText(),'Onnea flower');
+  const galleryStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getGalleryStats());
+  assert.equal(galleryStats.artworks.length,2);
+  await page.locator('#gallery-close').click();
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.galleryOpen()),false);
+
 
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.sourceUnchanged,true,'Sandbox operations must not mutate the renderer snapshot.');

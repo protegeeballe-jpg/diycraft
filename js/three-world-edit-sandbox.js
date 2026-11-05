@@ -211,10 +211,11 @@
    if(typeof data!=='string'||data.length>=550000||!PNG_DATA.test(data))
     throw new TypeError('This picture is too detailed or is not a supported PNG image.');
    const artworkName=String(name||'Artwork').slice(0,28);
-   const label=artworkName+' with '+String(neighborName||'a neighbor');
+   const galleryName=neighborName?artworkName+' with '+String(neighborName):artworkName;
+   const itemLabel=neighborName?galleryName:'';
    if(!canStoreItem('picture','crafted'))throw new Error('Your crafted pouch is full.');
-   world.artworks.push({name:label,data});
-   if(!addItem('picture','crafted',label)){
+   world.artworks.push({name:galleryName,data});
+   if(!addItem('picture','crafted',itemLabel)){
     world.artworks.pop();
     throw new Error('Your crafted pouch is full.');
    }
