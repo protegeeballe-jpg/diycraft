@@ -18,7 +18,7 @@ h1{font:700 15px Georgia,serif;margin:0 0 5px}.sub{font-size:11px;color:var(--mu
 button,select,input{font:12px Arial,sans-serif;color:var(--ink);background:#fffdf7;border:1px solid #bdc9b5;border-radius:8px;padding:7px 9px}
 button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 #color{width:35px;height:32px;padding:2px}#status{font:11px/1.45 Arial,sans-serif;color:var(--muted);margin-top:8px;max-width:390px}
-#safety{position:absolute;right:14px;top:14px;max-width:230px;padding:10px 12px;background:#fffdf0df;border:1px solid #d6d0b7;border-radius:12px;font:11px/1.45 Arial,sans-serif;color:#65715e;text-align:right}
+
 #player-controls{position:absolute;z-index:3;left:14px;bottom:14px;padding:10px;background:#fffdf0e8;border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 4px 16px #43564a22;touch-action:none}
 #player-controls[hidden]{display:none}.dpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,46px);gap:5px}
 .dpad button{font-size:18px;font-weight:700;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -104,7 +104,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  .neighbor-color-tools label{font-size:10px}
  .neighbor-color-tools button,.neighbor-color-actions button{padding:7px 8px;font-size:11px}
 }
-@media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#safety{right:8px;top:auto;bottom:8px;max-width:190px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
+@media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
 
 /* Compact settings entry point; the full build/save dashboard stays mounted while collapsed. */
 #settings-toggle{position:fixed;z-index:13;left:14px;top:14px;width:44px;height:44px;padding:0;border:1px solid #bdc9b5;border-radius:50%;background:rgba(255,252,244,.96);box-shadow:0 4px 16px #43564a25;font-size:23px;line-height:1;touch-action:manipulation}
@@ -121,7 +121,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:600px){
  #settings-toggle{left:8px;top:8px}
  #settings-panel{left:8px;top:60px;width:calc(100vw - 16px);max-height:calc(100dvh - 72px)}
- #safety{right:8px;top:8px;bottom:auto;max-width:175px}
+ 
  #player-controls{left:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:7px}
  #player-actions{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));gap:7px;padding:5px}
  .player-action-button{width:58px;height:58px;min-width:58px;font-size:12px}
@@ -239,7 +239,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  <button id="jump" class="player-action-button" type="button" disabled aria-label="Jump">Jump</button>
  <button id="flight" class="player-action-button" type="button" disabled aria-label="Toggle flight">Fly</button>
 </section>
-<div id="safety">Three.js world renderer · Device autosave · Offline play<br>Drag to look · Scroll to zoom · Tap to build or care</div>
+
 <section id="neighbor-coloring" class="neighbor-color-shade" hidden aria-label="Color together with a neighbor">
  <div class="neighbor-color-panel" role="dialog" aria-modal="true" aria-labelledby="neighbor-color-title">
   <div class="neighbor-color-head"><h2 id="neighbor-color-title">🖍 Color together</h2><button id="neighbor-color-close" type="button">Close ✕</button></div>

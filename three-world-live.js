@@ -1600,7 +1600,6 @@ async function start(){
  if(storageReadFailed)backupFeedback.textContent='Existing device data could not be read ('+loaded.source+'). It has been preserved. Restore a valid backup before making changes.';
  else if(loaded.source==='starter'){backupFeedback.textContent='A new world is ready. It will save automatically on this device.';queueWorldSave(sandbox.getState().world,true);}
  else backupFeedback.textContent='Your saved DIYCraft world was restored from this device.';
- document.getElementById('safety').textContent='Three.js painterly world · Watercolor washes + colored-pencil grain · Private device saves · Offline ready';
  await registerOffline();
  window.__DIYCRAFT_THREE_EDIT__=window.__DIYCRAFT_THREE_EDIT__||{};
  window.__DIYCRAFT_THREE_EDIT__.sourceUnchanged=true;
