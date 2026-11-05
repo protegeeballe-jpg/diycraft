@@ -60,7 +60,9 @@ const {chromium}=require('playwright');
   assert.equal(await settingsPanel.isVisible(),false,'Escape must dismiss the settings dashboard.');
   assert.equal(await settingsToggle.getAttribute('aria-expanded'),'false');
   await settingsToggle.click();
-  await page.locator('#safety').click();
+  await page.locator('body').dispatchEvent('pointerdown',{
+   pointerId:34,pointerType:'touch',isPrimary:true,button:0,buttons:1
+  });
   assert.equal(await settingsPanel.isVisible(),false,'Tapping outside the settings dashboard must dismiss it without blocking the tapped target.');
 
   assert.ok(startup.width<=390&&startup.height<=844,
