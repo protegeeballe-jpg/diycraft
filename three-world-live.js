@@ -110,7 +110,8 @@ fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVerte
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null;
 let deviceStorage=null,storageReadFailed=false,storageLoadSource='pending',lastAutoSaveRevision=0;
-let primaryWorldFileHandle=null,primaryWorldFileName='',deviceWorldFileState='unlinked',deviceFileSaveTimer=0,deviceFileWriteBusy=false,pendingDeviceFileWorld=null;
+let primaryWorldFileHandle=null,primaryWorldFileName='',deviceWorldFileState='unlinked',primaryWorldFileRemembered=false;
+let deviceFileSaveTimer=0,deviceFileWriteBusy=false,deviceFileDrainPromise=null,deviceFileFlushRequested=false,pendingDeviceFileWorld=null;
 let saveTimer=0,saveInFlight=false,pendingSaveWorld=null,saveGeneration=0,savedGeneration=0;
 let lastPosePersisted=null,lastPosePersistAt=0,animalPlacementSpecies='';
 let waterMesh=null,fishMeshes=[],renderedFishCount=0,lastWaterAnimationAt=-Infinity;
@@ -1621,33 +1622,53 @@ function syncDeviceFileControls(message=''){
 function queueDeviceFileSave(world,immediate=false){
  if(!primaryWorldFileHandle||deviceWorldFileState!=='connected'||!world||typeof world!=='object')return false;
  pendingDeviceFileWorld=world;
- if(immediate){void drainDeviceFileSave(true);return true;}
- if(!deviceFileSaveTimer)deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave();},6000);
+ if(immediate){
+  if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
+  void drainDeviceFileSave(true);
+ }else if(!deviceFileSaveTimer){
+  deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave(false);},1500);
+ }
  return true;
 }
-async function drainDeviceFileSave(){
- if(deviceFileWriteBusy||!primaryWorldFileHandle||deviceWorldFileState!=='connected')return false;
+async function drainDeviceFileSave(immediate=false){
+ if(!primaryWorldFileHandle||deviceWorldFileState!=='connected')return false;
  if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
+ if(deviceFileDrainPromise){
+  if(immediate)deviceFileFlushRequested=true;
+  const active=deviceFileDrainPromise,result=await active;
+  if(pendingDeviceFileWorld&&primaryWorldFileHandle&&deviceWorldFileState==='connected')
+   return drainDeviceFileSave(immediate||deviceFileFlushRequested);
+  return result;
+ }
+ const handleForRun=primaryWorldFileHandle;
  deviceFileWriteBusy=true;let succeeded=true;
- try{
-  while(pendingDeviceFileWorld&&primaryWorldFileHandle&&deviceWorldFileState==='connected'){
+ const run=(async()=>{
+  while(pendingDeviceFileWorld&&primaryWorldFileHandle===handleForRun&&deviceWorldFileState==='connected'){
    const snapshot=pendingDeviceFileWorld;pendingDeviceFileWorld=null;
    try{
-    const result=await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(snapshot));
+    const result=await deviceFiles.writeHandle(handleForRun,adapter.toSavedWorld(snapshot));
     primaryWorldFileName=result.fileName||primaryWorldFileName;
     syncDeviceFileControls('Saved '+primaryWorldFileName+' · '+result.format+' · '+result.bytes.toLocaleString()+' bytes.');
    }catch(error){
     succeeded=false;const reason=String(error.message||error).slice(0,220);
     deviceWorldFileState=/permission|grant access|reconnect/i.test(reason)?'permission-required':'error';
-    pendingDeviceFileWorld=null;syncDeviceFileControls('Device-file save paused: '+reason);break;
+    pendingDeviceFileWorld=null;syncDeviceFileControls('Device-file save paused: '+reason);
+    break;
    }
   }
- }finally{
+  return succeeded;
+ })();
+ deviceFileDrainPromise=run;
+ try{return await run;}
+ finally{
+  if(deviceFileDrainPromise===run)deviceFileDrainPromise=null;
   deviceFileWriteBusy=false;
-  if(pendingDeviceFileWorld&&primaryWorldFileHandle&&deviceWorldFileState==='connected'&&!deviceFileSaveTimer)
-   deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave();},6000);
+  const flushAgain=deviceFileFlushRequested;deviceFileFlushRequested=false;
+  if(pendingDeviceFileWorld&&primaryWorldFileHandle&&deviceWorldFileState==='connected'){
+   if(flushAgain)void drainDeviceFileSave(true);
+   else if(!deviceFileSaveTimer)deviceFileSaveTimer=setTimeout(()=>{deviceFileSaveTimer=0;void drainDeviceFileSave(false);},1500);
+  }
  }
- return succeeded;
 }
 async function importDeviceWorldText(worldText,fileName){
  if(typeof worldText!=='string'||!worldText)throw new Error('The selected world file is empty.');
@@ -1706,7 +1727,10 @@ async function downloadDeviceWorldFile(){
 }
 
 function queueWorldSave(world,immediate=false){
- if(storageReadFailed||!world||typeof world!=='object')return false;
+ if(!world||typeof world!=='object')return false;
+ // The selected file is independent of browser-managed recovery storage.
+ queueDeviceFileSave(world,false);
+ if(storageReadFailed)return false;
  pendingSaveWorld=world;saveGeneration++;
  if(saveTimer){clearTimeout(saveTimer);saveTimer=0;}
  if(immediate){void drainWorldSave();return true;}
@@ -1754,7 +1778,7 @@ function syncPlayerPoseToWorld(now=performance.now(),force=false){
  }catch(error){backupFeedback.textContent='Player position could not be saved: '+error.message;return false;}
 }
 function flushWorldSaveSync(){
- if(!sandbox||storageReadFailed)return false;
+ if(!sandbox)return false;
  if(saveTimer){clearTimeout(saveTimer);saveTimer=0;}
  syncPlayerPoseToWorld(performance.now(),true);
  if(saveTimer){clearTimeout(saveTimer);saveTimer=0;}
@@ -1762,20 +1786,30 @@ function flushWorldSaveSync(){
  saveGeneration++;
  const world=pendingSaveWorld||sandbox.getState().world;
  pendingSaveWorld=null;
- const result=storage.saveSync(deviceStorage,adapter,world,{storageReadFailed});
- if(result.saved){savedGeneration=saveGeneration;backupFeedback.textContent='Your latest world changes were saved on this device.';return true;}
- backupFeedback.textContent='The latest changes could not be saved during page exit: '+result.reason;return false;
+ let browserSaved=false;
+ if(!storageReadFailed){
+  const result=storage.saveSync(deviceStorage,adapter,world,{storageReadFailed});
+  browserSaved=!!result.saved;
+  if(browserSaved){savedGeneration=saveGeneration;backupFeedback.textContent='Latest world changes saved to browser recovery.';}
+  else backupFeedback.textContent='Browser recovery could not save the latest changes: '+result.reason;
+ }
+ // Always request the same final snapshot for the selected device file.
+ queueDeviceFileSave(world,true);
+ return browserSaved;
 }
 async function saveWorldNow(){
- if(storageReadFailed){backupFeedback.textContent='The existing saved world is protected. Restore a valid backup before saving.';return false;}
- if(sandbox){pendingSaveWorld=sandbox.getState().world;saveGeneration++;}
- const saved=await drainWorldSave();
- let fileSaved=true;
+ if(!sandbox)return false;
+ if(!storageReadFailed){pendingSaveWorld=sandbox.getState().world;saveGeneration++;}
+ const browserSaved=storageReadFailed?false:await drainWorldSave();
+ let fileSaved=false;
  if(primaryWorldFileHandle&&deviceWorldFileState==='connected'){
-  pendingDeviceFileWorld=sandbox.getState().world;fileSaved=await drainDeviceFileSave();
+  pendingDeviceFileWorld=sandbox.getState().world;fileSaved=await drainDeviceFileSave(true);
  }
- if(saved&&fileSaved)backupFeedback.textContent=primaryWorldFileHandle?'Saved to '+primaryWorldFileName+' and browser recovery.':'Saved to browser recovery. Link a .diycraft file for a separate device copy.';
- return saved&&fileSaved;
+ if(browserSaved&&fileSaved)backupFeedback.textContent='Saved to '+primaryWorldFileName+' and browser recovery.';
+ else if(fileSaved)backupFeedback.textContent='Saved to '+primaryWorldFileName+'. Browser recovery is unavailable.';
+ else if(browserSaved)backupFeedback.textContent='Saved to browser recovery. Link a .diycraft file for a separate device copy.';
+ else backupFeedback.textContent='The world could not be saved. Check the device-file link or download a portable .diycraft backup.';
+ return browserSaved||fileSaved;
 }
 function applyWorldName(){
  try{const next=sandbox.setWorldName(worldNameInput.value);worldNameInput.value=next.world.name;renderSandbox(next);backupFeedback.textContent='World name updated.';}
