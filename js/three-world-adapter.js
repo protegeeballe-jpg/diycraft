@@ -328,7 +328,7 @@
    name:safeName(snapshot.name,'My Peaceful World',30),
    blocks,excavations,
    waterCells:water.map(([x,z])=>[x,z]),waterLevels:water,
-   fish,animals,savedPlayer,player:savedPlayer,
+   fish,animals,player:savedPlayer,
    bucket,materials:inventory(snapshot.materials),crafted:inventory(snapshot.crafted),
    customBlock:{color:color(snapshot.customBlock?.color,'#aa83d8'),
     texture:TEXTURES.has(snapshot.customBlock?.texture)?snapshot.customBlock.texture:'custom'},
