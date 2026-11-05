@@ -44,7 +44,7 @@ function makeStorage(initial=null){
  const restoreStorage=makeStorage(corruptValue),restored=await storageApi.restore(restoreStorage,adapter,JSON.stringify(fresh));
  assert.equal(restored.restored,true);assert.equal(restored.snapshot.name,'Painterly home');
  assert.equal((await storageApi.load(restoreStorage,adapter,freshWorld())).source,'device');
- const corruptBefore=restoreStorage.inspect(),failedRestore=await storageApi.restore(restoreStorage,adapter,'{"blocks":[],"player":{}}');
+ const corruptBefore=restoreStorage.inspect(),failedRestore=await storageApi.restore(restoreStorage,adapter,'{"blocks":');
  assert.equal(failedRestore.restored,false);assert.equal(restoreStorage.inspect(),corruptBefore);
  const quota={getItem(){return null;},setItem(){throw new Error('quota exceeded');}};
  const failedSave=await storageApi.save(quota,adapter,snapshot);assert.equal(failedSave.saved,false);assert.match(failedSave.reason,/quota exceeded/);
