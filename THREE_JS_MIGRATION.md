@@ -212,3 +212,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Sheep silhouette refinement: the fleece cluster was tightened around the torso and the head enlarged slightly so the sheep reads as a sheep rather than a domed shell. All species use a slightly more upright body profile after visual review of the rendered screenshot.
+
+
+- Animal close-up refinement: non-giraffe heads sit higher and have more readable face proportions; sheep fleece is tighter, with legs set farther from the torso so the silhouette reads as a four-legged animal. The giraffe's neck/head design and bird body remain species-specific.

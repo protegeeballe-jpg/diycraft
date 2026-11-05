@@ -51,10 +51,12 @@ for(const species of animals.species){
  assert.equal(geometry.attributes.position.array.length,geometry.attributes.color.array.length,species+' vertex colors must align with positions');
  const bodyWidth=extent(features.body,0),bodyHeight=extent(features.body,1),bodyDepth=extent(features.body,2);
  assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
+ assert.ok(features.head.min[1]>.68,species+' head should sit visibly above the lower body line');
  assert.ok(bodyWidth<1.8&&bodyDepth<1.25,species+' body dimensions must stay compact around the legs and head');
  assert.ok(geometry.userData.animalBodyShape.every(value=>Number.isFinite(value)&&value>0),species+' must expose safe body proportions');
  if(species==='sheep'){
   assert.ok(extent(features.wool,0)<.85,'Sheep fleece should not overwhelm the body and head with a wide shell-like silhouette');
+  assert.ok(features.head.max[1]>1.15,'Sheep face should rise clearly above the fleece cluster');
   assert.ok(extent(features.head,0)>.5,'Sheep face should remain recognizable at the more compact scale');
  }
 

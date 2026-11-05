@@ -46,8 +46,8 @@
   }
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
   const bodyShape=species==='bird'?[.62,.62,.50]:({
-   sheep:[.62,.72,.50],cat:[.60,.64,.48],dog:[.65,.68,.52],
-   cow:[.72,.70,.54],horse:[.74,.68,.50],giraffe:[.60,.62,.48]
+   sheep:[.54,.76,.46],cat:[.55,.66,.45],dog:[.60,.68,.50],
+   cow:[.64,.68,.52],horse:[.69,.68,.48],giraffe:[.56,.62,.44]
   }[species]);
   if(species==='bird'){
    add(sphere,body,0,.62,0,.62,.62,.50,0,0,0,'body');
@@ -64,15 +64,16 @@
   }else{
    // A compact body leaves room for the face and all four legs to read clearly.
    add(sphere,body,0,.62,0,bodyShape[0],bodyShape[1],bodyShape[2],0,0,0,'body');
-   const giraffe=species==='giraffe',headY=giraffe?1.62:.83,headZ=giraffe?.57:.61;
+   const giraffe=species==='giraffe',headY=giraffe?1.62:.95,headZ=giraffe?.57:.57;
    if(giraffe){
     add(neckCylinder,body,0,1.24,.28,.88,1,1,0,0,0,'neck');
     for(let i=0;i<5;i++)add(spotSphere,accent,(i%2)*.13-.065,1.00+i*.15,.43,.95,1.05,1,0,0,0,'neckSpot');
    }
-   const headShape=species==='sheep'?[.275,.245,.27]:
-    species==='cat'?[.225,.205,.23]:
-    species==='dog'?[.255,.225,.255]:
-    species==='cow'?[.27,.235,.26]:[.245,.22,.25];
+   const headShape=species==='sheep'?[.32,.285,.31]:
+    species==='cat'?[.26,.235,.255]:
+    species==='dog'?[.30,.265,.29]:
+    species==='cow'?[.31,.265,.30]:
+    species==='horse'?[.28,.245,.27]:[.245,.22,.25];
    add(headSphere,body,0,headY,headZ,headShape[0],headShape[1],headShape[2],0,0,0,'head');
    const eyeY=headY+.015,eyeZ=headZ+.19;
    for(const x of [-.098,.098]){
@@ -105,8 +106,9 @@
     for(const x of [-.10,.10])add(earCone,accent,x,headY+.21,headZ-.025,.52,.85,.56,0,0,x*.7,'horn');
     for(let i=0;i<4;i++)add(spotSphere,accent,(i%2)*.11-.055,1.78+i*.035,.46,.9,1.1,1,0,0,0,'neckSpot');
    }
-   for(const x of [-.34,.34])for(const z of [-.30,.30]){
-    add(cylinder,legColor,x,.18,z,1,1.16,1,0,0,0,'leg');
+   const legX=species==='sheep'?.43:.39,legZ=species==='sheep'?.34:.32;
+   for(const x of [-legX,legX])for(const z of [-legZ,legZ]){
+    add(cylinder,legColor,x,.18,z,.92,1.28,.92,0,0,0,'leg');
     if(species==='horse'||species==='cow')add(muzzleSphere,'#59463d',x,.012,z,.52,.28,.60,0,0,0,'hoof');
    }
    add(sphere,body,0,.59,-.56,.10,.10,.18,0,0,0,'tail');
