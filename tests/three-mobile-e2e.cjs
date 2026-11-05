@@ -40,7 +40,7 @@ const {chromium}=require('playwright');
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
 
-  // The organized controls panel stays visible by default and during play.
+  // Settings start collapsed; compact utility and building controls stay available.
   const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
   const openSettingsPanel=async()=>{if(!(await settingsPanel.isVisible()))await settingsToggle.click();};
   const togglePlayModeFromSettings=async()=>{await openSettingsPanel();await page.locator('#play-mode').click();};
@@ -180,8 +180,8 @@ const {chromium}=require('playwright');
   assert.equal(await settingsPanel.isVisible(),true,'The controls panel must remain visible in Play Mode.');
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must appear in Play Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump, Fly, Dance and Sit controls must appear opposite the D-pad.');
+  assert.equal(await page.locator('#player-actions .player-action-button').count(),4,'The action pad must contain Jump, Fly, Dance and Sit.');
   const hudPositions=await page.evaluate(()=>{
-   assert.equal(await page.locator('#player-actions .player-action-button').count(),4,'The action pad must contain Jump, Fly, Dance and Sit.');
    const d=document.getElementById('player-controls').getBoundingClientRect();
    const a=document.getElementById('player-actions').getBoundingClientRect();
    return {dpad:{left:d.left,right:d.right,top:d.top,bottom:d.bottom},
