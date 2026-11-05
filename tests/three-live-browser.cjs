@@ -101,7 +101,7 @@ const {chromium}=require('playwright');
 
   // Exercise a real build action and wait for the version-1 device save.
   await openSettingsPanel();
-  await page.locator('#block-type').selectOption('grass');
+  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
   await page.locator('#add').evaluate(button=>button.click());
   const immediateBuild=await page.evaluate(()=>({
    selectedMaterial:document.getElementById('block-type')?.value,
@@ -159,7 +159,7 @@ const {chromium}=require('playwright');
    return (world.animals||[]).length;
   });
   await openSettingsPanel();
-  await page.locator('#animal-species').selectOption('cat');
+  await page.locator('#hud-choices-animal-species [data-value="cat"]').click();
   await page.locator('#animal-place').click();
   const canvas=page.locator('#three-world'),bounds=await canvas.boundingBox();
   let placed=false;
