@@ -34,12 +34,34 @@ on:
       - tests/three-world-raycast.test.cjs
       - tests/three-world-canvas-parity.test.cjs
       - THREE_JS_MIGRATION.md
+      - js/three.js
+      - js/three-animal-geometry.js
+      - js/three-painterly-materials.js
+      - js/three-player-model.js
+      - three-world-preview.html
+      - three-world-preview.js
+      - three-world-edit-preview.html
+      - three-world-edit-preview.js
+      - index.html
+      - offline/index.html
+      - tests/three-security-guard.cjs
       - .github/workflows/three-migration-guard.yml
   pull_request:
     paths:
       - js/three-world-adapter.js
       - tests/three-world-adapter.test.cjs
       - THREE_JS_MIGRATION.md
+      - js/three.js
+      - js/three-animal-geometry.js
+      - js/three-painterly-materials.js
+      - js/three-player-model.js
+      - three-world-preview.html
+      - three-world-preview.js
+      - three-world-edit-preview.html
+      - three-world-edit-preview.js
+      - index.html
+      - offline/index.html
+      - tests/three-security-guard.cjs
       - .github/workflows/three-migration-guard.yml
   workflow_dispatch:
 
@@ -56,6 +78,8 @@ jobs:
           node-version: 24
       - name: Fetch untouched production main for save compatibility checks
         run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+      - name: Run Three.js migration security guard
+        run: node tests/three-security-guard.cjs
       - name: Run read-only world adapter regression tests
         run: node tests/three-world-adapter.test.cjs
       - name: Run original DIYCraft backup schema compatibility tests
