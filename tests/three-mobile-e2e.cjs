@@ -48,7 +48,7 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#quick-tools').count(),0,'There must be no floating quick-action toolbar.');
   assert.equal(await page.locator('#gesture-guide').count(),0,'Tap and long-press are built-in gestures, not screen controls.');
   assert.equal(await page.locator('#quick-play-toggle').count(),0,'Play Mode belongs in the organized settings panel.');
-  for(const id of ['remove','water-add','fill-hole','dig-ground']){
+  for(const id of ['add','remove','water-add','fill-hole','dig-ground']){
    assert.equal(await page.locator('#'+id).count(),1,'Legacy gesture handler #'+id+' must remain wired.');
    assert.equal(await page.locator('#'+id).isVisible(),false,'Gesture action #'+id+' must not appear as a screen control.');
   }

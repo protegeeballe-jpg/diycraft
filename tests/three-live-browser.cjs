@@ -219,12 +219,12 @@ const {chromium}=require('playwright');
   });
   const cacheCheck=await page.evaluate(async()=>{
    const names=await caches.keys();
-   const name=names.find(value=>value==='diycraft-shell-v65');
+   const name=names.find(value=>value==='diycraft-shell-v66');
    if(!name)return {name:null,assets:[]};
    const cache=await caches.open(name),requests=await cache.keys();
    return {name,assets:requests.map(request=>new URL(request.url).pathname)};
   });
-  assert.equal(cacheCheck.name,'diycraft-shell-v65','The updated offline worker must install the Three.js shell cache.');
+  assert.equal(cacheCheck.name,'diycraft-shell-v66','The updated offline worker must install the Three.js shell cache.');
   for(const asset of ['/diycraft/three-world-live.js','/diycraft/js/three.js','/diycraft/js/three-world-storage.js','/diycraft/js/three-world-starter.js','/diycraft/js/three-plant-geometry.js']){
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);
