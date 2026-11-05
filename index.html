@@ -213,7 +213,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 #top-controls{position:fixed;z-index:13;top:calc(10px + env(safe-area-inset-top));right:12px;display:flex;gap:7px}
 /* Override the legacy fixed upper-left gear rule: the gear is a normal
    member of the top-right utility row, not its own positioned layer. */
-#top-controls #settings-toggle{position:relative;inset:auto;z-index:auto;left:auto;right:auto;top:auto;bottom:auto;width:36px;height:36px;min-width:36px;border-radius:11px;font-size:17px}
+#top-controls #settings-toggle{position:relative;inset:auto;z-index:auto;left:auto;right:auto;top:auto;bottom:auto;width:36px;height:36px;min-width:36px;border-radius:11px;font-size:17px;order:3}
 .hud-icon-button{width:36px;height:36px;min-width:36px;padding:0;display:grid;place-items:center;border:1px solid #bdc9b5;border-radius:11px;background:rgba(255,252,244,.96);box-shadow:0 3px 12px #43564a22;font-size:17px;line-height:1;touch-action:manipulation}
 .hud-icon-button:focus-visible,.hud-tool:focus-visible,.hud-action:focus-visible{outline:3px solid #789d72;outline-offset:2px}
 #settings-panel{position:fixed;z-index:16;left:auto;right:10px;top:calc(54px + env(safe-area-inset-top));width:min(560px,calc(100vw - 20px));max-height:min(72dvh,calc(100dvh - 70px));}
