@@ -609,6 +609,40 @@ test('clears user-placed blocks while preserving the exact original starter gard
  assert.deepEqual(world.blocks.map(block=>block.key),['starter-wood','starter-leaf','user-stone','user-door']);
 });
 
+test('adds saved animals with unique safe IDs, species defaults and a strict 100-animal cap',()=>{
+ const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world);
+ const first=edit.addAnimal({species:'cat',x:4.25,z:-3.5});
+ assert.equal(first.world.animals[0].species,'cat');
+ assert.equal(first.world.animals[0].name,'My cat');
+ assert.match(first.world.animals[0].id,/^pet_\d+$/);
+ assert.equal(first.world.animals[0].body,'#c5c0b6');
+ assert.equal(first.world.animalCare[first.world.animals[0].id],0);
+ const second=edit.addAnimal({species:'dog',name:'Buddy',x:5,z:-3});
+ assert.notEqual(second.world.animals[1].id,first.world.animals[0].id);
+ assert.equal(second.world.animals[1].name,'Buddy');
+ assert.equal(second.revision,2);
+ assert.equal(JSON.stringify(world),before,'Adding animals must affect only the private world clone.');
+ assert.throws(()=>edit.addAnimal({species:'dragon',x:0,z:0}),/supported animal/);
+ assert.throws(()=>edit.addAnimal({species:'bird',x:NaN,z:0}),/valid world coordinates/);
+ const full=fixture();full.animals=Array.from({length:100},(_,i)=>({id:'pet-'+i,species:'cat',name:'Pet '+i,x:i,z:0}));
+ const fullEdit=sandbox.create(full),fullState=fullEdit.getState();
+ assert.throws(()=>fullEdit.addAnimal({species:'sheep',x:0,z:0}),/100 saved-animal limit/);
+ assert.equal(fullEdit.getState().revision,fullState.revision);
+});
+test('updates and validates the saved player pose without modifying its source snapshot',()=>{
+ const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world);
+ const next=edit.setPlayerPose({x:12.345,y:1.2,z:-8.765,yaw:2.1,pitch:4,bed:{x:12.3,y:0,z:-8.7,yaw:2}});
+ assert.deepEqual({x:next.world.player.x,y:next.world.player.y,z:next.world.player.z,yaw:next.world.player.yaw,pitch:next.world.player.pitch},
+  {x:12.345,y:1.2,z:-8.765,yaw:2.1,pitch:1.25});
+ assert.deepEqual(next.world.player.bed,{x:12.3,y:0,z:-8.7,yaw:2});
+ assert.equal(next.revision,1);
+ const unchanged=edit.setPlayerPose({x:12.345,y:1.2,z:-8.765,yaw:2.1,pitch:4,bed:{x:12.3,y:0,z:-8.7,yaw:2}});
+ assert.equal(unchanged.revision,next.revision,'An identical pose does not create needless save revisions.');
+ assert.throws(()=>edit.setPlayerPose({x:Infinity}),/finite world value/);
+ assert.throws(()=>edit.setPlayerPose({bed:{x:0,y:0,z:0}}),/home-bed coordinates/);
+ assert.equal(JSON.stringify(world),before,'Player state changes must remain inside the sandbox clone.');
+});
+
 console.log('Three.js editing sandbox tests complete.');
 
 test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomically',()=>{

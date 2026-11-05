@@ -8,7 +8,9 @@
  if(root)root.DIYCraftThreeEditSandbox=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(protectionApi){
  'use strict';
- const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99;
+ const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99,MAX_ANIMALS=100;
+ const ANIMAL_SPECIES=new Set(['sheep','cat','dog','cow','horse','bird','giraffe']);
+ const ANIMAL_DEFAULTS={sheep:['#f0eee6','#d0b6a0'],cat:['#c5c0b6','#d0b6a0'],dog:['#c89b6d','#d0b6a0'],cow:['#f2eee5','#514b48'],horse:['#8a6347','#594337'],bird:['#e8c96d','#e8ad56'],giraffe:['#d9ad55','#9a643d']};
  const HEX=/^#[0-9a-f]{6}$/i,PNG_DATA=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
  const TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','tall_grass','sand','snow','tile','door','custom']);
  const SOLID_TYPES=new Set(['grass','dirt','stone','wood','leaves','brick','glass','flower','sand','snow']);
@@ -60,7 +62,7 @@
    world[target]=slots;
   }
   if(!Array.isArray(world.artworks))world.artworks=[];
-  let revision=0,selectedKey=null,selectedBucketItem=null,selectedBucketItemIndex=null,nextId=world.blocks.length;
+  let revision=0,selectedKey=null,selectedBucketItem=null,selectedBucketItemIndex=null,nextId=world.blocks.length,nextAnimalSerial=0;
   const HAIR_STYLES=new Set(['short','bob','long','ponytail','pigtails','curly','buns']);
   const OUTFIT_STYLES=new Set(['hoodie','sweater','overalls','dress','tee']);
   const ACCESSORIES=new Set(['none','bow','flower','glasses','cap']);
@@ -202,7 +204,54 @@
    revision++;
    return state();
   }
-  function animalStates(timeSeconds){
+function addAnimal(input){
+   if(!object(input)||!ANIMAL_SPECIES.has(input.species))throw new TypeError('Choose a supported animal species.');
+   if(!Number.isFinite(input.x)||!Number.isFinite(input.z)||Math.abs(input.x)>MAX_COORD||Math.abs(input.z)>MAX_COORD)
+    throw new TypeError('Animal position must contain valid world coordinates.');
+   if(!Array.isArray(world.animals))world.animals=[];
+   if(world.animals.length>=MAX_ANIMALS)throw new RangeError('This world has reached its 100 saved-animal limit.');
+   const defaults=ANIMAL_DEFAULTS[input.species],validColor=value=>typeof value==='string'&&HEX.test(value);
+   const ids=new Set(world.animals.map(animal=>animal&&animal.id).filter(value=>typeof value==='string'));
+   let id='';
+   do{id='pet_'+(++nextAnimalSerial);}while(ids.has(id));
+   const rawName=typeof input.name==='string'?input.name.trim():'';
+   const name=(rawName||('My '+input.species)).slice(0,24);
+   const animal={
+    id,species:input.species,name,
+    x:input.x,z:input.z,
+    facing:Number.isFinite(input.facing)?input.facing:0,
+    phase:Number.isFinite(input.phase)?input.phase:world.animals.length*1.37,
+    body:validColor(input.body)?input.body:defaults[0],
+    accent:validColor(input.accent)?input.accent:defaults[1]
+   };
+   world.animals.push(animal);
+   if(!object(world.animalCare))world.animalCare={};
+   world.animalCare[id]=0;
+   revision++;
+   return state();
+  }
+  function setPlayerPose(pose){
+   if(!object(pose))throw new TypeError('A player pose object is required.');
+   const changes={};
+   for(const field of ['x','y','z','yaw','pitch']){
+    if(pose[field]===undefined)continue;
+    if(!Number.isFinite(pose[field])||Math.abs(pose[field])>MAX_COORD)
+     throw new TypeError('Player '+field+' must be a finite world value.');
+    changes[field]=field==='pitch'?Math.max(-1.25,Math.min(1.25,pose[field])):pose[field];
+   }
+   if(Object.prototype.hasOwnProperty.call(pose,'bed')){
+    if(pose.bed===null)changes.bed=null;
+    else if(object(pose.bed)&&['x','y','z','yaw'].every(field=>Number.isFinite(pose.bed[field])&&Math.abs(pose.bed[field])<=MAX_COORD))
+     changes.bed={x:pose.bed.x,y:pose.bed.y,z:pose.bed.z,yaw:pose.bed.yaw};
+    else throw new TypeError('Player home-bed coordinates are invalid.');
+   }
+   if(!Object.keys(changes).length)throw new TypeError('At least one player pose value is required.');
+   const current=object(world.player)?world.player:{},next={...current,...changes};
+   const changed=Object.keys(changes).some(field=>JSON.stringify(current[field])!==JSON.stringify(next[field]));
+   if(changed){world.player=next;revision++;}
+   return state();
+  }
+    function animalStates(timeSeconds){
    if(!protectionApi||typeof protectionApi.animalStates!=='function')return [];
    return protectionApi.animalStates(world,timeSeconds);
   }
@@ -495,7 +544,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,setCustomBlockDesign,setSolidStyle,setDoorDesign,setTileDesign,clearMaterialBucket,clearPlacedBlocks,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addAnimal,setPlayerPose,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,setCustomBlockDesign,setSolidStyle,setDoorDesign,setTileDesign,clearMaterialBucket,clearPlacedBlocks,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
  }
  return Object.freeze({create,recipes:CRAFT_RECIPES,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
