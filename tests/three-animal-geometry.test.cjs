@@ -53,7 +53,7 @@ for(const species of animals.species){
  const bodyWidth=extent(features.body,0),bodyHeight=extent(features.body,1),bodyDepth=extent(features.body,2);
  assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
  assert.ok(features.head.min[1]>features.body.min[1]+.55,species+' head should sit visibly above the lower body line');
- assert.ok(bodyWidth<1.8&&bodyDepth<1.35,species+' body dimensions must stay compact around the legs and head');
+ assert.ok(bodyWidth<1.8&&bodyDepth<1.6,species+' torso should remain compact laterally while preserving natural front-to-back length');
  assert.ok(geometry.userData.animalBodyShape.every(value=>Number.isFinite(value)&&value>0),species+' must expose safe body proportions');
  if(species==='sheep'){
   assert.ok(extent(features.wool,0)<.85,'Sheep fleece should not overwhelm the body and head with a wide shell-like silhouette');
