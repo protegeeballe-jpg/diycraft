@@ -87,7 +87,7 @@ jobs:
            if(!main.includes('id="'+id+'"'))throw new Error('Missing live game UI control: '+id);
           const runtime=fs.readFileSync('three-world-live.js','utf8');
           if(!runtime.includes('storage.load(deviceStorage,adapter,starterWorld.create())')||
-   !runtime.includes('deviceFiles.loadRemembered()')||!runtime.includes('deviceFiles.writeHandle(primaryWorldFileHandle')||
+          !runtime.includes('deviceFiles.loadRemembered()')||!runtime.includes('deviceFiles.writeHandle(primaryWorldFileHandle')||
              !runtime.includes('storage.save(deviceStorage,adapter,snapshot')||
              !runtime.includes('storage.saveSync(deviceStorage,adapter,world')||
              runtime.includes('preview-three/starter-world.json')||/\bfetch\s*\(/.test(runtime))
@@ -98,7 +98,7 @@ jobs:
              !worker.includes("request.destination === 'script'")||
              !worker.includes("new URL('three-world-live.js', root).href")||
              !worker.includes("new URL('js/three-world-starter.js', root).href")||
-   !worker.includes("new URL('js/three-world-file-save.js', root).href"))
+          !worker.includes("new URL('js/three-world-file-save.js', root).href"))
            throw new Error('The service worker must version and cache all live Three.js modules.');
           NODE
       - name: Syntax-check all live production scripts and the offline worker
