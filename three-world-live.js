@@ -1719,7 +1719,11 @@ const SOLID_TEXTURES=['grass','dirt','stone','wood','leaves','brick','glass','fl
 function closeDesigners(){solidDesigner.hidden=true;doorDesigner.hidden=true;tileDesigner.hidden=true;}
 function updateSolidDesignPreview(){
  const type=document.getElementById('solid-design-type').value,color=document.getElementById('solid-design-color').value,texture=document.getElementById('solid-design-texture').value;
- document.getElementById('solid-design-chip').style.background=color;
+ const chip=document.getElementById('solid-design-chip');
+ chip.style.backgroundColor=color;
+ const texturePreview=painterly.generateCanvas(color,0x51a7,texture,{textureSize:128});
+ chip.style.backgroundImage='url("'+texturePreview.toDataURL('image/png')+'")';
+ chip.style.backgroundSize='cover';chip.style.backgroundRepeat='repeat';
  document.getElementById('solid-design-name').textContent=type==='custom'?'Custom solid':type.charAt(0).toUpperCase()+type.slice(1);
  document.getElementById('solid-design-details').textContent=color+' · '+texture+' texture';
 }
@@ -1746,7 +1750,11 @@ function openDoorDesigner(){
 }
 function updateTileDesignPreview(){
  const pattern=document.getElementById('tile-design-pattern').value,color=document.getElementById('tile-design-color').value;
- document.getElementById('tile-design-chip').style.background='repeating-linear-gradient(45deg,'+color+' 0 9px,#ffffff55 9px 13px)';
+ const chip=document.getElementById('tile-design-chip');
+ chip.style.backgroundColor=color;
+ const texturePreview=painterly.generateCanvas(color,0x51a7,'tile-'+pattern,{textureSize:128});
+ chip.style.backgroundImage='url("'+texturePreview.toDataURL('image/png')+'")';
+ chip.style.backgroundSize='cover';chip.style.backgroundRepeat='repeat';
  document.getElementById('tile-design-name').textContent=pattern.charAt(0).toUpperCase()+pattern.slice(1);
  document.getElementById('tile-design-details').textContent=color+' · '+pattern;
 }
