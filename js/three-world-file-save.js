@@ -79,7 +79,8 @@
    raw=payload;
   }else{
    if(typeof root.DecompressionStream!=='function')throw new Error('This browser cannot decompress this .diycraft file.');
-   raw=await collect(new Blob([payload]).stream().pipeThrough(new root.DecompressionStream('gzip')),MAX_WORLD);
+   try{raw=await collect(new Blob([payload]).stream().pipeThrough(new root.DecompressionStream('gzip')),MAX_WORLD);}
+   catch(error){throw new Error('The .diycraft compressed payload is corrupt or invalid.');}
    if(raw.byteLength!==rawLength)throw new Error('The expanded world length does not match the file header.');
   }
   if(crc32(raw)!==checksum)throw new Error('The .diycraft file failed its integrity check. The file has not been changed.');

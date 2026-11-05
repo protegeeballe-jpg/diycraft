@@ -12,7 +12,7 @@ async function main(){
  assert.ok(['raw','gzip'].includes(encoded.format));
  console.log('PASS compressed .diycraft round-trip ('+encoded.format+', '+encoded.bytes.byteLength+' bytes)');
  const corrupt=encoded.bytes.slice();corrupt[corrupt.length-1]^=0xff;
- await assert.rejects(()=>file.decode(corrupt),/integrity check|expanded world length/i);
+ await assert.rejects(()=>file.decode(corrupt),/integrity check|expanded world length|compressed payload is corrupt/i);
  console.log('PASS corrupt file rejected before restore');
  const badMagic=encoded.bytes.slice();badMagic[0]=0;
  await assert.rejects(()=>file.decode(badMagic),/not a recognized/i);
