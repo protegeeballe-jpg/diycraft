@@ -67,6 +67,7 @@ const {chromium}=require('playwright');
   await page.locator('details.settings-section').filter({hasText:'Characters & Animals'}).locator('summary').click();
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),true,'Play Mode remains available from its organized Settings group.');
+  await openSettingsPanel();
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),false,'Build Mode can be restored from the same control.');
   await page.locator('#settings-close').click();
