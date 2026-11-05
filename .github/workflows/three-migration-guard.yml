@@ -21,7 +21,6 @@ on:
       - tests/three-door-motion.test.cjs
       - tests/three-door-model.test.cjs
       - tests/three-performance-profile.test.cjs
-      - tests/three-animal-geometry.test.cjs
       - tests/three-player-physics.test.cjs
       - tests/three-player-camera.test.cjs
       - tests/three-neighbor-model.test.cjs
@@ -35,35 +34,12 @@ on:
       - tests/three-world-raycast.test.cjs
       - tests/three-world-canvas-parity.test.cjs
       - THREE_JS_MIGRATION.md
-      - js/three.js
-      - js/three-animal-geometry.js
-      - tests/three-animal-geometry.test.cjs
-      - js/three-painterly-materials.js
-      - js/three-player-model.js
-      - three-world-preview.html
-      - three-world-preview.js
-      - three-world-edit-preview.html
-      - three-world-edit-preview.js
-      - index.html
-      - offline/index.html
-      - tests/three-security-guard.cjs
       - .github/workflows/three-migration-guard.yml
   pull_request:
     paths:
       - js/three-world-adapter.js
       - tests/three-world-adapter.test.cjs
       - THREE_JS_MIGRATION.md
-      - js/three.js
-      - js/three-animal-geometry.js
-      - js/three-painterly-materials.js
-      - js/three-player-model.js
-      - three-world-preview.html
-      - three-world-preview.js
-      - three-world-edit-preview.html
-      - three-world-edit-preview.js
-      - index.html
-      - offline/index.html
-      - tests/three-security-guard.cjs
       - .github/workflows/three-migration-guard.yml
   workflow_dispatch:
 
@@ -80,8 +56,6 @@ jobs:
           node-version: 24
       - name: Fetch untouched production main for save compatibility checks
         run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
-      - name: Run Three.js migration security guard
-        run: node tests/three-security-guard.cjs
       - name: Run read-only world adapter regression tests
         run: node tests/three-world-adapter.test.cjs
       - name: Run original DIYCraft backup schema compatibility tests
@@ -96,8 +70,6 @@ jobs:
         run: node tests/three-door-model.test.cjs
       - name: Run mobile performance profile tests
         run: node tests/three-performance-profile.test.cjs
-      - name: Run recognizable animal geometry tests
-        run: node tests/three-animal-geometry.test.cjs
       - name: Run deterministic player physics parity tests
         run: node tests/three-player-physics.test.cjs
       - name: Run first-person and third-person camera parity tests

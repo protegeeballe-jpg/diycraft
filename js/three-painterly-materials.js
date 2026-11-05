@@ -22,15 +22,15 @@
  }
  function mix(a,b,t){return Math.round(a+(b-a)*t);}
  function generateCanvas(hex,seed,kind,quality={}){
-  const random=seeded(seed),size=Math.max(64,Math.min(256,Math.round(quality.textureSize||256))),scale=size/256,pencilScale=Math.max(.75,Math.min(1.35,Number.isFinite(quality.pencilScale)?quality.pencilScale:1)),watercolorStrength=Math.max(.8,Math.min(1.6,Number.isFinite(quality.watercolorStrength)?quality.watercolorStrength:1.2)),pencilStrength=Math.max(.8,Math.min(1.6,Number.isFinite(quality.pencilStrength)?quality.pencilStrength:1.18)),base=rgb(hex),canvas=document.createElement('canvas');
+  const random=seeded(seed),size=Math.max(64,Math.min(256,Math.round(quality.textureSize||256))),scale=size/256,pencilScale=Math.max(.4,Math.min(1,quality.pencilScale||1)),base=rgb(hex),canvas=document.createElement('canvas');
   canvas.width=canvas.height=size;
   const c=canvas.getContext('2d');
   c.fillStyle='rgb('+base.join(',')+')';c.fillRect(0,0,size,size);
-  const washCount=Math.max(10,Math.round((kind==='paper'?30:42)*scale*watercolorStrength));
+  const washCount=Math.max(8,Math.round((kind==='paper'?24:32)*scale));
   for(let i=0;i<washCount;i++){
-   const x=random()*size,y=random()*size,rx=12+random()*44,ry=9+random()*35;
-   const tint=i%3===0?[255,244,218]:i%3===1?base.map(v=>mix(v,255,.23)):base.map(v=>mix(v,0,.18));
-   const alpha=Math.min(.24,(.055+random()*.10)*watercolorStrength);
+   const x=random()*size,y=random()*size,rx=10+random()*34,ry=7+random()*27;
+   const tint=i%3===0?[255,246,224]:i%3===1?base.map(v=>mix(v,255,.17)):base.map(v=>mix(v,0,.12));
+   const alpha=.045+random()*.08;
    const gradient=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.4);
    gradient.addColorStop(0,'rgba('+tint.join(',')+','+(alpha*1.8)+')');
    gradient.addColorStop(.55,'rgba('+tint.join(',')+','+alpha+')');
@@ -111,33 +111,21 @@
   }
   // Visible colored-pencil hatching with varying stroke length, pressure and direction.
   c.lineCap='round';c.lineJoin='round';
-  const pencilCount=Math.max(220,Math.round((kind==='paper'?1420:1120)*pencilScale*pencilStrength));
+  const pencilCount=Math.max(180,Math.round((kind==='paper'?1050:840)*pencilScale));
   for(let i=0;i<pencilCount;i++){
-   const x=random()*size,y=random()*size,len=5+random()*(kind==='grass'?24:20);
+   const x=random()*size,y=random()*size,len=3+random()*(kind==='grass'?21:18);
    const angle=(random()-.5)*.9+(kind==='grass'?.28:0);
    const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len;
    const light=i%5===0;
-   const tint=light?base.map(v=>mix(v,255,.62)):base.map(v=>mix(v,Math.max(0,v-62),.60));
-   const alpha=Math.min(.34,((light?.17:.14)+random()*.11)*pencilStrength);
+   const tint=light?base.map(v=>mix(v,255,.5)):base.map(v=>mix(v,Math.max(0,v-48),.48));
+   const alpha=(light?.13:.105)+random()*.095;
    c.strokeStyle='rgba('+tint.join(',')+','+alpha+')';
-   c.lineWidth=.95+random()*1.8;
+   c.lineWidth=.8+random()*1.8;
    c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+dx*.48,y+dy*.48+(random()-.5)*2,x+dx,y+dy);c.stroke();
   }
-  // A lighter cross-hatch pass adds layered colored-pencil pressure without a screen filter.
-  const crossHatchCount=Math.round(pencilCount*.24);
-  for(let i=0;i<crossHatchCount;i++){
-   const x=random()*size,y=random()*size,len=3+random()*(kind==='grass'?17:14);
-   const angle=(random()-.5)*.86+(kind==='grass'?1.04:.88);
-   const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len;
-   const tint=i%4===0?base.map(v=>mix(v,255,.48)):base.map(v=>mix(v,Math.max(0,v-58),.52));
-   const alpha=Math.min(.25,(.075+random()*.075)*pencilStrength);
-   c.strokeStyle='rgba('+tint.join(',')+','+alpha+')';
-   c.lineWidth=.7+random()*1.15;
-   c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+dx*.48,y+dy*.48+(random()-.5)*1.6,x+dx,y+dy);c.stroke();
-  }
-  // Fine paper tooth: visible flecks and fibers, bounded by the texture size.
-  for(let i=0;i<Math.max(300,Math.round(1450*pencilScale));i++){
-   const x=random()*size,y=random()*size,v=random()>.48?255:48,a=.035+random()*.085;
+  // Fine paper tooth: sparse flecks and fibers.
+  for(let i=0;i<Math.max(250,Math.round(1250*pencilScale));i++){
+   const x=random()*size,y=random()*size,v=random()>.48?255:48,a=.025+random()*.075;
    c.fillStyle='rgba('+v+','+v+','+v+','+a+')';c.fillRect(x,y,.45+random()*1.1,.35+random()*.8);
   }
   return canvas;

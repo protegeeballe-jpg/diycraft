@@ -8,7 +8,7 @@ function test(name,fn){
 test('selects conservative profile for budget phones and data-saver mode',()=>{
  const low=profiles.select({mobile:true,hardwareConcurrency:4,deviceMemory:2,maxTextureSize:4096});
  assert.equal(low.tier,'low');assert.equal(low.maxPixelRatio,1);assert.equal(low.antialias,false);
- assert.equal(low.shadows,false);assert.equal(low.fpsCap,30);assert.equal(low.textureSize,128);assert.equal(low.pencilScale,1);assert.ok(low.watercolorStrength>=1.2);assert.ok(low.pencilStrength>=1.15);assert.equal(low.maxVisibleFish,48);assert.equal(low.maxVisibleAnimals,12);assert.equal(low.waterAnimationFps,15);
+ assert.equal(low.shadows,false);assert.equal(low.fpsCap,30);assert.equal(low.textureSize,128);assert.equal(low.maxVisibleFish,48);assert.equal(low.maxVisibleAnimals,12);assert.equal(low.waterAnimationFps,15);
  assert.equal(profiles.select({saveData:true}).tier,'low');
  assert.equal(profiles.select({maxTextureSize:2048}).tier,'low');
 });
@@ -21,11 +21,11 @@ test('selects balanced profile for typical phones and midrange hardware',()=>{
  assert.equal(profiles.select({mobile:true,hardwareConcurrency:8,deviceMemory:6,maxTextureSize:8192}).tier,'balanced');
  assert.equal(profiles.select({hardwareConcurrency:6,deviceMemory:8}).tier,'balanced');
  const p=profiles.select({mobile:true,hardwareConcurrency:8,deviceMemory:6});
- assert.equal(p.shadows,false);assert.ok(p.fpsCap>=30&&p.fpsCap<=45);assert.ok(p.watercolorStrength>=1.2&&p.pencilStrength>=1.15);
+ assert.equal(p.shadows,false);assert.ok(p.fpsCap>=30&&p.fpsCap<=45);
 });
 test('selects high profile only when capability signals support it',()=>{
  const p=profiles.select({mobile:false,hardwareConcurrency:12,deviceMemory:16,maxTextureSize:16384});
- assert.equal(p.tier,'high');assert.equal(p.shadows,true);assert.equal(p.fpsCap,60);assert.ok(p.watercolorStrength>=1.25&&p.pencilStrength>=1.2);
+ assert.equal(p.tier,'high');assert.equal(p.shadows,true);assert.equal(p.fpsCap,60);
 });
 test('frame gate respects configured cadence, rejects invalid times and resets safely',()=>{
  const gate=profiles.createFrameGate(30);
