@@ -233,3 +233,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Visual-angle correction from the focused screenshots: ground animals now turn their face direction toward the current orbit camera so the eyes and muzzles remain visible while players explore from different sides. Birds retain their flight heading. Bird wing shoulder pivots have been raised to the upper body line so the feathered wings no longer disappear behind the torso from the normal elevated camera.
+
+
+- Bird silhouette pass after close-up review: the torso was reduced to a leaner flight body, the head and beak were enlarged slightly, and three short tail feathers replace the blunt tail ball. The wing pivots, wing instances and flight motion are unchanged.

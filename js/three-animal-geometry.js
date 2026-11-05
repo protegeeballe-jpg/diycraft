@@ -45,22 +45,23 @@
    }
   }
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
-  const bodyShape=species==='bird'?[.55,.55,.62]:({
+  const bodyShape=species==='bird'?[.43,.40,.58]:({
    sheep:[.48,.54,.58],cat:[.44,.55,.53],dog:[.50,.57,.58],
    cow:[.56,.58,.64],horse:[.54,.57,.69],giraffe:[.50,.62,.55]
   }[species]);
   if(species==='bird'){
    // The body stays in one static batch; the two wings are separate pivoted instance batches.
-   add(sphere,body,0,.62,0,.55,.55,.62,0,0,0,'body');
-   add(headSphere,body,0,.89,.52,.21,.19,.21,0,0,0,'head');
-   const birdEyeFront=.52+.21*.905+.022;
+   add(sphere,body,0,.62,0,.43,.40,.58,0,0,0,'body');
+   add(headSphere,body,0,.89,.52,.23,.21,.23,0,0,0,'head');
+   const birdEyeFront=.52+.23*.905+.022;
    for(const x of [-.085,.085]){
     add(eyeWhiteSphere,'#fff8ed',x,.91,birdEyeFront,1,1,.42,0,0,0,'eye');
     add(eyeSphere,'#302820',x+(x<0?.006:-.006),.91,birdEyeFront+.021,.98,.98,.48,0,0,0,'eye');
     add(spotSphere,'#fff8e8',x-.010,.925,birdEyeFront+.036,.18,.18,.18,0,0,0,'eyeHighlight');
    }
-   add(beakCone,'#e8ad56',0,.85,.76,.9,1,1,Math.PI/2,0,0,'beak');
-   add(sphere,body,0,.57,-.52,.20,.12,.24,0,0,0,'tail');
+   add(beakCone,'#e8ad56',0,.85,.78,1.05,1.2,1.1,Math.PI/2,0,0,'beak');
+   for(const [x,y,angle] of [[-.12,.58,-.22],[0,.60,0],[.12,.58,.22]])
+    add(beakCone,accent,x,y,-.60,.48,.72,.62,-Math.PI/2,0,angle,'tail');
    for(const x of [-.22,.22]){
     add(fleeceSphere,body,x,.36,.055,.55,.62,.55,0,0,0,'legSocket');
     add(cylinder,legColor,x,.15,.06,.72,.72,.72,0,0,0,'leg');
@@ -138,7 +139,7 @@
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.computeVertexNormals();geometry.computeBoundingSphere();
-  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.70,.50,.54]:bodyShape.slice(),animalHasWingRig:species==='bird'};
+  geometry.userData={animalSpecies:species,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.43,.40,.58]:bodyShape.slice(),animalHasWingRig:species==='bird'};
   sources.forEach(source=>source.dispose());
   return geometry;
  }
