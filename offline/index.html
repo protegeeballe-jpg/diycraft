@@ -210,13 +210,13 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:560px){.design-panel{padding:11px;max-height:96vh}.design-head h2{font-size:16px}.design-fields{grid-template-columns:1fr}}
 
 /* Compact tap-first HUD */
-#top-controls{position:fixed;z-index:35;top:calc(10px + env(safe-area-inset-top));right:12px;display:flex;gap:7px}
+#top-controls{position:fixed;z-index:13;top:calc(10px + env(safe-area-inset-top));right:12px;display:flex;gap:7px}
 /* Override the legacy fixed upper-left gear rule: the gear is a normal
    member of the top-right utility row, not its own positioned layer. */
 #top-controls #settings-toggle{position:relative;inset:auto;z-index:auto;left:auto;right:auto;top:auto;bottom:auto;width:36px;height:36px;min-width:36px;border-radius:11px;font-size:17px}
 .hud-icon-button{width:36px;height:36px;min-width:36px;padding:0;display:grid;place-items:center;border:1px solid #bdc9b5;border-radius:11px;background:rgba(255,252,244,.96);box-shadow:0 3px 12px #43564a22;font-size:17px;line-height:1;touch-action:manipulation}
 .hud-icon-button:focus-visible,.hud-tool:focus-visible,.hud-action:focus-visible{outline:3px solid #789d72;outline-offset:2px}
-#settings-panel{position:fixed;z-index:34;left:auto;right:10px;top:calc(54px + env(safe-area-inset-top));width:min(560px,calc(100vw - 20px));max-height:min(72dvh,calc(100dvh - 70px));}
+#settings-panel{position:fixed;z-index:16;left:auto;right:10px;top:calc(54px + env(safe-area-inset-top));width:min(560px,calc(100vw - 20px));max-height:min(72dvh,calc(100dvh - 70px));}
 #settings-panel[hidden]{display:none!important}
 #settings-panel .settings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
 #settings-panel .settings-section>summary{font-size:13px;padding:9px 11px}
@@ -241,10 +241,10 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .hud-color-choice input{width:48px;height:34px;padding:2px}
 .hud-picker-primary{width:100%;margin-top:8px;text-align:center!important;font-weight:700!important;background:#e4eddf!important}
 .hud-picker-note{font-size:11px;line-height:1.4;color:#718075;margin:8px 0 0}
-#build-toolbar{position:fixed;z-index:28;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 7px;background:rgba(255,252,244,.94);border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 4px 16px #43564a22;max-width:calc(100vw - 24px);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+#build-toolbar{position:fixed;z-index:18;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 7px;background:rgba(255,252,244,.94);border:1px solid #c9d2bd;border-radius:14px;box-shadow:0 4px 16px #43564a22;max-width:calc(100vw - 24px);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
 #build-toolbar::-webkit-scrollbar{display:none}
 .hud-tool{width:34px;height:34px;min-width:34px;padding:0;display:grid;place-items:center;border-radius:9px;font-size:17px;line-height:1;touch-action:manipulation}
-#player-controls{z-index:29;left:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:6px;border-radius:12px}
+#player-controls{z-index:18;left:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:6px;border-radius:12px}
 #player-controls .dpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px);gap:3px}
 #player-controls .dpad button{font-size:16px;min-width:36px;min-height:34px}
 #player-controls .dpad button[data-move="forward"]{grid-column:2;grid-row:1}
@@ -252,7 +252,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 #player-controls .dpad button[data-move="back"]{grid-column:2;grid-row:2}
 #player-controls .dpad button[data-move="right"]{grid-column:3;grid-row:2}
 #play-instructions{display:none}
-#player-actions{z-index:29;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,42px);gap:4px;padding:5px;border-radius:12px}
+#player-actions{z-index:18;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,42px);gap:4px;padding:5px;border-radius:12px}
 .player-action-button{width:42px;height:36px;min-width:42px;padding:3px;font-size:10px;line-height:1.1}
 #dance,#sit{font-size:10px}
 @media(max-width:700px){
