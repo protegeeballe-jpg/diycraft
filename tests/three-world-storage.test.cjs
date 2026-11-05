@@ -51,5 +51,12 @@ function makeStorage(initial=null){
  const denied={getItem(){throw new Error('storage denied');}};
  const unavailable=await storageApi.load(denied,adapter,freshWorld());
  assert.equal(unavailable.source,'unavailable');assert.equal(unavailable.storageReadFailed,true);
+ const pagehideStorage=makeStorage();
+ const syncSaved=storageApi.saveSync(pagehideStorage,adapter,snapshot);
+ assert.equal(syncSaved.saved,true);
+ assert.equal(syncSaved.format,'json');
+ assert.equal(JSON.parse(pagehideStorage.inspect()).name,'Painterly home');
+ const syncBlocked=storageApi.saveSync(corruptStorage,adapter,snapshot,{storageReadFailed:true});
+ assert.equal(syncBlocked.saved,false);assert.equal(syncBlocked.protected,true);
  console.log('Three.js world storage bridge tests complete.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

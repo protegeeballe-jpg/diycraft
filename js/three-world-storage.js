@@ -108,6 +108,19 @@
    return Object.freeze({saved:true,protected:false,format:encoded.format,bytes:encoded.bytes});
   }catch(error){return Object.freeze({saved:false,protected:false,reason:String(error.message||error).slice(0,240)});}
  }
+ function saveSync(storage,adapter,snapshot,options={}){
+  requireAdapter(adapter);
+  if(options.storageReadFailed)return Object.freeze({saved:false,protected:true,reason:'The existing saved world is protected until a valid backup is restored.'});
+  try{
+   if(!storage||typeof storage.setItem!=='function')throw new TypeError('Browser storage is unavailable.');
+   const json=JSON.stringify(adapter.toSavedWorld(snapshot));
+   if(typeof json!=='string')throw new TypeError('The DIYCraft world could not be serialized.');
+   const bytes=byteLength(json);
+   if(bytes>MAX_UNCOMPRESSED_BYTES)throw new RangeError('Saved world exceeds the 32 MB safety limit.');
+   storage.setItem(STORE_KEY,json);
+   return Object.freeze({saved:true,protected:false,format:'json',bytes});
+  }catch(error){return Object.freeze({saved:false,protected:false,reason:String(error.message||error).slice(0,240)});}
+ }
  async function restore(storage,adapter,backupText){
   requireAdapter(adapter);
   try{
@@ -119,5 +132,5 @@
    return Object.freeze({restored:true,snapshot:parsed.snapshot,format:encoded.format,error:''});
   }catch(error){return Object.freeze({restored:false,snapshot:null,format:'',error:String(error.message||error).slice(0,240)});}
  }
- return Object.freeze({STORE_KEY,GZIP_PREFIX,MAX_COMPRESSED_BYTES,MAX_UNCOMPRESSED_BYTES,MAX_BACKUP_BYTES,decode,encode,load,save,restore});
+ return Object.freeze({STORE_KEY,GZIP_PREFIX,MAX_COMPRESSED_BYTES,MAX_UNCOMPRESSED_BYTES,MAX_BACKUP_BYTES,decode,encode,load,save,saveSync,restore});
 });
