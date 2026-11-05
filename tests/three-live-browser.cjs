@@ -62,6 +62,10 @@ const {chromium}=require('playwright');
   assert.ok(Math.abs(birdVisualAfter.birdFlapAngle-birdVisualBefore.birdFlapAngle)>.03,'Bird wings must flap over time rather than remain a static wobbling body.');
   assert.ok(Math.abs(birdVisualAfter.groundLegSwingAngle-birdVisualBefore.groundLegSwingAngle)>.01,'Ground-animal legs must swing over time instead of remaining rigid pegs.');
   assert.equal(birdVisualAfter.groundLegRotationOrder,'YXZ','Ground-animal gait must apply stride around the local side-to-side hip axis after heading.');
+  assert.ok(Math.abs(birdVisualAfter.groundLegRotationX-birdVisualAfter.groundLegSwingAngle)<1e-9,
+   'The live leg transform must place the gait swing angle on Euler X.');
+  assert.ok(Number.isFinite(birdVisualAfter.groundLegRotationY),
+   'The live leg transform must retain the animal heading on Euler Y.');
 
   // Exercise a real build action and wait for the version-1 device save.
   await page.locator('#block-type').selectOption('grass');
