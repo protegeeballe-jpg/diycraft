@@ -55,7 +55,8 @@ const {chromium}=require('playwright');
    revision:window.__DIYCRAFT_THREE_EDIT__?.getState?.().revision,
    status:document.getElementById('status')?.textContent,
    feedback:document.getElementById('backup-feedback')?.textContent,
-   stored:!!localStorage.getItem('diycraft_peaceful_voxel_v1')
+   stored:!!localStorage.getItem('diycraft_peaceful_voxel_v1'),
+   persistence:window.__DIYCRAFT_THREE_EDIT__?.getPersistenceStats?.()
   }));
   console.log('live build action diagnostic: '+JSON.stringify(immediateBuild));
   const expectedBlocks=initial.world.blocks.length+1;
@@ -69,10 +70,12 @@ const {chromium}=require('playwright');
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1')));
    return {blocks:world.blocks.length,version:world.version};
   });
+  const finalPersistence=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPersistenceStats?.());
   console.log('build persistence comparison: '+JSON.stringify({
    initialBlocks:initial.world.blocks.length,expectedBlocks,
    immediateLiveBlocks:immediateBuild.liveBlocks,savedBlocks:afterBuild.blocks,
-   savedGeneration:afterBuild.version
+   savedFormatVersion:afterBuild.version,immediatePersistence:immediateBuild.persistence,
+   finalPersistence,feedback:document.getElementById('backup-feedback')?.textContent
   }));
   assert.ok(afterBuild.blocks>=expectedBlocks,'A build action must persist the changed blocks. Expected '+expectedBlocks+' blocks from '+initial.world.blocks.length+', but storage contains '+afterBuild.blocks+'. Live sandbox count was '+immediateBuild.liveBlocks+'.');
 
