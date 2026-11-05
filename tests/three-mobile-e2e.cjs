@@ -202,6 +202,73 @@ const {chromium}=require('playwright');
   assert.equal(restored.designs.solidStyles.stone.color,'#8b91a0');
   assert.equal(restored.gallery.artworks.length,1);
 
+  // The main world canvas restores the original builder controls: tap to build/fill,
+  // hold 0.6 seconds to dig/remove. Use real projected positions in the running scene.
+  await openSettingsPanel();
+  await page.locator('#block-type').selectOption('grass');
+  await page.locator('#settings-close').click();
+  const buildCell=await page.evaluate(()=>{
+   const debug=window.__DIYCRAFT_THREE_EDIT__,state=debug.getState(),occupied=new Set(state.world.blocks.map(block=>block.x+','+block.y+','+block.z));
+   for(let z=-5;z<=8;z++)for(let x=-5;x<=8;x++){
+    if(occupied.has(x+',0,'+z)||debug.isProtectedDigCell(x,z))continue;
+    const point=debug.getGroundScreenPointForTest(x,z);
+    if(!point?.visible)continue;
+    const target=debug.getPointerTargetForTest(point.x,point.y);
+    if(target?.kind==='ground'&&target.x===x&&target.z===z)return {x,z,point};
+   }
+   return null;
+  });
+  assert.ok(buildCell,'The mobile scene must expose a clear, unprotected ground cell for touch building.');
+  const dispatchTouch=async(point,pointerId,holdMs=0)=>page.evaluate(async({point,pointerId,holdMs})=>{
+   const canvas=document.getElementById('three-world'),base={bubbles:true,cancelable:true,pointerId,pointerType:'touch',isPrimary:true,button:0};
+   canvas.dispatchEvent(new PointerEvent('pointerdown',{...base,buttons:1,clientX:point.x,clientY:point.y}));
+   if(holdMs)await new Promise(resolve=>setTimeout(resolve,holdMs));
+   canvas.dispatchEvent(new PointerEvent('pointerup',{...base,buttons:0,clientX:point.x,clientY:point.y}));
+  },{point,pointerId,holdMs});
+  const startingBlocks=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length);
+  await dispatchTouch(buildCell.point,61);
+  await page.waitForFunction(({x,z,count})=>{
+   const blocks=window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[];
+   return blocks.length===count+1&&blocks.some(block=>block.x===x&&block.y===0&&block.z===z&&block.type==='grass');
+  },{x:buildCell.x,z:buildCell.z,count:startingBlocks},{timeout:10000});
+  const builtBlock=await page.evaluate(({x,z})=>{
+   const debug=window.__DIYCRAFT_THREE_EDIT__,block=debug.getState().world.blocks.find(item=>item.x===x&&item.y===0&&item.z===z&&item.type==='grass');
+   return block?{key:block.key,point:debug.getBlockScreenPointForTest(block.key)}:null;
+  },{x:buildCell.x,z:buildCell.z});
+  assert.ok(builtBlock?.point?.visible,'The newly placed block must be directly targetable for digging.');
+  const blockTarget=await page.evaluate(point=>window.__DIYCRAFT_THREE_EDIT__?.getPointerTargetForTest?.(point.x,point.y),builtBlock.point);
+  assert.equal(blockTarget?.kind,'block');
+  assert.equal(blockTarget?.key,builtBlock.key);
+  assert.equal(blockTarget?.step?.[1],1,'A tap on the top face must build one block above the target.');
+  await dispatchTouch(builtBlock.point,62);
+  await page.waitForFunction(({x,z})=>(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[]).some(block=>block.x===x&&block.y===1&&block.z===z&&block.type==='grass'),{x:buildCell.x,z:buildCell.z},{timeout:10000});
+  const upperBlock=await page.evaluate(({x,z})=>{
+   const debug=window.__DIYCRAFT_THREE_EDIT__,block=debug.getState().world.blocks.find(item=>item.x===x&&item.y===1&&item.z===z&&item.type==='grass');
+   return block?{key:block.key,point:debug.getBlockScreenPointForTest(block.key)}:null;
+  },{x:buildCell.x,z:buildCell.z});
+  assert.ok(upperBlock?.point?.visible);
+  await dispatchTouch(upperBlock.point,63,680);
+  await page.waitForFunction(key=>!(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[]).some(block=>block.key===key),upperBlock.key,{timeout:10000});
+  let editState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world);
+  assert.ok(editState.bucket.some(item=>item.type==='grass'),'Holding a placed block must remove it and recover it to the Material Bucket.');
+  const basePoint=await page.evaluate(key=>window.__DIYCRAFT_THREE_EDIT__?.getBlockScreenPointForTest?.(key),builtBlock.key);
+  assert.ok(basePoint?.visible);
+  await dispatchTouch(basePoint,64,680);
+  await page.waitForFunction(key=>!(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[]).some(block=>block.key===key),builtBlock.key,{timeout:10000});
+  editState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world);
+  assert.ok(editState.bucket.filter(item=>item.type==='grass').length>=2,'Holding a second block must recover it too.');
+  const groundPoint=await page.evaluate(({x,z})=>window.__DIYCRAFT_THREE_EDIT__?.getGroundScreenPointForTest?.(x,z),{x:buildCell.x,z:buildCell.z});
+  assert.ok(groundPoint?.visible);
+  await dispatchTouch(groundPoint,65,680);
+  await page.waitForFunction(({x,z})=>(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.excavations||[]).some(cell=>cell.x===x&&cell.z===z&&cell.depth===1),{x:buildCell.x,z:buildCell.z},{timeout:10000});
+  editState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world);
+  assert.ok(editState.bucket.some(item=>item.type==='dirt'),'Holding the ground must dig one layer and recover dirt.');
+  await dispatchTouch(groundPoint,66);
+  await page.waitForFunction(({x,z})=>{
+   const world=window.__DIYCRAFT_THREE_EDIT__?.getState?.().world;
+   return !(world.excavations||[]).some(cell=>cell.x===x&&cell.z===z)&&world.blocks.some(block=>block.x===x&&block.y===-1&&block.z===z&&block.type==='grass');
+  },{x:buildCell.x,z:buildCell.z},{timeout:10000});
+
   // Measure real frame pacing on the emulated low-end mobile profile.
   const pacing=await page.evaluate(async()=>{
    const start=window.__DIYCRAFT_THREE_EDIT__?.frames||0,begin=performance.now();
