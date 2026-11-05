@@ -206,3 +206,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - Flowers now use eight folded, cupped petals with raised ridges, a raised center and two dimensional leaves. The flower remains one merged mesh per plant, preserving the low-draw-call strategy.
 - Tall grass blades use folded two-facet geometry to retain visible volume from multiple camera angles.
 - Dedicated tests check animal body width/height and flower petal relief, color/UV alignment, normals, and the geometry budget.
+
+
+- Autosave timing refinement: completed world edits (placement, removal, inventory/care/design changes) now begin the save immediately; continuous player movement/camera pose remains debounced. The page-exit synchronous writer still supersedes any older in-flight compressed snapshot.
