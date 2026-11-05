@@ -214,7 +214,8 @@ const {chromium}=require('playwright');
     const point=debug.getGroundScreenPointForTest(x,z);
     if(!point?.visible)continue;
     const target=debug.getPointerTargetForTest(point.x,point.y);
-    if(target?.kind==='ground'&&target.x===x&&target.z===z)return {x,z,point};
+    const actor=debug.getActorPickForTest(point.x,point.y);
+    if(target?.kind==='ground'&&target.x===x&&target.z===z&&!actor)return {x,z,point};
    }
    return null;
   });
@@ -227,10 +228,20 @@ const {chromium}=require('playwright');
   },{point,pointerId,holdMs});
   const startingBlocks=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length);
   await dispatchTouch(buildCell.point,61);
-  await page.waitForFunction(({x,z,count})=>{
-   const blocks=window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[];
-   return blocks.length===count+1&&blocks.some(block=>block.x===x&&block.y===0&&block.z===z&&block.type==='grass');
-  },{x:buildCell.x,z:buildCell.z,count:startingBlocks},{timeout:10000});
+  try{
+   await page.waitForFunction(({x,z,count})=>{
+    const blocks=window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks||[];
+    return blocks.length===count+1&&blocks.some(block=>block.x===x&&block.y===0&&block.z===z&&block.type==='grass');
+   },{x:buildCell.x,z:buildCell.z,count:startingBlocks},{timeout:10000});
+  }catch(error){
+   const diagnostics=await page.evaluate(({x,z,point})=>{
+    const debug=window.__DIYCRAFT_THREE_EDIT__,world=debug?.getState?.().world;
+    return {blocks:world?.blocks?.length,matching:world?.blocks?.filter(block=>block.x===x&&block.z===z),
+     target:debug?.getPointerTargetForTest?.(point.x,point.y),actor:debug?.getActorPickForTest?.(point.x,point.y),
+     status:document.getElementById('status')?.textContent};
+   },{x:buildCell.x,z:buildCell.z,point:buildCell.point});
+   throw new Error('Single-touch build did not create the expected grass block: '+JSON.stringify(diagnostics)+'; '+error.message);
+  }
   const builtBlock=await page.evaluate(({x,z})=>{
    const debug=window.__DIYCRAFT_THREE_EDIT__,block=debug.getState().world.blocks.find(item=>item.x===x&&item.y===0&&item.z===z&&item.type==='grass');
    return block?{key:block.key,point:debug.getBlockScreenPointForTest(block.key)}:null;
