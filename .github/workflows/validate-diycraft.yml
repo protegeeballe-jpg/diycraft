@@ -12,6 +12,7 @@ on:
       - tests/three-viewport.test.cjs
       - tests/three-sky-watercolor.test.cjs
       - tests/three-world-storage.test.cjs
+      - tests/three-world-file-save.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-animal-geometry.test.cjs
@@ -28,6 +29,7 @@ on:
       - tests/three-sky-watercolor.test.cjs
       - tests/three-viewport.test.cjs
       - tests/three-world-storage.test.cjs
+      - tests/three-world-file-save.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
       - .github/workflows/validate-diycraft.yml

@@ -2017,6 +2017,6 @@ async function start(){
  requestAnimationFrame(animate);
 }
 start().catch(error=>{status.textContent='DIYCraft could not start: '+error.message;backupFeedback.textContent='The game could not open: '+error.message;throw error;});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushWorldSaveSync();});
-window.addEventListener('pagehide',flushWorldSaveSync);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flushWorldSaveSync();void drainDeviceFileSave();}});
+window.addEventListener('pagehide',()=>{flushWorldSaveSync();void drainDeviceFileSave();});
 })();
