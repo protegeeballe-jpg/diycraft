@@ -47,7 +47,7 @@
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
   const bodyShape=species==='bird'?[.70,.50,.54]:({
    sheep:[.78,.60,.56],cat:[.70,.54,.51],dog:[.78,.56,.58],
-   cow:[.85,.60,.59],horse:[.88,.58,.54],giraffe:[.70,.53,.52]
+   cow:[.85,.60,.59],horse:[.84,.60,.54],giraffe:[.70,.53,.52]
   }[species]);
   if(species==='bird'){
    add(sphere,body,0,.60,0,.70,.50,.54,0,0,0,'body');
