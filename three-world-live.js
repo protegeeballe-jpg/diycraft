@@ -1446,9 +1446,9 @@ canvas.addEventListener('pointerup',event=>{
   if(!gesture.moved){gesture.moved=true;clearPointerHold(gesture);}
  }
  clearPointerHold(gesture);
- if(!playerPlayMode&&!gesture.moved){
+ if(!playerPlayMode&&!gesture.moved&&!gesture.holdTriggered){
   const heldFor=performance.now()-gesture.startedAt;
-  if(gesture.holdTriggered||heldFor>=HOLD_TO_DIG_MS)digWorldTarget(gesture.target);
+  if(heldFor>=HOLD_TO_DIG_MS)digWorldTarget(gesture.target);
   else tapWorldAt(event.clientX,event.clientY,gesture.target);
  }
  endPointerGesture();

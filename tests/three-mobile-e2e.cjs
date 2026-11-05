@@ -220,12 +220,16 @@ const {chromium}=require('playwright');
    return null;
   });
   assert.ok(buildCell,'The mobile scene must expose a clear, unprotected ground cell for touch building.');
-  const dispatchTouch=async(point,pointerId,holdMs=0)=>page.evaluate(async({point,pointerId,holdMs})=>{
+  const dispatchTouch=async(point,pointerId,holdMs=0,drift=0)=>page.evaluate(async({point,pointerId,holdMs,drift})=>{
    const canvas=document.getElementById('three-world'),base={bubbles:true,cancelable:true,pointerId,pointerType:'touch',isPrimary:true,button:0};
    canvas.dispatchEvent(new PointerEvent('pointerdown',{...base,buttons:1,clientX:point.x,clientY:point.y}));
-   if(holdMs)await new Promise(resolve=>setTimeout(resolve,holdMs));
-   canvas.dispatchEvent(new PointerEvent('pointerup',{...base,buttons:0,clientX:point.x,clientY:point.y}));
-  },{point,pointerId,holdMs});
+   if(holdMs)await new Promise(resolve=>setTimeout(resolve,Math.min(holdMs,180)));
+   if(drift){
+    canvas.dispatchEvent(new PointerEvent('pointermove',{...base,buttons:1,clientX:point.x+drift,clientY:point.y+drift}));
+    if(holdMs>180)await new Promise(resolve=>setTimeout(resolve,holdMs-180));
+   }else if(holdMs)await new Promise(resolve=>setTimeout(resolve,holdMs-180));
+   canvas.dispatchEvent(new PointerEvent('pointerup',{...base,buttons:0,clientX:point.x+drift,clientY:point.y+drift}));
+  },{point,pointerId,holdMs,drift});
   const startingBlocks=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length);
   await dispatchTouch(buildCell.point,61);
   try{
@@ -297,7 +301,7 @@ const {chromium}=require('playwright');
   assert.equal(poolDebug?.protected,false,'Moving neighbors must not block the reserved pool dig cell.');
   const poolHit=await page.evaluate(point=>window.__DIYCRAFT_THREE_EDIT__?.getPointerTargetForTest?.(point.x,point.y),poolPoint);
   assert.equal(poolHit?.kind,'ground','The pool site must raycast to the editable ground surface.');
-  await dispatchTouch(poolPoint,67,680);
+  await dispatchTouch(poolPoint,67,680,8);
   await page.waitForFunction(()=>(window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.excavations||[])
    .some(cell=>cell.x===14&&cell.z===-5&&cell.depth===1),null,{timeout:10000});
   const poolResult=await page.evaluate(()=>({
