@@ -364,6 +364,7 @@
     if (tool === 'inventory') {
       closeMenus();
       $('inventory-open').click();
+      document.querySelector('[data-inventory-tab="bucket"]')?.click();
     } else if (tool === 'tiles') {
       closeMenus();
       setMaterial('tile');
