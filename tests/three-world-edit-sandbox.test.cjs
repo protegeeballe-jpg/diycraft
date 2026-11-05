@@ -497,6 +497,51 @@ test('water operations reject undug and invalid cells without mutation',()=>{
  assert.throws(()=>edit.collectWaterLayer(8,8),/no water layer/);
  assert.equal(edit.getState().revision,before.revision);
 });
+
+test('updates the isolated player appearance while preserving position and every unrelated player field',()=>{
+ const world=fixture();
+ world.player={...world.player,hair:'#493127',skin:'#efc39d',shirt:'#d94b3d',pants:'#397d8f',shoes:'#bd4540',eyes:'#302820',
+  hairStyle:'short',outfitStyle:'hoodie',accessory:'none',accessoryColor:'#f4a8bb',bed:{x:4,y:0,z:5,yaw:.25}};
+ const before=JSON.stringify(world),edit=sandbox.create(world),initial=edit.getState();
+ const appearance={hairStyle:'pigtails',outfitStyle:'overalls',accessory:'glasses',hair:'#efbd43',skin:'#f2cda9',
+  shirt:'#48a78b',pants:'#219da5',shoes:'#e6b64d',eyes:'#302820',accessoryColor:'#ec83ba'};
+ const next=edit.setPlayerAppearance(appearance);
+ assert.deepEqual(Object.fromEntries(Object.keys(appearance).map(key=>[key,next.world.player[key]])),appearance);
+ assert.deepEqual(
+  {x:next.world.player.x,y:next.world.player.y,z:next.world.player.z,yaw:next.world.player.yaw,bed:next.world.player.bed},
+  {x:initial.world.player.x,y:initial.world.player.y,z:initial.world.player.z,yaw:initial.world.player.yaw,bed:initial.world.player.bed},
+  'Character Studio must not change player position, facing or bed assignment.'
+ );
+ assert.equal(next.revision,initial.revision+1);
+ assert.equal(next.sourceUnchanged,true);
+ assert.equal(JSON.stringify(world),before,'Character changes must not mutate the renderer snapshot.');
+});
+
+test('validates all original character style and color options atomically',()=>{
+ const world=fixture();
+ const edit=sandbox.create(world),before=edit.getState();
+ for(const value of ['short','bob','long','ponytail','pigtails','curly','buns'])
+  assert.equal(edit.setPlayerAppearance({hairStyle:value}).world.player.hairStyle,value);
+ for(const value of ['hoodie','sweater','overalls','dress','tee'])
+  assert.equal(edit.setPlayerAppearance({outfitStyle:value}).world.player.outfitStyle,value);
+ for(const value of ['none','bow','flower','glasses','cap'])
+  assert.equal(edit.setPlayerAppearance({accessory:value}).world.player.accessory,value);
+ for(const value of ['#123456','#ABCDEF','#000000','#ffffff'])
+  assert.equal(edit.setPlayerAppearance({hair:value}).world.player.hair,value);
+ const current=edit.getState();
+ assert.throws(()=>edit.setPlayerAppearance({hairStyle:'unknown'}),/supported hairStyle/);
+ assert.throws(()=>edit.setPlayerAppearance({outfitStyle:'armor'}),/supported outfitStyle/);
+ assert.throws(()=>edit.setPlayerAppearance({accessory:'sword'}),/supported accessory/);
+ assert.throws(()=>edit.setPlayerAppearance({shirt:'red'}),/six-digit hex/);
+ assert.throws(()=>edit.setPlayerAppearance({skin:'#12'}),/six-digit hex/);
+ assert.throws(()=>edit.setPlayerAppearance(null),/must be an object/);
+ assert.throws(()=>edit.setPlayerAppearance({}),/at least one/);
+ assert.equal(edit.getState().revision,current.revision,'Invalid changes must not increment the revision.');
+ assert.deepEqual(edit.getState().world.player,current.world.player,'Invalid changes must not partially update the player.');
+ assert.equal(JSON.stringify(world),JSON.stringify(world),'The source fixture remains valid after rejected changes.');
+ assert.equal(before.sourceUnchanged,true);
+});
+
 console.log('Three.js editing sandbox tests complete.');
 
 test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomically',()=>{

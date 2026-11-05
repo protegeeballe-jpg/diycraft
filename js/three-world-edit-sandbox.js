@@ -41,6 +41,10 @@
   }
   if(!Array.isArray(world.artworks))world.artworks=[];
   let revision=0,selectedKey=null,selectedBucketItem=null,selectedBucketItemIndex=null,nextId=world.blocks.length;
+  const HAIR_STYLES=new Set(['short','bob','long','ponytail','pigtails','curly','buns']);
+  const OUTFIT_STYLES=new Set(['hoodie','sweater','overalls','dress','tee']);
+  const ACCESSORIES=new Set(['none','bow','flower','glasses','cap']);
+  const PLAYER_COLOR_FIELDS=Object.freeze(['hair','skin','shirt','pants','shoes','eyes','accessoryColor']);
   const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
   world.blocks.forEach(block=>{
    if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
@@ -382,6 +386,27 @@
    block.open=!block.open;revision++;
    return state();
   }
+  function setPlayerAppearance(appearance){
+   if(!object(appearance))throw new TypeError('Character appearance must be an object.');
+   const changes={};
+   for(const field of ['hairStyle','outfitStyle','accessory']){
+    if(appearance[field]===undefined)continue;
+    const allowed=field==='hairStyle'?HAIR_STYLES:field==='outfitStyle'?OUTFIT_STYLES:ACCESSORIES;
+    if(!allowed.has(appearance[field]))throw new TypeError('Choose a supported '+field+'.');
+    changes[field]=appearance[field];
+   }
+   for(const field of PLAYER_COLOR_FIELDS){
+    if(appearance[field]===undefined)continue;
+    if(typeof appearance[field]!=='string'||!HEX.test(appearance[field]))
+     throw new TypeError('Character '+field+' must be a six-digit hex color.');
+    changes[field]=appearance[field];
+   }
+   if(!Object.keys(changes).length)throw new TypeError('Choose at least one character appearance setting.');
+   const current=object(world.player)?world.player:{};
+   world.player={...current,...changes};
+   revision++;
+   return state();
+  }
   function setTimeMode(mode){
    if(!['day','sunset','night','auto'].includes(mode))
     throw new TypeError('Choose day, sunset, night, or automatic time.');
@@ -395,7 +420,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
  }
  return Object.freeze({create,recipes:CRAFT_RECIPES,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });
