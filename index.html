@@ -234,7 +234,13 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 </div></details>
 <details class="settings-section"><summary>Creative Studios &amp; Collection</summary><div class="settings-section-controls">
 <select id="bucket-item" aria-label="Choose a recovered Material Bucket item"><option value="">Bucket: none selected</option></select><button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button><button id="art-open" type="button">Art Studio</button><button id="gallery-open" type="button">Gallery</button><button id="solid-design-open" type="button">Solid designer</button><button id="door-design-open" type="button">Door design</button><button id="tile-design-open" type="button">Tile design</button>
-</div></details></div>
+</div></details>
+<div class="gesture-action-compat" hidden aria-hidden="true">
+ <button id="remove" type="button" disabled>Remove</button>
+ <button id="water-add" type="button">Add water</button>
+ <button id="fill-hole" type="button">Fill hole</button>
+ <button id="dig-ground" type="button">Dig ground</button>
+</div></div>
 <div class="backup-controls" aria-label="World name and backup controls">
  <label for="world-name">World name <input id="world-name" maxlength="30" value="My Peaceful World"></label>
  <button id="world-name-apply" type="button">Set name</button>

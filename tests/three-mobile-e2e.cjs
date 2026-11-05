@@ -48,6 +48,10 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#quick-tools').count(),0,'There must be no floating quick-action toolbar.');
   assert.equal(await page.locator('#gesture-guide').count(),0,'Tap and long-press are built-in gestures, not screen controls.');
   assert.equal(await page.locator('#quick-play-toggle').count(),0,'Play Mode belongs in the organized settings panel.');
+  for(const id of ['remove','water-add','fill-hole','dig-ground']){
+   assert.equal(await page.locator('#'+id).count(),1,'Legacy gesture handler #'+id+' must remain wired.');
+   assert.equal(await page.locator('#'+id).isVisible(),false,'Gesture action #'+id+' must not appear as a screen control.');
+  }
   for(const section of ['Build & Materials','World & Water','Characters & Animals','Creative Studios & Collection']){
    assert.equal(await page.locator('details.settings-section').filter({hasText:section}).count(),1,'Settings must have one organized '+section+' group.');
   }
