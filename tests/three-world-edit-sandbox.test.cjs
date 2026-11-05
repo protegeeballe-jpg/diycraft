@@ -609,6 +609,21 @@ test('clears user-placed blocks while preserving the exact original starter gard
  assert.deepEqual(world.blocks.map(block=>block.key),['starter-wood','starter-leaf','user-stone','user-door']);
 });
 
+test('clears a player replacement placed on an original starter coordinate',()=>{
+ const world=fixture();
+ world.blocks=[{key:'starter-wood',x:-3,y:0,z:-13,type:'wood'},{key:'starter-leaf',x:9,y:3,z:-12,type:'leaves'}];
+ const edit=sandbox.create(world);
+ const removed=edit.remove('starter-wood');
+ assert.equal(removed.world.blocks.some(block=>block.key==='starter-wood'),false);
+ const replacement=edit.addBlock({x:-3,y:0,z:-13,type:'stone'});
+ const placed=replacement.world.blocks.find(block=>block.key===replacement.selectedKey);
+ assert.equal(placed.userPlaced,true,'New placements carry explicit provenance.');
+ const cleared=edit.clearPlacedBlocks();
+ assert.equal(cleared.world.blocks.some(block=>block.x===-3&&block.y===0&&block.z===-13),false,
+  'A replacement block must be cleared even when it occupies a canonical starter coordinate.');
+ assert.deepEqual(cleared.world.blocks.map(block=>block.key),['starter-leaf'],'Untouched starter scenery must remain.');
+ assert.equal(cleared.world.bucket.length,1,'Removing the original starter block still recovers it to the bucket.');
+});
 test('adds saved animals with unique safe IDs, species defaults and a strict 100-animal cap',()=>{
  const world=fixture(),before=JSON.stringify(world),edit=sandbox.create(world);
  const first=edit.addAnimal({species:'cat',x:4.25,z:-3.5});

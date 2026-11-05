@@ -53,6 +53,16 @@ const {chromium}=require('playwright');
     'Camera aspect must match '+size.width+'x'+size.height+' screens; got '+JSON.stringify(measured));
    assert.equal(measured.width,size.width,'Canvas width must match the visible game viewport.');
    assert.equal(measured.height,size.height,'Canvas height must match the visible game viewport.');
+   if(size.width>700&&size.width<=960){
+    const layout=await page.evaluate(()=>{
+     const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};};
+     const overlaps=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+     const toolbar=rect('build-toolbar'),dpad=rect('player-controls'),actions=rect('player-actions');
+     return {toolbar,dpad,actions,toolbarOverlapsDpad:overlaps(toolbar,dpad),toolbarOverlapsActions:overlaps(toolbar,actions)};
+    });
+    assert.equal(layout.toolbarOverlapsDpad,false,'Build toolbar must not cover D-pad: '+JSON.stringify(layout));
+    assert.equal(layout.toolbarOverlapsActions,false,'Build toolbar must not cover action buttons: '+JSON.stringify(layout));
+   }
   }
   await page.setViewportSize({width:390,height:844});
   await page.waitForFunction(()=>Math.abs((window.__DIYCRAFT_THREE_EDIT__?.cameraAspect||0)-(390/844))<.002,null,{timeout:10000});

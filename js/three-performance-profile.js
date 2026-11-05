@@ -37,10 +37,11 @@
  }
  function browserCapabilities(navigatorLike,matchMediaResult,maxTextureSize,saveData){
   const n=navigatorLike&&typeof navigatorLike==='object'?navigatorLike:{};
+  const ipadDesktop=n.platform==='MacIntel'&&typeof n.maxTouchPoints==='number'&&n.maxTouchPoints>1;
   return {
    hardwareConcurrency:n.hardwareConcurrency,
    deviceMemory:n.deviceMemory,
-   mobile:!!(n.userAgentData&&n.userAgentData.mobile)||!!matchMediaResult||
+   mobile:!!(n.userAgentData&&n.userAgentData.mobile)||!!matchMediaResult||ipadDesktop||
     (typeof n.maxTouchPoints==='number'&&n.maxTouchPoints>0&&!!n.userAgent&&/Android|iPhone|iPad|iPod|Mobile/i.test(n.userAgent)),
    saveData:!!saveData||!!(n.connection&&n.connection.saveData),
    maxTextureSize

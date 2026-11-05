@@ -42,4 +42,12 @@ test('browser capability adapter recognizes coarse pointer, data saver and hardw
  assert.equal(c.mobile,true);assert.equal(c.saveData,true);assert.equal(c.hardwareConcurrency,4);
  assert.equal(profiles.select(c).tier,'low');
 });
+test('recognizes iPadOS Safari in desktop mode through MacIntel and touch points',()=>{
+ const ipad=profiles.browserCapabilities({
+  platform:'MacIntel',maxTouchPoints:5,userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)',
+  hardwareConcurrency:8,deviceMemory:8
+ },false,4096,false);
+ assert.equal(ipad.mobile,true);
+ assert.equal(profiles.select(ipad).tier,'balanced');
+});
 console.log('Three.js performance profile tests complete.');

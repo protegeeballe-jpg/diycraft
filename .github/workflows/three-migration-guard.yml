@@ -55,6 +55,7 @@ on:
       - offline/index.html
       - tests/three-security-guard.cjs
       - .github/workflows/three-migration-guard.yml
+      - tests/three-*.test.cjs
   pull_request:
     paths:
       - js/three-world-adapter.js
@@ -72,6 +73,7 @@ on:
       - offline/index.html
       - tests/three-security-guard.cjs
       - .github/workflows/three-migration-guard.yml
+      - tests/three-*.test.cjs
   workflow_dispatch:
 
 permissions:

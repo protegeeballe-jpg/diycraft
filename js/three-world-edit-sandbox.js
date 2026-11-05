@@ -105,7 +105,7 @@
    if(occupied.has(position))throw new Error('That cell is already occupied.');
    const upperPosition=cellKey(input.x,input.y+1,input.z);
    if(input.type==='door'&&(input.y>=MAX_Y||occupied.has(upperPosition)))throw new Error('A door needs two clear vertical cells.');
-   const block={key:'sandbox-'+(++nextId),type:input.type,x:input.x,y:input.y,z:input.z};
+   const block={key:'sandbox-'+(++nextId),type:input.type,x:input.x,y:input.y,z:input.z,userPlaced:true};
    if(input.type==='custom'){
     const custom=object(world.customBlock)?world.customBlock:{};
     const color=input.color===undefined?custom.color:input.color;
@@ -483,7 +483,7 @@ function addAnimal(input){
   }
   function clearPlacedBlocks(){
   const before=world.blocks.length;
-  world.blocks=world.blocks.filter(block=>STARTER_BLOCK_KEYS.has(cellKey(block.x,block.y,block.z)));
+  world.blocks=world.blocks.filter(block=>block.userPlaced!==true&&STARTER_BLOCK_KEYS.has(cellKey(block.x,block.y,block.z)));
   const removed=before-world.blocks.length;
   if(removed){
    blockIndex.clear();occupied.clear();

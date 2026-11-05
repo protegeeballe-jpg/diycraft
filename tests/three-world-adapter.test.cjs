@@ -61,6 +61,14 @@ test('maps all supported block types with stable render keys',()=>{
  assert.equal(s.blocks[13].color,'#AA83D8');
  assert.equal(new Set(s.blocks.map(b=>b.key)).size,14);
 });
+test('preserves explicit player-placement provenance while leaving original blocks unmarked',()=>{
+ const snapshot=adapter.createSnapshot({blocks:[{x:0,y:0,z:0,type:'grass'},{x:1,y:0,z:0,type:'stone',userPlaced:true}]});
+ assert.equal(snapshot.blocks[0].userPlaced,undefined);assert.equal(snapshot.blocks[1].userPlaced,true);
+ const saved=adapter.toSavedWorld(snapshot);
+ assert.equal(saved.blocks[0].userPlaced,undefined);assert.equal(saved.blocks[1].userPlaced,true);
+ const restored=adapter.createSnapshot(saved);
+ assert.equal(restored.blocks[0].userPlaced,undefined);assert.equal(restored.blocks[1].userPlaced,true);
+});
 test('retains selected colors and style data without recoloring saved values',()=>{
  const s=adapter.createSnapshot(validWorld);
  assert.equal(s.blocks[1].color,'#AABBCC');

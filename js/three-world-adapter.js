@@ -86,6 +86,7 @@
   if(color(block.color,null))savedFields.color=block.color;
   if(TEXTURES.has(block.texture))savedFields.texture=block.texture;
   const out={key:'block-'+index,type,x:block.x,y:block.y,z:block.z,savedFields};
+  if(block.userPlaced===true)out.userPlaced=true;
   if(type==='custom'){
    out.color=block.color;
    out.texture=TEXTURES.has(block.texture)?block.texture:'custom';
@@ -240,6 +241,7 @@
    if(!isObject(block)||!TYPES.has(block.type)||!inWorld(block.x)||!inWorld(block.z)||!integer(block.y))
     throw new TypeError('The renderer snapshot contains an invalid block.');
    const record={x:block.x,y:block.y,z:block.z,type:block.type};
+   if(block.userPlaced===true)record.userPlaced=true;
    if(block.type==='custom'){
     if(!HEX.test(block.color||''))throw new TypeError('A custom block is missing its saved color.');
     record.color=block.color;

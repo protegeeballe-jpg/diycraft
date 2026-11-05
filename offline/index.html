@@ -275,6 +275,10 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  #player-controls,#player-actions{bottom:calc(8px + env(safe-area-inset-bottom))}
  #quick-picker{bottom:calc(64px + env(safe-area-inset-bottom));max-height:58dvh}
 }
+@media(min-width:701px) and (max-width:960px){
+ #build-toolbar{bottom:calc(100px + env(safe-area-inset-bottom))}
+ #quick-picker{bottom:calc(148px + env(safe-area-inset-bottom));max-height:min(48dvh,420px)}
+}
 
 </style></head>
 <body>
@@ -322,8 +326,8 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <details class="settings-section" open><summary>Build &amp; Materials</summary><div class="settings-section-controls">
 <label for="block-type">Material <select id="block-type"><option value="grass">Grass</option><option value="water">Water</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select></label>
 <label for="color">Custom color <input id="color" type="color" value="#70b85a" aria-label="Custom block color"></label><label for="door-style">Door style <select id="door-style"><option value="classic">Classic door</option><option value="window">Window door</option><option value="garden">Garden door</option></select></label>
-<button id="add" type="button">Place on face</button><button id="door" disabled>Open / close door</button>
-<label for="pattern">Tile pattern <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select></label><button id="apply-pattern" disabled>Apply tile pattern</button><button id="clear-placed" type="button">Clear placed blocks</button>
+<button id="add" type="button">Place on face</button><button id="door" type="button" disabled>Open / close door</button>
+<label for="pattern">Tile pattern <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select></label><button id="apply-pattern" type="button" disabled>Apply tile pattern</button><button id="clear-placed" type="button">Clear placed blocks</button>
 </div></details>
 <details class="settings-section"><summary>World &amp; Water</summary><div class="settings-section-controls">
 <label for="time-mode">Time of day <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>

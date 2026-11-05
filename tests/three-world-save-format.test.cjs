@@ -87,6 +87,16 @@ function assertRoundTrip(helpers,label){
 test('round-trips version-1 backups through both production and migration-branch validators',()=>{
  for(const version of validators)assertRoundTrip(version.helpers,version.label);
 });
+test('round-trips explicit user-placement provenance through both version-1 validators',()=>{
+ for(const version of validators){
+  const raw=version.helpers.freshWorld();
+  raw.blocks.push({x:500,y:0,z:500,type:'stone',userPlaced:true});
+  const before=version.helpers.validWorld(raw),saved=adapter.toSavedWorld(adapter.createSnapshot(before));
+  assert.equal(saved.blocks.at(-1).userPlaced,true,'Placement provenance survives adapter serialization for '+version.label+'.');
+  const restored=version.helpers.validWorld(saved);
+  assert.equal(restored.blocks.at(-1).userPlaced,true,'The original validator preserves the additive marker for '+version.label+'.');
+ }
+});
 test('exports legacy one-layer water as production-compatible coordinate arrays',()=>{
  const legacy=production.validWorld({
   ...production.freshWorld(),excavations:[[10,11,4]],waterCells:[[10,11]],waterLevels:undefined,fish:[[10,11]]

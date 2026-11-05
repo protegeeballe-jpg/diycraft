@@ -21,6 +21,7 @@ on:
       - three-world-live.js
       - js/three-*.js
       - tests/three-live-browser.cjs
+      - tests/three-mobile-e2e.cjs
       - .github/workflows/browser-smoke.yml
   workflow_dispatch:
 
