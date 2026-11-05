@@ -150,6 +150,14 @@ const {chromium}=require('playwright');
   const afterInvalid=await page.evaluate(()=>localStorage.getItem('diycraft_peaceful_voxel_v1'));
   assert.equal(afterInvalid,beforeInvalid,'A malformed backup must not overwrite the current device save.');
 
+  // Focus the actual resident models for visual review at the gameplay camera distance.
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.focusAnimalForTest?.('bird_chirpy')),true,'Chirpy should be focusable for the bird close-up.');
+  await page.waitForTimeout(180);
+  await page.screenshot({path:'three-animal-bird.png',fullPage:false});
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.focusAnimalForTest?.('sheep')),true,'Pip should be focusable for the sheep close-up.');
+  await page.waitForTimeout(180);
+  await page.screenshot({path:'three-animal-sheep.png',fullPage:false});
+
   // The offline worker must cache every production script, then serve the game after disconnect.
   await page.waitForFunction(()=>!!navigator.serviceWorker?.controller,null,{timeout:20000}).catch(async()=>{
    await page.reload({waitUntil:'networkidle',timeout:60000});
