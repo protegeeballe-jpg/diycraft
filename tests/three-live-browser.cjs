@@ -22,7 +22,8 @@ const {chromium}=require('playwright');
   page.on('pageerror',error=>errors.push(error.stack||error.message));
   page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle',timeout:60000});
-  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=5,null,{timeout:45000});
+  try{await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=5,null,{timeout:45000});}
+  catch(error){throw new Error(error.message+'\\nBrowser errors: '+errors.join('\\n'));}
   await page.waitForFunction(()=>!!localStorage.getItem('diycraft_peaceful_voxel_v1'),null,{timeout:20000});
   const initial=await page.evaluate(async()=>{
    const stored=localStorage.getItem('diycraft_peaceful_voxel_v1');
