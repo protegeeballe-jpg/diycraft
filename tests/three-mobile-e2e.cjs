@@ -40,6 +40,29 @@ const {chromium}=require('playwright');
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
 
+  // The local painterly generator must produce a visibly distinct surface for every design.
+  const textureCoverage=await page.evaluate(()=>{
+   const api=window.DIYCraftPainterlyMaterials;
+   const fingerprint=(kind)=>{
+    const canvas=api.generateCanvas('#b9a17f',0x51a7,kind,{textureSize:128});
+    const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    let hash=2166136261;
+    for(let i=0;i<data.length;i+=4){hash=Math.imul(hash^data[i],16777619)>>>0;hash=Math.imul(hash^data[i+1],16777619)>>>0;hash=Math.imul(hash^data[i+2],16777619)>>>0;}
+    return hash;
+   };
+   const patterns=['grid','brick','checker','diagonal','diamond','hexagon','herringbone','basket','mosaic','terrazzo','waves','dots','floral','stars','sunburst','scallop','parquet','pebble','cross','spiral'];
+   const surfaces=['grass','stone','wood','leaves','brick','dirt','sand','snow','glass','flower','custom'];
+   const patternHashes=patterns.map(value=>fingerprint('tile-'+value));
+   const surfaceHashes=surfaces.map(fingerprint);
+   return {patterns:patterns.length,uniquePatterns:new Set(patternHashes).size,
+    surfaces:surfaces.length,uniqueSurfaces:new Set(surfaceHashes).size};
+  });
+  assert.equal(textureCoverage.patterns,20);
+  assert.equal(textureCoverage.uniquePatterns,20,
+   'Each named tile pattern must have its own visual motif, not share the generic diagonal fallback.');
+  assert.equal(textureCoverage.uniqueSurfaces,textureCoverage.surfaces,
+   'Stone, grass, wood, leaves and the other solid finishes must have distinct surface motifs.');
+
   // Settings start collapsed; compact utility and building controls stay available.
   const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
   const openSettingsPanel=async()=>{if(!(await settingsPanel.isVisible()))await settingsToggle.click();};
@@ -149,6 +172,7 @@ const {chromium}=require('playwright');
   await page.locator('#solid-design-open').click();
   await page.locator('#hud-choices-solid-design-type [data-value="stone"]').click();
   await page.locator('#solid-design-color').fill('#8b91a0');
+  await page.locator('#hud-choices-solid-design-texture [data-value="brick"]').click();
   await page.locator('#solid-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().solidStyles?.stone?.color)),'#8b91a0');
 
@@ -165,6 +189,51 @@ const {chromium}=require('playwright');
   await page.locator('#tile-design-color').fill('#c48b72');
   await page.locator('#tile-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().tileDesign?.pattern)),'herringbone');
+
+  // Changing a solid finish must override any temporary green-picker color and reach the renderer.
+  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
+  await page.evaluate(()=>{window.DIYCraftQuickMaterialColors.grass='#ef2244';});
+  await page.locator('#solid-design-open').click();
+  await page.locator('#hud-choices-solid-design-type [data-value="grass"]').click();
+  await page.locator('#solid-design-color').fill('#3c9555');
+  await page.locator('#hud-choices-solid-design-texture [data-value="leaves"]').click();
+  await page.locator('#solid-design-apply').click();
+  const placedStyleBlocks=await page.evaluate(()=>{
+   const debug=window.__DIYCRAFT_THREE_EDIT__;
+   const stone=debug.debugPlaceObstacleForTest({type:'stone',x:84,y:0,z:82});
+   const grass=debug.debugPlaceObstacleForTest({type:'grass',x:86,y:0,z:82});
+   const tall=debug.debugPlaceObstacleForTest({type:'tall_grass',x:88,y:0,z:82,color:'#25a85c'});
+   const blocks=debug.getState().world.blocks;
+   const find=(x)=>blocks.find(block=>block.x===x&&block.z===82);
+   return {stoneKey:stone.key,grassKey:grass.key,tallKey:tall.key,
+    stone:find(84),grass:find(86),tall:find(88),
+    stoneVisual:debug.getBlockVisualStats(stone.key),grassVisual:debug.getBlockVisualStats(grass.key),
+    tallVisual:debug.getBlockVisualStats(tall.key)};
+  });
+  assert.equal(placedStyleBlocks.stone.color,'#8b91a0');
+  assert.equal(placedStyleBlocks.stone.texture,'brick');
+  assert.equal(placedStyleBlocks.grass.color,'#3c9555',
+   'The chosen grass finish must win over a stale temporary color-picker override.');
+  assert.equal(placedStyleBlocks.grass.texture,'leaves');
+  assert.equal(placedStyleBlocks.stoneVisual.materialKind,'brick');
+  assert.equal(placedStyleBlocks.grassVisual.materialKind,'leaves');
+  assert.equal(placedStyleBlocks.stoneVisual.hasCanvasMap,true);
+  assert.equal(placedStyleBlocks.grassVisual.hasCanvasMap,true);
+  assert.equal(placedStyleBlocks.tallVisual.plantBaseColor,'#25a85c',
+   'Tall-grass geometry must use the selected custom green.');
+  assert.equal(placedStyleBlocks.tallVisual.hasGeometry,true);
+
+  // A selected tile must not overwrite the saved design for the next tile placement.
+  await page.evaluate(()=>{
+   window.__DIYCRAFT_THREE_EDIT__.debugPlaceObstacleForTest({type:'tile',x:82,y:0,z:82});
+  });
+  const firstTile=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.find(block=>block.x===82&&block.z===82));
+  assert.equal(firstTile?.color,'#c48b72','New tiles must use the selected design color.');
+  assert.equal(firstTile?.tilePattern,'herringbone','New tiles must use the selected pattern instead of the reset Grid value.');
+  const tileVisual=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getBlockVisualStats?.(
+   window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.find(block=>block.x===82&&block.z===82)?.key));
+  assert.equal(tileVisual?.materialKind,'tile-herringbone');
+  assert.equal(tileVisual?.hasCanvasMap,true);
 
   // Art Studio: draw with touch-style PointerEvents, save PNG, and render it in Gallery.
   await openSettingsPanel();
