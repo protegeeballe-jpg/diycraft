@@ -187,11 +187,14 @@ function updatePlayerDiagnostics(){
 }
 function syncPlayerButtons(){
  playModeButton.textContent=playerPlayMode?'Exit Play Mode':'Enter Play Mode';
- cameraModeButton.disabled=!playerPlayMode;jumpButton.disabled=!playerPlayMode;flightButton.disabled=!playerPlayMode;
+ cameraModeButton.disabled=!playerPlayMode;
+ jumpButton.disabled=!playerPhysicsState;
+ flightButton.disabled=!playerPhysicsState;
  cameraModeButton.textContent=playerCameraMode==='third'?'First person':'Third person';
  flightButton.textContent=playerPhysicsState?.flying?'Flight on':'Flight off';
- touchControls.hidden=!playerPlayMode;touchActions.hidden=!playerPlayMode;
-
+ // Keep both touch clusters visible in Build Mode and Play Mode.
+ // The first movement/action input starts Play Mode when needed.
+ touchControls.hidden=false;touchActions.hidden=false;
 }
 function syncTouchMovement(){
  playerControls.moveX=(touchDirections.has('right')?1:0)-(touchDirections.has('left')?1:0);
@@ -216,14 +219,16 @@ function setPlayerPlayMode(enabled){
  syncPlayerButtons();updatePlayerDiagnostics();
 }
 function jumpPlayer(){
- if(!playerPlayMode||!playerPhysicsState)return;
+ if(!playerPhysicsState)return;
+ if(!playerPlayMode)setPlayerPlayMode(true);
  const result=playerPhysics.jump(playerPhysicsState);
  playerPhysicsState=result.state;
  status.textContent=result.accepted?'Jump!':'Jump is unavailable while flying, airborne, or resting.';
  updatePlayerModel();updatePlayerDiagnostics();
 }
 function togglePlayerFlight(){
- if(!playerPlayMode||!playerPhysicsState)return;
+ if(!playerPhysicsState)return;
+ if(!playerPlayMode)setPlayerPlayMode(true);
  playerPhysicsState={...playerPhysicsState,flying:!playerPhysicsState.flying,jumpVelocity:0};
  status.textContent=playerPhysicsState.flying?'Creative flight enabled.':'Flight turned off.';
  syncPlayerButtons();updatePlayerDiagnostics();
@@ -239,7 +244,9 @@ flightButton.addEventListener('click',togglePlayerFlight);
 document.querySelectorAll('[data-move]').forEach(button=>{
  const direction=button.dataset.move;
  const press=event=>{
-  if(!playerPlayMode)return;event.preventDefault();
+  if(!playerPhysicsState)return;
+  event.preventDefault();
+  if(!playerPlayMode)setPlayerPlayMode(true);
   touchDirections.add(direction);syncTouchMovement();
   try{button.setPointerCapture(event.pointerId);}catch(_){}
  };
