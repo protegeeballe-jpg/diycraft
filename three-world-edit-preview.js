@@ -501,6 +501,19 @@ function renderSandbox(state){
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps},
   waterCount,fishCount,renderedFishCount,animalCount,residentAnimalCount,totalAnimalCount,renderedAnimalCount,animalBatchCount:animalBatches.length,canvasSize:{width:canvas.width,height:canvas.height},
   getInventoryStats:()=>{const state=sandbox.getState();return {materials:(state.world.materials||[]).slice(0,60),crafted:(state.world.crafted||[]).slice(0,60),bucket:(state.world.bucket||[]).map(item=>({...item})),recipes:editing.recipes.map(recipe=>({id:recipe.id,name:recipe.name,cost:{...recipe.cost}}))};},
+  getBlockRepresentationStats:()=>{
+   const current=sandbox.getState(),counts=new Map();
+   for(const child of group.children){
+    if(child.userData.selectionOutline)continue;
+    const keys=Array.isArray(child.userData.blockKeys)?child.userData.blockKeys:
+     (typeof child.userData.blockKey==='string'?[child.userData.blockKey]:[]);
+    for(const key of keys)counts.set(key,(counts.get(key)||0)+1);
+   }
+   const expected=current.world.blocks.map(block=>block.key);
+   const missing=expected.filter(key=>!counts.has(key));
+   const duplicates=expected.filter(key=>(counts.get(key)||0)>1);
+   return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates};
+  },
   inventoryOpen:()=>!inventoryPanel.hidden,
   visualTimeMode:activeVisualMode,
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count}),

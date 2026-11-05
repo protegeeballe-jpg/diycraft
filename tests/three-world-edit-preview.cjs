@@ -240,7 +240,13 @@ function freshWorld(){
   await page.waitForTimeout(350);
   animalStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalStats());
   assert.ok(Math.abs(animalStats.firstY-initialAnimalY)>.0001,'Animals must retain their idle bobbing animation.');
-  assert.equal(state.renderedBlocks,world.blocks.length,'Every source block must remain represented after batching.');
+  const blockRepresentation=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getBlockRepresentationStats());
+  assert.equal(blockRepresentation.expectedCount,world.blocks.length+1,
+   'The earlier pool-fill scenario must replace one excavated cell with exactly one stone block.');
+  assert.equal(blockRepresentation.representedCount,blockRepresentation.expectedCount,
+   'Every current sandbox block must be represented by a Three.js batch, plant mesh, or door model.');
+  assert.deepEqual(blockRepresentation.missing,[],'No world block may disappear during batching or sandbox edits.');
+  assert.deepEqual(blockRepresentation.duplicates,[],'No world block may be represented more than once.');
   assert.ok(state.instanceBatches>0&&state.instanceBatches<=60,'Solid blocks should be consolidated into a small number of instanced batches.');
   assert.ok(state.renderedMeshes<60,'The scene should use far fewer render objects than world blocks.');
   assert.equal(state.performanceProfile.tier,'low','The browser test must exercise the budget-device profile.');
