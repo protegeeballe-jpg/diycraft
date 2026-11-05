@@ -43,6 +43,7 @@ for(const species of animals.species){
  assert.equal(geometry.userData.animalSpecies,species);
  assert.ok(geometry.attributes.position.array.length>0,species+' has visible geometry');
  assert.ok(features.body&&features.head&&features.eye&&features.leg,species+' has body, projected head, eyes and legs');
+ if(species!=='bird'&&species!=='giraffe')assert.ok(features.neck,species+' should have a short connecting neck between body and head');
  assert.ok(features.head.max[2]>features.body.max[2]+.08,species+' head must extend beyond the body silhouette');
  assert.ok(features.eye.max[2]>features.body.max[2],species+' eyes must sit on the visible front of the head');
  assert.ok(features.leg.min[1]<.02&&features.leg.max[1]>.28,species+' legs must reach the ground');

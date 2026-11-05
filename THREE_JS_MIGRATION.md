@@ -215,3 +215,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Animal close-up refinement: non-giraffe heads sit higher and have more readable face proportions; sheep fleece is tighter, with legs set farther from the torso so the silhouette reads as a four-legged animal. The giraffe's neck/head design and bird body remain species-specific.
+
+
+- Animal silhouette structure: mammal torsos are now narrower across X and longer along the front-to-back Z axis; non-giraffe mammals have a short angled neck connecting torso to raised head; leg stance follows the broader torso footprint. Bird and giraffe profiles remain intentionally distinct.
