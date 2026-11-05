@@ -1,6 +1,6 @@
 /* DIYCraft same-origin offline shell and game-engine cache. */
 'use strict';
-const CACHE_NAME = 'diycraft-shell-v67';
+const CACHE_NAME = 'diycraft-shell-v68';
 
 self.addEventListener('install', event => {
   const root = self.registration.scope;
@@ -12,6 +12,7 @@ self.addEventListener('install', event => {
     new URL('offline/index.html', root).href,
     new URL('diycraft.js', root).href,
     new URL('three-world-live.js', root).href,
+    new URL('js/three-compact-hud.js', root).href,
     new URL('js/three.js', root).href,
     new URL('js/three-performance-profile.js', root).href,
     new URL('js/three-world-adapter.js', root).href,
