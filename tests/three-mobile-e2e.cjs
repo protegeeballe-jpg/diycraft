@@ -139,12 +139,12 @@ const {chromium}=require('playwright');
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The D-pad remains available after returning to Build Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'The action pad remains available after returning to Build Mode.');
-  for(const [activity,expectedY,expectedZ] of [['sleep',.72,1],['transformer',1.04,1.04],['sit',.82,1],['work',1,1],['dance',1,1]]){
+  for(const [activity,expectedX,expectedY,expectedZ] of [['sleep',.90,.72,1],['transformer',.90*1.04,1.04,1.04],['sit',.90,.82,1],['work',.90,1,1],['dance',.90,1,1]]){
    await page.locator('#activity-mode').selectOption(activity);
    await page.locator('#activity-apply').click();
    await page.waitForTimeout(150);
    const scale=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale);
-   assert.deepEqual(scale,{x:.90,y:expectedY,z:expectedZ},
+   assert.deepEqual(scale,{x:expectedX,y:expectedY,z:expectedZ},
     'The '+activity+' animation must preserve the narrower character width.');
   }
   await page.locator('#activity-mode').selectOption('stop');
