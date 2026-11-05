@@ -51,19 +51,6 @@ const {chromium}=require('playwright');
    'Every live flower and tall-grass plant must use the smaller proportional render scale.');
   assert.deepEqual(proportions.character?.modelScale,{x:.90,y:1,z:1},
    'The player avatar must be narrower without changing its height or depth.');
-  for(const [activity,expectedY,expectedZ] of [['sleep',.72,1],['transformer',1.04,1.04],['sit',.82,1],['work',1,1],['dance',1,1]]){
-   await page.locator('#activity-mode').selectOption(activity);
-   await page.locator('#activity-apply').click();
-   await page.waitForTimeout(150);
-   const scale=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale);
-   assert.deepEqual(scale,{x:.90,y:expectedY,z:expectedZ},
-    'The '+activity+' animation must preserve the narrower character width.');
-  }
-  await page.locator('#activity-mode').selectOption('stop');
-  await page.locator('#activity-apply').click();
-  await page.waitForTimeout(150);
-  assert.deepEqual(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale),{x:.90,y:1,z:1},
-   'Stopping an activity must restore normal height and depth while preserving the narrower width.');
   assert.equal(proportions.animals?.renderScale,.74,'All animal species must use the shared smaller scale.');
   assert.deepEqual(proportions.animals?.instanceScale,{x:.74,y:.74,z:.74},
    'The actual animal instance matrix must apply the smaller scale, not just report metadata.');
@@ -150,6 +137,19 @@ const {chromium}=require('playwright');
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The D-pad remains available after returning to Build Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'The action pad remains available after returning to Build Mode.');
+  for(const [activity,expectedY,expectedZ] of [['sleep',.72,1],['transformer',1.04,1.04],['sit',.82,1],['work',1,1],['dance',1,1]]){
+   await page.locator('#activity-mode').selectOption(activity);
+   await page.locator('#activity-apply').click();
+   await page.waitForTimeout(150);
+   const scale=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale);
+   assert.deepEqual(scale,{x:.90,y:expectedY,z:expectedZ},
+    'The '+activity+' animation must preserve the narrower character width.');
+  }
+  await page.locator('#activity-mode').selectOption('stop');
+  await page.locator('#activity-apply').click();
+  await page.waitForTimeout(150);
+  assert.deepEqual(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale),{x:.90,y:1,z:1},
+   'Stopping an activity must restore normal height and depth while preserving the narrower width.');
   await settingsToggle.click();
   assert.equal(await settingsPanel.isVisible(),false,'The controls toggle must collapse the panel.');
   await settingsToggle.click();
