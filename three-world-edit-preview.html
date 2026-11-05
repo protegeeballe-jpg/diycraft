@@ -150,6 +150,21 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 #backup-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:4px 2px 8px}
 .backup-controls button{min-height:34px}
 @media(max-width:560px){.backup-controls{gap:6px;padding:8px}.backup-controls label{flex:1 1 100%}#world-name{width:100%;flex:1}#backup-restore{max-width:100%}.backup-controls button{flex:1 1 46%}}
+
+.design-shade[hidden]{display:none!important}
+.design-shade{position:fixed;z-index:29;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(39,55,43,.58);backdrop-filter:blur(5px)}
+.design-panel{width:min(520px,100%);max-height:94vh;overflow:auto;padding:15px;background:#fffdf5;border:1px solid #c9d2bd;border-radius:16px;box-shadow:0 16px 50px #263c3250}
+.design-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.design-head h2{font:700 18px Georgia,serif;margin:0;color:#405a46}
+.design-note{font-size:11px;line-height:1.45;color:#718075;margin:8px 0 12px}
+.design-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.design-fields label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#657563}
+.design-fields input[type=color]{width:100%;height:38px;padding:2px}.design-fields select{width:100%}
+.design-preview{display:flex;align-items:center;gap:12px;margin:10px 0;padding:10px;background:#eef3e8;border:1px solid #dce6d4;border-radius:10px}
+.design-chip{width:64px;height:54px;flex:0 0 64px;border:2px solid #fff;border-radius:8px;box-shadow:0 1px 4px #0002}
+.design-preview-copy{font-size:11px;line-height:1.5}.design-preview-copy strong{display:block;font-size:12px}
+.design-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.inventory-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:9px}
+@media(max-width:560px){.design-panel{padding:11px;max-height:96vh}.design-head h2{font-size:16px}.design-fields{grid-template-columns:1fr}}
 </style></head>
 <body>
 <canvas id="three-world" aria-label="Interactive Three.js editing sandbox"></canvas>
@@ -162,7 +177,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <label for="time-mode">Time <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>
 <select id="block-type" aria-label="Block type"><option value="water">Water</option><option value="grass">Grass</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select>
 <input id="color" type="color" value="#70b85a" aria-label="Custom block color">
-<button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button><button id="art-open" type="button">Art Studio</button><button id="gallery-open" type="button">Gallery</button>
+<button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button><button id="art-open" type="button">Art Studio</button><button id="gallery-open" type="button">Gallery</button><button id="solid-design-open" type="button">Solid designer</button><button id="door-design-open" type="button">Door design</button><button id="tile-design-open" type="button">Tile design</button>
 <button id="add">Place on face</button><button id="remove" disabled>Remove</button>
 <button id="door" disabled>Open / close door</button>
 <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select>
@@ -286,6 +301,43 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
   <div class="gallery-head"><h2 id="gallery-title">My Gallery</h2><button id="gallery-close" type="button">Close ✕</button></div>
   <p id="gallery-note" class="gallery-note">Your saved PNG pictures · up to 20 artworks</p>
   <div id="gallery-artworks" class="gallery-grid" aria-live="polite"></div>
+ </div>
+</section>
+<section id="solid-designer" class="design-shade" hidden aria-label="Solid block designer">
+ <div class="design-panel" role="dialog" aria-modal="true" aria-labelledby="solid-design-title">
+  <div class="design-head"><h2 id="solid-design-title">Solid Block Designer</h2><button type="button" data-design-close>Close ✕</button></div>
+  <p class="design-note">Choose a solid material, color and surface finish. New blocks will use this design; existing blocks keep their own finish.</p>
+  <div class="design-preview"><div class="design-chip" id="solid-design-chip"></div><div class="design-preview-copy"><strong id="solid-design-name">Stone</strong><span id="solid-design-details">#9ca6a1 · stone texture</span></div></div>
+  <div class="design-fields">
+   <label>Material<select id="solid-design-type"><option value="stone">Stone</option><option value="wood">Wood</option><option value="brick">Brick</option><option value="dirt">Dirt</option><option value="grass">Grass</option><option value="leaves">Leaves</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Custom solid</option></select></label>
+   <label>Color<input id="solid-design-color" type="color" value="#9ca6a1"></label>
+   <label>Texture<select id="solid-design-texture"><option value="stone">Stone</option><option value="wood">Wood grain</option><option value="grass">Grass</option><option value="dirt">Earth</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="flower">Flower</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="custom">Speckled custom</option></select></label>
+  </div>
+  <div class="design-actions"><button type="button" data-design-close>Cancel</button><button id="solid-design-apply" class="primary" type="button">Use this solid finish</button></div>
+ </div>
+</section>
+<section id="door-designer" class="design-shade" hidden aria-label="Door designer">
+ <div class="design-panel" role="dialog" aria-modal="true" aria-labelledby="door-design-title">
+  <div class="design-head"><h2 id="door-design-title">Door Design Studio</h2><button type="button" data-design-close>Close ✕</button></div>
+  <p class="design-note">Choose one of the original door styles and a color. New doors use your saved design.</p>
+  <div class="design-preview"><div class="design-chip" id="door-design-chip"></div><div class="design-preview-copy"><strong id="door-design-name">Classic door</strong><span id="door-design-details">#a97545</span></div></div>
+  <div class="design-fields">
+   <label>Door style<select id="door-design-style"><option value="classic">Classic</option><option value="window">Window</option><option value="garden">Garden</option></select></label>
+   <label>Door color<input id="door-design-color" type="color" value="#a97545"></label>
+  </div>
+  <div class="design-actions"><button type="button" data-design-close>Cancel</button><button id="door-design-apply" class="primary" type="button">Use this door design</button></div>
+ </div>
+</section>
+<section id="tile-designer" class="design-shade" hidden aria-label="Tile designer">
+ <div class="design-panel" role="dialog" aria-modal="true" aria-labelledby="tile-design-title">
+  <div class="design-head"><h2 id="tile-design-title">Tile Design Studio</h2><button type="button" data-design-close>Close ✕</button></div>
+  <p class="design-note">Choose one of the original 20 tile patterns and any color. Every placed tile keeps its own design.</p>
+  <div class="design-preview"><div class="design-chip" id="tile-design-chip"></div><div class="design-preview-copy"><strong id="tile-design-name">Classic grid</strong><span id="tile-design-details">#c5a98a</span></div></div>
+  <div class="design-fields">
+   <label>Pattern<select id="tile-design-pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select></label>
+   <label>Tile color<input id="tile-design-color" type="color" value="#c5a98a"></label>
+  </div>
+  <div class="design-actions"><button type="button" data-design-close>Cancel</button><button id="tile-design-apply" class="primary" type="button">Use this tile design</button></div>
  </div>
 </section>
 <section id="animal-care" class="animal-care-shade" hidden aria-label="Gentle animal care">
