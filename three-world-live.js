@@ -1670,10 +1670,10 @@ async function drainDeviceFileSave(immediate=false){
   }
  }
 }
-async function importDeviceWorldText(worldText,fileName){
+async function importDeviceWorldText(worldText){
  if(typeof worldText!=='string'||!worldText)throw new Error('The selected world file is empty.');
  adapter.createSnapshot(JSON.parse(worldText));
- const imported=await restoreWorldBackup(new File([worldText],(fileName||'MyWorld')+'.json',{type:'application/json'}));
+ const imported=await restoreWorldText(worldText,{saveToLinkedFile:false});
  if(!imported)throw new Error('The selected world could not be restored. Your current world remains unchanged.');
  return true;
 }
@@ -1835,23 +1835,23 @@ async function readBackupPayload(file){
  }
  return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
 }
-async function restoreWorldBackup(file){
- if(!file)return;let replacementModel=null;
+async function restoreWorldText(backupText,options={}){
+ let replacementModel=null;
  try{
-  const backupText=await readBackupPayload(file),parsed=JSON.parse(await storage.decode(backupText));
+  const parsed=JSON.parse(await storage.decode(backupText));
   const restoredSnapshot=adapter.createSnapshot(parsed),normalizedBackup=adapter.toSavedWorld(restoredSnapshot);
   const replacement=editing.create(restoredSnapshot),replacementState=replacement.getState(),player={...restoredSnapshot.player};
   const floor=replacement.surfaceHeightAt(player.x,player.z,player.y),grounded=Math.abs(player.y-floor)<=.18;
   const replacementPhysics={player,jumpVelocity:0,playerGrounded:grounded,flying:false,playerActivity:''};
   replacementModel=playerModelFactory.create(THREE,materials,player,performanceProfile.shadows);
+  // Browser recovery is best-effort. A valid device file remains usable if local storage is unavailable or full.
   const committed=await storage.restore(deviceStorage,adapter,backupText);
-  if(!committed.restored)throw new Error(committed.error);
   closeNeighborColoring();closeInventory();closeCharacterStudio();closeArtStudio();closeGallery();closeDesigners();
   animalCareShade.hidden=true;animalCareSelection=null;animalCareFlash.hidden=true;
   if(playerModelRoot)playerModelFactory.dispose(playerModelRoot);
   sandbox=replacement;sourceSnapshot=restoredSnapshot;originalJson=JSON.stringify(normalizedBackup);
-  storageReadFailed=false;storageLoadSource='device';pendingSaveWorld=null;lastAutoSaveRevision=replacementState.revision;
-  saveGeneration++;savedGeneration=saveGeneration;
+  if(committed.restored){storageReadFailed=false;storageLoadSource='device';}
+  lastAutoSaveRevision=replacementState.revision;saveGeneration++;savedGeneration=saveGeneration;pendingSaveWorld=null;
   playerPhysicsState=replacementPhysics;playerPlayMode=false;playerCameraMode='third';
   playerModelRoot=replacementModel;replacementModel=null;scene.add(playerModelRoot);updatePlayerModel();
   target.set(player.x,Math.max(1,player.y+1),player.z);
@@ -1859,13 +1859,24 @@ async function restoreWorldBackup(file){
   lastPosePersisted={x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch};
   setPlayerPlayMode(false);renderSandbox(replacementState);updateNeighborModels(performance.now());cameraUpdate();
   worldNameInput.value=normalizedBackup.name;
-  backupFeedback.textContent='World restored to browser recovery.';
+  backupFeedback.textContent=committed.restored?'World restored to browser recovery.':
+   'World restored in this session, but browser recovery could not be updated. Keep your portable .diycraft file safe.';
   status.textContent='Restored: '+normalizedBackup.name+' · '+normalizedBackup.blocks.length+' blocks.';
-  queueDeviceFileSave(replacementState.world,false);
+  if(options.saveToLinkedFile)queueDeviceFileSave(replacementState.world,false);
   return true;
  }catch(error){
   if(replacementModel)playerModelFactory.dispose(replacementModel);
-  backupFeedback.textContent='Backup not restored. Your current world and saved data remain unchanged. '+error.message;
+  backupFeedback.textContent='Backup not restored. Your current world and saved data remain unchanged. '+String(error.message||error);
+  return false;
+ }
+}
+async function restoreWorldBackup(file){
+ if(!file)return false;
+ try{
+  const backupText=await readBackupPayload(file);
+  return await restoreWorldText(backupText,{saveToLinkedFile:true});
+ }catch(error){
+  backupFeedback.textContent='Backup not restored. Your current world and saved data remain unchanged. '+String(error.message||error);
   return false;
  }finally{document.getElementById('backup-restore').value='';}
 }
