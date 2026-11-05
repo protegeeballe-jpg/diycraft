@@ -95,6 +95,8 @@ jobs:
         run: node tests/three-world-adapter.test.cjs
       - name: Run persistent save bridge compatibility tests
         run: node tests/three-world-storage.test.cjs
+      - name: Run compressed .diycraft device-file format and integrity tests
+        run: node tests/three-world-file-save.test.cjs
       - name: Verify canonical starter world parity
         run: node tests/three-world-starter.test.cjs
       - name: Run original DIYCraft backup schema compatibility tests
