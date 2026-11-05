@@ -48,17 +48,28 @@ const {chromium}=require('playwright');
   // Exercise a real build action and wait for the version-1 device save.
   await page.locator('#block-type').selectOption('grass');
   await page.locator('#add').click();
-  await page.waitForFunction(async()=>{
+  const immediateBuild=await page.evaluate(()=>({
+   selectedMaterial:document.getElementById('block-type')?.value,
+   addDisabled:document.getElementById('add')?.disabled,
+   liveBlocks:window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length,
+   revision:window.__DIYCRAFT_THREE_EDIT__?.getState?.().revision,
+   status:document.getElementById('status')?.textContent,
+   feedback:document.getElementById('backup-feedback')?.textContent,
+   stored:!!localStorage.getItem('diycraft_peaceful_voxel_v1')
+  }));
+  console.log('live build action diagnostic: '+JSON.stringify(immediateBuild));
+  const expectedBlocks=initial.world.blocks.length+1;
+  await page.waitForFunction(async(expected)=>{
    const stored=localStorage.getItem('diycraft_peaceful_voxel_v1');
    if(!stored)return false;
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(stored));
-   return world.blocks.length>232;
-  },null,{timeout:15000});
+   return world.blocks.length>=expected;
+  },expectedBlocks,{timeout:15000});
   const afterBuild=await page.evaluate(async()=>{
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1')));
    return {blocks:world.blocks.length,version:world.version};
   });
-  assert.ok(afterBuild.blocks>initial.world.blocks.length,'A build action must persist the changed blocks.');
+  assert.ok(afterBuild.blocks>=expectedBlocks,'A build action must persist the changed blocks.');
 
   // Verify the save button does a direct, successful save.
   await page.locator('#save-now').click();
