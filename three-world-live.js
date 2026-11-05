@@ -602,6 +602,17 @@ function renderSandbox(state){
    const duplicates=expected.filter(key=>(counts.get(key)||0)>1);
    return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates};
   },
+  getPlantStats:()=>{
+   const plants=group.children.filter(root=>root.userData.blockKey&&root.children.some(child=>child.isMesh&&child.geometry?.userData?.plantShape));
+   const flowers=plants.map(root=>{
+    const mesh=root.children.find(child=>child.isMesh&&child.geometry?.userData?.plantShape),shape=mesh.geometry.userData.plantShape;
+    return {type:shape.plantType,petalCount:shape.petalCount,leafCount:shape.leafCount,flowerVolume:shape.flowerVolume,
+     petalCrossSectionSegments:shape.petalCrossSectionSegments,petalLongitudinalRings:shape.petalLongitudinalRings,
+     petalThickness:shape.petalThickness,stalkVolume:shape.stalkVolume,basalLeavesVolume:shape.basalLeavesVolume,
+     leafThickness:shape.leafThickness,vertexCount:mesh.geometry.attributes.position.count,indexCount:mesh.geometry.index?.count||0};
+   });
+   return {plantCount:plants.length,flowerCount:flowers.filter(item=>item.type==='flower').length,flowers};
+  },
   getDesignStats:()=>{const state=sandbox.getState().world;return {customBlock:{...state.customBlock},solidStyles:{...state.solidStyles},styledSolidTypes:[...(state.styledSolidTypes||[])],doorDesign:{...state.doorDesign},tileDesign:{...state.tileDesign}};},
   inventoryOpen:()=>!inventoryPanel.hidden,
   characterOpen:()=>!characterPanel.hidden,

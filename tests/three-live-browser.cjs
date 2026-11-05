@@ -33,6 +33,7 @@ const {chromium}=require('playwright');
     storageReadFailed:diagnostics?.storageReadFailed,
     canvas:{width:document.getElementById('three-world')?.width,height:document.getElementById('three-world')?.height},
     hasCanvas2DWorld:!!document.getElementById('game'),
+    hasSafetyOverlay:!!document.getElementById('safety'),
     hasWebGL:!!(document.getElementById('three-world')?.getContext('webgl2')||document.getElementById('three-world')?.getContext('webgl')),
     saveControls:!!document.getElementById('save-now'),
     runtimeScripts:[...document.scripts].map(script=>script.getAttribute('src')).filter(Boolean)
@@ -41,6 +42,20 @@ const {chromium}=require('playwright');
   assert.equal(initial.revision,'128','The live world must use the pinned local Three.js r128 build.');
   assert.equal(initial.storageSource,'starter','A clean profile must load the canonical starter-world source.');
   assert.equal(initial.storageReadFailed,false);
+  assert.equal(initial.hasSafetyOverlay,false,'The floating upper-right HUD must be absent from the production viewport.');
+  const plantStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlantStats?.());
+  assert.ok(plantStats?.flowerCount>0,'The production starter world must render actual flower meshes.');
+  for(const flower of plantStats.flowers.filter(item=>item.type==='flower')){
+   assert.equal(flower.flowerVolume,true,'Every production flower must use closed volume geometry.');
+   assert.equal(flower.petalCount,8);
+   assert.equal(flower.petalCrossSectionSegments,8);
+   assert.equal(flower.petalLongitudinalRings,7);
+   assert.ok(flower.petalThickness>=.03);
+   assert.equal(flower.stalkVolume,true);
+   assert.equal(flower.basalLeavesVolume,true);
+   assert.ok(flower.leafThickness>.015);
+   assert.ok(flower.indexCount>flower.vertexCount*2,'The live flower must include indexed three-dimensional surfaces.');
+  }
   assert.equal(initial.world.version,1);
   assert.ok(Array.isArray(initial.world.blocks)&&initial.world.blocks.length>0);
   assert.equal(initial.hasCanvas2DWorld,false,'The Canvas 2D world canvas must no longer be the game renderer.');
