@@ -131,25 +131,7 @@ const neighborColorCtx=neighborColorCanvas.getContext('2d',{willReadFrequently:t
 const neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
 let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
 const touchControls=document.getElementById('player-controls'),touchActions=document.getElementById('player-actions'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
-const quickTools=document.getElementById('quick-tools'),gestureGuide=document.getElementById('gesture-guide'),quickPlayToggle=document.getElementById('quick-play-toggle'),blockTypeSelect=document.getElementById('block-type');
-function syncQuickPalette(){
- const selected=blockTypeSelect.value;
- quickTools.querySelectorAll('[data-quick-block]').forEach(button=>{
-  const active=button.dataset.quickBlock===selected;
-  button.setAttribute('aria-pressed',String(active));
- });
-}
-quickTools.querySelectorAll('[data-quick-block]').forEach(button=>button.addEventListener('click',()=>{
- blockTypeSelect.value=button.dataset.quickBlock;syncQuickPalette();
-}));
-blockTypeSelect.addEventListener('change',syncQuickPalette);
-const quickActionTargets={inventory:'inventory-open',animal:'animal-place',character:'character-open',art:'art-open'};
-quickTools.querySelectorAll('[data-quick-action]').forEach(button=>{
- const targetId=quickActionTargets[button.dataset.quickAction];
- if(targetId)button.addEventListener('click',()=>document.getElementById(targetId).click());
-});
-quickPlayToggle.addEventListener('click',()=>playModeButton.click());
-syncQuickPalette();
+
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
  if(playerPlayMode&&playerPhysicsState){updatePlayerCamera();return;}
@@ -211,11 +193,7 @@ function syncPlayerButtons(){
  cameraModeButton.textContent=playerCameraMode==='third'?'First person':'Third person';
  flightButton.textContent=playerPhysicsState?.flying?'Flight on':'Flight off';
  touchControls.hidden=!playerPlayMode;touchActions.hidden=!playerPlayMode;
- quickTools.hidden=playerPlayMode;gestureGuide.hidden=playerPlayMode;
- quickPlayToggle.textContent=playerPlayMode?'🧰':'🚶';
- quickPlayToggle.setAttribute('aria-label',playerPlayMode?'Exit play mode':'Enter play mode');
- quickPlayToggle.setAttribute('title',playerPlayMode?'Build mode':'Play');
- quickPlayToggle.setAttribute('aria-pressed',String(playerPlayMode));
+
 }
 function syncTouchMovement(){
  playerControls.moveX=(touchDirections.has('right')?1:0)-(touchDirections.has('left')?1:0);

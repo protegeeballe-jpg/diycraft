@@ -106,30 +106,23 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  .neighbor-color-tools label{font-size:10px}
  .neighbor-color-tools button,.neighbor-color-actions button{padding:7px 8px;font-size:11px}
 }
+/* Calm, grouped control panel: one place for options, with collapsible sections. */
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;margin-top:10px}
+.settings-section{border:1px solid #d1d8c8;border-radius:13px;background:rgba(255,253,246,.84);overflow:hidden}
+.settings-section>summary{padding:11px 13px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px}
+.settings-section>summary::-webkit-details-marker{display:none}
+.settings-section>summary:before{content:"＋";font-size:15px;color:#647c5d}
+.settings-section[open]>summary:before{content:"−"}
+.settings-section-controls{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:10px 12px 13px;border-top:1px solid #e1e5da}
+.settings-section-controls label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.settings-section-controls select{max-width:100%}
+#remove,#water-add,#fill-hole,#dig-ground{display:none!important}
+#settings-panel{width:min(560px,calc(100vw - 28px))}
+@media(max-width:600px){.settings-section>summary{padding:12px;font-size:16px}.settings-section-controls{gap:7px;padding:9px}.settings-section-controls button,.settings-section-controls select{min-height:40px}}
 @media(max-width:600px){.panel{left:8px;top:8px;max-height:46vh;overflow:auto}.toolbar{gap:5px}button,select{padding:6px 7px}#player-controls{left:8px;bottom:8px;padding:7px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}}
 
 
-/* Child-first painterly HUD: picture controls stay visible without opening Settings. */
-#gesture-guide{position:fixed;z-index:5;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:7px 12px;border:1px solid #d2d9c8;border-radius:16px;background:rgba(255,252,244,.9);box-shadow:0 3px 12px #43564a1c;font-size:17px;line-height:1;pointer-events:none;white-space:nowrap}
-#gesture-guide[hidden]{display:none!important}
-#quick-play-toggle{position:fixed;z-index:7;top:12px;right:14px;width:46px;height:46px;padding:0;border:1px solid #bdc9b5;border-radius:50%;background:rgba(255,252,244,.96);box-shadow:0 4px 16px #43564a25;font-size:23px;line-height:1;touch-action:manipulation}
-#quick-tools{position:fixed;z-index:6;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 28px);padding:8px 10px;border:1px solid #c9d2bd;border-radius:18px;background:rgba(255,252,244,.94);box-shadow:0 5px 18px #43564a24;backdrop-filter:blur(7px);touch-action:manipulation}
-#quick-tools[hidden]{display:none!important}
-.quick-tool-group{display:flex;flex:0 0 auto;align-items:center;gap:5px}
-.quick-tool-group.quick-actions{padding-left:8px;border-left:1px solid #d8ddcf}
-.quick-tool-button{display:grid;place-items:center;width:44px;height:44px;min-width:44px;padding:0;border:1px solid #c5d0bd;border-radius:13px;background:#fffdf7;font-size:22px;line-height:1;touch-action:manipulation;user-select:none;-webkit-user-select:none}
-.quick-tool-button[aria-pressed="true"]{background:#e8f0e3;border:2px solid #79956e;box-shadow:inset 0 0 0 1px #fffdf7}
-.quick-tool-button:active,#quick-play-toggle:active{transform:scale(.96)}
-#quick-play-toggle:focus-visible,.quick-tool-button:focus-visible{outline:3px solid #789d72;outline-offset:3px}
-#world-feedback{bottom:calc(76px + env(safe-area-inset-bottom))}
-@media(max-width:600px){
- #gesture-guide{top:9px;gap:9px;padding:7px 10px;font-size:16px}
- #quick-play-toggle{top:8px;right:8px;width:44px;height:44px}
- #quick-tools{bottom:calc(8px + env(safe-area-inset-bottom));width:calc(100vw - 16px);max-width:calc(100vw - 16px);gap:6px;padding:6px}
- .quick-tool-group.quick-actions{padding-left:0;border-left:0}
- .quick-tool-button{width:43px;height:43px;min-width:43px;font-size:21px}
- #world-feedback{bottom:calc(112px + env(safe-area-inset-bottom))}
-}
+#world-feedback{bottom:calc(18px + env(safe-area-inset-bottom))}
 
 /* Compact settings entry point; the full build/save dashboard stays mounted while collapsed. */
 #settings-toggle{position:fixed;z-index:13;left:14px;top:14px;width:44px;height:44px;padding:0;border:1px solid #bdc9b5;border-radius:50%;background:rgba(255,252,244,.96);box-shadow:0 4px 16px #43564a25;font-size:23px;line-height:1;touch-action:manipulation}
@@ -220,47 +213,28 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <canvas id="three-world" aria-label="Three-dimensional DIYCraft world: tap to build or fill a hole, press and hold for 0.6 seconds to dig or remove a block, drag to look around" title="Tap to build or fill · Hold 0.6s to dig or remove · Drag to look around"></canvas>
 <div id="world-feedback" role="status" aria-live="polite" hidden></div>
 <button id="settings-toggle" type="button" aria-label="Open settings and build tools" aria-controls="settings-panel" aria-expanded="false" title="Settings and build tools">⚙</button>
-<div id="gesture-guide" aria-label="Tap to build; hold to dig or remove">
- <span aria-hidden="true">👆 🧱</span><span aria-hidden="true">👆 ⏳ ⛏️</span>
-</div>
-<button id="quick-play-toggle" type="button" aria-label="Enter play mode" aria-pressed="false" title="Play">🚶</button>
-<nav id="quick-tools" aria-label="Quick build and play tools">
- <div class="quick-tool-group" aria-label="Choose a building material">
-  <button class="quick-tool-button" type="button" data-quick-block="grass" aria-label="Grass blocks" title="Grass" aria-pressed="true">🌱</button>
-  <button class="quick-tool-button" type="button" data-quick-block="dirt" aria-label="Dirt blocks" title="Dirt" aria-pressed="false">🟫</button>
-  <button class="quick-tool-button" type="button" data-quick-block="stone" aria-label="Stone blocks" title="Stone" aria-pressed="false">🪨</button>
-  <button class="quick-tool-button" type="button" data-quick-block="wood" aria-label="Wood blocks" title="Wood" aria-pressed="false">🪵</button>
-  <button class="quick-tool-button" type="button" data-quick-block="water" aria-label="Water" title="Water" aria-pressed="false">💧</button>
-  <button class="quick-tool-button" type="button" data-quick-block="flower" aria-label="Flowers" title="Flowers" aria-pressed="false">🌸</button>
- </div>
- <div class="quick-tool-group quick-actions" aria-label="More play tools">
-  <button class="quick-tool-button" type="button" data-quick-action="inventory" aria-label="Open pouches and bucket" title="Pouches and bucket">🎒</button>
-  <button class="quick-tool-button" type="button" data-quick-action="animal" aria-label="Add a sheep" title="Add a sheep">🐑</button>
-  <button class="quick-tool-button" type="button" data-quick-action="character" aria-label="Change character" title="Character">👧</button>
-  <button class="quick-tool-button" type="button" data-quick-action="art" aria-label="Open art studio" title="Art studio">🖍️</button>
- </div>
-</nav>
+
 <section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false" hidden>
 <div class="settings-heading"><h1 id="settings-title">DIYCraft · Peaceful Painterly World</h1><button id="settings-close" type="button" aria-label="Close settings">Close ✕</button></div>
 <div class="sub">Explore, build, paint, and care for your world · Watercolor + colored-pencil texture</div>
-<div class="toolbar">
-<select id="bucket-item" aria-label="Choose a recovered Material Bucket item"><option value="">Bucket: none selected</option></select>
-<select id="door-style" aria-label="Door style"><option value="classic">Classic door</option><option value="window">Window door</option><option value="garden">Garden door</option></select>
-<label for="time-mode">Time <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>
-<select id="block-type" aria-label="Block type"><option value="grass">Grass</option><option value="water">Water</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select>
-<input id="color" type="color" value="#70b85a" aria-label="Custom block color">
-<button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button><button id="art-open" type="button">Art Studio</button><button id="gallery-open" type="button">Gallery</button><button id="solid-design-open" type="button">Solid designer</button><button id="door-design-open" type="button">Door design</button><button id="tile-design-open" type="button">Tile design</button><button id="clear-placed" type="button">Clear placed blocks</button>
-<button id="add">Place on face</button><button id="remove" disabled>Remove</button>
-<button id="door" disabled>Open / close door</button>
-<select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select>
-<button id="apply-pattern" disabled>Apply tile pattern</button>
-<button id="fullscreen-toggle" type="button" aria-label="Toggle full screen">Full screen</button>
-<button id="play-mode">Enter Play Mode</button><button id="camera-mode" disabled>First person</button>
-<select id="animal-species" aria-label="Animal species"><option value="sheep">Sheep</option><option value="cat">Cat</option><option value="dog">Dog</option><option value="cow">Cow</option><option value="horse">Horse</option><option value="bird">Bird</option><option value="giraffe">Giraffe</option></select><button id="animal-place">Place an animal</button>
-<select id="activity-mode" aria-label="Character activity"><option value="sleep">Sleep here</option><option value="transformer">Transformer sleep</option><option value="sit">Sit</option><option value="work">Work</option><option value="dance">Dance</option><option value="stop">Stop activity</option></select><button id="activity-apply">Start activity</button><button id="set-home-bed">Set home bed</button><button id="go-home">Go home &amp; sleep</button>
-<input id="water-x" type="number" value="14" step="1" aria-label="Water pool X coordinate" style="width:62px"><input id="water-z" type="number" value="-5" step="1" aria-label="Water pool Z coordinate" style="width:62px">
-<button id="water-add">Add water</button><button id="water-collect">Collect water</button><button id="fish-add">Add fish</button><button id="fill-hole">Fill hole</button><button id="dig-ground">Dig ground</button>
-</div>
+ <div class="toolbar">
+<details class="settings-section" open><summary>Build &amp; Materials</summary><div class="settings-section-controls">
+<label for="block-type">Material <select id="block-type"><option value="grass">Grass</option><option value="water">Water</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="leaves">Leaves</option><option value="brick">Brick</option><option value="glass">Glass</option><option value="sand">Sand</option><option value="snow">Snow</option><option value="flower">Flower</option><option value="tall_grass">Tall grass</option><option value="custom">Custom</option><option value="door">Door</option><option value="tile">Tile</option></select></label>
+<label for="color">Custom color <input id="color" type="color" value="#70b85a" aria-label="Custom block color"></label><label for="door-style">Door style <select id="door-style"><option value="classic">Classic door</option><option value="window">Window door</option><option value="garden">Garden door</option></select></label>
+<button id="add" type="button">Place on face</button><button id="door" disabled>Open / close door</button>
+<label for="pattern">Tile pattern <select id="pattern" aria-label="Tile pattern"><option value="grid">Grid</option><option value="brick">Brick</option><option value="checker">Checker</option><option value="diagonal">Diagonal</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option><option value="herringbone">Herringbone</option><option value="basket">Basket Weave</option><option value="mosaic">Mosaic</option><option value="terrazzo">Terrazzo</option><option value="waves">Waves</option><option value="dots">Dots</option><option value="floral">Floral</option><option value="stars">Stars</option><option value="sunburst">Sunburst</option><option value="scallop">Scallop</option><option value="parquet">Parquet</option><option value="pebble">Pebble</option><option value="cross">Cross</option><option value="spiral">Spiral</option></select></label><button id="apply-pattern" disabled>Apply tile pattern</button><button id="clear-placed" type="button">Clear placed blocks</button>
+</div></details>
+<details class="settings-section"><summary>World &amp; Water</summary><div class="settings-section-controls">
+<label for="time-mode">Time of day <select id="time-mode" aria-label="Time of day"><option value="day">Day</option><option value="sunset">Sunset</option><option value="night">Night</option><option value="auto">Auto cycle</option></select></label>
+<label for="water-x">Pool X <input id="water-x" type="number" value="14" step="1" aria-label="Water pool X coordinate"></label><label for="water-z">Pool Z <input id="water-z" type="number" value="-5" step="1" aria-label="Water pool Z coordinate"></label><button id="water-collect" type="button">Collect water</button><button id="fish-add" type="button">Add fish</button>
+</div></details>
+<details class="settings-section"><summary>Characters &amp; Animals</summary><div class="settings-section-controls">
+<label for="animal-species">Animal <select id="animal-species" aria-label="Animal species"><option value="sheep">Sheep</option><option value="cat">Cat</option><option value="dog">Dog</option><option value="cow">Cow</option><option value="horse">Horse</option><option value="bird">Bird</option><option value="giraffe">Giraffe</option></select></label><button id="animal-place" type="button">Place an animal</button>
+<label for="activity-mode">Activity <select id="activity-mode" aria-label="Character activity"><option value="sleep">Sleep here</option><option value="transformer">Transformer sleep</option><option value="sit">Sit</option><option value="work">Work</option><option value="dance">Dance</option><option value="stop">Stop activity</option></select></label><button id="activity-apply" type="button">Start activity</button><button id="set-home-bed" type="button">Set home bed</button><button id="go-home" type="button">Go home &amp; sleep</button><button id="play-mode" type="button">Enter Play Mode</button><button id="camera-mode" type="button" disabled>First person</button><button id="fullscreen-toggle" type="button" aria-label="Toggle full screen">Full screen</button>
+</div></details>
+<details class="settings-section"><summary>Creative Studios &amp; Collection</summary><div class="settings-section-controls">
+<select id="bucket-item" aria-label="Choose a recovered Material Bucket item"><option value="">Bucket: none selected</option></select><button id="inventory-open" type="button">Pouches &amp; Crafting</button><button id="character-open" type="button">Character Studio</button><button id="art-open" type="button">Art Studio</button><button id="gallery-open" type="button">Gallery</button><button id="solid-design-open" type="button">Solid designer</button><button id="door-design-open" type="button">Door design</button><button id="tile-design-open" type="button">Tile design</button>
+</div></details></div>
 <div class="backup-controls" aria-label="World name and backup controls">
  <label for="world-name">World name <input id="world-name" maxlength="30" value="My Peaceful World"></label>
  <button id="world-name-apply" type="button">Set name</button>
