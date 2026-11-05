@@ -54,6 +54,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Fetch untouched production main for save compatibility checks
+        run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
       - name: Run read-only world adapter regression tests
         run: node tests/three-world-adapter.test.cjs
       - name: Run original DIYCraft backup schema compatibility tests

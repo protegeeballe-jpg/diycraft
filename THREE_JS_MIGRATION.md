@@ -153,3 +153,5 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - Repository-wide checks of tracked active source, archived HTML, offline files, docs and workflows found no gzip/gunzip, CompressionStream, pako, LZ or compressed-backup prefix in this repository. The current production `localStorage` and `.json` backup paths use plain JSON; no compression wrapper is being added to migration exports.
 
 - A syntax-only guard failure identified an over-escaped slash in the serializer's PNG data-URI validation regex. The source regex is corrected to match the same `data:image/png;base64,` form used by the production validator.
+
+- Save-schema compatibility test was hardened after discovering the migration branch carries a newer save-handler revision than untouched `main`. The guard now fetches `origin/main` read-only and the test executes both real `freshWorld()` / `validWorld()` implementations from production main and the migration branch. Both must accept the serializer's version-1 backup and round-trip all representative game state.
