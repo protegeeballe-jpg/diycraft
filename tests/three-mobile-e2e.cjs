@@ -59,6 +59,9 @@ const {chromium}=require('playwright');
   await page.keyboard.press('Escape');
   assert.equal(await settingsPanel.isVisible(),false,'Escape must dismiss the settings dashboard.');
   assert.equal(await settingsToggle.getAttribute('aria-expanded'),'false');
+  await settingsToggle.click();
+  await page.locator('#safety').click();
+  assert.equal(await settingsPanel.isVisible(),false,'Tapping outside the settings dashboard must dismiss it without blocking the tapped target.');
 
   assert.ok(startup.width<=390&&startup.height<=844,
    'Mobile rendering must clamp the drawing buffer to the mobile viewport rather than multiplying by device pixel ratio.');

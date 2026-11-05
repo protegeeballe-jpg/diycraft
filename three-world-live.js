@@ -8,14 +8,14 @@ const playerPhysics=window.DIYCraftThreePlayerPhysics,playerCamera=window.DIYCra
 const timeVisuals=window.DIYCraftThreeWorldTime;
 const canvas=document.getElementById('three-world'),status=document.getElementById('status');
 const settingsPanel=document.getElementById('settings-panel'),settingsToggle=document.getElementById('settings-toggle'),settingsClose=document.getElementById('settings-close');
-function setSettingsPanelOpen(open){
+function setSettingsPanelOpen(open,restoreFocus=true){
  const expanded=!!open;
  settingsPanel.hidden=!expanded;
  settingsToggle.setAttribute('aria-expanded',String(expanded));
  if(expanded){
   const firstControl=settingsPanel.querySelector('button,select,input');
   if(firstControl)firstControl.focus({preventScroll:true});
- }else settingsToggle.focus({preventScroll:true});
+ }else if(restoreFocus)settingsToggle.focus({preventScroll:true});
 }
 settingsToggle.addEventListener('click',()=>setSettingsPanelOpen(settingsPanel.hidden));
 settingsClose.addEventListener('click',()=>setSettingsPanelOpen(false));
@@ -25,7 +25,7 @@ document.addEventListener('keydown',event=>{
 document.addEventListener('pointerdown',event=>{
  if(settingsPanel.hidden)return;
  if(settingsPanel.contains(event.target)||settingsToggle.contains(event.target))return;
- setSettingsPanelOpen(false);
+ setSettingsPanelOpen(false,false);
 });
 if(!THREE||!adapter||!storage||!starterWorld||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen||!timeVisuals)throw new Error('A required local Three.js game dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
