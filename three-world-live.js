@@ -1214,6 +1214,17 @@ function goHomeAndSleep(){
   lastPosePersisted={...player};lastPosePersistAt=performance.now();
  }catch(error){status.textContent='Could not return home: '+error.message;}
 }
+document.getElementById('fullscreen-toggle').addEventListener('click',async()=>{
+ try{
+  if(document.fullscreenElement)await document.exitFullscreen();
+  else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();
+  else status.textContent='Full screen is not available in this browser.';
+ }catch(error){status.textContent='Full screen could not be enabled: '+String(error.message||error).slice(0,120);}
+});
+document.addEventListener('fullscreenchange',()=>{
+ const button=document.getElementById('fullscreen-toggle');
+ if(button)button.textContent=document.fullscreenElement?'Exit full screen':'Full screen';
+});
 document.getElementById('activity-apply').addEventListener('click',applyPlayerActivity);
 document.getElementById('set-home-bed').addEventListener('click',setHomeBed);
 document.getElementById('go-home').addEventListener('click',goHomeAndSleep);
@@ -1225,7 +1236,7 @@ function animatePlayerActivity(now){
  if(activity==='sit')playerModelRoot.scale.y=.82;
  else if(activity==='work')playerModelRoot.rotation.z=-.055;
  else if(activity==='dance')playerModelRoot.rotation.z=Math.sin(now*.0042)*.13;
- else if(activity==='sleep'){playerModelRoot.scale.y=.72;playerModelRoot.rotation.x=1.34;}
+ else if(activity==='sleep'||activity==='bed'){playerModelRoot.scale.y=.72;playerModelRoot.rotation.x=1.34;}
  else if(activity==='transformer')playerModelRoot.scale.set(1.04,1.04,1.04);
 }
 function animate(now){

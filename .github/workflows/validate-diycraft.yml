@@ -75,7 +75,7 @@ jobs:
             if(!fs.existsSync(target))throw new Error(name+' entry is missing local script '+src);
            }
           }
-          for(const id of ['animal-place','animal-species','save-now','backup-download','backup-restore','play-mode','camera-mode','jump','flight','activity-apply','set-home-bed','go-home','inventory-open','character-open','art-open','gallery-open','solid-design-open','door-design-open','tile-design-open'])
+          for(const id of ['fullscreen-toggle','animal-place','animal-species','save-now','backup-download','backup-restore','play-mode','camera-mode','jump','flight','activity-apply','set-home-bed','go-home','inventory-open','character-open','art-open','gallery-open','solid-design-open','door-design-open','tile-design-open'])
            if(!main.includes('id="'+id+'"'))throw new Error('Missing live game UI control: '+id);
           const runtime=fs.readFileSync('three-world-live.js','utf8');
           if(!runtime.includes('storage.load(deviceStorage,adapter,starterWorld.create())')||
