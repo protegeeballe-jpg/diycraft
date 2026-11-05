@@ -56,6 +56,8 @@ jobs:
           node-version: 24
       - name: Run read-only world adapter regression tests
         run: node tests/three-world-adapter.test.cjs
+      - name: Run original DIYCraft backup schema compatibility tests
+        run: node tests/three-world-save-format.test.cjs
       - name: Run isolated editing sandbox regression tests
         run: node tests/three-world-edit-sandbox.test.cjs
       - name: Run raycast selection resolver tests
