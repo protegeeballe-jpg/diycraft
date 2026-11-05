@@ -94,6 +94,8 @@ const {chromium}=require('playwright');
   };
   const togglePlayModeFromSettings=async()=>{
    await openSettingsPanel();
+   const characterSection=page.locator('details.settings-section').filter({hasText:'Characters & Animals'});
+   if(!(await characterSection.evaluate(element=>element.open)))await characterSection.locator('summary').click();
    await page.locator('#play-mode').click();
   };
 
