@@ -498,7 +498,7 @@ function renderSandbox(state){
  const renderObjects=group.children.length,instanceBatches=batches.size,waterCount=(state.world.water||[]).length,fishCount=(state.world.fish||[]).length,animalCount=(state.world.animals||[]).length,residentAnimalCount=protection.RESIDENTS.length,totalAnimalCount=animalStatesCache.length;
  status.textContent=state.world.name+' · '+state.world.blocks.length+' blocks · '+instanceBatches+' instanced batches · '+renderObjects+' render objects · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Select a block to edit')+
-  ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · Animals: '+totalAnimalCount+' ('+residentAnimalCount+' residents, '+animalCount+' saved; '+renderedAnimalCount+' shown) · '+performanceProfile.tier+' quality · Original unchanged: '+state.sourceUnchanged;
+  ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · Animals: '+totalAnimalCount+' ('+residentAnimalCount+' residents, '+animalCount+' saved; '+renderedAnimalCount+' shown) · '+performanceProfile.tier+' quality · '+(storageReadFailed?'Existing save protected — restore backup':'Autosaving to this device');
  window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,
   sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),renderedMeshes:renderObjects,renderObjects,instanceBatches,
   performanceProfile:{tier:performanceProfile.tier,fpsCap:performanceProfile.fpsCap,maxPixelRatio:performanceProfile.maxPixelRatio,antialias:performanceProfile.antialias,shadows:performanceProfile.shadows,textureSize:performanceProfile.textureSize,maxVisibleFish:performanceProfile.maxVisibleFish,maxVisibleAnimals:performanceProfile.maxVisibleAnimals,waterAnimationFps:performanceProfile.waterAnimationFps},
@@ -1220,8 +1220,9 @@ document.getElementById('go-home').addEventListener('click',goHomeAndSleep);
 function animatePlayerActivity(now){
  if(!playerModelRoot||!playerPhysicsState)return;
  const activity=playerPhysicsState.playerActivity;
+ playerModelRoot.position.y=playerPhysicsState.player.y+(activity==='sit'?-.08:0);
  playerModelRoot.scale.set(1,1,1);playerModelRoot.rotation.x=0;playerModelRoot.rotation.z=0;
- if(activity==='sit'){playerModelRoot.scale.y=.82;playerModelRoot.position.y-=.08;}
+ if(activity==='sit')playerModelRoot.scale.y=.82;
  else if(activity==='work')playerModelRoot.rotation.z=-.055;
  else if(activity==='dance')playerModelRoot.rotation.z=Math.sin(now*.0042)*.13;
  else if(activity==='sleep'){playerModelRoot.scale.y=.72;playerModelRoot.rotation.x=1.34;}

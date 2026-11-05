@@ -188,3 +188,13 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - Startup distinguishes a missing save from an unreadable save. A corrupt or inaccessible existing save is preserved, reported as recovery-required, and blocks ordinary renderer writes. The explicit restore path parses, validates, normalizes and serializes the replacement before its single storage write; invalid restores leave the existing key untouched.
 - Storage write permission is isolated to `js/three-world-storage.js`. The security guard explicitly reviews this one module and continues to reject browser-storage writes in every other Three.js renderer module.
 - The adapter is tested against the actual production `freshWorld()` and the existing renderer adapter, including old JSON, compressed JSON, exact version-1 export, corruption preservation, restore rollback, storage-denial and quota errors. This is groundwork only: the live entry point is not yet connected to this module, and the Canvas 2D scene remains active pending the full Three.js runtime and feature-parity cutover.
+
+
+## 2026-11-05 live Three.js entry-point cutover
+
+- The production `index.html` and `offline/index.html` now load the local Three.js r128 runtime and the shared production editing interface; neither page loads `diycraft.js` as its world renderer.
+- The live renderer boots from the canonical version-1 starter world only when the device save is absent. Existing JSON and gzip-prefixed saves are read via the dedicated storage adapter. Renderer state is serialized through the version-1 adapter and auto-saved to the existing `diycraft_peaceful_voxel_v1` key; invalid or inaccessible saves remain protected until the user restores a valid backup.
+- Player movement/camera pose is debounced into the same saved player record. Page visibility and page-exit events use the dedicated synchronous JSON save path. Manual Save, version-1 JSON export, JSON/gzip backup restore, animal placement, gentle animal care, home bed, and activity controls are available in the live UI.
+- The service worker cache is versioned and precaches all Three.js production modules. Same-origin script requests use network-first caching with a cache fallback, so the Three.js app can start after a first successful online install when offline.
+- Canvas elements remain only for Art Studio, neighbor coloring, and local texture generation; the 3D world itself is rendered by WebGL/Three.js. This is the permanent renderer direction.
+- Automated production-browser and offline-cache checks are being moved from the retired Canvas 2D expectations to the new live Three.js entry point. Physical low-cost Android validation remains important for final device-specific WebGL support and memory/frame-time behavior.

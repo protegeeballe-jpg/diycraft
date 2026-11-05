@@ -6,6 +6,7 @@ const fs = require('node:fs');
 
 const runtimeFiles = [
   'js/three-world-adapter.js',
+  'js/three-world-starter.js',
   'js/three-world-storage.js',
   'js/three-world-edit-sandbox.js',
   'js/three-world-protection.js',
@@ -23,6 +24,7 @@ const runtimeFiles = [
   'js/three-neighbor-coloring.js',
   'js/three-world-time.js',
   'three-world-preview.js',
+  'three-world-live.js',
   'three-world-edit-preview.js'
 ];
 

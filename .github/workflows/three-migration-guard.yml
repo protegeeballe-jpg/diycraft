@@ -7,6 +7,7 @@ on:
       - three-js-migration
     paths:
       - js/three-world-adapter.js
+      - js/three-world-starter.js
       - js/three-world-storage.js
       - js/three-world-edit-sandbox.js
       - js/three-world-raycast.js
@@ -32,6 +33,7 @@ on:
       - tests/three-world-protection.test.cjs
       - tests/three-world-time.test.cjs
       - tests/three-world-adapter.test.cjs
+      - tests/three-world-starter.test.cjs
       - tests/three-world-storage.test.cjs
       - js/three-world-protection.js
       - tests/three-world-edit-sandbox.test.cjs
@@ -45,6 +47,7 @@ on:
       - js/three-player-model.js
       - three-world-preview.html
       - three-world-preview.js
+      - three-world-live.js
       - three-world-edit-preview.html
       - three-world-edit-preview.js
       - index.html
@@ -89,6 +92,8 @@ jobs:
         run: node tests/three-world-adapter.test.cjs
       - name: Run persistent save bridge compatibility tests
         run: node tests/three-world-storage.test.cjs
+      - name: Verify canonical starter world parity
+        run: node tests/three-world-starter.test.cjs
       - name: Run original DIYCraft backup schema compatibility tests
         run: node tests/three-world-save-format.test.cjs
       - name: Run isolated editing sandbox regression tests
