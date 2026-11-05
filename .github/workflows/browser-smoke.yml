@@ -11,6 +11,7 @@ on:
       - three-world-live.js
       - js/three-*.js
       - tests/three-live-browser.cjs
+      - tests/three-device-file-browser.cjs
       - tests/three-mobile-e2e.cjs
       - .github/workflows/browser-smoke.yml
   pull_request:
@@ -21,6 +22,7 @@ on:
       - three-world-live.js
       - js/three-*.js
       - tests/three-live-browser.cjs
+      - tests/three-device-file-browser.cjs
       - tests/three-mobile-e2e.cjs
       - .github/workflows/browser-smoke.yml
   workflow_dispatch:
@@ -43,6 +45,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test live Three.js renderer, real device saves and offline launch
         run: node tests/three-live-browser.cjs
+      - name: Test device-file create, autosave, reopen, permission renewal and browser-data clearing
+        run: node tests/three-device-file-browser.cjs
       - name: Test mobile UI, touch controls, save integrity and frame pacing
         run: node tests/three-mobile-e2e.cjs
       - name: Upload live Three.js screenshot
