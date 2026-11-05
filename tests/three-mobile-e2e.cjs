@@ -285,12 +285,45 @@ const {chromium}=require('playwright');
    'The D-pad must stay on the left and the Jump/Fly cluster on the right without overlap.');
   assert.ok(Math.abs(hudPositions.dpad.bottom-hudPositions.actions.bottom)<3,
    'Both touch clusters must share a common bottom safe-area alignment.');
+  assert.equal(await page.locator('#flight-vertical-controls').isVisible(),false,
+   'Vertical flight controls must stay hidden before flight is enabled.');
   await page.locator('#flight').click();
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().flying),true,
    'The right-side Fly button must toggle flight on.');
+  const flightPad=page.locator('#flight-vertical-controls');
+  assert.equal(await flightPad.isVisible(),true,
+   'Turning flight on must reveal dedicated UP and DOWN touch controls.');
+  assert.equal(await page.locator('[data-flight-vertical]').count(),2,
+   'The vertical flight pad must contain exactly UP and DOWN controls.');
+  const flightLayout=await page.evaluate(()=>{
+   const vertical=document.getElementById('flight-vertical-controls').getBoundingClientRect();
+   const actions=document.getElementById('player-actions').getBoundingClientRect();
+   return {vertical:{left:vertical.left,right:vertical.right,top:vertical.top,bottom:vertical.bottom},
+    actions:{left:actions.left,right:actions.right}};
+  });
+  assert.ok(flightLayout.vertical.right<flightLayout.actions.left,
+   'The vertical flight pad must not overlap Jump/Fly/Dance/Sit actions.');
+  const beforeRise=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().player?.y);
+  const rise=page.locator('#flight-rise');
+  await rise.dispatchEvent('pointerdown',{pointerId:41,pointerType:'touch',isPrimary:true,button:0,buttons:1});
+  await page.waitForTimeout(480);
+  await rise.dispatchEvent('pointerup',{pointerId:41,pointerType:'touch',isPrimary:true,button:0,buttons:0});
+  const afterRise=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().player?.y);
+  assert.ok(Number.isFinite(beforeRise)&&Number.isFinite(afterRise)&&afterRise>beforeRise+.2,
+   'Holding UP while flying must raise the player.');
+  const beforeDescend=afterRise;
+  const descend=page.locator('#flight-descend');
+  await descend.dispatchEvent('pointerdown',{pointerId:42,pointerType:'touch',isPrimary:true,button:0,buttons:1});
+  await page.waitForTimeout(480);
+  await descend.dispatchEvent('pointerup',{pointerId:42,pointerType:'touch',isPrimary:true,button:0,buttons:0});
+  const afterDescend=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().player?.y);
+  assert.ok(Number.isFinite(afterDescend)&&afterDescend<beforeDescend-.2,
+   'Holding DOWN while flying must lower the player.');
   await page.locator('#flight').click();
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().flying),false,
    'The right-side Fly button must toggle flight off.');
+  assert.equal(await flightPad.isVisible(),false,
+   'Turning flight off must hide the vertical UP/DOWN controls.');
   await page.locator('#play-mode').click(); // Exit Play Mode before testing first-touch activation.
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.playerMode),false);
   const firstTouch=page.locator('#player-controls [data-move="forward"]');

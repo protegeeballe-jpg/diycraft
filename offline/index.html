@@ -132,6 +132,9 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .settings-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
 .settings-heading h1{margin:0}
 #settings-close{flex:0 0 auto;padding:6px 9px}
+#flight-vertical-controls{position:absolute;left:calc(100% + 8px);bottom:0;display:grid;grid-template-rows:repeat(2,42px);gap:5px;padding:6px;background:rgba(255,252,244,.94);border:1px solid #c9d2bd;border-radius:12px;box-shadow:0 4px 16px #43564a22}
+#flight-vertical-controls[hidden]{display:none!important}
+.flight-vertical-button{width:56px;height:42px;min-width:56px;padding:3px 4px;font-size:11px;font-weight:700;touch-action:none;user-select:none;-webkit-user-select:none}
 #player-actions{position:fixed;z-index:4;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;align-items:flex-end;gap:10px;padding:7px;background:rgba(255,252,244,.92);border:1px solid #c9d2bd;border-radius:18px;box-shadow:0 4px 16px #43564a22;touch-action:none}
 #player-actions[hidden]{display:none!important}
 .player-action-button{width:64px;height:64px;min-width:64px;padding:0;border-radius:50%;font-size:13px;font-weight:700;background:#fffdf7;border-color:#aebea6;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -262,6 +265,8 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  #settings-panel{top:calc(50px + env(safe-area-inset-top));right:8px;width:calc(100vw - 16px);max-height:64dvh}
  #build-toolbar{bottom:calc(102px + env(safe-area-inset-bottom));width:calc(100vw - 16px);justify-content:flex-start}
  #player-controls{left:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:5px}
+ #flight-vertical-controls{left:calc(100% + 5px);grid-template-rows:repeat(2,34px);gap:3px;padding:4px}
+ .flight-vertical-button{width:50px;height:34px;min-width:50px;padding:2px;font-size:10px}
  #player-actions{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));gap:3px;padding:4px}
  #quick-picker{bottom:calc(148px + env(safe-area-inset-bottom));max-height:42dvh}
 }
@@ -356,6 +361,10 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-move="right" aria-label="Move right">→</button>
  </div>
  <div id="play-instructions">Hold arrows to move · Tap to build · Hold world to dig · Drag to look</div>
+  <div id="flight-vertical-controls" hidden aria-label="Vertical flight controls">
+   <button id="flight-rise" class="flight-vertical-button" type="button" data-flight-vertical="1" aria-label="Rise while flying" title="Rise">UP ↑</button>
+   <button id="flight-descend" class="flight-vertical-button" type="button" data-flight-vertical="-1" aria-label="Descend while flying" title="Descend">DOWN ↓</button>
+  </div>
 </section>
 <section id="player-actions" hidden aria-label="Touch action controls">
  <button id="jump" class="player-action-button" type="button" disabled aria-label="Jump">Jump</button>

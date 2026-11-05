@@ -126,9 +126,9 @@ const neighborColorCanvas=document.getElementById('neighbor-color-canvas');
 const neighborColorCtx=neighborColorCanvas.getContext('2d',{willReadFrequently:true});
 
 const neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
-let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
+let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),touchVerticalDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
 // World interaction is gesture-first: tap builds/fills; hold digs/removes; no action buttons are needed.
-const touchControls=document.getElementById('player-controls'),touchActions=document.getElementById('player-actions'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
+const touchControls=document.getElementById('player-controls'),touchActions=document.getElementById('player-actions'),flightVerticalControls=document.getElementById('flight-vertical-controls'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
 
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
@@ -192,6 +192,9 @@ function syncPlayerButtons(){
  flightButton.disabled=!playerPhysicsState;
  cameraModeButton.textContent=playerCameraMode==='third'?'First person':'Third person';
  flightButton.textContent=playerPhysicsState?.flying?'Flight on':'Flight off';
+ flightButton.setAttribute('aria-pressed',String(!!playerPhysicsState?.flying));
+ // Vertical movement is exposed only while the player is in creative flight.
+ flightVerticalControls.hidden=!playerPhysicsState?.flying;
  // Keep both touch clusters visible in Build Mode and Play Mode.
  // The first movement/action input starts Play Mode when needed.
  touchControls.hidden=false;touchActions.hidden=false;
@@ -199,17 +202,18 @@ function syncPlayerButtons(){
 function syncTouchMovement(){
  playerControls.moveX=(touchDirections.has('right')?1:0)-(touchDirections.has('left')?1:0);
  playerControls.moveZ=(touchDirections.has('forward')?1:0)-(touchDirections.has('back')?1:0);
+ playerControls.vertical=(touchVerticalDirections.has(1)?1:0)-(touchVerticalDirections.has(-1)?1:0);
 }
 function clearPlayerInputs(){
  playerControls={moveX:0,moveZ:0,vertical:0,keys:{}};
- touchDirections.clear();
+ touchDirections.clear();touchVerticalDirections.clear();
 }
 function setPlayerPlayMode(enabled){
  playerPlayMode=!!enabled;
  clearPlayerInputs();physicsClock.reset();lastPlayerPhysicsTime=performance.now();
  if(playerPlayMode){
   playerCameraMode='third';
-  status.textContent='Play mode · WASD / arrows or touch pad to move · Space to jump · F for flight';
+  status.textContent='Play mode · WASD / arrows to move · F to toggle flight · Space/Shift to rise/descend while flying';
   updatePlayerCamera();
  }else{
   status.textContent='Build mode · Tap to build or fill · Hold 0.6s to dig or remove · Drag to orbit';
@@ -230,7 +234,7 @@ function togglePlayerFlight(){
  if(!playerPhysicsState)return;
  if(!playerPlayMode)setPlayerPlayMode(true);
  playerPhysicsState={...playerPhysicsState,flying:!playerPhysicsState.flying,jumpVelocity:0};
- status.textContent=playerPhysicsState.flying?'Creative flight enabled.':'Flight turned off.';
+ status.textContent=playerPhysicsState.flying?'Creative flight enabled · Hold UP to rise and DOWN to descend.':'Flight turned off.';
  syncPlayerButtons();updatePlayerDiagnostics();
 }
 playModeButton.addEventListener('click',()=>setPlayerPlayMode(!playerPlayMode));
@@ -253,6 +257,23 @@ document.querySelectorAll('[data-move]').forEach(button=>{
  const release=event=>{
   if(!touchDirections.has(direction))return;event.preventDefault();
   touchDirections.delete(direction);syncTouchMovement();
+ };
+ button.addEventListener('pointerdown',press);
+ button.addEventListener('pointerup',release);
+ button.addEventListener('pointercancel',release);
+ button.addEventListener('lostpointercapture',release);
+});
+document.querySelectorAll('[data-flight-vertical]').forEach(button=>{
+ const direction=Number(button.dataset.flightVertical);
+ const press=event=>{
+  if(!playerPhysicsState?.flying||!Number.isFinite(direction)||direction===0)return;
+  event.preventDefault();
+  touchVerticalDirections.add(direction);syncTouchMovement();
+  try{button.setPointerCapture(event.pointerId);}catch(_){}
+ };
+ const release=event=>{
+  if(!touchVerticalDirections.has(direction))return;
+  event.preventDefault();touchVerticalDirections.delete(direction);syncTouchMovement();
  };
  button.addEventListener('pointerdown',press);
  button.addEventListener('pointerup',release);
