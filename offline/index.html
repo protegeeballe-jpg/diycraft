@@ -211,6 +211,9 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 
 /* Compact tap-first HUD */
 #top-controls{position:fixed;z-index:35;top:calc(10px + env(safe-area-inset-top));right:12px;display:flex;gap:7px}
+/* Override the legacy fixed upper-left gear rule: the gear is a normal
+   member of the top-right utility row, not its own positioned layer. */
+#top-controls #settings-toggle{position:relative;inset:auto;z-index:auto;left:auto;right:auto;top:auto;bottom:auto;width:36px;height:36px;min-width:36px;border-radius:11px;font-size:17px}
 .hud-icon-button{width:36px;height:36px;min-width:36px;padding:0;display:grid;place-items:center;border:1px solid #bdc9b5;border-radius:11px;background:rgba(255,252,244,.96);box-shadow:0 3px 12px #43564a22;font-size:17px;line-height:1;touch-action:manipulation}
 .hud-icon-button:focus-visible,.hud-tool:focus-visible,.hud-action:focus-visible{outline:3px solid #789d72;outline-offset:2px}
 #settings-panel{position:fixed;z-index:34;left:auto;right:10px;top:calc(54px + env(safe-area-inset-top));width:min(560px,calc(100vw - 20px));max-height:min(72dvh,calc(100dvh - 70px));}
@@ -255,6 +258,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:700px){
  #top-controls{top:calc(8px + env(safe-area-inset-top));right:8px;gap:5px}
  .hud-icon-button{width:34px;height:34px;min-width:34px;font-size:16px}
+ #top-controls #settings-toggle{width:34px;height:34px;min-width:34px;font-size:16px}
  #settings-panel{top:calc(50px + env(safe-area-inset-top));right:8px;width:calc(100vw - 16px);max-height:64dvh}
  #build-toolbar{bottom:calc(102px + env(safe-area-inset-bottom));width:calc(100vw - 16px);justify-content:flex-start}
  #player-controls{left:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:5px}
