@@ -1309,8 +1309,16 @@ document.getElementById('tile-design-apply').addEventListener('click',()=>{
  }catch(error){status.textContent=error.message;}
 });
 document.getElementById('bucket-empty').addEventListener('click',()=>{
+ const current=sandbox.getState().world.bucket||[];
+ if(!current.length){document.getElementById('inventory-feedback').textContent='Your Material Bucket is already empty.';return;}
+ if(!window.confirm('Empty the Material Bucket? Recovered blocks will be discarded.'))return;
  const next=sandbox.clearMaterialBucket();document.getElementById('bucket-item').value='';
  renderSandbox(next);document.getElementById('inventory-feedback').textContent='Material Bucket emptied in this sandbox copy.';
+});
+document.getElementById('clear-placed').addEventListener('click',()=>{
+ if(!window.confirm('Clear the blocks you have built? The starter garden and neighbor homes will remain.'))return;
+ const before=sandbox.getState().world.blocks.length,next=sandbox.clearPlacedBlocks();
+ renderSandbox(next);status.textContent=Math.max(0,before-next.world.blocks.length)+' placed blocks cleared. Starter garden and homes are safe.';
 });
 [solidDesigner,doorDesigner,tileDesigner].forEach(panel=>panel.addEventListener('pointerdown',event=>{if(event.target===panel)closeDesigners();}));
 async function start(){

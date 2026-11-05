@@ -617,9 +617,24 @@ function freshWorld(){
   assert.deepEqual(designStats.doorDesign,{color:'#bd7a4b',style:'garden'});
   assert.deepEqual(designStats.tileDesign,{color:'#a1b2c3',pattern:'spiral'});
   await page.locator('#inventory-open').click();
+  page.once('dialog',dialog=>dialog.dismiss());
   await page.locator('#bucket-empty').click();
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
-  assert.deepEqual(worldState.world.bucket,[],'Empty Material Bucket must clear only the sandbox bucket.');
+  assert.ok(worldState.world.bucket.length>0,'Dismissing the empty-bucket confirmation must preserve recovered items.');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#bucket-empty').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.deepEqual(worldState.world.bucket,[],'Confirmed empty action must clear only the sandbox bucket.');
+  await page.locator('#inventory-close').click();
+  const beforeClear=worldState.world.blocks.length;
+  page.once('dialog',dialog=>dialog.dismiss());
+  await page.locator('#clear-placed').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.blocks.length,beforeClear,'Dismissing clear confirmation must preserve every block.');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#clear-placed').click();
+  worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
+  assert.equal(worldState.world.blocks.length,232,'Confirmed clear removes placed blocks but preserves the original 232-block starter garden and homes.');
 
   // Art Studio saves production-compatible PNG data and the Gallery reads the saved artwork.
   await page.locator('#art-open').click();
