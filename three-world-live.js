@@ -595,7 +595,11 @@ function renderSandbox(state){
  document.getElementById('remove').disabled=!selectedBlock;
  document.getElementById('door').disabled=!selectedBlock||selectedBlock.type!=='door';
  document.getElementById('apply-pattern').disabled=!selectedBlock||selectedBlock.type!=='tile';
- document.getElementById('pattern').value=selectedBlock&&selectedBlock.type==='tile'?selectedBlock.tilePattern||'grid':'grid';
+ const patternInput=document.getElementById('pattern');
+ // Keep the saved future tile design selected unless an actual tile is selected for editing.
+ patternInput.value=selectedBlock&&selectedBlock.type==='tile'
+  ?(selectedBlock.tilePattern||'grid')
+  :(state.world.tileDesign?.pattern||patternInput.value||'grid');
  const renderObjects=group.children.length,instanceBatches=batches.size,waterCount=(state.world.water||[]).length,fishCount=(state.world.fish||[]).length,animalCount=(state.world.animals||[]).length,residentAnimalCount=protection.RESIDENTS.length,totalAnimalCount=animalStatesCache.length;
  status.textContent=state.world.name+' · '+state.world.blocks.length+' blocks · '+instanceBatches+' instanced batches · '+renderObjects+' render objects · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Tap to build or fill · Hold 0.6s to dig or remove')+
@@ -1748,8 +1752,10 @@ document.getElementById('solid-design-apply').addEventListener('click',()=>{
  try{
   const type=document.getElementById('solid-design-type').value,design={color:document.getElementById('solid-design-color').value,texture:document.getElementById('solid-design-texture').value};
   const next=type==='custom'?sandbox.setCustomBlockDesign(design):sandbox.setSolidStyle(type,design);
+  // A fresh designer choice supersedes any temporary color-only picker override.
+  if(window.DIYCraftQuickMaterialColors)delete window.DIYCraftQuickMaterialColors[type];
   document.getElementById('block-type').value=type;document.getElementById('color').value=design.color;
-  renderSandbox(next);closeDesigners();status.textContent='New '+type+' blocks will use this finish.';
+  renderSandbox(next);window.DIYCraftSyncHudChoices?.();closeDesigners();status.textContent='New '+type+' blocks will use this '+design.texture+' finish.';
  }catch(error){status.textContent=error.message;}
 });
 document.getElementById('door-design-apply').addEventListener('click',()=>{
@@ -1762,8 +1768,14 @@ document.getElementById('door-design-apply').addEventListener('click',()=>{
 document.getElementById('tile-design-apply').addEventListener('click',()=>{
  try{
   const design={color:document.getElementById('tile-design-color').value,pattern:document.getElementById('tile-design-pattern').value};
-  const next=sandbox.setTileDesign(design);document.getElementById('pattern').value=design.pattern;
-  document.getElementById('block-type').value='tile';renderSandbox(next);closeDesigners();status.textContent='Your tile design is ready for new tiles.';
+  const next=sandbox.setTileDesign(design);
+  // Clear any selected old tile so renderSandbox cannot overwrite the new future-placement pattern.
+  const ready=sandbox.select(null);
+  renderSandbox(ready||next);
+  document.getElementById('pattern').value=design.pattern;
+  document.getElementById('block-type').value='tile';
+  window.DIYCraftSyncHudChoices?.();
+  closeDesigners();status.textContent='Your '+design.pattern+' tile design is ready for new tiles.';
  }catch(error){status.textContent=error.message;}
 });
 document.getElementById('bucket-empty').addEventListener('click',()=>{
