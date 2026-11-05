@@ -169,28 +169,28 @@
     // Upright triangular ears emerge clearly above the skull with a contrasting inner surface.
     for(const x of [-.205,.205]){
      add(earCone,body,x,headY+.245,headZ-.055,.92,1.34,.90,0,0,x*.62,'ear');
-     add(earCone,'#d99aa3',x,headY+.255,headZ+.005,.43,.82,.38,0,0,x*.62,'earInner');
+     add(earCone,'#c96f83',x,headY+.255,headZ+.02,.48,.90,.42,0,0,x*.62,'earInner');
     }
    }else if(species==='dog'){
     // Soft floppy ears extend beyond both cheeks rather than being buried in the head.
     for(const side of [-1,1]){
      const x=side*.33;
      add(fleeceSphere,accent,x,headY-.045,headZ-.015,.84,1.42,.62,0,0,side*.22,'ear');
-     add(muzzleSphere,'#b77f78',x+side*.018,headY-.055,headZ+.045,.42,.78,.18,0,0,side*.22,'earInner');
+     add(muzzleSphere,'#b96d7c',x+side*.025,headY-.055,headZ+.08,.54,.86,.24,0,0,side*.22,'earInner');
     }
    }else if(species==='cow'){
     for(const x of [-.17,.17])add(earCone,'#f0e7d9',x,headY+.30,headZ-.055,.76,.92,.70,0,0,x*.9,'horn');
     for(const side of [-1,1]){
      const x=side*.425;
      add(fleeceSphere,accent,x,headY+.075,headZ-.035,.92,.46,.62,0,0,side*.12,'ear');
-     add(muzzleSphere,'#dca7a3',x+side*.012,headY+.078,headZ+.025,.48,.26,.18,0,0,side*.12,'earInner');
+     add(muzzleSphere,'#c97983',x+side*.045,headY+.078,headZ+.105,.54,.30,.22,0,0,side*.12,'earInner');
     }
     add(sphere,'#f0e7d9',0,headY+.055,headZ-.08,.19,.10,.12,0,0,0,'foreheadPatch');
    }else if(species==='horse'){
     for(const side of [-1,1]){
      const x=side*.15;
      add(earCone,body,x,headY+.255,headZ-.045,.72,1.28,.72,0,0,side*.28,'ear');
-     add(earCone,'#d5a69b',x,headY+.265,headZ+.005,.34,.78,.34,0,0,side*.28,'earInner');
+     add(earCone,'#c77b83',x,headY+.265,headZ+.02,.40,.84,.42,0,0,side*.28,'earInner');
     }
     for(let i=0;i<5;i++)add(fleeceSphere,'#4b372d',0,headY+.12-i*.09,headZ-.20-i*.015,.55,.52,.55,0,0,0,'mane');
    }else if(species==='sheep'){
@@ -200,7 +200,7 @@
     for(const side of [-1,1]){
      const x=side*.405;
      add(fleeceSphere,'#d5b5ad',x,headY+.055,headZ-.025,1.02,.50,.56,0,0,side*.10,'ear');
-     add(muzzleSphere,'#f1d2ca',x+side*.018,headY+.058,headZ+.035,.56,.28,.18,0,0,side*.10,'earInner');
+     add(muzzleSphere,'#c87583',side*.46,headY+.075,headZ+.10,.72,.40,.24,0,0,side*.10,'earInner');
     }
    }else{
     // Giraffe ossicones are distinct from the sideways ears.
@@ -208,7 +208,7 @@
     for(const side of [-1,1]){
      const x=side*.325;
      add(fleeceSphere,accent,x,headY+.045,headZ-.025,.92,.44,.60,0,0,side*.12,'ear');
-     add(muzzleSphere,'#bd8b79',x+side*.012,headY+.05,headZ+.025,.46,.25,.18,0,0,side*.12,'earInner');
+     add(muzzleSphere,'#b96f6f',x+side*.04,headY+.05,headZ+.08,.52,.28,.22,0,0,side*.12,'earInner');
     }
     for(let i=0;i<4;i++)add(spotSphere,accent,(i%2)*.11-.055,1.78+i*.035,.46,.9,1.1,1,0,0,0,'neckSpot');
    }

@@ -86,6 +86,7 @@ for(const species of animals.species){
    features.ear.max[0]>features.head.max[0]+.035||
    features.ear.max[1]>features.head.max[1]+.025;
   assert.ok(earOutsideHead,species+' ears must extend outside the head silhouette instead of being buried.');
+  assert.ok(features.earInner.max[2]>features.ear.max[2]+.005,species+' inner-ear color must sit on the visible front surface.');
  }
 }
 const leftWing=animals.createBirdWingGeometry(THREE,{body:'#75b9df',accent:'#f3bd54',side:-1});
