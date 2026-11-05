@@ -21,7 +21,7 @@
   const neckCylinder=new THREE.CylinderGeometry(.14,.19,.85,8);
   const earCone=new THREE.ConeGeometry(.10,.25,5),beakCone=new THREE.ConeGeometry(.09,.22,5);
   const fleeceSphere=new THREE.SphereGeometry(.16,8,6),spotSphere=new THREE.SphereGeometry(.055,7,6);
-  const eyeSphere=new THREE.SphereGeometry(.035,8,6),eyeWhiteSphere=new THREE.SphereGeometry(.052,10,8),muzzleSphere=new THREE.SphereGeometry(.12,8,6);
+  const eyeSphere=new THREE.SphereGeometry(.042,10,8),eyeWhiteSphere=new THREE.SphereGeometry(.065,10,8),muzzleSphere=new THREE.SphereGeometry(.12,8,6);
   const sources=[sphere,headSphere,cylinder,neckCylinder,earCone,beakCone,fleeceSphere,spotSphere,eyeSphere,eyeWhiteSphere,muzzleSphere];
   function add(geometry,color,x,y,z,sx=1,sy=1,sz=1,rx=0,ry=0,rz=0,feature=''){
    const position=geometry.attributes.position,uv=geometry.attributes.uv;
@@ -53,11 +53,13 @@
    // The body stays in one static batch; the two wings are separate pivoted instance batches.
    add(sphere,body,0,.62,0,.43,.40,.58,0,0,0,'body');
    add(headSphere,body,0,.89,.52,.23,.21,.23,0,0,0,'head');
-   const birdEyeFront=.52+.23*.905+.022;
-   for(const x of [-.085,.085]){
-    add(eyeWhiteSphere,'#fff8ed',x,.91,birdEyeFront,1,1,.42,0,0,0,'eye');
-    add(eyeSphere,'#302820',x+(x<0?.006:-.006),.91,birdEyeFront+.021,.98,.98,.48,0,0,0,'eye');
-    add(spotSphere,'#fff8e8',x-.010,.925,birdEyeFront+.036,.18,.18,.18,0,0,0,'eyeHighlight');
+   // One visible eye on each side/front surface keeps the bird expressive through turns in flight.
+   for(const side of [-1,1]){
+    const eyeYaw=side===1?-.42:-Math.PI+.42;
+    const eyeX=side*.218,eyeZ=.618;
+    add(eyeWhiteSphere,'#fff8ed',eyeX,.91,eyeZ,.48,1,.90,0,eyeYaw,0,'eye');
+    add(eyeSphere,'#302820',side*.232,.91,.624,.98,1,.72,0,eyeYaw,0,'eye');
+    add(spotSphere,'#fff8e8',side*.245,.925,.630,.18,.18,.18,0,eyeYaw,0,'eyeHighlight');
    }
    add(beakCone,'#e8ad56',0,.85,.78,1.05,1.2,1.1,Math.PI/2,0,0,'beak');
    for(const [x,y,angle] of [[-.12,.58,-.22],[0,.60,0],[.12,.58,.22]])

@@ -239,3 +239,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Ground-animal proportion pass: mammal torsos were narrowed laterally, heads raised and scaled slightly larger, and leg sockets moved inward to remain attached to the narrower body footprint. The aim is a distinct head/neck/torso silhouette rather than a broad oval, while preserving the existing watercolor surface and instanced rendering.
+
+
+- Bird face visibility: the two eye assemblies now sit on opposing side/front surfaces of the head rather than only on the front plane. The bird can maintain its flight heading and still show the near-side eye as it turns. Eye whites and pupils were enlarged slightly across the animal set for readability at normal gameplay scale.

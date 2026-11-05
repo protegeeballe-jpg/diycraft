@@ -49,7 +49,9 @@ for(const species of animals.species){
  if(species!=='bird'&&species!=='giraffe')assert.ok(features.neck,species+' should have a short connecting neck between body and head');
  assert.ok(features.head.max[2]>features.body.max[2]+.08,species+' head must extend beyond the body silhouette');
  assert.ok(features.eye.max[2]>features.body.max[2],species+' eyes must sit on the visible front of the head');
- assert.ok(features.eye.min[2]>features.head.max[2]-.055,species+' layered eyes must sit on the head surface rather than inside it');
+ if(species==='bird'){
+  assert.ok(features.eye.min[0]<features.head.min[0]-.015&&features.eye.max[0]>features.head.max[0]+.015,'Bird has a separate visible eye on both sides of its head.');
+ }else assert.ok(features.eye.min[2]>features.head.max[2]-.055,species+' layered eyes must sit on the head surface rather than inside it');
  assert.ok(features.leg.min[1]<.02&&features.leg.max[1]>.28,species+' legs must reach the ground');
  if(species==='bird')assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'bird feet must be spaced side-to-side');
  else assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
