@@ -46,7 +46,8 @@ for(const species of animals.species){
  assert.ok(features.head.max[2]>features.body.max[2]+.08,species+' head must extend beyond the body silhouette');
  assert.ok(features.eye.max[2]>features.body.max[2],species+' eyes must sit on the visible front of the head');
  assert.ok(features.leg.min[1]<.02&&features.leg.max[1]>.28,species+' legs must reach the ground');
- assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
+ if(species==='bird')assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'bird feet must be spaced side-to-side');
+ else assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
  assert.equal(geometry.attributes.position.array.length,geometry.attributes.color.array.length,species+' vertex colors must align with positions');
 }
 assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);

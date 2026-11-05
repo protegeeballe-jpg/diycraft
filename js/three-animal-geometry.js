@@ -56,7 +56,7 @@
     add(spotSphere,'#fff8e8',x-.008,.922,.719,.25,.25,.25,0,0,0,'eyeHighlight');
    }
    add(sphere,body,0,.57,-.52,.20,.12,.24,0,0,0,'tail');
-   for(const x of [-.15,.15])add(cylinder,legColor,x,.15,.06,.72,.72,.72,0,0,0,'leg');
+   for(const x of [-.22,.22])add(cylinder,legColor,x,.15,.06,.72,.72,.72,0,0,0,'leg');
   }else{
    // A compact body leaves room for the face and all four legs to read clearly.
    add(sphere,body,0,.62,0,.95,.55,.65,0,0,0,'body');
