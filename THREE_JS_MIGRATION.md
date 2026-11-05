@@ -209,3 +209,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Autosave timing refinement: completed world edits (placement, removal, inventory/care/design changes) now begin the save immediately; continuous player movement/camera pose remains debounced. The page-exit synchronous writer still supersedes any older in-flight compressed snapshot.
+
+
+- Sheep silhouette refinement: the fleece cluster was tightened around the torso and the head enlarged slightly so the sheep reads as a sheep rather than a domed shell. All species use a slightly more upright body profile after visual review of the rendered screenshot.

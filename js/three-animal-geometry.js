@@ -45,12 +45,12 @@
    }
   }
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
-  const bodyShape=species==='bird'?[.70,.50,.54]:({
-   sheep:[.78,.60,.56],cat:[.70,.54,.51],dog:[.78,.56,.58],
-   cow:[.85,.60,.59],horse:[.84,.60,.54],giraffe:[.70,.53,.52]
+  const bodyShape=species==='bird'?[.62,.62,.50]:({
+   sheep:[.62,.72,.50],cat:[.60,.64,.48],dog:[.65,.68,.52],
+   cow:[.72,.70,.54],horse:[.74,.68,.50],giraffe:[.60,.62,.48]
   }[species]);
   if(species==='bird'){
-   add(sphere,body,0,.60,0,.70,.50,.54,0,0,0,'body');
+   add(sphere,body,0,.62,0,.62,.62,.50,0,0,0,'body');
    add(sphere,body,-.49,.62,-.01,.30,.16,.40,0,0,-.16,'wing');
    add(sphere,body,.49,.62,-.01,.30,.16,.40,0,0,.16,'wing');
    add(headSphere,body,0,.89,.52,.21,.19,.21,0,0,0,'head');
@@ -69,7 +69,11 @@
     add(neckCylinder,body,0,1.24,.28,.88,1,1,0,0,0,'neck');
     for(let i=0;i<5;i++)add(spotSphere,accent,(i%2)*.13-.065,1.00+i*.15,.43,.95,1.05,1,0,0,0,'neckSpot');
    }
-   add(headSphere,body,0,headY,headZ,species==='cow'?.25:.235,.215,.24,0,0,0,'head');
+   const headShape=species==='sheep'?[.275,.245,.27]:
+    species==='cat'?[.225,.205,.23]:
+    species==='dog'?[.255,.225,.255]:
+    species==='cow'?[.27,.235,.26]:[.245,.22,.25];
+   add(headSphere,body,0,headY,headZ,headShape[0],headShape[1],headShape[2],0,0,0,'head');
    const eyeY=headY+.015,eyeZ=headZ+.19;
    for(const x of [-.098,.098]){
     add(eyeSphere,'#302820',x,eyeY,eyeZ,.95,1,1,0,0,0,'eye');
@@ -93,8 +97,8 @@
     for(const x of [-.11,.11])add(earCone,body,x,headY+.21,headZ-.015,.62,1,.64,0,0,x*.6,'ear');
     for(let i=0;i<5;i++)add(fleeceSphere,'#4b372d',0,headY+.12-i*.09,headZ-.20-i*.015,.55,.52,.55,0,0,0,'mane');
    }else if(species==='sheep'){
-    for(const [x,y,z] of [[-.31,.78,-.08],[.31,.78,-.08],[-.28,.73,.31],[.28,.73,.31],[0,.91,-.35],[0,1.00,-.12]])
-     add(fleeceSphere,'#faf7ed',x,y,z,.95,.92,.96,0,0,0,'wool');
+    for(const [x,y,z] of [[-.24,.78,-.06],[.24,.78,-.06],[-.22,.73,.23],[.22,.73,.23],[0,.89,-.22],[0,.96,-.06]])
+     add(fleeceSphere,'#faf7ed',x,y,z,.82,.88,.86,0,0,0,'wool');
     for(const x of [-.15,.15])add(earCone,'#d6b6aa',x,headY+.03,headZ-.04,.48,.34,.52,0,0,x*.7,'ear');
    }else{
     // Giraffe ossicones and small ears sit above the long neck.

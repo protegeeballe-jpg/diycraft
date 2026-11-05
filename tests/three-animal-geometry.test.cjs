@@ -53,6 +53,11 @@ for(const species of animals.species){
  assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
  assert.ok(bodyWidth<1.8&&bodyDepth<1.25,species+' body dimensions must stay compact around the legs and head');
  assert.ok(geometry.userData.animalBodyShape.every(value=>Number.isFinite(value)&&value>0),species+' must expose safe body proportions');
+ if(species==='sheep'){
+  assert.ok(extent(features.wool,0)<.85,'Sheep fleece should not overwhelm the body and head with a wide shell-like silhouette');
+  assert.ok(extent(features.head,0)>.5,'Sheep face should remain recognizable at the more compact scale');
+ }
+
 
 }
 assert.throws(()=>animals.create(THREE,{species:'unknown'}),/supported animal/);
