@@ -194,6 +194,10 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 #world-name{width:min(230px,45vw);min-width:110px;padding:7px;border:1px solid #cdd5c8;border-radius:7px;background:#fffdf8;color:#435244}
 #backup-restore{max-width:170px;font-size:10px}
 #backup-feedback{font-size:11px;line-height:1.4;color:#718075;min-height:16px;margin:4px 2px 8px}
+#device-file-feedback{font-size:11px;line-height:1.45;color:#536c56;min-height:16px;margin:4px 2px 9px}
+#device-file-fallback{display:none!important}
+#device-file-connect,#device-file-open,#device-file-download{font-size:11px}
+@media(max-width:560px){#device-file-feedback{font-size:10px}}
 .backup-controls button{min-height:34px}
 @media(max-width:560px){.backup-controls{gap:6px;padding:8px}.backup-controls label{flex:1 1 100%}#world-name{width:100%;flex:1}#backup-restore{max-width:100%}.backup-controls button{flex:1 1 46%}}
 
@@ -350,10 +354,15 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
  <label for="world-name">World name <input id="world-name" maxlength="30" value="My Peaceful World"></label>
  <button id="world-name-apply" type="button">Set name</button>
  <button id="save-now" type="button" class="primary">Save now</button>
- <button id="backup-download" type="button">Download backup</button>
- <label for="backup-restore">Restore backup <input id="backup-restore" type="file" accept=".json,.gz,.diycraft.gz,application/json,application/gzip"></label>
+ <button id="backup-download" type="button">Download JSON backup</button>
+ <button id="device-file-connect" type="button" class="primary">Choose device file</button>
+ <button id="device-file-open" type="button">Open .diycraft</button>
+ <button id="device-file-download" type="button">Download .diycraft</button>
+ <input id="device-file-fallback" type="file" accept=".diycraft,application/vnd.diycraft.world" hidden>
+ <label for="backup-restore">Restore backup <input id="backup-restore" type="file" accept=".json,.gz,.diycraft,.diycraft.gz,application/json,application/gzip,application/vnd.diycraft.world"></label>
 </div>
-<div id="backup-feedback" aria-live="polite">Your world is saved locally on this device. Use Download backup to keep a portable copy.</div>
+<div id="backup-feedback" aria-live="polite">Your world is saved with browser recovery. Link a .diycraft file for a separate device copy.</div>
+<div id="device-file-feedback" aria-live="polite">No device file is linked yet. Choose one to create MyWorld.diycraft.</div>
 <div id="offline-ready-note" aria-live="polite">Preparing offline game files…</div>
 <div id="status">Opening your saved world…</div>
 </section>
@@ -530,5 +539,5 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <div id="animal-care-flash" hidden aria-hidden="true"></div>
 <script src="../js/three.js"></script><script src="../js/three-viewport.js"></script><script src="../js/three-performance-profile.js"></script><script src="../js/three-world-adapter.js"></script><script src="../js/three-world-storage.js"></script><script src="../js/three-world-starter.js"></script><script src="../js/three-door-model.js"></script>
 <script src="../js/three-painterly-materials.js"></script><script src="../js/three-plant-geometry.js"></script><script src="../js/three-animal-geometry.js"></script><script src="../js/three-world-protection.js"></script><script src="../js/three-world-time.js"></script><script src="../js/three-world-edit-sandbox.js"></script>
-<script src="../js/three-world-raycast.js"></script><script src="../js/three-door-motion.js"></script><script src="../js/three-player-physics.js"></script><script src="../js/three-player-camera.js"></script><script src="../js/three-player-model.js"></script><script src="../js/three-neighbor-model.js"></script><script src="../js/three-neighbor-coloring.js"></script><script src="../js/three-compact-hud.js"></script><script src="../three-world-live.js"></script>
+<script src="../js/three-world-raycast.js"></script><script src="../js/three-door-motion.js"></script><script src="../js/three-player-physics.js"></script><script src="../js/three-player-camera.js"></script><script src="../js/three-player-model.js"></script><script src="../js/three-neighbor-model.js"></script><script src="../js/three-neighbor-coloring.js"></script><script src="../js/three-compact-hud.js"></script><script src="../js/three-world-file-save.js"></script><script src="../three-world-live.js"></script>
 </body></html>

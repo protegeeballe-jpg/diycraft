@@ -128,7 +128,7 @@
  async function restore(storage,adapter,backupText){
   requireAdapter(adapter);
   try{
-   if(typeof backupText!=='string'||byteLength(backupText)>MAX_BACKUP_BYTES)throw new RangeError('Backup must be text no larger than 24 MB.');
+   if(typeof backupText!=='string'||byteLength(backupText)>MAX_UNCOMPRESSED_BYTES)throw new RangeError('Expanded backup must be text no larger than 32 MB.');
    const parsed=parseWorld(await decode(backupText),adapter),encoded=await encode(parsed.savedWorld);
    if(!storage||typeof storage.setItem!=='function')throw new TypeError('Browser storage is unavailable.');
    // Validate and serialize fully before replacing the existing key.
