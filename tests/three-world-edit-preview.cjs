@@ -316,6 +316,11 @@ function freshWorld(){
   let selected=false;
   for(const key of keys){
    await page.evaluate(k=>window.__DIYCRAFT_THREE_EDIT__.pickBlock(k),key);
+   // Animal care intentionally has priority over block selection. Close an
+   // animal panel if a projected block tap lands on an animal, then keep
+   // searching for a genuinely selected block before testing placement.
+   if(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getAnimalCareStats().open))
+    await page.locator('#animal-care-close').click();
    await page.waitForTimeout(30);
    state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
    const canPlace=await page.evaluate(()=>{const d=window.__DIYCRAFT_THREE_EDIT__,s=d.getState(),b=s.world.blocks.find(v=>v.key===s.selectedKey),p=d.lastPlacement;if(!b||!p)return false;const x=b.x+p.step[0],y=b.y+p.step[1],z=b.z+p.step[2];return !s.world.blocks.some(v=>v.x===x&&v.y===y&&v.z===z);});
