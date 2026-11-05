@@ -57,7 +57,7 @@ for(const species of animals.species){
  assert.ok(geometry.userData.animalBodyShape.every(value=>Number.isFinite(value)&&value>0),species+' must expose safe body proportions');
  if(species==='sheep'){
   assert.ok(extent(features.wool,0)<.85,'Sheep fleece should not overwhelm the body and head with a wide shell-like silhouette');
-  assert.ok(features.head.max[1]>1.15,'Sheep face should rise clearly above the fleece cluster');
+  assert.ok(features.head.max[1]>1.35,'Sheep face should rise clearly above the fleece cluster');
   assert.ok(extent(features.head,0)>.5,'Sheep face should remain recognizable at the more compact scale');
  }
 

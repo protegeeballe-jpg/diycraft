@@ -218,3 +218,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Animal silhouette structure: mammal torsos are now narrower across X and longer along the front-to-back Z axis; non-giraffe mammals have a short angled neck connecting torso to raised head; leg stance follows the broader torso footprint. Bird and giraffe profiles remain intentionally distinct.
+
+
+- Sheep/animal face visibility pass: reduced torso height slightly and lifted non-giraffe heads and necks toward the front (+Z) so faces remain separate from the body at the normal isometric camera distance. Head sizes were increased proportionally, while the body widths and one-batch animal geometry budget remain bounded.

@@ -46,8 +46,8 @@
   }
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
   const bodyShape=species==='bird'?[.55,.55,.62]:({
-   sheep:[.50,.62,.64],cat:[.45,.60,.58],dog:[.52,.62,.62],
-   cow:[.58,.62,.70],horse:[.56,.60,.75],giraffe:[.50,.62,.55]
+   sheep:[.48,.54,.58],cat:[.44,.55,.53],dog:[.50,.57,.58],
+   cow:[.56,.58,.64],horse:[.54,.57,.69],giraffe:[.50,.62,.55]
   }[species]);
   if(species==='bird'){
    add(sphere,body,0,.62,0,.55,.55,.62,0,0,0,'body');
@@ -64,17 +64,17 @@
   }else{
    // A compact body leaves room for the face and all four legs to read clearly.
    add(sphere,body,0,.62,0,bodyShape[0],bodyShape[1],bodyShape[2],0,0,0,'body');
-   const giraffe=species==='giraffe',headY=giraffe?1.62:.95,headZ=giraffe?.57:(species==='horse'?.68:.68);
+   const giraffe=species==='giraffe',headY=giraffe?1.62:1.16,headZ=giraffe?.57:(species==='horse'?.79:.78);
    if(giraffe){
     add(neckCylinder,body,0,1.24,.28,.88,1,1,0,0,0,'neck');
     for(let i=0;i<5;i++)add(spotSphere,accent,(i%2)*.13-.065,1.00+i*.15,.43,.95,1.05,1,0,0,0,'neckSpot');
    }
-   const headShape=species==='sheep'?[.32,.285,.31]:
-    species==='cat'?[.26,.235,.255]:
-    species==='dog'?[.30,.265,.29]:
-    species==='cow'?[.31,.265,.30]:
-    species==='horse'?[.28,.245,.27]:[.245,.22,.25];
-   if(!giraffe)add(neckCylinder,body,0,headY-.17,headZ-.17,.88,species==='horse'?.82:.68,.88,Math.PI/5,0,0,'neck');
+   const headShape=species==='sheep'?[.36,.31,.34]:
+    species==='cat'?[.29,.25,.28]:
+    species==='dog'?[.33,.29,.32]:
+    species==='cow'?[.34,.29,.33]:
+    species==='horse'?[.32,.27,.30]:[.27,.235,.27];
+   if(!giraffe)add(neckCylinder,body,0,headY-.18,headZ-.18,.88,species==='horse'?.92:.82,.88,Math.PI/5,0,0,'neck');
    add(headSphere,body,0,headY,headZ,headShape[0],headShape[1],headShape[2],0,0,0,'head');
    const eyeY=headY+.015,eyeZ=headZ+.19;
    for(const x of [-.098,.098]){
