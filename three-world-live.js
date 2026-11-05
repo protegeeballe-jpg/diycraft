@@ -894,7 +894,7 @@ function worldTargetAtScreen(clientX,clientY){
    const normal=hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
    const values=[normal.x,normal.y,normal.z],axis=values.map(Math.abs).indexOf(Math.max(...values));
    const step=[0,0,0];step[axis]=values[axis]>=0?1:-1;
-   return {kind:'block',key,block,step};
+   return {kind:'block',key,block,step,depth:hit.point.clone().project(camera).z};
   }
   if(hit.object===floor)
    return {kind:'ground',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z)};
@@ -1389,12 +1389,19 @@ canvas.addEventListener('pointerdown',event=>{
  event.preventDefault();
  const gesture={id:event.pointerId,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,holdTriggered:false,target:null,holdTimer:null};
  if(!playerPlayMode){
+  const worldHit=worldTargetAtScreen(event.clientX,event.clientY);
   const animal=animalAtScreen(event.clientX,event.clientY);
-  if(animal)gesture.target={kind:'animal',actor:animal};
-  else{
-   const neighbor=neighborAtScreen(event.clientX,event.clientY);
-   gesture.target=neighbor?{kind:'neighbor',actor:neighbor}:worldTargetAtScreen(event.clientX,event.clientY);
-  }
+  const neighbor=animal?null:neighborAtScreen(event.clientX,event.clientY);
+  const actor=animal?{kind:'animal',actor:animal}:neighbor?{kind:'neighbor',actor:neighbor}:null;
+  if(actor&&worldHit?.kind==='block'){
+   // Actors are screen-picked because their instanced meshes are not part of the block raycast.
+   // Compare projected depth so a nearby character cannot steal a tap on a foreground block.
+   const point=actor.kind==='animal'
+    ?new THREE.Vector3(animal.x,animal.species==='giraffe'?.8:.48,animal.z)
+    :new THREE.Vector3(neighbor.x+Math.sin(neighbor.facing||0)*.38,1.18,neighbor.z+Math.cos(neighbor.facing||0)*.38);
+   const actorDepth=point.project(camera).z;
+   gesture.target=actorDepth<worldHit.depth-.003?actor:worldHit;
+  }else gesture.target=actor||worldHit;
   if(gesture.target&&['block','ground','water'].includes(gesture.target.kind)){
    gesture.holdTimer=setTimeout(()=>{
     if(pointerGesture!==gesture||gesture.moved||gesture.holdTriggered)return;
