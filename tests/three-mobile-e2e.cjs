@@ -52,8 +52,10 @@ const {chromium}=require('playwright');
   assert.deepEqual(proportions.character?.modelScale,{x:.90,y:1,z:1},
    'The player avatar must be narrower without changing its height or depth.');
   assert.equal(proportions.animals?.renderScale,.74,'All animal species must use the shared smaller scale.');
-  assert.deepEqual(proportions.animals?.instanceScale,{x:.74,y:.74,z:.74},
-   'The actual animal instance matrix must apply the smaller scale, not just report metadata.');
+  assert.ok(proportions.animals?.instanceScale&&
+   [proportions.animals.instanceScale.x,proportions.animals.instanceScale.y,proportions.animals.instanceScale.z]
+    .every(value=>Number.isFinite(value)&&Math.abs(value-.74)<1e-5),
+   'The actual animal instance matrix must apply the smaller scale on every axis within Float32 precision.');
 
   // The local painterly generator must produce a visibly distinct surface for every design.
   const textureCoverage=await page.evaluate(()=>{
