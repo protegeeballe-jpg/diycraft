@@ -309,7 +309,7 @@
   }
   const artworks=snapshot.artworks.map(item=>{
    if(!isObject(item)||typeof item.name!=='string'||typeof item.data!=='string'||
-      item.data.length>=MAX_ARTWORK_DATA||!/^data:image\\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.data))
+      item.data.length>=MAX_ARTWORK_DATA||!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.data))
     throw new TypeError('The renderer snapshot contains an invalid gallery artwork.');
    return {name:item.name.slice(0,28),data:item.data};
   });
