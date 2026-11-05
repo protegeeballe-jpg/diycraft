@@ -40,11 +40,12 @@ const {chromium}=require('playwright');
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
 
-  // Compact HUD: the settings dashboard is collapsed by default and retains all controls.
+  // The organized controls panel stays visible by default and during play.
   const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
   const openSettingsPanel=async()=>{if(!(await settingsPanel.isVisible()))await settingsToggle.click();};
   const togglePlayModeFromSettings=async()=>{await openSettingsPanel();await page.locator('#play-mode').click();};
-  assert.equal(await settingsPanel.isVisible(),false,'The settings dashboard must start collapsed.');
+  assert.equal(await settingsPanel.isVisible(),true,'The organized controls panel must be visible when the world opens.');
+  assert.equal(await settingsToggle.getAttribute('aria-expanded'),'true','The visible panel must be reflected by the toggle.');
   assert.equal(await page.locator('#quick-tools').count(),0,'There must be no floating quick-action toolbar.');
   assert.equal(await page.locator('#gesture-guide').count(),0,'Tap and long-press are built-in gestures, not screen controls.');
   assert.equal(await page.locator('#quick-play-toggle').count(),0,'Play Mode belongs in the organized settings panel.');
@@ -71,7 +72,9 @@ const {chromium}=require('playwright');
   await page.locator('#play-mode').click();
   assert.equal(await page.locator('#player-controls').isVisible(),false,'Build Mode can be restored from the same control.');
   await settingsToggle.click();
-  assert.equal(await settingsPanel.isVisible(),true,'The gear must open the settings dashboard.');
+  assert.equal(await settingsPanel.isVisible(),false,'The controls toggle must collapse the panel.');
+  await settingsToggle.click();
+  assert.equal(await settingsPanel.isVisible(),true,'The same toggle must reopen the controls panel.');
   assert.equal(await settingsToggle.getAttribute('aria-expanded'),'true');
   for(const id of ['bucket-item','block-type','inventory-open','character-open','art-open','gallery-open',
    'solid-design-open','door-design-open','tile-design-open','animal-place','world-name','save-now',
@@ -88,7 +91,7 @@ const {chromium}=require('playwright');
   await page.locator('body').dispatchEvent('pointerdown',{
    pointerId:34,pointerType:'touch',isPrimary:true,button:0,buttons:1
   });
-  assert.equal(await settingsPanel.isVisible(),false,'Tapping outside the settings dashboard must dismiss it without blocking the tapped target.');
+  assert.equal(await settingsPanel.isVisible(),true,'Tapping the world must not make the controls disappear.');
 
   assert.ok(startup.width<=390&&startup.height<=844,
    'Mobile rendering must clamp the drawing buffer to the mobile viewport rather than multiplying by device pixel ratio.');
@@ -164,7 +167,7 @@ const {chromium}=require('playwright');
 
   // Touch movement: pointer-down must move the player; pointer-cancel must release it.
   await togglePlayModeFromSettings();
-  assert.equal(await settingsPanel.isVisible(),false,'Entering Play Mode must close the settings dashboard.');
+  assert.equal(await settingsPanel.isVisible(),true,'The controls panel must remain visible in Play Mode.');
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must appear in Play Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump/Fly controls must appear opposite the D-pad.');
   const hudPositions=await page.evaluate(()=>{

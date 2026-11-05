@@ -127,7 +127,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 /* Compact settings entry point; the full build/save dashboard stays mounted while collapsed. */
 #settings-toggle{position:fixed;z-index:13;left:14px;top:14px;width:44px;height:44px;padding:0;border:1px solid #bdc9b5;border-radius:50%;background:rgba(255,252,244,.96);box-shadow:0 4px 16px #43564a25;font-size:23px;line-height:1;touch-action:manipulation}
 #settings-toggle:focus-visible,#settings-close:focus-visible,.player-action-button:focus-visible{outline:3px solid #789d72;outline-offset:3px}
-#settings-panel{position:fixed;z-index:12;left:14px;top:68px;right:auto;width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 82px);overflow:auto}
+#settings-panel{position:fixed;z-index:12;left:14px;top:68px;right:auto;width:min(540px,calc(100vw - 28px));max-height:min(78dvh,calc(100dvh - 82px));overflow:auto}
 #settings-panel[hidden]{display:none!important}
 .settings-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
 .settings-heading h1{margin:0}
@@ -138,7 +138,7 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 #player-controls{bottom:calc(14px + env(safe-area-inset-bottom));left:calc(14px + env(safe-area-inset-left))}
 @media(max-width:600px){
  #settings-toggle{left:8px;top:8px}
- #settings-panel{left:8px;top:60px;width:calc(100vw - 16px);max-height:calc(100dvh - 72px)}
+ #settings-panel{left:8px;top:60px;width:calc(100vw - 16px);max-height:min(64dvh,calc(100dvh - 72px))}
  
  #player-controls{left:8px;bottom:calc(8px + env(safe-area-inset-bottom));padding:7px}
  #player-actions{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));gap:7px;padding:5px}
@@ -212,9 +212,9 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 <body>
 <canvas id="three-world" aria-label="Three-dimensional DIYCraft world: tap to build or fill a hole, press and hold for 0.6 seconds to dig or remove a block, drag to look around" title="Tap to build or fill · Hold 0.6s to dig or remove · Drag to look around"></canvas>
 <div id="world-feedback" role="status" aria-live="polite" hidden></div>
-<button id="settings-toggle" type="button" aria-label="Open settings and build tools" aria-controls="settings-panel" aria-expanded="false" title="Settings and build tools">⚙</button>
+<button id="settings-toggle" type="button" aria-label="Hide controls panel" aria-controls="settings-panel" aria-expanded="true" title="Hide controls panel">⚙</button>
 
-<section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false" hidden>
+<section id="settings-panel" class="panel" role="dialog" aria-labelledby="settings-title" aria-modal="false">
 <div class="settings-heading"><h1 id="settings-title">DIYCraft · Peaceful Painterly World</h1><button id="settings-close" type="button" aria-label="Close settings">Close ✕</button></div>
 <div class="sub">Explore, build, paint, and care for your world · Watercolor + colored-pencil texture</div>
  <div class="toolbar">

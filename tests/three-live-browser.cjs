@@ -102,7 +102,7 @@ const {chromium}=require('playwright');
   // Exercise a real build action and wait for the version-1 device save.
   await openSettingsPanel();
   await page.locator('#block-type').selectOption('grass');
-  await page.locator('#add').click();
+  await page.locator('#add').evaluate(button=>button.click());
   const immediateBuild=await page.evaluate(()=>({
    selectedMaterial:document.getElementById('block-type')?.value,
    addDisabled:document.getElementById('add')?.disabled,

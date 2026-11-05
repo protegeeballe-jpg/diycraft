@@ -21,6 +21,8 @@ function setSettingsPanelOpen(open,restoreFocus=true){
  const expanded=!!open;
  settingsPanel.hidden=!expanded;
  settingsToggle.setAttribute('aria-expanded',String(expanded));
+ settingsToggle.setAttribute('aria-label',expanded?'Hide controls panel':'Show controls panel');
+ settingsToggle.title=expanded?'Hide controls panel':'Show controls panel';
  if(expanded){
   const firstControl=settingsPanel.querySelector('button,select,input');
   if(firstControl)firstControl.focus({preventScroll:true});
@@ -30,11 +32,6 @@ settingsToggle.addEventListener('click',()=>setSettingsPanelOpen(settingsPanel.h
 settingsClose.addEventListener('click',()=>setSettingsPanelOpen(false));
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'&&!settingsPanel.hidden){event.preventDefault();setSettingsPanelOpen(false);}
-});
-document.addEventListener('pointerdown',event=>{
- if(settingsPanel.hidden)return;
- if(settingsPanel.contains(event.target)||settingsToggle.contains(event.target))return;
- setSettingsPanelOpen(false,false);
 });
 if(!THREE||!adapter||!storage||!starterWorld||!painterly||!editing||!raycastKeys||!doorMotion||!performanceProfiles||!plantGeometryFactory||!doorModels||!animalGeometryFactory||!playerPhysics||!playerCamera||!playerModelFactory||!neighborModelFactory||!coloring||!protection||!protection.pickAnimalAtScreen||!timeVisuals)throw new Error('A required local Three.js game dependency did not load.');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xf2ead9);scene.fog=new THREE.Fog(0xf2ead9,30,75);
@@ -231,7 +228,7 @@ function togglePlayerFlight(){
  status.textContent=playerPhysicsState.flying?'Creative flight enabled.':'Flight turned off.';
  syncPlayerButtons();updatePlayerDiagnostics();
 }
-playModeButton.addEventListener('click',()=>{setSettingsPanelOpen(false);setPlayerPlayMode(!playerPlayMode);});
+playModeButton.addEventListener('click',()=>setPlayerPlayMode(!playerPlayMode));
 cameraModeButton.addEventListener('click',()=>{
  if(!playerPlayMode)return;
  playerCameraMode=playerCameraMode==='third'?'first':'third';
