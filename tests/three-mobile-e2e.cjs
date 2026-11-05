@@ -61,6 +61,8 @@ const {chromium}=require('playwright');
   });
   assert.ok(initialHud.gear.left>=initialHud.toolbar.left&&initialHud.gear.right<=initialHud.toolbar.right,
    'The gear icon must be inside the upper-right utility row.');
+  assert.ok(Math.abs(initialHud.gear.right-initialHud.toolbar.right)<1,
+   'The gear icon must be the rightmost icon in the upper-right utility row.');
   assert.ok(initialHud.d.right<initialHud.a.left,'The always-visible lower-corner touch pads must not overlap.');
   assert.ok(Math.abs(initialHud.d.bottom-initialHud.a.bottom)<3,'Both touch pads must share the same bottom alignment.');
 
