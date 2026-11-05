@@ -49,6 +49,21 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#quick-tools').count(),0,'There must be no floating quick-action toolbar.');
   assert.equal(await page.locator('#gesture-guide').count(),0,'Tap and long-press are built-in gestures, not screen controls.');
   assert.equal(await page.locator('#quick-play-toggle').count(),0,'Play Mode belongs in the organized settings panel.');
+  assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must stay visible even before Play Mode starts.');
+  assert.equal(await page.locator('#player-actions').isVisible(),true,'The Jump/Fly/Dance/Sit pad must stay visible even before Play Mode starts.');
+  const initialHud=await page.evaluate(()=>{
+   const d=document.getElementById('player-controls').getBoundingClientRect();
+   const a=document.getElementById('player-actions').getBoundingClientRect();
+   const g=document.getElementById('settings-toggle').getBoundingClientRect();
+   const t=document.getElementById('top-controls').getBoundingClientRect();
+   return {d:{left:d.left,right:d.right,bottom:d.bottom},a:{left:a.left,right:a.right,bottom:a.bottom},
+    gear:{left:g.left,right:g.right},toolbar:{left:t.left,right:t.right}};
+  });
+  assert.ok(initialHud.gear.left>=initialHud.toolbar.left&&initialHud.gear.right<=initialHud.toolbar.right,
+   'The gear icon must be inside the upper-right utility row.');
+  assert.ok(initialHud.d.right<initialHud.a.left,'The always-visible lower-corner touch pads must not overlap.');
+  assert.ok(Math.abs(initialHud.d.bottom-initialHud.a.bottom)<3,'Both touch pads must share the same bottom alignment.');
+
   assert.equal(await page.locator('#top-controls button').count(),3,'Exactly three utility icons must appear at the upper right.');
   assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),8,'The compact build toolbar must contain eight requested tools.');
   assert.equal(await page.locator('#settings-toggle').getAttribute('aria-expanded'),'false');
@@ -198,6 +213,13 @@ const {chromium}=require('playwright');
   await page.locator('#flight').click();
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().flying),false,
    'The right-side Fly button must toggle flight off.');
+  await page.locator('#play-mode').click(); // Exit Play Mode before testing first-touch activation.
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.playerMode),false);
+  const firstTouch=page.locator('#player-controls [data-move="forward"]');
+  await firstTouch.dispatchEvent('pointerdown',{pointerId:20,pointerType:'touch',isPrimary:true,button:0,buttons:1});
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.playerMode),true,
+   'Touching a visible movement arrow must enter Play Mode automatically.');
+  await firstTouch.dispatchEvent('pointerup',{pointerId:20,pointerType:'touch',isPrimary:true,button:0,buttons:0});
   const before=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState?.().player?.z);
   const forward=page.locator('#player-controls [data-move="forward"]');
   await forward.dispatchEvent('pointerdown',{pointerId:21,pointerType:'touch',isPrimary:true,button:0,buttons:1});
