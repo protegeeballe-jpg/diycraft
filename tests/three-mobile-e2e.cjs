@@ -38,7 +38,7 @@ const {chromium}=require('playwright');
    storageReadFailed:window.__DIYCRAFT_THREE_EDIT__?.storageReadFailed
   }));
   // The live camera must track the actual canvas dimensions on tall and wide screens.
-  const viewportCases=[{width:390,height:844},{width:844,height:390},{width:1366,height:768},{width:1024,height:768}];
+  const viewportCases=[{width:390,height:844},{width:844,height:390},{width:1366,height:768},{width:1024,height:768},{width:768,height:1024}];
   for(const size of viewportCases){
    await page.setViewportSize(size);
    await page.waitForFunction(({width,height})=>{
