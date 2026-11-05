@@ -48,6 +48,7 @@ const {chromium}=require('playwright');
   assert.ok(birdVisualBefore?.birdWingBatches>=1,'The live scene must build a separate pair of pivoted bird wing batches.');
   assert.ok(birdVisualBefore?.birdWingInstances>=1,'The live bird wings must have per-bird instance transforms.');
   assert.ok(birdVisualBefore.birdFlightY>.45,'Chirpy should be rendered airborne above the ground.');
+  assert.ok(birdVisualBefore.birdWingPivotY>=1,'Bird wing pivots must sit at shoulder height above the torso rather than inside it.');
   await page.waitForTimeout(240);
   const birdVisualAfter=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
   assert.ok(Math.abs(birdVisualAfter.birdFlapAngle-birdVisualBefore.birdFlapAngle)>.03,'Bird wings must flap over time rather than remain a static wobbling body.');

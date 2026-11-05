@@ -230,3 +230,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 - Bird bodies remain instanced, while left/right feathered wings use separate instanced meshes whose matrices are composed from shoulder pivots each frame. The wing tips flap in opposing local rotations, with a gentle airborne bob and bank. This retains batching rather than creating one Three.js draw call per bird.
 - Existing watercolor + colored-pencil materials are reused on every added feature; no extra texture downloads or shadow-map requirements are introduced.
 - Automated checks cover visible face geometry, joined leg sockets, the mirrored shoulder-wing shapes, airborne height and changing wing angles in the live browser.
+
+
+- Visual-angle correction from the focused screenshots: ground animals now turn their face direction toward the current orbit camera so the eyes and muzzles remain visible while players explore from different sides. Birds retain their flight heading. Bird wing shoulder pivots have been raised to the upper body line so the feathered wings no longer disappear behind the torso from the normal elevated camera.
