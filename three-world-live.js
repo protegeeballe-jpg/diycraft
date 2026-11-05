@@ -130,6 +130,7 @@ const neighborColorCtx=neighborColorCanvas.getContext('2d',{willReadFrequently:t
 
 const neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[];
 let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
+// World interaction is gesture-first: tap builds/fills; hold digs/removes; no action buttons are needed.
 const touchControls=document.getElementById('player-controls'),touchActions=document.getElementById('player-actions'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
 
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
