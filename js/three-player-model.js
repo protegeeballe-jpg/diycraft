@@ -8,6 +8,7 @@
  if(root)root.DIYCraftThreePlayerModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
+ const WIDTH_SCALE=.90;
  const HAIR_STYLES=new Set(['short','bob','long','ponytail','pigtails','curly','buns']);
  const OUTFIT_STYLES=new Set(['hoodie','sweater','overalls','dress','tee']);
  const ACCESSORIES=new Set(['none','bow','flower','glasses','cap']);
@@ -46,6 +47,7 @@
  function create(THREE,materials,player,shadows=false){
   if(!THREE||!materials||!player)throw new TypeError('Three.js, painterly materials and a player appearance are required.');
   const root=new THREE.Group(),boxes=[];
+  root.scale.set(WIDTH_SCALE,1,1);
   const skin=player.skin||'#efc39d',shirt=player.shirt||'#d94b3d';
   const pants=player.pants||'#397d8f',shoes=player.shoes||'#bd4540';
   const hair=player.hair||'#493127',eyes=player.eyes||'#302820';
@@ -147,6 +149,7 @@
   root.userData.playerMesh=mesh;
   root.userData.playerGeometry=geometry;
   root.userData.sharedMaterial=surface;
+  root.userData.proportions=Object.freeze({widthScale:WIDTH_SCALE});
   root.userData.appearance={hairStyle,outfitStyle:outfit,accessory,hair,skin,shirt,pants,shoes,eyes,accessoryColor:accent};
   update(root,player);
   return root;
@@ -164,5 +167,5 @@
   if(geometry&&typeof geometry.dispose==='function')geometry.dispose();
   return true;
  }
- return Object.freeze({create,update,dispose,geometryFromBoxes});
+ return Object.freeze({create,update,dispose,geometryFromBoxes,proportions:Object.freeze({widthScale:WIDTH_SCALE})});
 });

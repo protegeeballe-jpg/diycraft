@@ -6,12 +6,13 @@
  if(root)root.DIYCraftThreePlantGeometry=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
+ const RENDER_SCALE=.72;
  function createGeometry(THREE,block){
   if(!THREE||!block||!['flower','tall_grass'].includes(block.type))
    throw new TypeError('A flower or tall-grass block and Three.js are required.');
   const positions=[],colors=[],uvs=[],indices=[];
   const shape={
-   plantType:block.type,petalCount:0,leafCount:0,raisedPetalRidges:false,raisedLeafVeins:false,
+   plantType:block.type,renderScale:RENDER_SCALE,petalCount:0,leafCount:0,raisedPetalRidges:false,raisedLeafVeins:false,
    petalYRange:null,petalProfiles:[],petalRise:0,petalCupDepth:0,flowerCenterY:0,flowerVolume:false,petalCrossSectionSegments:0,petalLongitudinalRings:0,
    petalThickness:0,stalkVolume:false,stalkRadialSegments:0,basalLeavesVolume:false,leafThickness:0,grassBaseColor:null,grassColors:[]
   };
@@ -167,5 +168,5 @@
   geometry.userData.plantShape=shape;
   return geometry;
  }
- return Object.freeze({createGeometry});
+ return Object.freeze({createGeometry,renderScale:RENDER_SCALE});
 });

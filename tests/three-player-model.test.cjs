@@ -11,7 +11,7 @@ class Position{
  set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}
 }
 class FakeGroup{
- constructor(){this.children=[];this.position=new Position();this.rotation={x:0,y:0,z:0};this.userData={};this.parent=null;}
+ constructor(){this.children=[];this.position=new Position();this.rotation={x:0,y:0,z:0};this.scale={x:1,y:1,z:1,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}};this.userData={};this.parent=null;}
  add(child){child.parent=this;this.children.push(child);}
  remove(child){this.children=this.children.filter(item=>item!==child);child.parent=null;}
 }
@@ -62,6 +62,7 @@ test('builds the complete player with one painterly mesh and one draw-call surfa
  assert.equal(root.position.x,.5);
  assert.equal(root.position.y,0);
  assert.equal(root.position.z,7.5);
+  assert.deepEqual({x:root.scale.x,y:root.scale.y,z:root.scale.z},{x:.90,y:1,z:1},'The avatar should be a little narrower without changing height or depth.');
 });
 
 test('preserves every saved hairstyle, outfit and accessory appearance',()=>{

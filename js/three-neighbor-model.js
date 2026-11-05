@@ -8,6 +8,7 @@
  if(root)root.DIYCraftThreeNeighborModels=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
+ const WIDTH_SCALE=.90;
  function finite(value,fallback=0){return Number.isFinite(value)?value:fallback;}
  function shade(hex,factor){
   const value=parseInt(String(hex||'#808080').slice(1),16);
@@ -156,7 +157,8 @@
    {x:0,y:-.31,z:0,color:pants,w:.25,h:.62,d:.30},
    {x:0,y:-.465,z:.07,color:shoes,w:.32,h:.16,d:.39}
   ]);
-  root.scale.setScalar(scale);
+  root.scale.set(scale*WIDTH_SCALE,scale,scale);
+  root.userData.proportions=Object.freeze({widthScale:WIDTH_SCALE});
   root.userData.neighborId=appearance.id;
   root.userData.bodyMesh=bodyMesh;
   root.userData.limbs={leftArm,rightArm,leftLeg,rightLeg};
@@ -190,5 +192,5 @@
   limbs.leftLeg.rotation.x=legSwing;limbs.rightLeg.rotation.x=-legSwing;
   return root;
  }
- return Object.freeze({create,update,geometryFromBoxes});
+ return Object.freeze({create,update,geometryFromBoxes,proportions:Object.freeze({widthScale:WIDTH_SCALE})});
 });

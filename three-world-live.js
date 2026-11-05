@@ -99,7 +99,7 @@ function applyWorldTime(seconds){
 }
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
 const group=new THREE.Group();scene.add(group);
-const boxGeometry=new THREE.BoxGeometry(1,1,1),tileGeometry=new THREE.BoxGeometry(1,.13,1),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
+const BLOCK_SIZE=1,boxGeometry=new THREE.BoxGeometry(BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE),tileGeometry=new THREE.BoxGeometry(BLOCK_SIZE,.13,BLOCK_SIZE),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
 const animatedPlants=[],animalSurfaceMaterial=materials.get('#ffffff','paper');
 animalSurfaceMaterial.vertexColors=true;animalSurfaceMaterial.needsUpdate=true;
@@ -351,7 +351,7 @@ function updateDoorAnimations(now=performance.now()){
 const plantSurfaceMaterial=materials.get('#ffffff','paper');
 plantSurfaceMaterial.vertexColors=true;plantSurfaceMaterial.side=THREE.DoubleSide;plantSurfaceMaterial.needsUpdate=true;
 function addPlant(block){
- const root=new THREE.Group();root.position.set(block.x+.5,block.y,block.z+.5);root.userData.blockKey=block.key;
+ const root=new THREE.Group();root.position.set(block.x+.5,block.y,block.z+.5);root.scale.setScalar(plantGeometryFactory.renderScale);root.userData.blockKey=block.key;
  const plantGeometry=plantGeometryFactory.createGeometry(THREE,block);plantGeometry.userData.sandboxOwned=true;
  const mesh=new THREE.Mesh(plantGeometry,plantSurfaceMaterial);
  mesh.userData.blockKey=block.key;mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
@@ -458,7 +458,7 @@ function buildAnimalBatches(animals){
   entry.animals.forEach((animal,index)=>{
    const isBird=animal.species==='bird';
    dummy.position.set(animal.x,isBird?.70:.04,animal.z);
-   dummy.rotation.set(0,animalFacingCamera(animal),0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+   dummy.rotation.set(0,animalFacingCamera(animal),0);dummy.scale.setScalar(animalGeometryFactory.renderScale);dummy.updateMatrix();
    mesh.setMatrixAt(index,dummy.matrix);
   });
   mesh.instanceMatrix.needsUpdate=true;group.add(mesh);
@@ -501,7 +501,7 @@ function updateAnimalInstances(now){
    const bob=isBird?.70+Math.sin(time*3.2+phase)*.105:.04+Math.sin(time*2.2+phase)*.03;
    dummy.position.set(animal.x,bob,animal.z);
    dummy.rotation.order='XYZ';dummy.rotation.set(0,animalFacingCamera(animal),isBird?Math.cos(time*2.1+phase)*.035:Math.sin(time*1.1+phase)*.018);
-   dummy.scale.set(1,1,1);dummy.updateMatrix();batch.mesh.setMatrixAt(index,dummy.matrix);
+   dummy.scale.setScalar(animalGeometryFactory.renderScale);dummy.updateMatrix();batch.mesh.setMatrixAt(index,dummy.matrix);
   });
   batch.mesh.instanceMatrix.needsUpdate=true;
  });
@@ -515,10 +515,10 @@ function updateAnimalInstances(now){
    legs.forEach(leg=>{
     const stride=moving?Math.sin(gait+leg[2])*.24:Math.sin(time*1.1+phase+leg[2])*.025;
     lastGroundLegAngle=stride;
-    const dx=leg[0],dz=leg[1],cos=Math.cos(yaw),sin=Math.sin(yaw);
-    const worldX=animal.x+dx*cos+dz*sin,worldZ=animal.z-dx*sin+dz*cos;
-    dummy.position.set(worldX,bob+batch.pivotY,worldZ);
-    animalGeometryFactory.applyQuadrupedLegPose(dummy,yaw,stride);lastGroundLegRotationOrder=dummy.rotation.order;lastGroundLegRotationX=dummy.rotation.x;lastGroundLegRotationY=dummy.rotation.y;dummy.scale.set(1,1,1);dummy.updateMatrix();
+    const dx=leg[0],dz=leg[1],cos=Math.cos(yaw),sin=Math.sin(yaw),animalScale=animalGeometryFactory.renderScale;
+    const worldX=animal.x+(dx*cos+dz*sin)*animalScale,worldZ=animal.z+(-dx*sin+dz*cos)*animalScale;
+    dummy.position.set(worldX,bob+batch.pivotY*animalScale,worldZ);
+    animalGeometryFactory.applyQuadrupedLegPose(dummy,yaw,stride);lastGroundLegRotationOrder=dummy.rotation.order;lastGroundLegRotationX=dummy.rotation.x;lastGroundLegRotationY=dummy.rotation.y;dummy.scale.setScalar(animalScale);dummy.updateMatrix();
     batch.mesh.setMatrixAt(instance++,dummy.matrix);
    });
   });
@@ -529,7 +529,7 @@ function updateAnimalInstances(now){
    const animal=byId.get(original.id)||original,phase=Number.isFinite(animal.phase)?animal.phase:0;
    const flap=Math.sin(time*11.5+phase)*.60;
    lastBirdFlapAngle=flap;lastBirdFlightY=.70+Math.sin(time*3.2+phase)*.105;
-   birdRoot.position.set(animal.x,lastBirdFlightY,animal.z);
+   birdRoot.position.set(animal.x,lastBirdFlightY,animal.z);birdRoot.scale.setScalar(animalGeometryFactory.renderScale);
    birdRoot.rotation.set(0,animalFacingCamera(animal),Math.cos(time*2.1+phase)*.035);
    birdLeftPivot.rotation.set(.025*Math.cos(time*11.5+phase),0,-flap);
    birdRightPivot.rotation.set(-.025*Math.cos(time*11.5+phase),0,flap);
@@ -641,7 +641,8 @@ function renderSandbox(state){
    const expected=current.world.blocks.map(block=>block.key);
    const missing=expected.filter(key=>!counts.has(key));
    const duplicates=expected.filter(key=>(counts.get(key)||0)>1);
-   return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates};
+   return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates,
+     cellDimensions:{width:BLOCK_SIZE,height:BLOCK_SIZE,depth:BLOCK_SIZE}};
   },
   focusFlowerForTest:(index=0)=>{
    const roots=group.children.filter(root=>root.userData.blockKey&&root.children.some(child=>
@@ -657,7 +658,7 @@ function renderSandbox(state){
    const plants=group.children.filter(root=>root.userData.blockKey&&root.children.some(child=>child.isMesh&&child.geometry?.userData?.plantShape));
    const flowers=plants.map(root=>{
     const mesh=root.children.find(child=>child.isMesh&&child.geometry?.userData?.plantShape),shape=mesh.geometry.userData.plantShape;
-    return {type:shape.plantType,petalCount:shape.petalCount,leafCount:shape.leafCount,flowerVolume:shape.flowerVolume,
+    return {type:shape.plantType,renderScale:root.scale.x,petalCount:shape.petalCount,leafCount:shape.leafCount,flowerVolume:shape.flowerVolume,
      petalCrossSectionSegments:shape.petalCrossSectionSegments,petalLongitudinalRings:shape.petalLongitudinalRings,
      petalThickness:shape.petalThickness,petalRise:shape.petalRise,petalCupDepth:shape.petalCupDepth,flowerCenterY:shape.flowerCenterY,petalProfiles:shape.petalProfiles,stalkVolume:shape.stalkVolume,basalLeavesVolume:shape.basalLeavesVolume,
      leafThickness:shape.leafThickness,vertexCount:mesh.geometry.attributes.position.count,indexCount:mesh.geometry.index?.count||0};
@@ -685,7 +686,7 @@ function renderSandbox(state){
   artOpen:()=>!artStudio.hidden,galleryOpen:()=>!galleryPanel.hidden,
   getGalleryStats:()=>({artworks:sandbox.getState().world.artworks.map(artwork=>({name:artwork.name,dataLength:artwork.data.length})),imageCount:galleryRoot.querySelectorAll('img').length}),
 
-  getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
+  getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},modelScale:playerModelRoot?{x:playerModelRoot.scale.x,y:playerModelRoot.scale.y,z:playerModelRoot.scale.z}:null,meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -705,7 +706,7 @@ function renderSandbox(state){
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
-  getAnimalStats:()=>({animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,birdWingBatches:birdWingBatches.length,birdWingInstances:birdWingBatches.reduce((count,batch)=>count+batch.animals.length,0),birdFlapAngle:lastBirdFlapAngle,birdFlightY:lastBirdFlightY,birdWingPivotY:birdLeftPivot.position.y,quadrupedLegBatches:quadrupedLegBatches.length,quadrupedLegInstances:quadrupedLegBatches.reduce((count,batch)=>count+batch.animals.length*4,0),groundLegSwingAngle:lastGroundLegAngle,groundLegRotationOrder:lastGroundLegRotationOrder,groundLegRotationX:lastGroundLegRotationX,groundLegRotationY:lastGroundLegRotationY,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getPersistenceStats:()=>{const state=sandbox.getState();return {name:state.world.name,sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),revision:state.revision,lastAutoSaveRevision,saveGeneration,savedGeneration,saveInFlight,hasPendingSave:!!pendingSaveWorld,pendingBlocks:pendingSaveWorld?.blocks?.length||0,saveTimerActive:!!saveTimer,storageReadFailed};},getState:()=>sandbox.getState()};
+  getAnimalStats:()=>({renderScale:animalGeometryFactory.renderScale,instanceScale:animalBatches[0]?.mesh.instanceMatrix.array?{x:animalBatches[0].mesh.instanceMatrix.array[0],y:animalBatches[0].mesh.instanceMatrix.array[5],z:animalBatches[0].mesh.instanceMatrix.array[10]}:null,animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,birdWingBatches:birdWingBatches.length,birdWingInstances:birdWingBatches.reduce((count,batch)=>count+batch.animals.length,0),birdFlapAngle:lastBirdFlapAngle,birdFlightY:lastBirdFlightY,birdWingPivotY:birdLeftPivot.position.y,quadrupedLegBatches:quadrupedLegBatches.length,quadrupedLegInstances:quadrupedLegBatches.reduce((count,batch)=>count+batch.animals.length*4,0),groundLegSwingAngle:lastGroundLegAngle,groundLegRotationOrder:lastGroundLegRotationOrder,groundLegRotationX:lastGroundLegRotationX,groundLegRotationY:lastGroundLegRotationY,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getPersistenceStats:()=>{const state=sandbox.getState();return {name:state.world.name,sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),revision:state.revision,lastAutoSaveRevision,saveGeneration,savedGeneration,saveInFlight,hasPendingSave:!!pendingSaveWorld,pendingBlocks:pendingSaveWorld?.blocks?.length||0,saveTimerActive:!!saveTimer,storageReadFailed};},getState:()=>sandbox.getState()};
  updatePlayerDiagnostics();
  if(state.revision>lastAutoSaveRevision){lastAutoSaveRevision=state.revision;queueWorldSave(state.world,true);}
 }

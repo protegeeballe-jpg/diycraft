@@ -12,7 +12,7 @@ class Position{
  set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}
 }
 class FakeGroup{
- constructor(){this.children=[];this.position=new Position();this.rotation={x:0,y:0,z:0};this.scale={x:1,y:1,z:1,setScalar(v){this.x=v;this.y=v;this.z=v;}};this.visible=true;this.userData={};this.parent=null;}
+ constructor(){this.children=[];this.position=new Position();this.rotation={x:0,y:0,z:0};this.scale={x:1,y:1,z:1,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;},setScalar(v){this.x=v;this.y=v;this.z=v;}};this.visible=true;this.userData={};this.parent=null;}
  add(child){child.parent=this;this.children.push(child);}
  remove(child){this.children=this.children.filter(item=>item!==child);child.parent=null;}
 }
@@ -84,7 +84,9 @@ test('keeps sleeping neighbors hidden and preserves character scale and identity
  const actor=actors.find(item=>item.id==='maya'),model=models.create(THREE,materials,actor,false);
  model.update({...actor,x:19.1,z:-6.2,facing:Math.PI/2,sleeping:true,moving:false},140);
  assert.equal(model.root.visible,false);
- assert.equal(model.root.scale.x,.75);
+ assert.equal(model.root.scale.x,.75*models.proportions.widthScale,'Neighbor characters should be a little narrower while retaining their personal height.');
+  assert.equal(model.root.scale.y,.75);
+  assert.equal(model.root.scale.z,.75);
  assert.equal(model.root.userData.neighborId,'maya');
  model.dispose();
 });

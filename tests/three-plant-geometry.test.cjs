@@ -19,6 +19,8 @@ const THREE={Color,BufferGeometry,Float32BufferAttribute};
 const flower=plants.createGeometry(THREE,{type:'flower',color:'#e9a4c1'});
 const shape=flower.userData.plantShape;
 assert.equal(shape.plantType,'flower');
+assert.equal(plants.renderScale,.72,'Flowers and tall grass should stay below full block height.');
+assert.equal(shape.renderScale,plants.renderScale,'Plant geometry metadata and live instance scale must agree.');
 assert.equal(shape.petalCount,8,'A flower should retain eight readable petals.');
 assert.equal(shape.leafCount,2,'A flower should have two leaves.');
 assert.equal(shape.raisedPetalRidges,true,'Petals should be folded and cupped in 3D.');

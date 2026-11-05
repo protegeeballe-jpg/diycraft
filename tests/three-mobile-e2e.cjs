@@ -40,6 +40,21 @@ const {chromium}=require('playwright');
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
 
+  const proportions=await page.evaluate(()=>{
+   const edit=window.__DIYCRAFT_THREE_EDIT__;
+   return {blocks:edit?.getBlockRepresentationStats?.(),plants:edit?.getPlantStats?.(),
+    character:edit?.getCharacterStats?.(),animals:edit?.getAnimalStats?.()};
+  });
+  assert.deepEqual(proportions.blocks?.cellDimensions,{width:1,height:1,depth:1},
+   'Regular building blocks must stay true cubes; special tiles and doors keep their intended shapes.');
+  assert.ok(proportions.plants?.flowerCount>0&&proportions.plants.flowers.every(item=>item.renderScale===.72),
+   'Every live flower and tall-grass plant must use the smaller proportional render scale.');
+  assert.deepEqual(proportions.character?.modelScale,{x:.90,y:1,z:1},
+   'The player avatar must be narrower without changing its height or depth.');
+  assert.equal(proportions.animals?.renderScale,.74,'All animal species must use the shared smaller scale.');
+  assert.deepEqual(proportions.animals?.instanceScale,{x:.74,y:.74,z:.74},
+   'The actual animal instance matrix must apply the smaller scale, not just report metadata.');
+
   // The local painterly generator must produce a visibly distinct surface for every design.
   const textureCoverage=await page.evaluate(()=>{
    const api=window.DIYCraftPainterlyMaterials;
