@@ -352,10 +352,12 @@ function freshWorld(){
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.equal(worldState.world.blocks.length,world.blocks.length+1,'Removing the test block must retain the protection-fixture fill.');
   assert.equal(worldState.world.blocks.some(b=>b.key===addedStone.key),false);
-  assert.equal(worldState.world.bucket.length,1,'Removing a block must recover it into the sandbox Material Bucket.');
-  assert.equal(worldState.world.bucket[0].type,'stone');
-  const recoveredStone={...worldState.world.bucket[0]};
-  await page.locator('#bucket-item').selectOption('0');
+  assert.equal(worldState.world.bucket.length,2,
+   'The NPC obstacle removal and this block removal must each recover one stone into the Material Bucket.');
+  assert.equal(worldState.world.bucket[0].type,'stone','The earlier NPC obstacle must remain recovered in the first slot.');
+  assert.equal(worldState.world.bucket[1].type,'stone','The newly removed block must be recovered in the next slot.');
+  const recoveredStone={...worldState.world.bucket[1]};
+  await page.locator('#bucket-item').selectOption('1');
   worldState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getState());
   assert.deepEqual(worldState.selectedBucketItem,recoveredStone,'Selecting a bucket slot must retain its recovered appearance data.');
   assert.equal(await page.locator('#block-type').inputValue(),'stone','Selecting a recovered item must select its block type.');
@@ -365,7 +367,7 @@ function freshWorld(){
   assert.equal(reusedStone.type,'stone');
   assert.equal(reusedStone.color,recoveredStone.color);
   assert.equal(reusedStone.texture,recoveredStone.texture);
-  assert.equal(worldState.world.bucket.length,1,'Placing a recovered item must leave it available for reuse.');
+  assert.equal(worldState.world.bucket.length,2,'Placing a recovered item must leave both recovered items available for reuse.');
   await page.locator('#block-type').selectOption('door');
   await page.locator('#door-style').selectOption('window');
   await page.locator('#add').click();
