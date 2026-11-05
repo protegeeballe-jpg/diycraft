@@ -69,7 +69,12 @@ const {chromium}=require('playwright');
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1')));
    return {blocks:world.blocks.length,version:world.version};
   });
-  assert.ok(afterBuild.blocks>=expectedBlocks,'A build action must persist the changed blocks.');
+  console.log('build persistence comparison: '+JSON.stringify({
+   initialBlocks:initial.world.blocks.length,expectedBlocks,
+   immediateLiveBlocks:immediateBuild.liveBlocks,savedBlocks:afterBuild.blocks,
+   savedGeneration:afterBuild.version
+  }));
+  assert.ok(afterBuild.blocks>=expectedBlocks,'A build action must persist the changed blocks. Expected '+expectedBlocks+' blocks from '+initial.world.blocks.length+', but storage contains '+afterBuild.blocks+'. Live sandbox count was '+immediateBuild.liveBlocks+'.');
 
   // Verify the save button does a direct, successful save.
   await page.locator('#save-now').click();
