@@ -236,3 +236,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Bird silhouette pass after close-up review: the torso was reduced to a leaner flight body, the head and beak were enlarged slightly, and three short tail feathers replace the blunt tail ball. The wing pivots, wing instances and flight motion are unchanged.
+
+
+- Ground-animal proportion pass: mammal torsos were narrowed laterally, heads raised and scaled slightly larger, and leg sockets moved inward to remain attached to the narrower body footprint. The aim is a distinct head/neck/torso silhouette rather than a broad oval, while preserving the existing watercolor surface and instanced rendering.

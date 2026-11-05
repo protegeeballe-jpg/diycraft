@@ -46,8 +46,8 @@
   }
   const legColor=species==='bird'?'#bd8650':species==='horse'?'#594337':'#775941';
   const bodyShape=species==='bird'?[.43,.40,.58]:({
-   sheep:[.48,.54,.58],cat:[.44,.55,.53],dog:[.50,.57,.58],
-   cow:[.56,.58,.64],horse:[.54,.57,.69],giraffe:[.50,.62,.55]
+   sheep:[.42,.52,.58],cat:[.39,.53,.53],dog:[.44,.55,.58],
+   cow:[.50,.56,.64],horse:[.48,.55,.69],giraffe:[.44,.60,.55]
   }[species]);
   if(species==='bird'){
    // The body stays in one static batch; the two wings are separate pivoted instance batches.
@@ -69,16 +69,16 @@
   }else{
    // A compact body leaves room for the face and all four legs to read clearly.
    add(sphere,body,0,.62,0,bodyShape[0],bodyShape[1],bodyShape[2],0,0,0,'body');
-   const giraffe=species==='giraffe',headY=giraffe?1.62:1.16,headZ=giraffe?.57:(species==='horse'?.79:.78);
+   const giraffe=species==='giraffe',headY=giraffe?1.62:(species==='sheep'?1.32:1.27),headZ=giraffe?.57:(species==='horse'?.86:.88);
    if(giraffe){
     add(neckCylinder,body,0,1.24,.28,.88,1,1,0,0,0,'neck');
     for(let i=0;i<5;i++)add(spotSphere,accent,(i%2)*.13-.065,1.00+i*.15,.43,.95,1.05,1,0,0,0,'neckSpot');
    }
-   const headShape=species==='sheep'?[.36,.31,.34]:
-    species==='cat'?[.29,.25,.28]:
-    species==='dog'?[.33,.29,.32]:
-    species==='cow'?[.34,.29,.33]:
-    species==='horse'?[.32,.27,.30]:[.27,.235,.27];
+   const headShape=species==='sheep'?[.40,.34,.36]:
+    species==='cat'?[.31,.27,.30]:
+    species==='dog'?[.35,.30,.33]:
+    species==='cow'?[.36,.31,.34]:
+    species==='horse'?[.34,.29,.31]:[.29,.25,.29];
    if(!giraffe)add(neckCylinder,body,0,headY-.18,headZ-.18,.88,species==='horse'?.92:.82,.88,Math.PI/5,0,0,'neck');
    add(headSphere,body,0,headY,headZ,headShape[0],headShape[1],headShape[2],0,0,0,'head');
    // Surface-mounted, layered eyes sit just proud of the curved head instead of being buried inside it.
@@ -123,7 +123,7 @@
     for(let i=0;i<4;i++)add(spotSphere,accent,(i%2)*.11-.055,1.78+i*.035,.46,.9,1.1,1,0,0,0,'neckSpot');
    }
    // Hip sockets overlap both torso and upper leg; paws/hooves overlap the lower leg.
-   const legX=species==='sheep'?.34:species==='cat'?.32:species==='dog'?.35:species==='cow'?.38:species==='horse'?.36:.33;
+   const legX=species==='sheep'?.30:species==='cat'?.28:species==='dog'?.31:species==='cow'?.35:species==='horse'?.34:.30;
    const legZ=species==='sheep'?.36:species==='cat'?.31:species==='dog'?.35:species==='cow'?.40:species==='horse'?.43:.34;
    for(const x of [-legX,legX])for(const z of [-legZ,legZ]){
     add(fleeceSphere,body,x,.39,z,.72,.82,.72,0,0,0,'legSocket');

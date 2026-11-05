@@ -42,6 +42,7 @@ for(const species of animals.species){
  const geometry=animals.create(THREE,{species}),features=geometry.userData.animalFeatureBounds;
  assert.equal(geometry.userData.animalSpecies,species);
  if(species==='bird')assert.deepEqual(geometry.userData.animalBodyShape,[.43,.40,.58],'Bird torso should stay compact so the wings and head define its silhouette.');
+ if(species!=='bird')assert.ok(geometry.userData.animalBodyShape[0]<=.50,species+' torso should stay narrow across the shoulders and hips.');
  assert.ok(geometry.attributes.position.array.length>0,species+' has visible geometry');
  assert.ok(features.body&&features.head&&features.eye&&features.leg,species+' has body, projected head, eyes and legs');
  assert.ok(features.legSocket,species+' has visible upper-leg/body sockets that join the limbs to the torso');
