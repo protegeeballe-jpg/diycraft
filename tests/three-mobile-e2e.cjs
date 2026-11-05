@@ -173,6 +173,9 @@ const {chromium}=require('playwright');
   await page.locator('#hud-choices-solid-design-type [data-value="stone"]').click();
   await page.locator('#solid-design-color').fill('#8b91a0');
   await page.locator('#hud-choices-solid-design-texture [data-value="brick"]').click();
+  const solidPreview=await page.locator('#solid-design-chip').evaluate(element=>getComputedStyle(element).backgroundImage);
+  assert.ok(solidPreview.startsWith('url("data:image/png;base64,'),
+   'The solid designer preview must show the actual selected texture pattern.');
   await page.locator('#solid-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().solidStyles?.stone?.color)),'#8b91a0');
 
@@ -186,6 +189,9 @@ const {chromium}=require('playwright');
   await openSettingsPanel();
   await page.locator('#tile-design-open').click();
   await page.locator('#hud-choices-tile-design-pattern [data-value="herringbone"]').click();
+  const tilePreview=await page.locator('#tile-design-chip').evaluate(element=>getComputedStyle(element).backgroundImage);
+  assert.ok(tilePreview.startsWith('url("data:image/png;base64,'),
+   'The tile designer preview must show the actual selected pattern.');
   await page.locator('#tile-design-color').fill('#c48b72');
   await page.locator('#tile-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().tileDesign?.pattern)),'herringbone');
