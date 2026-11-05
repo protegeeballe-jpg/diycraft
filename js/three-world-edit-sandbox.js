@@ -30,6 +30,26 @@
   return Object.freeze(value);
  }
  function cellKey(x,y,z){return x+','+y+','+z;}
+ function starterBlockKeys(){
+  const keys=new Set(),put=(x,y,z)=>keys.add(cellKey(x,y,z));
+  for(let x=-3;x<=1;x++)for(let z=-13;z<=-9;z++){
+   put(x,0,z);if(x===-3||x===1||z===-13||z===-9){put(x,1,z);put(x,2,z);}
+  }
+  for(let x=-4;x<=2;x++)for(let z=-14;z<=-8;z++)put(x,3,z);
+  for(let x=-4;x<=2;x++){put(x,4,-14);put(x,4,-8);}
+  put(-1,1,-9);put(-3,1,-11);put(1,1,-11);
+  for(let y=0;y<=3;y++)put(9,y,-12);
+  for(let x=7;x<=11;x++)for(let z=-14;z<=-10;z++)put(x,3,z);
+  for(let x=8;x<=10;x++)for(let z=-13;z<=-11;z++)put(x,4,z);
+  for(let y=0;y<=3;y++)put(-10,y,-13);
+  for(let x=-12;x<=-8;x++)for(let z=-15;z<=-11;z++)put(x,3,z);
+  for(let x=-11;x<=-9;x++)for(let z=-14;z<=-12;z++)put(x,4,z);
+  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z++)put(x,0,z);
+  for(let x=10;x<=13;x++)for(let z=-5;z<=-2;z+=2)put(x,1,z);
+  for(let x=-8;x<=-6;x++)for(let z=-9;z<=-7;z++)put(x,0,z);
+  return keys;
+ }
+ const STARTER_BLOCK_KEYS=starterBlockKeys();
  function create(snapshot){
   if(!object(snapshot)||!Array.isArray(snapshot.blocks))throw new TypeError('A Three.js world snapshot is required.');
   const sourceBefore=JSON.stringify(snapshot);
@@ -412,7 +432,24 @@
     throw new TypeError('Tile design needs a valid color and supported pattern.');
    world.tileDesign={color:design.color.toLowerCase(),pattern:design.pattern};revision++;return state();
   }
-  function clearMaterialBucket(){
+  function clearPlacedBlocks(){
+  const before=world.blocks.length;
+  world.blocks=world.blocks.filter(block=>STARTER_BLOCK_KEYS.has(cellKey(block.x,block.y,block.z)));
+  const removed=before-world.blocks.length;
+  if(removed){
+   blockIndex.clear();occupied.clear();
+   world.blocks.forEach(block=>{
+    if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
+    if(object(block)&&coord(block.x)&&Number.isInteger(block.y)&&coord(block.z)){
+     const key=cellKey(block.x,block.y,block.z);if(!occupied.has(key))occupied.set(key,block.key);
+     if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
+    }
+   });
+   selectedKey=null;revision++;
+  }
+  return state();
+ }
+ function clearMaterialBucket(){
    const hadItems=Array.isArray(world.bucket)&&world.bucket.length>0;
    if(hadItems){world.bucket=[];revision++;}
    selectedBucketItem=null;selectedBucketItemIndex=null;
@@ -458,7 +495,7 @@
    block.tilePattern=pattern;revision++;
    return state();
   }
-  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,setCustomBlockDesign,setSolidStyle,setDoorDesign,setTileDesign,clearMaterialBucket,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
+  return Object.freeze({select,selectBucketItem,clearBucketSelection,addBlock,excavateGround,fillExcavation,remove,addWaterLayer,collectWaterLayer,addFish,saveArtwork,craftRecipe,animalStates,careForAnimal,setPlayerAppearance,setWorldName,setCustomBlockDesign,setSolidStyle,setDoorDesign,setTileDesign,clearMaterialBucket,clearPlacedBlocks,isProtectedDigCell,protectionContext:(timeSeconds)=>protectionApi?protectionApi.actorContext(world,timeSeconds,revision):{neighbors:[],animals:[]},characterStates:(timeSeconds)=>protectionApi&&typeof protectionApi.characterStates==='function'?protectionApi.characterStates(world,timeSeconds,revision):[],isMovementSolidAt,playerCollisionAt,nudgePlayerOutOfBlocks,groundDepthAt,surfaceHeightAt,toggleDoor,setTilePattern,setTimeMode,getState:state});
  }
  return Object.freeze({create,recipes:CRAFT_RECIPES,limits:Object.freeze({blocks:MAX_BLOCKS,bucket:MAX_BUCKET_ITEMS})});
 });

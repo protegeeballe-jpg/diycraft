@@ -591,6 +591,24 @@ test('rejects invalid design settings and clears only the sandbox Material Bucke
  assert.equal(JSON.stringify(world),before);
 });
 
+test('clears user-placed blocks while preserving the exact original starter garden and homes',()=>{
+ const world=fixture();
+ world.blocks=[
+  {key:'starter-wood',x:-3,y:0,z:-13,type:'wood'},
+  {key:'starter-leaf',x:9,y:3,z:-12,type:'leaves'},
+  {key:'user-stone',x:80,y:0,z:80,type:'stone'},
+  {key:'user-door',x:81,y:0,z:80,type:'door'}
+ ];
+ const edit=sandbox.create(world),before=edit.getState();
+ const cleared=edit.clearPlacedBlocks();
+ assert.deepEqual(cleared.world.blocks.map(block=>block.key),['starter-wood','starter-leaf']);
+ assert.equal(cleared.revision,before.revision+1);
+ assert.equal(cleared.sourceUnchanged,true);
+ const added=edit.addBlock({x:80,y:0,z:80,type:'stone'});
+ assert.equal(added.world.blocks.length,3,'Occupancy indexes must be rebuilt after clearing.');
+ assert.deepEqual(world.blocks.map(block=>block.key),['starter-wood','starter-leaf','user-stone','user-door']);
+});
+
 console.log('Three.js editing sandbox tests complete.');
 
 test('saves a shared coloring PNG to the sandbox gallery and crafted pouch atomically',()=>{
