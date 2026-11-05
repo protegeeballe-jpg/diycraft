@@ -454,7 +454,7 @@
   return canvas;
  }
 
- function create(THREE,renderer,quality={})
+ function create(THREE,renderer,quality={}){
   if(!THREE||!renderer)throw new TypeError('Three.js and a renderer are required.');
   const cache=new Map(),textures=new Set();
   function get(hex,kind='surface',options={}){
