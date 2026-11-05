@@ -346,6 +346,18 @@ const {chromium}=require('playwright');
   await openSettingsPanel();
   await page.locator('#hud-choices-block-type [data-value="grass"]').click();
   await page.locator('#settings-close').click();
+  // Enter Play Mode with every movement arrow; Tap and Press world actions must remain available.
+  for(const [pointerId,direction] of [[31,'forward'],[32,'back'],[33,'left'],[34,'right']]){
+   const arrow=page.locator('#player-controls [data-move="'+direction+'"]');
+   await arrow.dispatchEvent('pointerdown',{pointerId,pointerType:'touch',isPrimary:true,button:0,buttons:1});
+   await arrow.dispatchEvent('pointerup',{pointerId,pointerType:'touch',isPrimary:true,button:0,buttons:0});
+   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.playerMode),true,
+    'Movement arrow '+direction+' must activate Play Mode.');
+   assert.equal(await page.locator('#player-controls').isVisible(),true,
+    'The movement controls must remain visible after '+direction+'.');
+   assert.equal(await page.locator('#player-actions').isVisible(),true,
+    'The world Tap/Press actions must remain visible after '+direction+'.');
+  }
   const buildCell=await page.evaluate(()=>{
    const debug=window.__DIYCRAFT_THREE_EDIT__,state=debug.getState(),occupied=new Set(state.world.blocks.map(block=>block.x+','+block.y+','+block.z));
    for(let z=-5;z<=8;z++)for(let x=-5;x<=8;x++){

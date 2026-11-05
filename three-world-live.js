@@ -1426,27 +1426,27 @@ canvas.addEventListener('pointerdown',event=>{
  if(event.pointerType==='mouse'&&event.button!==0)return;
  event.preventDefault();
  const gesture={id:event.pointerId,pointerType:event.pointerType,startedAt:performance.now(),startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,holdTriggered:false,target:null,holdTimer:null};
- if(!playerPlayMode){
-  const worldHit=worldTargetAtScreen(event.clientX,event.clientY);
-  const animal=animalAtScreen(event.clientX,event.clientY);
-  const neighbor=animal?null:neighborAtScreen(event.clientX,event.clientY);
-  const actor=animal?{kind:'animal',actor:animal}:neighbor?{kind:'neighbor',actor:neighbor}:null;
-  const poolWorksite=worldHit?.kind==='ground'&&worldHit.x===14&&worldHit.z>=-8&&worldHit.z<=-3;
-  if(poolWorksite)gesture.target=worldHit;
-  else if(actor&&worldHit&&Number.isFinite(worldHit.depth)){
-   // Generous actor hit areas must not steal a foreground ground, water, or block tap.
-   const point=actor.kind==='animal'
-    ?new THREE.Vector3(animal.x,animal.species==='giraffe'?.8:.48,animal.z)
-    :new THREE.Vector3(neighbor.x+Math.sin(neighbor.facing||0)*.38,1.18,neighbor.z+Math.cos(neighbor.facing||0)*.38);
-   const actorDepth=point.project(camera).z;
-   gesture.target=actorDepth<worldHit.depth-.003?actor:worldHit;
-  }else gesture.target=actor||worldHit;
-  if(gesture.target&&['block','ground','water'].includes(gesture.target.kind)){
-   gesture.holdTimer=setTimeout(()=>{
-    if(pointerGesture!==gesture||gesture.moved||gesture.holdTriggered)return;
-    gesture.holdTriggered=true;clearPointerHold(gesture);digWorldTarget(gesture.target);
-   },HOLD_TO_DIG_MS);
-  }
+ // World gestures stay available after a movement arrow enters Play Mode.
+ // Only a drag is reserved for camera look; a tap builds/interacts and a hold digs.
+ const worldHit=worldTargetAtScreen(event.clientX,event.clientY);
+ const animal=animalAtScreen(event.clientX,event.clientY);
+ const neighbor=animal?null:neighborAtScreen(event.clientX,event.clientY);
+ const actor=animal?{kind:'animal',actor:animal}:neighbor?{kind:'neighbor',actor:neighbor}:null;
+ const poolWorksite=worldHit?.kind==='ground'&&worldHit.x===14&&worldHit.z>=-8&&worldHit.z<=-3;
+ if(poolWorksite)gesture.target=worldHit;
+ else if(actor&&worldHit&&Number.isFinite(worldHit.depth)){
+  // Generous actor hit areas must not steal a foreground ground, water, or block tap.
+  const point=actor.kind==='animal'
+   ?new THREE.Vector3(animal.x,animal.species==='giraffe'?.8:.48,animal.z)
+   :new THREE.Vector3(neighbor.x+Math.sin(neighbor.facing||0)*.38,1.18,neighbor.z+Math.cos(neighbor.facing||0)*.38);
+  const actorDepth=point.project(camera).z;
+  gesture.target=actorDepth<worldHit.depth-.003?actor:worldHit;
+ }else gesture.target=actor||worldHit;
+ if(gesture.target&&['block','ground','water'].includes(gesture.target.kind)){
+  gesture.holdTimer=setTimeout(()=>{
+   if(pointerGesture!==gesture||gesture.moved||gesture.holdTriggered)return;
+   gesture.holdTriggered=true;clearPointerHold(gesture);digWorldTarget(gesture.target);
+  },HOLD_TO_DIG_MS);
  }
  pointerGesture=gesture;
  try{canvas.setPointerCapture(event.pointerId);}catch(_){}
@@ -1473,7 +1473,7 @@ canvas.addEventListener('pointerup',event=>{
   if(!gesture.moved){gesture.moved=true;clearPointerHold(gesture);}
  }
  clearPointerHold(gesture);
- if(!playerPlayMode&&!gesture.moved&&!gesture.holdTriggered){
+ if(!gesture.moved&&!gesture.holdTriggered){
   const heldFor=performance.now()-gesture.startedAt;
   if(heldFor>=HOLD_TO_DIG_MS)digWorldTarget(gesture.target);
   else tapWorldAt(event.clientX,event.clientY,gesture.target);
