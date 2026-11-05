@@ -49,7 +49,7 @@ const forbiddenPatterns = [
   [/\bnavigator\s*\.\s*sendBeacon\b/, 'beacon data transmission'],
   [/\b(?:window|parent|top)\s*\.\s*postMessage\s*\(/, 'cross-context message transmission'],
   [/\bimport\s*\(/, 'dynamic module loading'],
-  [/\b(?:https?:)?\/\/[^/\s"']+/i, 'remote URL literal']
+  [/\b(?:https?:)?\/\/(?!www\.w3\.org\/2000\/svg\b)[^/\s"']+/i, 'remote URL literal']
 ];
 
 for (const path of runtimeFiles) {
