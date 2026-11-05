@@ -52,7 +52,8 @@ for(const species of animals.species){
  if(species==='bird')assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.05,'bird feet must be spaced side-to-side');
  else assert.ok(extent(features.leg,0)>.5&&extent(features.leg,2)>.35,species+' legs must be separated in width and depth');
  assert.equal(geometry.attributes.position.array.length,geometry.attributes.color.array.length,species+' vertex colors must align with positions');
- assert.ok(features.muzzle&&features.muzzle.max[2]>features.head.max[2]+.02,species+' muzzle or nose must project beyond the face');
+ if(species==='bird')assert.ok(features.beak&&features.beak.max[2]>features.head.max[2]+.02,'Bird beak must project beyond the face');
+ else assert.ok(features.muzzle&&features.muzzle.max[2]>features.head.max[2]+.02,species+' muzzle or nose must project beyond the face');
  const bodyWidth=extent(features.body,0),bodyHeight=extent(features.body,1),bodyDepth=extent(features.body,2);
  assert.ok(bodyWidth/bodyHeight<=1.5,species+' body silhouette must not be excessively wide or pancake-shaped');
  assert.ok(features.head.min[1]>features.body.min[1]+.55,species+' head should sit visibly above the lower body line');
