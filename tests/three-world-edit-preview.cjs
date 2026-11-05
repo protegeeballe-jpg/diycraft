@@ -539,8 +539,12 @@ function freshWorld(){
   assert.equal(worldState.world.artworks.length,1,'Saving the shared picture must add one gallery artwork.');
   assert.equal(worldState.world.artworks[0].name,'Big happy flower with Lia');
   assert.match(worldState.world.artworks[0].data,/^data:image\/png;base64,/);
-  assert.ok(worldState.world.crafted.some(item=>item&&item.id==='picture'&&item.label==='Big happy flower with Lia'),
-   'Saving the gallery picture must also add the original crafted-pouch picture item.');
+  const craftedPicture=worldState.world.crafted.find(item=>item&&item.id==='picture');
+  assert.ok(craftedPicture,'Saving the gallery picture must use the original crafted-pouch picture item.');
+  assert.equal(craftedPicture.count,2,
+   'The existing recipe-crafted picture stack must increment when the shared artwork is saved.');
+  assert.equal(craftedPicture.label,'',
+   'The original addItem() behavior merges by item ID and retains the existing stack label.');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getNeighborColoringStats().open),false,
    'Saving should close the shared coloring panel.');
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
