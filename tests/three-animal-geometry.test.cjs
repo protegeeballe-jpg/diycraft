@@ -114,5 +114,13 @@ const stride=.31,length=.42;
 const localFootZ=-Math.sin(stride)*length;
 const localFootX=0;
 assert.ok(localFootZ<0&&Math.abs(localFootX)<1e-12,'Hip stride must move the foot in the animal local forward/back plane, not sideways.');
+// With a diagonal animal heading, yaw rotates that local forward step into world space.
+// Transforming back into the animal frame must recover zero lateral movement.
+const worldFootX=-Math.sin(.73)*Math.sin(stride)*length;
+const worldFootZ=-Math.cos(.73)*Math.sin(stride)*length;
+const recoveredLocalX=Math.cos(.73)*worldFootX-Math.sin(.73)*worldFootZ;
+const recoveredLocalZ=Math.sin(.73)*worldFootX+Math.cos(.73)*worldFootZ;
+assert.ok(Math.abs(recoveredLocalX)<1e-12,'A diagonally facing animal must not gain local sideways foot movement.');
+assert.ok(Math.abs(recoveredLocalZ-localFootZ)<1e-12,'A diagonally facing animal must retain its full local forward/back stride.');
 assert.throws(()=>animals.applyQuadrupedLegPose(gaitTransform,NaN,0),/finite animal gait angles/);
 console.log('Three.js recognizable animal geometry tests complete.');

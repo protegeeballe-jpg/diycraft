@@ -256,3 +256,6 @@ The adapter has no dependency on Three.js, the DOM, canvas or browser storage. T
 
 
 - Corrected local gait-axis assignment: the previous helper had mistakenly assigned animal heading to Euler X and stride to Euler Y. The live transform now assigns stride to Euler X and heading to Euler Y under YXZ order. A vertical leg consequently swings forward/back along local Z instead of sweeping inward/outward along local X. Unit tests now assert the specific Euler components and the expected local foot displacement; live browser diagnostics expose both components for verification.
+
+
+- Diagonal-heading gait check: a numerical regression test rotates the local foot displacement into world space and back, proving that a diagonally facing animal retains forward/back stride with no local lateral component.
