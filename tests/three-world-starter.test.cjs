@@ -1,0 +1,22 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const starter=require('../js/three-world-starter.js');
+
+const source=fs.readFileSync('diycraft.js','utf8');
+const start=source.indexOf('function freshWorld(){');
+const marker='\n}\n\nfunction validHex';
+const end=source.indexOf(marker,start);
+assert.ok(start>=0&&end>start,'The production Canvas data source must retain the canonical version-1 starter-world definition.');
+const productionFactory=new Function('emptySlots','return ('+source.slice(start,end+2)+');');
+const production=productionFactory(()=>Array.from({length:60},()=>null))();
+const canonical=starter.create();
+assert.deepEqual(canonical,production,'Three.js starter world must match the exact production version-1 starter world.');
+assert.equal(canonical.version,1);
+assert.equal(canonical.blocks.length,production.blocks.length);
+const second=starter.create();
+second.blocks.pop();
+second.materials[0]={id:'seed',count:99,label:''};
+assert.equal(starter.create().blocks.length,production.blocks.length,'Starter worlds must not share mutable block arrays.');
+assert.equal(starter.create().materials[0],null,'Starter worlds must not share mutable inventory slots.');
+console.log('Canonical Three.js starter-world parity tests complete.');

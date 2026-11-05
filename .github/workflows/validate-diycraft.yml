@@ -6,20 +6,24 @@ on:
       - index.html
       - offline/index.html
       - diycraft.js
-      - linkedin.html
       - sw.js
-      - tests/performance-smoke.cjs
-      - offline/README.md
+      - three-world-live.js
+      - js/three-*.js
+      - tests/three-world-storage.test.cjs
+      - tests/three-world-starter.test.cjs
+      - tests/three-world-edit-sandbox.test.cjs
       - .github/workflows/validate-diycraft.yml
   pull_request:
     paths:
       - index.html
       - offline/index.html
       - diycraft.js
-      - linkedin.html
       - sw.js
-      - tests/performance-smoke.cjs
-      - offline/README.md
+      - three-world-live.js
+      - js/three-*.js
+      - tests/three-world-storage.test.cjs
+      - tests/three-world-starter.test.cjs
+      - tests/three-world-edit-sandbox.test.cjs
       - .github/workflows/validate-diycraft.yml
   workflow_dispatch:
 
@@ -27,219 +31,74 @@ permissions:
   contents: read
 
 jobs:
-  javascript:
-    name: Check both DIYCraft entry points
+  production:
+    name: Validate the live Three.js and offline entry points
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
-
-      - name: Verify both published pages stay in sync and syntax-check the game
+      - name: Verify production and offline entries, strict CSP and local modules
         shell: bash
         run: |
           node <<'NODE'
-          const fs = require('node:fs');
-          const main = fs.readFileSync('index.html', 'utf8');
-          const offline = fs.readFileSync('offline/index.html', 'utf8');
-
-          const normalizedOffline = offline
-            .replace('<link rel="manifest" href="../manifest.json">', '<link rel="manifest" href="./manifest.json">')
-            .replace('<link rel="icon" type="image/svg+xml" href="../diycraft-icon.svg">', '<link rel="icon" type="image/svg+xml" href="./diycraft-icon.svg">')
-            .replace('<link rel="apple-touch-icon" sizes="192x192" href="../diycraft-icon-192.png">', '<link rel="apple-touch-icon" sizes="192x192" href="./diycraft-icon-192.png">')
-            .replace('<script src="../diycraft.js"></script>', '<script src="./diycraft.js"></script>');
-          if (main !== normalizedOffline) {
-            throw new Error('Main and offline pages must match apart from their expected relative asset paths.');
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const main=fs.readFileSync('index.html','utf8');
+          const offline=fs.readFileSync('offline/index.html','utf8');
+          const normalized=offline
+            .replace('href="../manifest.json"','href="./manifest.json"')
+            .replace('href="../diycraft-icon.svg"','href="./diycraft-icon.svg"')
+            .replace('href="../diycraft-icon-192.png"','href="./diycraft-icon-192.png"')
+            .replaceAll('src="../js/','src="./js/')
+            .replace('src="../three-world-live.js"','src="./three-world-live.js"');
+          if(main!==normalized)throw new Error('Production and offline Three.js pages must remain identical except for expected relative asset paths.');
+          const launch=fs.readFileSync('linkedin.html','utf8');
+          if(!launch.includes('<title>DIYCraft</title>')||
+             !launch.includes('class="play-button" href="./index.html"')||
+             !launch.includes('https://github.com/protegeeballe-jpg/diycraft'))
+           throw new Error('DIYCraft launch page links are missing.');
+          for(const [name,html] of [['main',main],['offline',offline]]){
+           if(!html.includes('<canvas id="three-world"')||html.includes('id="game"'))
+            throw new Error(name+' entry page must use the Three.js world canvas, not the Canvas 2D world.');
+           if(!html.includes("script-src 'self'")||html.includes("script-src 'unsafe-inline'")||
+              !html.includes("connect-src 'self'")||!html.includes("worker-src 'self'"))
+            throw new Error(name+' entry page has an unsafe or incomplete content security policy.');
+           const tags=[...html.matchAll(/<script\b([^>]*)>/gi)];
+           if(tags.length!==20)throw new Error(name+' entry page must load exactly 20 reviewed local engine modules; found '+tags.length);
+           for(const tag of tags){
+            const src=(tag[1].match(/\bsrc=["']([^"']+)["']/i)||[])[1];
+            if(!src||/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(src)||/^(?:javascript|data):/i.test(src))
+             throw new Error(name+' entry page contains a non-local or inline script.');
+            const target=path.join(name==='main'?'.':'offline',src);
+            if(!fs.existsSync(target))throw new Error(name+' entry is missing local script '+src);
+           }
           }
-
-          const html = main;
-          const launch = fs.readFileSync('linkedin.html', 'utf8');
-          if (!launch.includes('<title>DIYCraft</title>') ||
-              !launch.includes('class="play-button" href="./index.html"') ||
-              !launch.includes('https://github.com/protegeeballe-jpg/diycraft')) {
-            throw new Error('The DIYCraft launch page or its play/source links are missing.');
-          }
-
-          const mainScripts = [...main.matchAll(/<script\b[^>]*>/gi)];
-          const offlineScripts = [...offline.matchAll(/<script\b[^>]*>/gi)];
-          if (mainScripts.length !== 1 || offlineScripts.length !== 1 ||
-              !main.includes('<script src="./diycraft.js"></script>') ||
-              !offline.includes('<script src="../diycraft.js"></script>') ||
-              /<script>([\s\S]*?)<\/script>/i.test(main) ||
-              /<script>([\s\S]*?)<\/script>/i.test(offline)) {
-            throw new Error('Both entry pages must load the shared external JavaScript engine with no inline game code.');
-          }
-
-          const source = fs.readFileSync('diycraft.js', 'utf8');
-          const required = [
-            'function getTimePalette',
-            'function animalPositions',
-            'function pushAnimalModel',
-            'function pushAnimalEllipsoid',
-            'for(const animal of animals)pushAnimalModel(polys,cam,w,h,animal,tick);',
-            'animals:[]',
-            'w.animals=d.animals.slice(0,100)',
-
-            'function setPlayerActivity(activity)',
-            "const dancing=activity==='dance',working=activity==='work',sitting=activity==='sit'",
-            "if(activity==='sleep'||activity==='transformer'||activity==='bed'){",
-            'function resolveRestActivity(activity,bed)',
-            'function isStationaryRestActivity(activity)',
-            'function shouldDrawTemporaryRestBed(activity,homeBed,x,z)',
-            "const sleeping=n.activity==='sleep'||n.activity==='transformer'||n.activity==='bed';",
-            "if(activity==='sleep'||activity==='transformer'||p.y<=floor+.35){",
-            'function drawPlayerBed(queue,cam,w,h,bed)',
-            "p.bed={x:Math.round(p.x*100)/100,y:floor,z:Math.round(p.z*100)/100,yaw:p.yaw}",
-            'p.x=bed.x;p.z=bed.z;p.y=surfaceHeightAt(p.x,p.z,bed.y);p.yaw=bed.yaw||0',
-            "playerActivity&&playerActivity!=='transformer'&&(moveX!==0",
-            'activity:playerActivity',
-            'const NEIGHBOR_ROUTES',
-            'function neighborOnRoute',
-            'const HOLD_TO_REMOVE_MS=600',
-            'function toggleDoor(door)',
-            'function drawVoxelDoor(queue,cam,w,h,door)',
-            'function jump()',
-            'const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000',
-            'function surfaceHeightAt(x,z,atOrBelowY=Infinity)',
-            'blockColumnBlocks=new Map()',
-            'if(next<=floor){',
-            'function addBlock(x,y,z,type=selected,saveImmediately=true)',
-            'function traceWorldRay(cam,dir,maxDistance,step)',
-            'function isProtectedDigCell(x,z)',
-            'function digAtScreen(',
-            'function buildOrFillAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHitAtScreen(px,py))',
-            'function pushGroundSurface(queue,cam,w,h,color)',
-            "material:underground?'dirt':'grass'",
-            "function pushTerrainFace(queue,cam,w,h,vertices,color,material='dirt')",
-            'function skyDirection(azimuth,altitude)',
-            'function projectSkyPoint(cam,direction,w,h,distance=700)',
-            'function drawSkyDecorations(cam,w,h,palette)',
-            'function pushExcavationTerrain(queue,cam,w,h)',
-            'function setToolMode(mode,announce=true)',
-            'function fillAtScreen(',
-            'function waterAtScreen(',
-            'function fishAtScreen(',
-            'function pauseBuildPlacement()',
-            "if(item.id==='pause'){pauseBuildPlacement();return;}",
-            "if(placementPaused){showStatus('Building is paused. Choose a block to resume placing.');return;}",
-            'placementPaused=false;setToolMode(\'build\',false);renderHotbar();',
-            'function pushWaterSurfaces(queue,cam,w,h)',
-            'function waterLevelAt(x,z)',
-            'function waterTopAt(x,z)',
-            'function paintWaterFace(poly,time)',
-            'function collectWaterLayer(x,z)',
-            'const inWater=topY!==null&&y>floorY+.015&&y<topY-.015',
-            'const pts=side.verticesAt(exposedFrom,topY).map(v=>project(v,cam,w,h))',
-            'function syncWaterLife()',
-            'function pushFishOverlays(queue,cam,w,h)',
-            'if(poly.fishEye)',
-            'pushFishOverlays(polys,cam,w,h)',
-            'function consumeItem(id,target=\'materials\',amount=1)',
-            'const PLAYER_JUMP_SPEED=6.4,PLAYER_GRAVITY=14.5',
-            'function makeTileTexturePatterns()',
-            'function pushTileSlab',
-            'function paintTileTexture',
-            'function openTileDesigner()',
-            "if(item.id==='tile'){selectedBucketItem=null;setToolMode('build',false);openTileDesigner();return;}",
-            'const TILE_THICKNESS=.13,TILE_BASE_OFFSET=.02',
-            'b.y+TILE_BASE_OFFSET',
-            '1,TILE_THICKNESS,1',
-            'floor<=p.y+.18',
-            'const TILE_DESIGNS=[',
-            'function terrainCollisionAt(x,z,y)',
-            'const HOLD_TO_REMOVE_MS=600',
-            'function playerCollisionAt(x,z,y)',
-            'function buildNeighborObstacleSet()',
-            'function findNeighborPath(start,end)',
-            'const NEIGHBOR_SLEEP_SPOTS=',
-            "currentNeighbors(tick,palette.mode==='night')",
-            "if(b.type==='door'&&b.open)continue",
-            'const PLAYER_RADIUS=.23,PLAYER_BODY_HEIGHT=1.72,PLAYER_STEP_HEIGHT=.18',
-            'navigator.serviceWorker.register',
-            "id:'tile'",
-            "id:'door'"
-          ];
-          for (const marker of required) {
-            if (!source.includes(marker)) {
-              throw new Error('Missing expected DIYCraft feature: ' + marker);
-            }
-          }
-          const performanceRequired = [
-            'const RENDER_CHUNK_SIZE=16',
-            'const MAX_BLOCK_CHUNK_CACHE=16',
-            'function projectedPolygonVisible(pts,w,h,margin=2)',
-            'function chunkBoundsVisible(bounds,cam,w,h,margin=16)',
-            'function buildBlockChunkMesh(key,items)',
-            'if(isOpaqueCubeBlock(neighbor))continue;',
-            'function invalidateBlockChunkMeshesAt(x,z)',
-            'function appendBlockChunkMesh(queue,mesh,cam,w,h)',
-            "const door=block.type==='door',tile=block.type==='tile'",
-            "const DEBUG_PERFORMANCE=new URLSearchParams(location.search).get('debug')==='1';",
-            'function renderMeasuredFrame()',
-            'function updatePerformanceHud(time)',
-            'function trackPointerHandler(name,handler)',
-            'function processPendingLook()',
-            'function handleWorldTap(px,py,target=null)',
-            "panel.id='performanceHud'",
-            'function interpolatePlayerState(previous,current,alpha)',
-            'renderPlayerFrame(frameAccumulator/FIXED_UPDATE_STEP);',
-            "textureTiles.get('tile-'+pattern)",
-            'const FIXED_UPDATE_STEP=1/60',
-            'MAX_FRAME_DELTA=.1',
-            'visitNearbyBlockChunkMeshes(cam,BLOCK_RENDER_RADIUS,mesh=>',
-            'invalidateBlockChunkMeshesAt(b.x,b.z)',
-            "if(b.type==='door')drawVoxelDoor(polys,cam,w,h,b)"
-          ];
-          for (const marker of performanceRequired) {
-            if (!source.includes(marker)) {
-              throw new Error('Missing performance safeguard: ' + marker);
-            }
-          }
-          if (source.includes('time-lastTime<30')) {
-            throw new Error('The old 30 ms frame gate must not limit rendering to 30 FPS.');
-          }
-          if (!html.includes('id="customBlockShade"') || !html.includes('id="doorShade"') || !html.includes('id="jumpBtn"') || !html.includes('id="flyBtn"') || !html.includes('id="tileShade"') || !html.includes('id="tileDesignBtn"') || !html.includes('id="doorDesignBtn"') || !html.includes('id="fishModeToggle"') || !html.includes('id="hotbar"') || !html.includes('id="topHint"') || !html.includes('id="solidPickerShade"') || !html.includes('id="inventoryShade"')) {
-            throw new Error('A block, door, jump, water, fish, or build control is missing.');
-          }
-          for (const obsolete of ['digBtn','digModeBtn','fillBtn','fillModeBtn','removeBtn']) {
-            if (html.includes('id="' + obsolete + '"')) throw new Error('Merged build/dig controls should not include ' + obsolete + '.');
-          }
-          if (!html.includes('Tap to build or fill · Hold 0.6s to dig or remove') || !source.includes('Tap water to stack another layer · Hold to collect a layer') || !source.includes('Hold 0.6s to dig soil or remove a block')) {
-            throw new Error('The merged tap and long-press instructions are missing.');
-          }
-          if (source.includes('function drawFishOverlays(cam,w,h)')) throw new Error('Screen-space fish overlays must be removed so terrain can occlude fish.');
-          const tileList = source.match(/const TILE_DESIGNS=\[([\s\S]*?)\];/);
-          const tileCount = tileList ? (tileList[1].match(/\bid:/g) || []).length : 0;
-          if (tileCount !== 20) throw new Error('Expected exactly 20 tile designs; found ' + tileCount);
-          if (!html.includes('id="activityBtn"') || !html.includes('id="activityShade"') ||
-              !html.includes('data-player-activity="sleep"') || !html.includes('data-player-activity="transformer"') || !html.includes('data-player-activity="bed"') ||
-              !html.includes('data-player-activity="set-bed"') || !html.includes('data-player-activity="sit"') ||
-              !html.includes('data-player-activity="work"') || !html.includes('data-player-activity="dance"')) {
-            throw new Error('The stationary sleep, Transformer sleep, go-home, set-bed, sit, work, dance and stop activity controls are missing.');
-          }
-          if (!html.includes('id="offlineReadyNote"')) throw new Error('Persistent offline-ready status is missing.');
-          if (!html.includes("script-src 'self'") || html.includes("script-src 'unsafe-inline'") ||
-              !html.includes("connect-src 'self'") || !html.includes("worker-src 'self'")) {
-            throw new Error('The game must block inline scripts and allow only same-origin scripts and offline worker resources.');
-          }
-          const worker = fs.readFileSync('sw.js', 'utf8');
-          if (!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)) throw new Error('Expected a versioned DIYCraft offline cache.');
-          for (const marker of ['self.addEventListener(\'install\'', 'cache.addAll(pages)', "new URL('diycraft.js', root).href",
-            "new URL('linkedin.html', root).href", "const gameScriptUrl = new URL('diycraft.js', self.registration.scope)", 'request.mode !== \'navigate\'', 'ignoreSearch: true']) {
-            if (!worker.includes(marker)) throw new Error('Missing offline cache behavior: ' + marker);
-          }
-
+          for(const id of ['animal-place','animal-species','save-now','backup-download','backup-restore','play-mode','camera-mode','jump','flight','activity-apply','set-home-bed','go-home','inventory-open','character-open','art-open','gallery-open','solid-design-open','door-design-open','tile-design-open'])
+           if(!main.includes('id="'+id+'"'))throw new Error('Missing live game UI control: '+id);
+          const runtime=fs.readFileSync('three-world-live.js','utf8');
+          if(!runtime.includes('storage.load(deviceStorage,adapter,starterWorld.create())')||
+             !runtime.includes('storage.save(deviceStorage,adapter,snapshot')||
+             !runtime.includes('storage.saveSync(deviceStorage,adapter,world')||
+             runtime.includes('preview-three/starter-world.json')||/\bfetch\s*\(/.test(runtime))
+           throw new Error('The live Three.js runtime must load and save real device worlds with no preview-fixture dependency.');
+          if(runtime.includes('localStorage.setItem('))throw new Error('All renderer storage writes must use the reviewed storage adapter.');
+          const worker=fs.readFileSync('sw.js','utf8');
+          if(!/const CACHE_NAME = 'diycraft-shell-v\d+'/.test(worker)||
+             !worker.includes("request.destination === 'script'")||
+             !worker.includes("new URL('three-world-live.js', root).href")||
+             !worker.includes("new URL('js/three-world-starter.js', root).href"))
+           throw new Error('The service worker must version and cache all live Three.js modules.');
           NODE
-          node --check diycraft.js
-
-      - name: Stress-test frame cadence, chunk meshing, occlusion, and large-world indexes
+      - name: Syntax-check all live production scripts and the offline worker
         run: |
-          node --check tests/performance-smoke.cjs
-          node tests/performance-smoke.cjs
-
-      - name: Syntax-check the offline service worker
-        run: node --check sw.js
+          node --check sw.js
+          node --check three-world-live.js
+          for file in $(grep -oE 'src="[^"]+"' index.html | cut -d '"' -f2); do node --check "$file"; done
+      - name: Run original version-1 world storage compatibility tests
+        run: node tests/three-world-storage.test.cjs
+      - name: Verify canonical starter-world parity
+        run: node tests/three-world-starter.test.cjs
+      - name: Run Three.js editing, protection and save-safety tests
+        run: node tests/three-world-edit-sandbox.test.cjs

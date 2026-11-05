@@ -1,25 +1,25 @@
-name: DIYCraft browser smoke test
+name: DIYCraft live Three.js browser test
 
 on:
   push:
+    branches:
+      - main
     paths:
       - index.html
-      - diycraft.js
+      - offline/index.html
       - sw.js
-      - tests/browser-smoke.cjs
-      - three-painterly-preview.html
-      - three-painterly-preview.js
-      - js/three.js
+      - three-world-live.js
+      - js/three-*.js
+      - tests/three-live-browser.cjs
       - .github/workflows/browser-smoke.yml
   pull_request:
     paths:
       - index.html
-      - diycraft.js
+      - offline/index.html
       - sw.js
-      - tests/browser-smoke.cjs
-      - three-painterly-preview.html
-      - three-painterly-preview.js
-      - js/three.js
+      - three-world-live.js
+      - js/three-*.js
+      - tests/three-live-browser.cjs
       - .github/workflows/browser-smoke.yml
   workflow_dispatch:
 
@@ -39,13 +39,13 @@ jobs:
           npm init -y
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Launch DIYCraft and test real controls
-        run: node tests/browser-smoke.cjs
-      - name: Upload Three.js painterly screenshot
+      - name: Test live Three.js renderer, real device saves and offline launch
+        run: node tests/three-live-browser.cjs
+      - name: Upload live Three.js screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: diycraft-three-painterly-preview
-          path: preview-three/
+          name: diycraft-live-three-world
+          path: three-live-main.png
           if-no-files-found: ignore
           retention-days: 7
