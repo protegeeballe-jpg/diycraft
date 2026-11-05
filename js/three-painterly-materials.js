@@ -393,7 +393,68 @@
   }
   return canvas;
  }
- function create(THREE,renderer,quality={}){
+ const SKY_STYLES=Object.freeze({
+  day:Object.freeze({glow:[255,249,221],cloud:[255,253,239],light:[230,241,224],cool:[151,185,199],shade:[111,151,174],ink:[92,139,158]}),
+  sunset:Object.freeze({glow:[255,212,159],cloud:[255,224,204],light:[246,173,157],cool:[205,126,151],shade:[125,88,126],ink:[114,76,116]}),
+  night:Object.freeze({glow:[178,192,224],cloud:[203,211,232],light:[146,165,207],cool:[91,111,160],shade:[53,68,112],ink:[49,66,112]})
+ });
+ function generateSkyCanvas(colors,mode,quality={}){
+  if(!Object.prototype.hasOwnProperty.call(SKY_STYLES,mode))throw new TypeError('A day, sunset or night watercolor sky mode is required.');
+  if(!Array.isArray(colors)||colors.length!==3||!colors.every(value=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)))
+   throw new TypeError('A watercolor sky needs three six-digit palette colors.');
+  if(typeof document==='undefined'||typeof document.createElement!=='function')throw new Error('A browser canvas is required to paint the watercolor sky.');
+  const width=Math.max(384,Math.min(768,Math.round((quality.textureSize||192)*2.5))),height=Math.round(width/2);
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const c=canvas.getContext('2d'),random=seeded(hash(mode+'|'+colors.join('|'))),style=SKY_STYLES[mode];
+  const color=(rgbValue,alpha)=>'rgba('+rgbValue.join(',')+','+alpha+')';
+  const gradient=c.createLinearGradient(0,0,0,height);
+  gradient.addColorStop(0,colors[0]);gradient.addColorStop(.49,colors[1]);gradient.addColorStop(1,colors[2]);
+  c.fillStyle=gradient;c.fillRect(0,0,width,height);
+  function wash(x,y,rx,ry,angle,tone,opacity){
+   for(const offset of [-width,0,width]){
+    c.save();c.translate(x+offset,y);c.rotate(angle);c.scale(rx,ry);
+    const bloom=c.createRadialGradient(0,0,.025,0,0,1);
+    bloom.addColorStop(0,color(tone,opacity));bloom.addColorStop(.58,color(tone,opacity*.52));bloom.addColorStop(1,color(tone,0));
+    c.fillStyle=bloom;c.beginPath();c.arc(0,0,1,0,Math.PI*2);c.fill();c.restore();
+   }
+  }
+  const textureSize=quality.textureSize||192,stains=Math.max(64,Math.round(textureSize*.48));
+  for(let i=0;i<stains;i++){const x=random()*width,y=random()*height;wash(x,y,4+random()*width*.035,3+random()*height*.09,(random()-.5)*.9,i%3===0?style.glow:i%3===1?style.light:style.cool,.025+random()*.045);}
+  wash(mode==='sunset'?width*.72:width*.68,height*.77,width*.22,height*.23,0,style.glow,mode==='night'?.12:mode==='sunset'?.22:.17);
+  const clouds=mode==='sunset'?12:mode==='day'?9:7;
+  for(let cloud=0;cloud<clouds;cloud++){
+   const x=random()*width,y=height*(mode==='night'?.20+random()*.43:.22+random()*.48);
+   const span=width*(mode==='sunset'?.085+random()*.085:.045+random()*.065),thickness=height*(mode==='sunset'?.035+random()*.035:.055+random()*.045);
+   const lobes=mode==='sunset'?5:6;
+   for(let lobe=0;lobe<lobes;lobe++){
+    const t=lobe/(lobes-1),px=x+(t-.5)*span*1.55,py=y+Math.sin(t*Math.PI*2+cloud)*thickness*.34;
+    const rx=span*(mode==='sunset'?.18:.16)+random()*span*.055,ry=thickness*(.48+random()*.45);
+    wash(px,py,rx,ry,(random()-.5)*.22,style.shade,.075+random()*.045);
+    wash(px-span*.035,py-ry*.22,rx*.82,ry*.58,(random()-.5)*.2,lobe%2?style.light:style.cloud,.11+random()*.075);
+   }
+   for(const offset of [-width,0,width]){
+    c.save();c.beginPath();c.moveTo(x-span*.62+offset,y+thickness*.18);
+    c.bezierCurveTo(x-span*.24+offset,y-thickness*.58,x+span*.10+offset,y+thickness*.40,x+span*.64+offset,y-thickness*.12);
+    c.strokeStyle=color(cloud%2?style.ink:style.glow,mode==='night'?.13:.17);
+    c.lineWidth=Math.max(1,height*(mode==='sunset'?.009:.012));c.lineCap='round';c.stroke();c.restore();
+   }
+  }
+  const streaks=mode==='sunset'?8:mode==='night'?5:4;
+  for(let i=0;i<streaks;i++){
+   const x=random()*width,y=height*(.28+random()*.50),span=width*(.035+random()*.10);
+   for(const offset of [-width,0,width]){
+    c.save();c.beginPath();c.moveTo(x-span+offset,y);
+    c.quadraticCurveTo(x+offset,y+(random()-.5)*height*.025,x+span+offset,y+(random()-.5)*height*.018);
+    c.strokeStyle=color(i%2?style.light:style.glow,mode==='sunset'?.14:mode==='night'?.10:.12);
+    c.lineWidth=Math.max(1,height*(.004+random()*.004));c.lineCap='round';c.stroke();c.restore();
+   }
+  }
+  const flecks=Math.max(90,Math.round(textureSize*.8));
+  for(let i=0;i<flecks;i++){const x=random()*width,y=random()*height,light=i%3!==0;c.fillStyle=color(light?style.cloud:style.shade,.035+random()*.055);c.beginPath();c.ellipse(x,y,.45+random()*1.15,.35+random()*.8,random(),0,Math.PI*2);c.fill();}
+  return canvas;
+ }
+
+ function create(THREE,renderer,quality={})
   if(!THREE||!renderer)throw new TypeError('Three.js and a renderer are required.');
   const cache=new Map(),textures=new Set();
   function get(hex,kind='surface',options={}){
@@ -419,5 +480,5 @@
    dispose(){for(const material of cache.values())material.dispose();for(const texture of textures)texture.dispose();cache.clear();textures.clear();}
   });
  }
- return Object.freeze({create,generateCanvas});
+ return Object.freeze({create,generateCanvas,generateSkyCanvas,skyStyles:SKY_STYLES});
 });

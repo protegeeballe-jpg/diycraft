@@ -104,6 +104,8 @@ jobs:
         run: node tests/three-world-starter.test.cjs
       - name: Run Three.js editing, protection and save-safety tests
         run: node tests/three-world-edit-sandbox.test.cjs
+      - name: Run watercolor sky palette tests
+        run: node tests/three-sky-watercolor.test.cjs
       - name: Run dimensional animal and flower geometry tests
         run: |
           node tests/three-animal-geometry.test.cjs

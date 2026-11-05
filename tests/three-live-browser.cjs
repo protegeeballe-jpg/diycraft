@@ -44,6 +44,22 @@ const {chromium}=require('playwright');
   assert.equal(initial.storageSource,'starter','A clean profile must load the canonical starter-world source.');
   assert.equal(initial.storageReadFailed,false);
   assert.equal(initial.hasSafetyOverlay,false,'The floating upper-right HUD must be absent from the production viewport.');
+  const skySamples=[];
+  for(const mode of ['day','sunset','night']){
+   const sky=await page.evaluate(mode=>{
+    const select=document.getElementById('time-mode');select.value=mode;
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+    return window.__DIYCRAFT_THREE_EDIT__?.getVisualTimeStats?.();
+   },mode);
+   assert.equal(sky?.mode,mode,'The '+mode+' world mode must activate its own watercolor sky.');
+   assert.equal(sky?.skyTexture?.hasMap,true,'The '+mode+' sky must be painted onto the actual sky-dome material.');
+   assert.ok(sky.skyTexture.width>=384&&sky.skyTexture.height>=192,'The '+mode+' sky texture must have enough detail for the world dome.');
+   assert.ok(sky.skyTexture.signature>0,'The '+mode+' watercolor sky must contain canvas pigment.');
+   assert.equal(sky.starsVisible,mode==='night','Stars must remain visible only at night.');
+   skySamples.push(sky.skyTexture.signature);
+  }
+  assert.equal(new Set(skySamples).size,3,'Day, sunset and night must each paint a distinct sky.');
+  await page.evaluate(()=>{const select=document.getElementById('time-mode');select.value='day';select.dispatchEvent(new Event('change',{bubbles:true}));});
   const plantStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlantStats?.());
   assert.ok(plantStats?.flowerCount>0,'The production starter world must render actual flower meshes.');
   for(const flower of plantStats.flowers.filter(item=>item.type==='flower')){
@@ -219,12 +235,12 @@ const {chromium}=require('playwright');
   });
   const cacheCheck=await page.evaluate(async()=>{
    const names=await caches.keys();
-   const name=names.find(value=>value==='diycraft-shell-v72');
+   const name=names.find(value=>value==='diycraft-shell-v73');
    if(!name)return {name:null,assets:[]};
    const cache=await caches.open(name),requests=await cache.keys();
    return {name,assets:requests.map(request=>new URL(request.url).pathname)};
   });
-  assert.equal(cacheCheck.name,'diycraft-shell-v72','The updated offline worker must install the Three.js shell cache.');
+  assert.equal(cacheCheck.name,'diycraft-shell-v73','The updated offline worker must install the Three.js shell cache.');
   for(const asset of ['/diycraft/three-world-live.js','/diycraft/js/three.js','/diycraft/js/three-world-storage.js','/diycraft/js/three-world-starter.js','/diycraft/js/three-plant-geometry.js','/diycraft/js/three-compact-hud.js']){
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);

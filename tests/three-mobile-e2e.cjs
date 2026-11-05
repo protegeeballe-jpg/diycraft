@@ -40,6 +40,10 @@ const {chromium}=require('playwright');
   assert.equal(startup.revision,'128');
   assert.equal(startup.storageReadFailed,false);
 
+  const mobileSky=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getVisualTimeStats?.());
+  assert.equal(mobileSky?.skyTexture?.hasMap,true,'The mobile world must use the watercolor sky texture.');
+  assert.ok(mobileSky.skyTexture.width<=512&&mobileSky.skyTexture.height<=256,'The watercolor sky texture must remain bounded on low-memory mobile devices.');
+
   const proportions=await page.evaluate(()=>{
    const edit=window.__DIYCRAFT_THREE_EDIT__;
    return {blocks:edit?.getBlockRepresentationStats?.(),plants:edit?.getPlantStats?.(),
