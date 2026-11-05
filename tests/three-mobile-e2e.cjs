@@ -67,9 +67,9 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('details.settings-section').filter({hasText:section}).count(),1,'Settings must have one organized '+section+' group.');
   }
   await openSettingsPanel();
-  await page.locator('#block-type').selectOption('water');
+  await page.locator('#hud-choices-block-type [data-value="water"]').click();
   assert.equal(await page.locator('#block-type').inputValue(),'water','Material selection remains available inside organized Settings.');
-  await page.locator('#block-type').selectOption('grass');
+  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
   await page.locator('details.settings-section').filter({hasText:'Creative Studios & Collection'}).locator('summary').click();
   await page.locator('#inventory-open').click();
   assert.equal(await page.locator('#inventory-panel').isVisible(),true,'Inventory remains accessible from its Settings group.');
@@ -129,21 +129,21 @@ const {chromium}=require('playwright');
   // All three designers must apply valid state into the same world sandbox.
   await openSettingsPanel();
   await page.locator('#solid-design-open').click();
-  await page.locator('#solid-design-type').selectOption('stone');
+  await page.locator('#hud-choices-solid-design-type [data-value="stone"]').click();
   await page.locator('#solid-design-color').fill('#8b91a0');
   await page.locator('#solid-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().solidStyles?.stone?.color)),'#8b91a0');
 
   await openSettingsPanel();
   await page.locator('#door-design-open').click();
-  await page.locator('#door-design-style').selectOption('window');
+  await page.locator('#hud-choices-door-design-style [data-value="window"]').click();
   await page.locator('#door-design-color').fill('#6d9f8a');
   await page.locator('#door-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().doorDesign?.style)),'window');
 
   await openSettingsPanel();
   await page.locator('#tile-design-open').click();
-  await page.locator('#tile-design-pattern').selectOption('herringbone');
+  await page.locator('#hud-choices-tile-design-pattern [data-value="herringbone"]').click();
   await page.locator('#tile-design-color').fill('#c48b72');
   await page.locator('#tile-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().tileDesign?.pattern)),'herringbone');
