@@ -274,12 +274,22 @@ function freshWorld(){
   await page.locator('#camera-mode').click();
   state=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__);
   assert.equal(state.cameraMode,'third','The camera control must return to third-person mode.');
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState()?.playerGrounded===true,null,{timeout:3000});
+  playerState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
   const beforeJump=playerState.player.y;
   await page.locator('#jump').click();
-  await page.waitForTimeout(180);
+  const jumpStart=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
+  assert.ok(jumpStart.jumpVelocity>0&&!jumpStart.playerGrounded,'The jump button must be accepted by the grounded player-physics state.');
+  await page.waitForFunction(start=>{
+   const state=window.__DIYCRAFT_THREE_EDIT__.getPlayerState();
+   return state.player.y>start+.35&&!state.playerGrounded;
+  },beforeJump,{timeout:3000});
   playerState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
   assert.ok(playerState.player.y>beforeJump+.35&&!playerState.playerGrounded,'Jump must produce a visible upward arc.');
-  await page.waitForTimeout(850);
+  await page.waitForFunction(()=>{
+   const state=window.__DIYCRAFT_THREE_EDIT__.getPlayerState();
+   return state.playerGrounded&&Math.abs(state.player.y)<.02;
+  },null,{timeout:3500});
   playerState=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getPlayerState());
   assert.ok(playerState.playerGrounded&&Math.abs(playerState.player.y)<.02,'The player must land back on the ground after a complete jump.');
   const beforeFlight=playerState.player.y;
