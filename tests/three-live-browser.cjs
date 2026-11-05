@@ -227,6 +227,14 @@ const {chromium}=require('playwright');
     'Offline cache is missing '+asset);
   }
   await page.screenshot({path:'three-live-main.png',fullPage:false});
+  const flowerFocus=await page.evaluate(()=>{
+   const panel=document.getElementById('settings-panel'),toggle=document.getElementById('settings-toggle');
+   if(panel)panel.hidden=true;if(toggle)toggle.setAttribute('aria-expanded','false');
+   return window.__DIYCRAFT_THREE_EDIT__?.focusFlowerForTest?.(0);
+  });
+  assert.ok(flowerFocus,'The live scene must expose a flower for visual close-up validation.');
+  await page.waitForTimeout(220);
+  await page.screenshot({path:'three-flower-closeup.png',fullPage:false});
   await context.setOffline(true);
   await page.reload({waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=3,null,{timeout:30000});

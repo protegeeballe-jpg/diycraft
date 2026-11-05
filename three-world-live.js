@@ -602,6 +602,16 @@ function renderSandbox(state){
    const duplicates=expected.filter(key=>(counts.get(key)||0)>1);
    return {expectedCount:expected.length,representedCount:expected.filter(key=>counts.has(key)).length,missing,duplicates};
   },
+  focusFlowerForTest:(index=0)=>{
+   const roots=group.children.filter(root=>root.userData.blockKey&&root.children.some(child=>
+    child.isMesh&&child.geometry?.userData?.plantShape?.plantType==='flower'));
+   if(!roots.length)return false;
+   playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;
+   const root=roots[Math.max(0,Math.min(roots.length-1,Math.floor(index)))];
+   target.set(root.position.x,root.position.y+.93,root.position.z);
+   orbit.radius=2.35;orbit.theta=.62;orbit.phi=1.25;cameraUpdate();
+   return {x:root.position.x,y:root.position.y,z:root.position.z,flowerIndex:index};
+  },
   getPlantStats:()=>{
    const plants=group.children.filter(root=>root.userData.blockKey&&root.children.some(child=>child.isMesh&&child.geometry?.userData?.plantShape));
    const flowers=plants.map(root=>{

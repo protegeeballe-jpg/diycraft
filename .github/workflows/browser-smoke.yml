@@ -53,5 +53,6 @@ jobs:
             three-live-main.png
             three-animal-bird.png
             three-animal-sheep.png
+            three-flower-closeup.png
           if-no-files-found: ignore
           retention-days: 7
