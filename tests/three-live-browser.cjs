@@ -60,24 +60,26 @@ const {chromium}=require('playwright');
   }));
   console.log('live build action diagnostic: '+JSON.stringify(immediateBuild));
   const expectedBlocks=initial.world.blocks.length+1;
-  await page.waitForFunction(async(expected)=>{
-   const stored=localStorage.getItem('diycraft_peaceful_voxel_v1');
-   if(!stored)return false;
+  const targetGeneration=immediateBuild.persistence?.saveGeneration;
+  assert.ok(Number.isInteger(targetGeneration)&&targetGeneration>0,'A new autosave generation must be queued after building.');
+  await page.waitForFunction(async({generation,expected})=>{
+   const diagnostics=window.__DIYCRAFT_THREE_EDIT__?.getPersistenceStats?.();
+   if(!diagnostics||diagnostics.savedGeneration<generation||diagnostics.hasPendingSave||diagnostics.saveInFlight||diagnostics.saveTimerActive)return false;
+   const stored=localStorage.getItem('diycraft_peaceful_voxel_v1');if(!stored)return false;
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(stored));
    return world.blocks.length>=expected;
-  },expectedBlocks,{timeout:15000});
-  const afterBuild=await page.evaluate(async()=>{
-   const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1')));
-   return {blocks:world.blocks.length,version:world.version};
-  });
-  const finalPersistence=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPersistenceStats?.());
+  },{generation:targetGeneration,expected:expectedBlocks},{timeout:20000});
+  const afterBuild=await page.evaluate(async()=>({
+   world:JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1'))),
+   persistence:window.__DIYCRAFT_THREE_EDIT__?.getPersistenceStats?.(),
+   feedback:document.getElementById('backup-feedback')?.textContent
+  }));
   console.log('build persistence comparison: '+JSON.stringify({
    initialBlocks:initial.world.blocks.length,expectedBlocks,
-   immediateLiveBlocks:immediateBuild.liveBlocks,savedBlocks:afterBuild.blocks,
-   savedFormatVersion:afterBuild.version,immediatePersistence:immediateBuild.persistence,
-   finalPersistence,feedback:document.getElementById('backup-feedback')?.textContent
+   immediateLiveBlocks:immediateBuild.liveBlocks,savedBlocks:afterBuild.world.blocks.length,
+   immediatePersistence:immediateBuild.persistence,finalPersistence:afterBuild.persistence,feedback:afterBuild.feedback
   }));
-  assert.ok(afterBuild.blocks>=expectedBlocks,'A build action must persist the changed blocks. Expected '+expectedBlocks+' blocks from '+initial.world.blocks.length+', but storage contains '+afterBuild.blocks+'. Live sandbox count was '+immediateBuild.liveBlocks+'.');
+  assert.ok(afterBuild.world.blocks.length>=expectedBlocks,'A build action must persist the changed blocks. Expected '+expectedBlocks+' blocks from '+initial.world.blocks.length+', but storage contains '+afterBuild.world.blocks.length+'. Live sandbox count was '+immediateBuild.liveBlocks+'.');
 
   // Verify the save button does a direct, successful save.
   await page.locator('#save-now').click();
@@ -172,7 +174,7 @@ const {chromium}=require('playwright');
   await context.setOffline(false);
   if(errors.length)throw new Error('Browser console/page errors:\n'+errors.join('\n\n'));
   console.log('Three.js live browser integration passed: '+JSON.stringify({
-   initialBlocks:initial.world.blocks.length,afterBuild:afterBuild.blocks,
+   initialBlocks:initial.world.blocks.length,afterBuild:afterBuild.world.blocks.length,
    playerStartZ:beforeMove,animals:savedAnimalCount,cacheFiles:cacheCheck.assets.length,offlineStatus
   }));
   await context.close();
