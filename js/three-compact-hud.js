@@ -28,6 +28,18 @@
   const settingsToggle = $('settings-toggle');
   const settingsPanel = $('settings-panel');
   const buildToolbar = $('build-toolbar');
+  let buildPaused = false;
+  const pauseBuildButton = buildToolbar.querySelector('[data-hud-tool="pause-build"]');
+  function setBuildPaused(paused) {
+    buildPaused = !!paused;
+    if (pauseBuildButton) {
+      pauseBuildButton.setAttribute('aria-pressed', String(buildPaused));
+      pauseBuildButton.classList.toggle('active', buildPaused);
+      pauseBuildButton.setAttribute('aria-label', buildPaused ? 'Resume building' : 'Pause building');
+      pauseBuildButton.title = buildPaused ? 'Resume building' : 'Pause building';
+    }
+    window.dispatchEvent(new CustomEvent('diycraft:build-mode', { detail: { paused: buildPaused } }));
+  }
   const quickColors = window.DIYCraftQuickMaterialColors =
     window.DIYCraftQuickMaterialColors || Object.create(null);
 
@@ -277,6 +289,89 @@
     });
   }
 
+
+  function openMoreMaterialsPicker() {
+    let activeType = ['wood','brick','glass','sand','snow','custom','door'].includes($('block-type').value)
+      ? $('block-type').value : 'wood';
+    openQuickPicker('More building materials', (root) => {
+      const grid = document.createElement('div');
+      grid.className = 'hud-picker-grid';
+      const entries = [
+        ['wood','🪵 Wood'], ['brick','🧱 Brick'], ['glass','🔹 Glass'],
+        ['sand','🟨 Sand'], ['snow','❄️ Snow'], ['custom','🎨 Custom'], ['door','🚪 Door']
+      ];
+      const optionButtons = new Map();
+      entries.forEach(([type,label]) => {
+        const button = makeButton(label, () => {
+          activeType = type;
+          setMaterial(type);
+          optionButtons.forEach((item,key) => {
+            item.classList.toggle('active',key===type);
+            item.setAttribute('aria-pressed',String(key===type));
+          });
+        });
+        button.setAttribute('aria-pressed',String(type===activeType));
+        if(type===activeType)button.classList.add('active');
+        optionButtons.set(type,button);
+        grid.append(button);
+      });
+      root.append(grid);
+      root.append(makeButton('Use selected material', () => {
+        setMaterial(activeType);
+        closeMenus();
+      }, 'hud-picker-primary'));
+      root.append(makeButton('Choose color and finish', () => {
+        setMaterial(activeType);
+        closeMenus();
+        if(activeType==='door')$('door-design-open').click();
+        else $('solid-design-open').click();
+      }));
+      root.append(makeButton('Open door design', () => {
+        setMaterial('door');
+        closeMenus();
+        $('door-design-open').click();
+      }));
+    });
+  }
+
+  function openWaterPicker() {
+    openQuickPicker('Water choices', (root) => {
+      root.append(makeButton('💧 Build with water', () => {
+        setMaterial('water');
+        closeMenus();
+      }, 'hud-picker-primary'));
+      root.append(makeButton('🪣 Collect a water layer', () => {
+        closeMenus();
+        $('water-collect').click();
+      }));
+      root.append(makeButton('🐟 Add fish to the pool', () => {
+        closeMenus();
+        $('fish-add').click();
+      }));
+      const note = document.createElement('p');
+      note.className = 'hud-picker-note';
+      note.textContent = 'Dig a pool first. Hold a water layer to collect it.';
+      root.append(note);
+    });
+  }
+
+  function openStudiosPicker() {
+    openQuickPicker('Creative studios', (root) => {
+      [
+        ['character','🧍 Character Studio','character-open'],
+        ['art','🖍 Art Studio','art-open'],
+        ['gallery','🖼 My Gallery','gallery-open']
+      ].forEach(([action,label,targetId]) => {
+        const button = makeButton(label, () => {
+          closeMenus();
+          $(targetId).click();
+        });
+        button.dataset.studioAction = action;
+        root.append(button);
+      });
+    });
+  }
+
   function openAnimalPicker() {
     const select = $('animal-species');
     openQuickPicker('Choose an animal', (root) => {
@@ -361,7 +456,14 @@
     if (!button) return;
     const tool = button.dataset.hudTool;
 
-    if (tool === 'inventory') {
+    if (tool === 'pause-build') {
+      setBuildPaused(!buildPaused);
+      const status = $('status');
+      if (status) status.textContent = buildPaused
+        ? 'Building paused. Tap the hand again when you are ready to place blocks.'
+        : 'Building is ready. Tap the world to place blocks.';
+      closeMenus();
+    } else if (tool === 'inventory') {
       closeMenus();
       $('inventory-open').click();
       document.querySelector('[data-inventory-tab="bucket"]')?.click();
@@ -381,8 +483,11 @@
       closeMenus();
       setMaterial('dirt');
     } else if (tool === 'water') {
-      closeMenus();
-      setMaterial('water');
+      openWaterPicker();
+    } else if (tool === 'more-materials') {
+      openMoreMaterialsPicker();
+    } else if (tool === 'studios') {
+      openStudiosPicker();
     } else if (tool === 'flower') {
       openFlowerPicker();
     } else if (tool === 'animal') {
