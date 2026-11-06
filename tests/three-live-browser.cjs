@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const liveRuntimeSource=fs.readFileSync('three-world-live.js','utf8');
-for(const id of ['world-name-apply','backup-download','backup-restore']){
+for(const id of ['world-name-apply','backup-download','backup-restore','neighborhood-toggle']){
  const count=(liveRuntimeSource.match(new RegExp("getElementById\\('"+id+"'\\)\\.addEventListener\\(",'g'))||[]).length;
  assert.equal(count,1,'Production control #'+id+' must register exactly one event handler.');
 }
@@ -37,12 +37,14 @@ const {chromium}=require('playwright');
     hasSafetyOverlay:!!document.getElementById('safety'),
     hasWebGL:!!(document.getElementById('three-world')?.getContext('webgl2')||document.getElementById('three-world')?.getContext('webgl')),
     saveControls:!!document.getElementById('save-now'),
+    neighborhoodControl:!!document.getElementById('neighborhood-toggle'),
     runtimeScripts:[...document.scripts].map(script=>script.getAttribute('src')).filter(Boolean)
    };
   });
   assert.equal(initial.revision,'128','The live world must use the pinned local Three.js r128 build.');
   assert.equal(initial.storageSource,'starter','A clean profile must load the canonical starter-world source.');
   assert.equal(initial.storageReadFailed,false);
+  assert.equal(initial.neighborhoodControl,true,'The production HUD must expose the Visit neighborhood control.');
   assert.equal(initial.hasSafetyOverlay,false,'The floating upper-right HUD must be absent from the production viewport.');
   const skySamples=[];
   for(const mode of ['day','sunset','night']){
@@ -293,6 +295,25 @@ const {chromium}=require('playwright');
   assert.ok(flowerFocus,'The live scene must expose a flower for visual close-up validation.');
   await page.waitForTimeout(220);
   await page.screenshot({path:'three-flower-closeup.png',fullPage:false});
+  // The restored house icon must safely return the player to the starter neighborhood.
+  const beforeNeighborhoodVisit=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState()?.player);
+  assert.ok(beforeNeighborhoodVisit,'The live player state must be available before visiting the neighborhood.');
+  await page.locator('#neighborhood-toggle').click();
+  await page.waitForFunction(()=>{
+   const player=window.__DIYCRAFT_THREE_EDIT__?.getPlayerState()?.player;
+   return player&&Math.hypot(player.x-4.5,player.z+5.5)<=2&&
+    document.getElementById('status')?.textContent.includes('Welcome back! You are home in the neighborhood.');
+  },null,{timeout:8000});
+  const neighborhoodVisit=await page.evaluate(()=>({
+   player:window.__DIYCRAFT_THREE_EDIT__?.getPlayerState()?.player,
+   playMode:window.__DIYCRAFT_THREE_EDIT__?.playerMode,
+   status:document.getElementById('status')?.textContent
+  }));
+  assert.equal(neighborhoodVisit.playMode,false,'Neighborhood return must leave the player in build mode.');
+  assert.ok(Math.hypot(neighborhoodVisit.player.x-4.5,neighborhoodVisit.player.z+5.5)<=2,
+   'Neighborhood return must use a safe position close to the original village entrance.');
+  assert.match(neighborhoodVisit.status,/Welcome back! You are home in the neighborhood/);
+
   await context.setOffline(true);
   await page.reload({waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=3,null,{timeout:30000});
