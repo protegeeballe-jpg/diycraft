@@ -146,7 +146,11 @@ const {chromium}=require('playwright');
   assert.ok(birdVisualBefore.birdWingPivotY>=1,'Bird wing pivots must sit at shoulder height above the torso rather than inside it.');
   assert.ok(birdVisualBefore.quadrupedLegBatches>=1,'Ground animals must use separate pivoted leg batches.');
   assert.ok(birdVisualBefore.quadrupedLegInstances>=4,'Each ground animal must have four leg instances.');
-  await page.waitForTimeout(240);
+  await page.waitForFunction(({bird,legs})=>{
+   const current=window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.();
+   return current&&Math.abs(current.birdFlapAngle-bird)>.03&&
+    Math.abs(current.groundLegSwingAngle-legs)>.01;
+  },{bird:birdVisualBefore.birdFlapAngle,legs:birdVisualBefore.groundLegSwingAngle},{timeout:3000});
   const birdVisualAfter=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
   assert.ok(Math.abs(birdVisualAfter.birdFlapAngle-birdVisualBefore.birdFlapAngle)>.03,'Bird wings must flap over time rather than remain a static wobbling body.');
   assert.ok(Math.abs(birdVisualAfter.groundLegSwingAngle-birdVisualBefore.groundLegSwingAngle)>.01,'Ground-animal legs must swing over time instead of remaining rigid pegs.');
