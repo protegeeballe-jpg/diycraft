@@ -98,11 +98,28 @@ function applyWorldTime(seconds){
  return palette;
 }
 const GROUND_HALF_SIZE=45,GROUND_SIZE=GROUND_HALF_SIZE*2;
+// Keep the original village terrain anchored even when the camera travels far away.
+// This rectangle covers all three cottages, the starter garden, every resident route,
+// and the roaming animals, while the 90×90 camera-following patch serves exploration.
+const NEIGHBORHOOD_GROUND=Object.freeze({
+ minX:-26,maxX:30,minZ:-28,maxZ:10,
+ centerX:2,centerZ:-9,halfWidthX:28,halfWidthZ:19
+});
 const floor=new THREE.Mesh(new THREE.BufferGeometry(),floorMat);
 floor.frustumCulled=false;floor.receiveShadow=true;floor.userData.groundSurface=true;scene.add(floor);
 const groundDirtMesh=new THREE.Mesh(new THREE.BufferGeometry(),groundDirtMaterial);
 groundDirtMesh.frustumCulled=false;groundDirtMesh.receiveShadow=true;groundDirtMesh.userData.groundSurface=true;scene.add(groundDirtMesh);
-let groundCenterX=NaN,groundCenterZ=NaN,groundExcavationSignature='';
+const neighborhoodFloor=new THREE.Mesh(new THREE.BufferGeometry(),floorMat);
+neighborhoodFloor.position.set(NEIGHBORHOOD_GROUND.centerX,0,NEIGHBORHOOD_GROUND.centerZ);
+neighborhoodFloor.frustumCulled=false;neighborhoodFloor.receiveShadow=true;neighborhoodFloor.userData.groundSurface=true;scene.add(neighborhoodFloor);
+const neighborhoodDirtMesh=new THREE.Mesh(new THREE.BufferGeometry(),groundDirtMaterial);
+neighborhoodDirtMesh.position.set(NEIGHBORHOOD_GROUND.centerX,0,NEIGHBORHOOD_GROUND.centerZ);
+neighborhoodDirtMesh.frustumCulled=false;neighborhoodDirtMesh.receiveShadow=true;neighborhoodDirtMesh.userData.groundSurface=true;scene.add(neighborhoodDirtMesh);
+let groundCenterX=NaN,groundCenterZ=NaN,groundExcavationSignature='',neighborhoodGroundSignature=null;
+function isNeighborhoodGroundCell(x,z){
+ return x>=NEIGHBORHOOD_GROUND.minX&&x<NEIGHBORHOOD_GROUND.maxX&&
+  z>=NEIGHBORHOOD_GROUND.minZ&&z<NEIGHBORHOOD_GROUND.maxZ;
+}
 function terrainBuffers(){return {vertices:[],uvs:[],indices:[]};}
 function appendTerrainQuad(buffers,points,uvs){
  const base=buffers.vertices.length/3;
@@ -112,37 +129,32 @@ function appendTerrainQuad(buffers,points,uvs){
  }
  buffers.indices.push(base,base+1,base+2,base,base+2,base+3);
 }
-function finishTerrainGeometry(buffers,stats){
+function finishTerrainGeometry(buffers,stats,width,height){
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.Float32BufferAttribute(buffers.vertices,3));
  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(buffers.uvs,2));
  geometry.setIndex(buffers.indices);
  geometry.computeVertexNormals();geometry.computeBoundingSphere();
- geometry.parameters={width:GROUND_SIZE,height:GROUND_SIZE};
+ geometry.parameters={width,height};
  geometry.userData={...stats};
  return geometry;
 }
-function syncGroundMesh(world,force=false){
- const centerX=Math.round(camera.position.x),centerZ=Math.round(camera.position.z);
- const excavations=Array.isArray(world?.excavations)?world.excavations:[];
- const signature=excavations.map(cell=>cell&&Number.isFinite(cell.x)&&Number.isFinite(cell.z)
-  ?String(cell.x)+','+String(cell.z)+','+String(cell.depth||0):'').sort().join('|');
- if(!force&&centerX===groundCenterX&&centerZ===groundCenterZ&&signature===groundExcavationSignature)return false;
- const depths=new Map();
- excavations.forEach(cell=>{
-  if(cell&&Number.isInteger(cell.x)&&Number.isInteger(cell.z)&&Number.isFinite(cell.depth)&&cell.depth>0)
-   depths.set(cell.x+','+cell.z,Math.min(playerPhysics.CONSTANTS.maxDigDepth,Math.floor(cell.depth)));
- });
- const grass=terrainBuffers(),dirt=terrainBuffers();let grassCellCount=0,holeCellCount=0,dirtFaceCount=0;
+function buildTerrainWindow(centerX,centerZ,halfWidthX,halfWidthZ,depths,signature,skipNeighborhood){
+ const grass=terrainBuffers(),dirt=terrainBuffers();
+ let grassCellCount=0,holeCellCount=0,dirtFaceCount=0;
  const uvFor=(x,z)=>[
-  [(x+GROUND_HALF_SIZE)/4,(z+GROUND_HALF_SIZE)/4],
-  [(x+GROUND_HALF_SIZE)/4,(z+GROUND_HALF_SIZE+1)/4],
-  [(x+GROUND_HALF_SIZE+1)/4,(z+GROUND_HALF_SIZE+1)/4],
-  [(x+GROUND_HALF_SIZE+1)/4,(z+GROUND_HALF_SIZE)/4]
+  [x/4,z/4],
+  [x/4,(z+1)/4],
+  [(x+1)/4,(z+1)/4],
+  [(x+1)/4,z/4]
  ];
- for(let lx=-GROUND_HALF_SIZE;lx<GROUND_HALF_SIZE;lx++){
-  for(let lz=-GROUND_HALF_SIZE;lz<GROUND_HALF_SIZE;lz++){
-   const wx=centerX+lx,wz=centerZ+lz,depth=depths.get(wx+','+wz)||0,uv=uvFor(lx,lz);
+ for(let lx=-halfWidthX;lx<halfWidthX;lx++){
+  for(let lz=-halfWidthZ;lz<halfWidthZ;lz++){
+   const wx=centerX+lx,wz=centerZ+lz;
+   // The fixed village patch owns these cells; omit them from the moving patch
+   // so the two ground meshes never overlap or z-fight.
+   if(skipNeighborhood&&isNeighborhoodGroundCell(wx,wz))continue;
+   const depth=depths.get(wx+','+wz)||0,uv=uvFor(wx,wz);
    if(depth<=0){
     appendTerrainQuad(grass,[[lx,0,lz],[lx,0,lz+1],[lx+1,0,lz+1],[lx+1,0,lz]],uv);
     grassCellCount++;continue;
@@ -152,36 +164,69 @@ function syncGroundMesh(world,force=false){
    dirtFaceCount++;
    const west=depths.get((wx-1)+','+wz)||0,east=depths.get((wx+1)+','+wz)||0;
    const north=depths.get(wx+','+(wz-1))||0,south=depths.get(wx+','+(wz+1))||0;
-   const yTop=-Math.min(depth,west),yEast=-Math.min(depth,east),yNorth=-Math.min(depth,north),ySouth=-Math.min(depth,south);
+   const yWest=-Math.min(depth,west),yEast=-Math.min(depth,east);
+   const yNorth=-Math.min(depth,north),ySouth=-Math.min(depth,south);
    if(depth>west){
-    appendTerrainQuad(dirt,[[lx,-depth,lz],[lx,yTop,lz],[lx,yTop,lz+1],[lx,-depth,lz+1]],
-     [[(lz+GROUND_HALF_SIZE)/4,depth/4],[(lz+GROUND_HALF_SIZE)/4,-yTop/4],[(lz+GROUND_HALF_SIZE+1)/4,-yTop/4],[(lz+GROUND_HALF_SIZE+1)/4,depth/4]]);
+    appendTerrainQuad(dirt,[[lx,-depth,lz],[lx,yWest,lz],[lx,yWest,lz+1],[lx,-depth,lz+1]],
+     [[wz/4,depth/4],[wz/4,-yWest/4],[(wz+1)/4,-yWest/4],[(wz+1)/4,depth/4]]);
     dirtFaceCount++;
    }
    if(depth>east){
     appendTerrainQuad(dirt,[[lx+1,-depth,lz+1],[lx+1,yEast,lz+1],[lx+1,yEast,lz],[lx+1,-depth,lz]],
-     [[(lz+GROUND_HALF_SIZE+1)/4,depth/4],[(lz+GROUND_HALF_SIZE+1)/4,-yEast/4],[(lz+GROUND_HALF_SIZE)/4,-yEast/4],[(lz+GROUND_HALF_SIZE)/4,depth/4]]);
+     [[(wz+1)/4,depth/4],[(wz+1)/4,-yEast/4],[wz/4,-yEast/4],[wz/4,depth/4]]);
     dirtFaceCount++;
    }
    if(depth>north){
     appendTerrainQuad(dirt,[[lx,-depth,lz],[lx+1,-depth,lz],[lx+1,yNorth,lz],[lx,yNorth,lz]],
-     [[(lx+GROUND_HALF_SIZE)/4,depth/4],[(lx+GROUND_HALF_SIZE+1)/4,depth/4],[(lx+GROUND_HALF_SIZE+1)/4,-yNorth/4],[(lx+GROUND_HALF_SIZE)/4,-yNorth/4]]);
+     [[wx/4,depth/4],[(wx+1)/4,depth/4],[(wx+1)/4,-yNorth/4],[wx/4,-yNorth/4]]);
     dirtFaceCount++;
    }
    if(depth>south){
     appendTerrainQuad(dirt,[[lx+1,-depth,lz+1],[lx,-depth,lz+1],[lx,ySouth,lz+1],[lx+1,ySouth,lz+1]],
-     [[(lx+GROUND_HALF_SIZE+1)/4,depth/4],[(lx+GROUND_HALF_SIZE)/4,depth/4],[(lx+GROUND_HALF_SIZE)/4,-ySouth/4],[(lx+GROUND_HALF_SIZE+1)/4,-ySouth/4]]);
+     [[(wx+1)/4,depth/4],[wx/4,depth/4],[wx/4,-ySouth/4],[(wx+1)/4,-ySouth/4]]);
     dirtFaceCount++;
    }
   }
  }
- const nextGrass=finishTerrainGeometry(grass,{grassCellCount,holeCellCount,excavationSignature:signature});
- const nextDirt=finishTerrainGeometry(dirt,{holeCellCount,dirtFaceCount,excavationSignature:signature});
- if(floor.geometry)floor.geometry.dispose();
- if(groundDirtMesh.geometry)groundDirtMesh.geometry.dispose();
- floor.geometry=nextGrass;groundDirtMesh.geometry=nextDirt;
- floor.position.set(centerX,0,centerZ);groundDirtMesh.position.set(centerX,0,centerZ);
- groundCenterX=centerX;groundCenterZ=centerZ;groundExcavationSignature=signature;
+ const width=halfWidthX*2,height=halfWidthZ*2;
+ return {
+  grass:finishTerrainGeometry(grass,{grassCellCount,holeCellCount,excavationSignature:signature},width,height),
+  dirt:finishTerrainGeometry(dirt,{holeCellCount,dirtFaceCount,excavationSignature:signature},width,height)
+ };
+}
+function installTerrainWindow(pair,grassMesh,dirtMesh,centerX,centerZ){
+ if(grassMesh.geometry)grassMesh.geometry.dispose();
+ if(dirtMesh.geometry)dirtMesh.geometry.dispose();
+ grassMesh.geometry=pair.grass;dirtMesh.geometry=pair.dirt;
+ grassMesh.position.set(centerX,0,centerZ);dirtMesh.position.set(centerX,0,centerZ);
+}
+function syncGroundMesh(world,force=false){
+ const centerX=Math.round(camera.position.x),centerZ=Math.round(camera.position.z);
+ const excavations=Array.isArray(world?.excavations)?world.excavations:[];
+ const signature=excavations.map(cell=>cell&&Number.isFinite(cell.x)&&Number.isFinite(cell.z)
+  ?String(cell.x)+','+String(cell.z)+','+String(cell.depth||0):'').sort().join('|');
+ const centerChanged=centerX!==groundCenterX||centerZ!==groundCenterZ;
+ const excavationsChanged=signature!==groundExcavationSignature;
+ const neighborhoodChanged=signature!==neighborhoodGroundSignature;
+ if(!force&&!centerChanged&&!excavationsChanged&&!neighborhoodChanged)return false;
+ const depths=new Map();
+ excavations.forEach(cell=>{
+  if(cell&&Number.isInteger(cell.x)&&Number.isInteger(cell.z)&&Number.isFinite(cell.depth)&&cell.depth>0)
+   depths.set(cell.x+','+cell.z,Math.min(playerPhysics.CONSTANTS.maxDigDepth,Math.floor(cell.depth)));
+ });
+ if(force||centerChanged||excavationsChanged){
+  const active=buildTerrainWindow(centerX,centerZ,GROUND_HALF_SIZE,GROUND_HALF_SIZE,depths,signature,true);
+  installTerrainWindow(active,floor,groundDirtMesh,centerX,centerZ);
+  groundCenterX=centerX;groundCenterZ=centerZ;
+ }
+ if(force||neighborhoodChanged){
+  const home=buildTerrainWindow(NEIGHBORHOOD_GROUND.centerX,NEIGHBORHOOD_GROUND.centerZ,
+   NEIGHBORHOOD_GROUND.halfWidthX,NEIGHBORHOOD_GROUND.halfWidthZ,depths,signature,false);
+  installTerrainWindow(home,neighborhoodFloor,neighborhoodDirtMesh,
+   NEIGHBORHOOD_GROUND.centerX,NEIGHBORHOOD_GROUND.centerZ);
+  neighborhoodGroundSignature=signature;
+ }
+ groundExcavationSignature=signature;
  return true;
 }
 function updateWorldBackdrop(){
