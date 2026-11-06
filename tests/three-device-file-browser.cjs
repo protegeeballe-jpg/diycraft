@@ -100,6 +100,7 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Device-file save paused:'),null,{timeout:15000});
   assert.equal(JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes))).blocks.length,beforeFailureCount,
    'A failed staged write must not replace the previously saved device file.');
+  await showSettingsPanel(page);
   assert.equal(await page.locator('#device-file-connect').textContent(),'Retry device save');
   await page.locator('#device-file-connect').click();
   await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Retry successful.'),null,{timeout:15000});
