@@ -41,8 +41,10 @@ function extent(b,axis){return b.max[axis]-b.min[axis];}
 for(const species of animals.species){
  const geometry=animals.create(THREE,{species}),features=geometry.userData.animalFeatureBounds;
  assert.equal(geometry.userData.animalSpecies,species);
- assert.equal(animals.renderScale,.74,'Animal companions should be smaller relative to the player and one-block grid.');
- assert.equal(geometry.userData.animalRenderScale,animals.renderScale,'Animal geometry metadata and live instance scale must agree.');
+ assert.equal(animals.renderScale,.74,'The original animal scale remains the reference size.');
+ const expectedScale=species==='horse'||species==='giraffe'?.74:.37;
+ assert.equal(animals.renderScaleFor(species),expectedScale,species+' must use its requested half-size or unchanged scale.');
+ assert.equal(geometry.userData.animalRenderScale,expectedScale,'Animal geometry metadata must match the species-specific live instance scale.');
  if(species==='bird')assert.deepEqual(geometry.userData.animalBodyShape,[.43,.40,.58],'Bird torso should stay compact so the wings and head define its silhouette.');
  if(species!=='bird')assert.ok(geometry.userData.animalBodyShape[0]<=.50,species+' torso should stay narrow across the shoulders and hips.');
  assert.ok(geometry.attributes.position.array.length>0,species+' has visible geometry');
