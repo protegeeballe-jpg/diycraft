@@ -163,7 +163,7 @@ const {chromium}=require('playwright');
   assert.ok(Math.abs(initialHud.d.bottom-initialHud.a.bottom)<3,'Both touch pads must share the same bottom alignment.');
 
   assert.equal(await page.locator('#top-controls button').count(),3,'Exactly three utility icons must appear at the upper right.');
-  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),11,'The compact build toolbar must contain eleven small tools, including pause, more materials and studios.');
+  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),12,'The compact build toolbar must contain twelve small tools, including pause, save, more materials and studios.');
   assert.equal(await page.locator('[data-hud-tool="pause-build"]').getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('#legacy-control-bindings').isVisible(),false,'Compatibility controls must not appear as a second settings menu.');
   assert.equal(await page.locator('#settings-toggle').getAttribute('aria-expanded'),'false');
@@ -432,9 +432,8 @@ const {chromium}=require('playwright');
    'A cancelled touch gesture must release movement and must not leave the player walking.');
   await togglePlayModeFromSettings();
 
-  // Persist the combined changes and verify a clean reload reconstructs them.
-  await openSettingsPanel();
-  await page.locator('#save-now').click();
+  // Persist the combined changes through the visible toolbar save icon and verify a clean reload reconstructs them.
+  await page.locator('[data-hud-tool="save-world"]').click();
   await page.waitForFunction(()=>/Saved to browser recovery|Saved to .* and browser recovery/.test(document.getElementById('backup-feedback').textContent),null,{timeout:15000});
   const saved=await page.evaluate(async()=>{
    const raw=await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1'));
