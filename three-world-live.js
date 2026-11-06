@@ -40,11 +40,11 @@ const deviceSignals=performanceProfiles.browserCapabilities(window.navigator,!!(
 const performanceProfile=performanceProfiles.select(deviceSignals),frameGate=performanceProfiles.createFrameGate(performanceProfile.fpsCap);
 const renderer=new THREE.WebGLRenderer({canvas,antialias:performanceProfile.antialias,powerPreference:'low-power'});
 const viewportController=viewportSizing.create(canvas,camera,renderer,window,{maxPixelRatio:performanceProfile.maxPixelRatio});
-renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.91;
 renderer.shadowMap.enabled=performanceProfile.shadows;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-const hemisphere=new THREE.HemisphereLight(0xfff7e9,0x788b70,.86);scene.add(hemisphere);
-const sun=new THREE.DirectionalLight(0xfff0d5,1.05);sun.position.set(-14,23,16);sun.castShadow=performanceProfile.shadows;sun.shadow.mapSize.set(performanceProfile.shadows?1024:1,performanceProfile.shadows?1024:1);scene.add(sun);
-const fill=new THREE.DirectionalLight(0xc5d9e8,.24);fill.position.set(12,9,-15);scene.add(fill);
+const hemisphere=new THREE.HemisphereLight(0xfff7e9,0x788b70,.74);scene.add(hemisphere);
+const sun=new THREE.DirectionalLight(0xfff0d5,.94);sun.position.set(-14,23,16);sun.castShadow=performanceProfile.shadows;sun.shadow.mapSize.set(performanceProfile.shadows?1024:1,performanceProfile.shadows?1024:1);scene.add(sun);
+const fill=new THREE.DirectionalLight(0xc5d9e8,.17);fill.position.set(12,9,-15);scene.add(fill);
 const materials=painterly.create(THREE,renderer,performanceProfile);
 const floorMat=new THREE.MeshStandardMaterial({color:0x789767,roughness:1});
 const skyGeometry=new THREE.SphereGeometry(120,48,32);
@@ -79,12 +79,12 @@ function applyWorldTime(seconds){
  activeVisualMode=palette.mode;
  scene.background.set(palette.sky[0]);scene.fog.color.set(palette.sky[2]);
  hemisphere.color.set(palette.sky[0]);hemisphere.groundColor.set(palette.ground);
- hemisphere.intensity=palette.mode==='night'?.43:palette.mode==='sunset'?.68:.86;
+ hemisphere.intensity=palette.mode==='night'?.38:palette.mode==='sunset'?.60:.74;
  sun.color.set(palette.mode==='night'?'#b8c6df':palette.sun);
- sun.intensity=palette.mode==='night'?.055:palette.mode==='sunset'?.68:1.05;
+ sun.intensity=palette.mode==='night'?.045:palette.mode==='sunset'?.58:.94;
  sun.position.set(-14,palette.mode==='sunset'?7:23,16);
  fill.color.set(palette.mode==='night'?'#9eafd4':'#c5d9e8');
- fill.intensity=palette.mode==='night'?.28:palette.mode==='sunset'?.18:.24;
+ fill.intensity=palette.mode==='night'?.22:palette.mode==='sunset'?.14:.17;
  floorMat.color.set(palette.ground);
  setSkyGradient(palette.sky,palette.mode);
  const night=palette.mode==='night',direction=night?skyDirection(-.48,.29):palette.mode==='sunset'?skyDirection(.98,.12):skyDirection(.42,.29);
@@ -108,7 +108,7 @@ fishGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
 ],3));
 fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVertexNormals();
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
-let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null;
+let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null,buildPaused=false;
 let deviceStorage=null,storageReadFailed=false,storageLoadSource='pending',lastAutoSaveRevision=0;
 let primaryWorldFileHandle=null,primaryWorldFileName='',deviceWorldFileState='unlinked',primaryWorldFileRemembered=false;
 let deviceFileSaveTimer=0,deviceFileWriteBusy=false,deviceFileDrainPromise=null,deviceFileFlushRequested=false,deviceFilePermissionLostInSession=false,pendingDeviceFileWorld=null;
@@ -622,7 +622,7 @@ function renderSandbox(state){
  status.textContent=state.world.name+' · '+state.world.blocks.length+' blocks · '+instanceBatches+' instanced batches · '+renderObjects+' render objects · Bucket: '+(state.world.bucket?.length||0)+
   (selectedBlock?' · Selected: '+selectedBlock.type:' · Tap to build or fill · Hold 0.6s to dig or remove')+
   ' · Water: '+waterCount+' · Fish: '+fishCount+' ('+renderedFishCount+' shown) · Animals: '+totalAnimalCount+' ('+residentAnimalCount+' residents, '+animalCount+' saved; '+renderedAnimalCount+' shown) · '+performanceProfile.tier+' quality · '+(storageReadFailed?'Existing save protected — restore backup':'Autosaving to this device');
- window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,
+ window.__DIYCRAFT_THREE_EDIT__={revision:state.revision,selectedKey:state.selectedKey,blockCount:state.world.blocks.length,renderedBlocks:state.world.blocks.length,buildPaused,
   sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),renderedMeshes:renderObjects,renderObjects,instanceBatches,
   get deviceFileState(){return deviceWorldFileState;},get hasDeviceFileHandle(){return !!primaryWorldFileHandle;},
   get hasPendingDeviceFileSave(){return !!pendingDeviceFileWorld;},get deviceFileWriteBusy(){return deviceFileWriteBusy;},
@@ -893,7 +893,7 @@ function neighborColorPoint(event){
  return {x:(event.clientX-rect.left)*neighborColorCanvas.width/rect.width,y:(event.clientY-rect.top)*neighborColorCanvas.height/rect.height};
 }
 function placeAnimalAtScreen(x,y){
- if(!animalPlacementSpecies)return false;
+ if(!animalPlacementSpecies||buildPaused)return false;
  pointer.x=(x/innerWidth)*2-1;pointer.y=-(y/innerHeight)*2+1;
  raycaster.setFromCamera(pointer,camera);
  const point=raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
@@ -974,7 +974,10 @@ function tapWorldAt(clientX,clientY,target){
   const neighbor=neighborAtScreen(clientX,clientY);
   if(neighbor){lastPlacement=null;openNeighborColoring(neighbor.name);return;}
  }
- if(animalPlacementSpecies&&placeAnimalAtScreen(clientX,clientY))return;
+ if(animalPlacementSpecies){
+  if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing.');return;}
+  if(placeAnimalAtScreen(clientX,clientY))return;
+ }
  const hit=target||worldTargetAtScreen(clientX,clientY);
  if(!hit){status.textContent='Tap a place in the world to build.';return;}
  try{
@@ -983,6 +986,7 @@ function tapWorldAt(clientX,clientY,target){
    const block=blockByKey.get(hit.key);
    if(!block)return;
    if(block.type==='door'){renderSandbox(sandbox.toggleDoor(block.key));status.textContent='Door opened or closed.';return;}
+   if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing blocks.');return;}
    if(type==='water'){status.textContent='Choose a dug pool cell to add water.';return;}
    const nextX=block.x+hit.step[0],nextY=block.y+hit.step[1],nextZ=block.z+hit.step[2];
    renderSandbox(sandbox.addBlock(buildInputAt(nextX,nextY,nextZ)));
@@ -991,11 +995,13 @@ function tapWorldAt(clientX,clientY,target){
   }
   if(hit.kind==='water'){
    if(type!=='water'){status.textContent='Select Water to add another layer, or press and hold to collect it.';return;}
+   if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing.');return;}
    renderSandbox(sandbox.addWaterLayer(hit.x,hit.z,currentProtectionContext()));
    status.textContent='Water layer added.';
    return;
   }
   if(hit.kind==='ground'){
+   if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing blocks.');return;}
    const depth=sandbox.groundDepthAt(hit.x,hit.z);
    if(type==='water'){
     if(depth<1)throw new Error('Dig a pool cell first, then add water.');
@@ -1036,6 +1042,7 @@ function digWorldTarget(target){
  }catch(error){status.textContent=error.message;}
 }
 function addBeside(){
+ if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing blocks.');return false;}
  const base=selectedBlock();let x=base?base.x+1:0,y=base?base.y:0,z=base?base.z:0;
  if(base&&lastPlacement&&lastPlacement.key===base.key){x=base.x+lastPlacement.step[0];y=base.y+lastPlacement.step[1];z=base.z+lastPlacement.step[2];}
  const state=sandbox.getState(),occupied=new Set(state.world.blocks.map(b=>b.x+','+b.y+','+b.z));
@@ -1118,6 +1125,7 @@ function renderInventoryPanel(){
 
 document.getElementById('add').addEventListener('click',()=>{try{addBeside();}catch(e){status.textContent=e.message;}});
 document.getElementById('animal-place').addEventListener('click',()=>{
+ if(buildPaused&&!animalPlacementSpecies){showWorldFeedback('Building is paused. Tap the hand to resume placing.');return;}
  const requested=document.getElementById('animal-species').value;
  animalPlacementSpecies=animalPlacementSpecies?'':requested;
  const button=document.getElementById('animal-place');
@@ -1432,6 +1440,16 @@ function neighborScreenPoint(id){
  return point?{...point,visible:point.x>=0&&point.x<=innerWidth&&point.y>=0&&point.y<=innerHeight}:null;
 }
 canvas.addEventListener('contextmenu',event=>event.preventDefault());
+window.addEventListener('diycraft:build-mode',event=>{
+ buildPaused=!!event.detail?.paused;
+ if(buildPaused&&animalPlacementSpecies){
+  animalPlacementSpecies='';
+  const placeButton=document.getElementById('animal-place');
+  placeButton.classList.remove('primary');
+  placeButton.textContent='Place an animal';
+ }
+ if(window.__DIYCRAFT_THREE_EDIT__)window.__DIYCRAFT_THREE_EDIT__.buildPaused=buildPaused;
+});
 let pointerGesture=null;
 const HOLD_TO_DIG_MS=600,TOUCH_DRAG_THRESHOLD=18,MOUSE_DRAG_THRESHOLD=5;
 function clearPointerHold(gesture){
