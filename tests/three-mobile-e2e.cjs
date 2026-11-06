@@ -132,7 +132,7 @@ const {chromium}=require('playwright');
   };
   const chooseGrass=async()=>{
    await page.locator('[data-hud-tool="green"]').click();
-   await page.locator('#quick-picker-content .hud-picker-grid button').filter({hasText:'Grass'}).click();
+   await page.getByRole('button',{name:'Grass',exact:true}).click();
    await page.locator('#quick-picker-content .hud-picker-primary').click();
   };
   const runCharacterActivity=async(activity)=>{
