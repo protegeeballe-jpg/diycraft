@@ -109,7 +109,11 @@
   }finally{db.close();}
  }
  function getRememberedHandle(){return dbRequest('readonly',store=>store.get(KEY));}
- async function rememberHandle(handle){await dbRequest('readwrite',store=>store.put(handle,KEY));return handle;}
+ async function rememberHandle(handle){
+  if(!handle||handle.kind!=='file')throw new TypeError('A valid device file must be selected.');
+  await dbRequest('readwrite',store=>store.put(handle,KEY));return handle;
+ }
+ async function forgetHandle(){await dbRequest('readwrite',store=>store.delete(KEY));return true;}
  function permission(handle,mode='readwrite',request=false){
   if(!handle||typeof handle.queryPermission!=='function')return Promise.resolve(false);
   return (async()=>{
@@ -170,6 +174,6 @@
   root.setTimeout(()=>root.URL.revokeObjectURL(url),1500);
   return {fileName:safe+'.diycraft',bytes:encoded.bytes.byteLength,format:encoded.format};
  }
- return Object.freeze({MAGIC,MAX_FILE,MAX_WORLD,encode,decode,isDiycraftFile,getRememberedHandle,rememberHandle,
+ return Object.freeze({MAGIC,MAX_FILE,MAX_WORLD,encode,decode,isDiycraftFile,getRememberedHandle,rememberHandle,forgetHandle,
   permission,readHandle,writeHandle,chooseSaveHandle,chooseOpenHandle,loadRemembered,openFile,download});
 });
