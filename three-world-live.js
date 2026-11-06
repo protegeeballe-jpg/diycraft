@@ -891,8 +891,30 @@ function renderSandbox(state){
 
   getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},modelScale:playerModelRoot?{x:playerModelRoot.scale.x,y:playerModelRoot.scale.y,z:playerModelRoot.scale.z}:null,meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
-  getWorldBackdropStats:()=>({floor:{x:floor.position.x,z:floor.position.z,width:floor.geometry.parameters.width,height:floor.geometry.parameters.height},camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},sky:{x:skyDome.position.x,y:skyDome.position.y,z:skyDome.position.z},celestial:{x:celestialGroup.position.x,y:celestialGroup.position.y,z:celestialGroup.position.z}}),
-  getTerrainStats:()=>({excavatedCells:(sandbox.getState().world.excavations||[]).length,visibleHoleCells:floor.geometry.userData.holeCellCount||0,grassCells:floor.geometry.userData.grassCellCount||0,dirtFaces:groundDirtMesh.geometry.userData.dirtFaceCount||0,hasGrassTexture:!!floorMat.map,grassTextureSize:floorMat.map?.image?.width||0}),
+  getWorldBackdropStats:()=>({floor:{x:floor.position.x,z:floor.position.z,width:floor.geometry.parameters.width,height:floor.geometry.parameters.height},neighborhoodGround:{x:neighborhoodFloor.position.x,z:neighborhoodFloor.position.z,width:neighborhoodFloor.geometry.parameters.width,height:neighborhoodFloor.geometry.parameters.height},camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},sky:{x:skyDome.position.x,y:skyDome.position.y,z:skyDome.position.z},celestial:{x:celestialGroup.position.x,y:celestialGroup.position.y,z:celestialGroup.position.z}}),
+  getNeighborhoodGroundStats:()=>({bounds:{minX:NEIGHBORHOOD_GROUND.minX,maxX:NEIGHBORHOOD_GROUND.maxX,minZ:NEIGHBORHOOD_GROUND.minZ,maxZ:NEIGHBORHOOD_GROUND.maxZ},center:{x:neighborhoodFloor.position.x,z:neighborhoodFloor.position.z,y:neighborhoodFloor.position.y},width:neighborhoodFloor.geometry.parameters.width,height:neighborhoodFloor.geometry.parameters.height,grassCells:neighborhoodFloor.geometry.userData.grassCellCount||0,visibleHoleCells:neighborhoodFloor.geometry.userData.holeCellCount||0,dirtFaces:neighborhoodDirtMesh.geometry.userData.dirtFaceCount||0,hasGrassTexture:neighborhoodFloor.material.map===groundTexture}),
+  getGroundCellCoverageForTest:(x,z)=>{
+   if(!Number.isInteger(x)||!Number.isInteger(z))return null;
+   const neighborhood=isNeighborhoodGroundCell(x,z);
+   const insideMoving=x>=groundCenterX-GROUND_HALF_SIZE&&x<groundCenterX+GROUND_HALF_SIZE&&
+    z>=groundCenterZ-GROUND_HALF_SIZE&&z<groundCenterZ+GROUND_HALF_SIZE;
+   const moving=insideMoving&&!neighborhood;
+   return {neighborhood,moving,owners:Number(neighborhood)+Number(moving),
+    owner:neighborhood?'neighborhood':moving?'camera-following':'none'};
+  },
+  focusNeighborhoodFromDistanceForTest:(distance=120)=>{
+   if(!Number.isFinite(distance)||distance<75)return false;
+   playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;
+   target.set(NEIGHBORHOOD_GROUND.centerX,0,NEIGHBORHOOD_GROUND.centerZ);
+   orbit.radius=distance;orbit.theta=.62;orbit.phi=1.12;cameraUpdate();updateWorldBackdrop();
+   return {camera:{x:camera.position.x,z:camera.position.z},target:{x:target.x,z:target.z},
+    neighborhoodGround:{x:neighborhoodFloor.position.x,z:neighborhoodFloor.position.z}};
+  },
+  getTerrainStats:()=>({excavatedCells:(sandbox.getState().world.excavations||[]).length,
+   visibleHoleCells:(floor.geometry.userData.holeCellCount||0)+(neighborhoodFloor.geometry.userData.holeCellCount||0),
+   grassCells:(floor.geometry.userData.grassCellCount||0)+(neighborhoodFloor.geometry.userData.grassCellCount||0),
+   dirtFaces:(groundDirtMesh.geometry.userData.dirtFaceCount||0)+(neighborhoodDirtMesh.geometry.userData.dirtFaceCount||0),
+   hasGrassTexture:!!floorMat.map,grassTextureSize:floorMat.map?.image?.width||0}),
   getNeighborhoodStats:()=>({houseCount:neighborhoodHouses.length,houses:neighborhoodHouses.map(house=>({name:house.userData.houseName,meshCount:house.children.filter(child=>child.isMesh).length,visible:house.visible}))}),
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count,skyTexture:{hasMap:skyMaterial.map===skyTexture,width:skyTexture.image.width,height:skyTexture.image.height,version:skyTexture.version,signature:(()=>{const pixels=skyTexture.image.getContext('2d').getImageData(0,0,skyTexture.image.width,skyTexture.image.height).data;let hash=2166136261;const stride=Math.max(4,Math.floor(pixels.length/4096/4)*4);for(let i=0;i<pixels.length;i+=stride){hash=Math.imul(hash^pixels[i],16777619)>>>0;hash=Math.imul(hash^pixels[i+1],16777619)>>>0;hash=Math.imul(hash^pixels[i+2],16777619)>>>0;}return hash>>>0;})()}}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -1150,7 +1172,7 @@ function worldTargetAtScreen(clientX,clientY){
  pointer.x=((clientX-rect.left)/rect.width)*2-1;
  pointer.y=-((clientY-rect.top)/rect.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
- const intersections=raycaster.intersectObjects([floor,groundDirtMesh,...group.children],true);
+ const intersections=raycaster.intersectObjects([floor,groundDirtMesh,neighborhoodFloor,neighborhoodDirtMesh,...group.children],true);
  for(const hit of intersections){
   if(hit.object.userData?.selectionOutline)continue;
   if(waterMesh&&hit.object===waterMesh)
@@ -1162,7 +1184,7 @@ function worldTargetAtScreen(clientX,clientY){
    const step=[0,0,0];step[axis]=values[axis]>=0?1:-1;
    return {kind:'block',key,block,step,depth:hit.point.clone().project(camera).z};
   }
-  if(hit.object===floor||hit.object===groundDirtMesh)
+  if(hit.object===floor||hit.object===groundDirtMesh||hit.object===neighborhoodFloor||hit.object===neighborhoodDirtMesh)
    return {kind:'ground',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z),depth:hit.point.clone().project(camera).z};
  }
  return null;
