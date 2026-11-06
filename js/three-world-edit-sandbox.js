@@ -67,10 +67,23 @@
   const OUTFIT_STYLES=new Set(['hoodie','sweater','overalls','dress','tee']);
   const ACCESSORIES=new Set(['none','bow','flower','glasses','cap']);
   const PLAYER_COLOR_FIELDS=Object.freeze(['hair','skin','shirt','pants','shoes','eyes','accessoryColor']);
-  const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
+  const occupied=new Map(),blockIndex=new Map(),blockColumns=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
+  function addBlockToColumn(block){
+   const key=block.x+','+block.z;
+   if(!blockColumns.has(key))blockColumns.set(key,[]);
+   blockColumns.get(key).push(block);
+  }
+  function removeBlockFromColumn(block){
+   const key=block.x+','+block.z,column=blockColumns.get(key);
+   if(!column)return;
+   const index=column.indexOf(block);
+   if(index>=0)column.splice(index,1);
+   if(!column.length)blockColumns.delete(key);
+  }
   world.blocks.forEach(block=>{
    if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
    if(object(block)&&coord(block.x)&&Number.isInteger(block.y)&&coord(block.z)){
+    addBlockToColumn(block);
     const key=cellKey(block.x,block.y,block.z);
     if(!occupied.has(key))occupied.set(key,block.key);
     if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
@@ -137,7 +150,7 @@
      if(selectedBucketItem[field]!==undefined)block[field]=selectedBucketItem[field];
     if(input.type==='door')block.open=false;
    }
-   world.blocks.push(block);blockIndex.set(block.key,block);occupied.set(position,block.key);
+   world.blocks.push(block);blockIndex.set(block.key,block);occupied.set(position,block.key);addBlockToColumn(block);
    if(input.type==='door')occupied.set(upperPosition,block.key);
    selectedKey=block.key;
    return block;
@@ -161,7 +174,7 @@
     if(!item.texture)item.texture=block.type;
    }
    bucket.push(item);
-   world.blocks.splice(index,1);blockIndex.delete(block.key);
+   world.blocks.splice(index,1);blockIndex.delete(block.key);removeBlockFromColumn(block);
    occupied.delete(cellKey(block.x,block.y,block.z));
    if(block.type==='door')occupied.delete(cellKey(block.x,block.y+1,block.z));
    if(selectedKey===key)selectedKey=null;
@@ -437,8 +450,11 @@ function addAnimal(input){
     throw new TypeError('Surface query coordinates and height must be finite.');
    const bx=Math.floor(x),bz=Math.floor(z),ground=-groundDepthAt(bx,bz);
    let highest=ground;
-   for(const block of world.blocks){
-    if(block.x!==bx||block.z!==bz||block.type==='door'||block.type==='flower'||block.type==='tall_grass')continue;
+   // Query only the requested X/Z column. Actor grounding runs every frame, so
+   // scanning every saved block for every neighbor and animal would scale poorly.
+   const column=blockColumns.get(bx+','+bz)||[];
+   for(const block of column){
+    if(block.type==='door'||block.type==='flower'||block.type==='tall_grass')continue;
     const top=block.type==='tile'?block.y+.02+.13:block.y+1;
     if(top<=atOrBelowY+.18&&top>highest)highest=top;
    }
@@ -486,10 +502,11 @@ function addAnimal(input){
   world.blocks=world.blocks.filter(block=>block.userPlaced!==true&&STARTER_BLOCK_KEYS.has(cellKey(block.x,block.y,block.z)));
   const removed=before-world.blocks.length;
   if(removed){
-   blockIndex.clear();occupied.clear();
+   blockIndex.clear();occupied.clear();blockColumns.clear();
    world.blocks.forEach(block=>{
     if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
     if(object(block)&&coord(block.x)&&Number.isInteger(block.y)&&coord(block.z)){
+     addBlockToColumn(block);
      const key=cellKey(block.x,block.y,block.z);if(!occupied.has(key))occupied.set(key,block.key);
      if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
     }
