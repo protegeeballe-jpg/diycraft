@@ -204,10 +204,12 @@ const {chromium}=require('playwright');
   await page.waitForTimeout(150);
   assert.deepEqual(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale),{x:.90,y:1,z:1},
    'Stopping an activity must restore normal height and depth while preserving the narrower width.');
+  if(!(await settingsPanel.isVisible()))await settingsToggle.click();
+  assert.equal(await settingsPanel.isVisible(),true,'The gear icon must open the controls panel.');
   await settingsToggle.click();
-  assert.equal(await settingsPanel.isVisible(),false,'The controls toggle must collapse the panel.');
+  assert.equal(await settingsPanel.isVisible(),false,'The gear icon must collapse an already-open panel.');
   await settingsToggle.click();
-  assert.equal(await settingsPanel.isVisible(),true,'The same toggle must reopen the controls panel.');
+  assert.equal(await settingsPanel.isVisible(),true,'The same icon must reopen the controls panel.');
   assert.equal(await settingsToggle.getAttribute('aria-expanded'),'true');
   for(const id of ['bucket-item','block-type','inventory-open','character-open','art-open','gallery-open',
    'solid-design-open','door-design-open','tile-design-open','animal-place','world-name','save-now',
