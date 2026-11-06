@@ -1558,6 +1558,55 @@ function applyPlayerActivity(){
   renderSandbox(next);lastPosePersisted={...playerPhysicsState.player};cameraUpdate();updatePlayerModel();
  }catch(error){status.textContent='Activity could not be applied: '+error.message;}
 }
+function findNeighborhoodReturnSpot(){
+ const homeX=4.5,homeZ=-5.5,step=.5,maxRing=24;
+ const waterCells=new Set((sandbox.getState().world.water||[])
+  .filter(cell=>cell&&Number(cell.level??1)>0)
+  .map(cell=>cell.x+','+cell.z));
+ for(let ring=0;ring<=maxRing;ring++){
+  for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
+   if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring)continue;
+   const x=homeX+dx*step,z=homeZ+dz*step;
+   if(Math.abs(x)>playerPhysics.CONSTANTS.worldLimit-1||Math.abs(z)>playerPhysics.CONSTANTS.worldLimit-1)continue;
+   const cellX=Math.floor(x),cellZ=Math.floor(z);
+   if(waterCells.has(cellX+','+cellZ))continue;
+   const y=sandbox.surfaceHeightAt(x,z);
+   if(!Number.isFinite(y)||y< -playerPhysics.CONSTANTS.maxDigDepth||y>58)continue;
+   if(sandbox.playerCollisionAt(x,z,y))continue;
+   return {x,y,z};
+  }
+ }
+ return null;
+}
+function visitNeighborhood(){
+ if(!sandbox||!playerPhysicsState)return false;
+ const spot=findNeighborhoodReturnSpot();
+ if(!spot){
+  showWorldFeedback('The neighborhood return spot is blocked. Clear a little space near the village and try again.');
+  return false;
+ }
+ try{
+  setPlayerPlayMode(false);
+  const player={...playerPhysicsState.player,x:spot.x,y:spot.y,z:spot.z,yaw:0,pitch:-.12};
+  playerPhysicsState={...playerPhysicsState,player,jumpVelocity:0,playerGrounded:true,flying:false,playerActivity:''};
+  const next=sandbox.setPlayerPose({x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch});
+  renderSandbox(next);
+  updatePlayerModel();
+  target.set(player.x,Math.max(1,player.y+1),player.z);
+  orbit.radius=24;orbit.theta=.62;orbit.phi=.92;
+  cameraUpdate();
+  updateNeighborModels(performance.now());
+  lastPosePersisted={x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch};
+  lastPosePersistAt=performance.now();
+  status.textContent='Welcome back! You are home in the neighborhood. 🌼';
+  return true;
+ }catch(error){
+  status.textContent='Neighborhood visit could not be completed: '+String(error.message||error);
+  return false;
+ }
+}
+document.getElementById('neighborhood-toggle').addEventListener('click',visitNeighborhood);
+
 function setHomeBed(){
  if(!sandbox||!playerPhysicsState)return;
  try{
