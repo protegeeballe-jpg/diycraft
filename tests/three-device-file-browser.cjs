@@ -124,7 +124,8 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   assert.ok(downloadedPath,'Download .diycraft must produce a file.');
   const portableBytes=fs.readFileSync(downloadedPath);
   const portableWorld=JSON.parse(await deviceFileFormat.decode(new Uint8Array(portableBytes)));
-  assert.equal(portableWorld.blocks.length,afterBuild.blocks.length);
+  assert.equal(portableWorld.blocks.length,afterPermissionReconnect.blocks.length,
+   'Portable backup must contain the latest world after retry and permission recovery.');
   console.log('PASS portable .diycraft download and integrity');
 
   // Manual open must restore the world and detach the previous automatic-save target.
