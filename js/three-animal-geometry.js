@@ -12,6 +12,10 @@
  const HEX=/^#[0-9a-f]{6}$/i;
  const DEFAULTS={sheep:'#f0eee6',cat:'#c5c0b6',dog:'#c89b6d',cow:'#f2eee5',horse:'#8a6347',bird:'#e8c96d',giraffe:'#d9ad55'};
  const SPECIES=new Set(Object.keys(DEFAULTS));
+ function renderScaleFor(species){
+  if(!SPECIES.has(species))throw new TypeError('A supported animal species is required for render scaling.');
+  return species==='horse'||species==='giraffe'?RENDER_SCALE:RENDER_SCALE*.5;
+ }
  function validColor(value,fallback){return typeof value==='string'&&HEX.test(value)?value:fallback;}
  function quadrupedLayout(species){
   const layouts={
@@ -226,7 +230,7 @@
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geometry.computeVertexNormals();geometry.computeBoundingSphere();
-  geometry.userData={animalSpecies:species,animalRenderScale:RENDER_SCALE,animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.43,.40,.58]:bodyShape.slice(),animalHasWingRig:species==='bird',animalLegLayout:quadrupedLayout(species)};
+  geometry.userData={animalSpecies:species,animalRenderScale:renderScaleFor(species),animalBody:body,animalAccent:accent,animalFeatureBounds:featureBounds,animalBodyShape:species==='bird'?[.43,.40,.58]:bodyShape.slice(),animalHasWingRig:species==='bird',animalLegLayout:quadrupedLayout(species)};
   sources.forEach(source=>source.dispose());
   return geometry;
  }
@@ -266,5 +270,5 @@
   geometry.userData={animalWing:true,wingSide:side,wingSpan:.72,featherCount:5};
   return geometry;
  }
- return Object.freeze({create,createBirdWingGeometry,createQuadrupedLegGeometry,applyQuadrupedLegPose,quadrupedLayout,renderScale:RENDER_SCALE,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
+ return Object.freeze({create,createBirdWingGeometry,createQuadrupedLegGeometry,applyQuadrupedLegPose,quadrupedLayout,renderScale:RENDER_SCALE,renderScaleFor,species:Object.freeze(Array.from(SPECIES)),defaults:Object.freeze({...DEFAULTS})});
 });
