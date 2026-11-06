@@ -463,7 +463,7 @@ const {chromium}=require('playwright');
   // The main world canvas restores the original builder controls: tap to build/fill,
   // hold 0.6 seconds to dig/remove. Use real projected positions in the running scene.
   await openSettingsPanel();
-  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
+  await chooseGrass();
   await page.locator('#settings-close').click();
   // Enter Play Mode with every movement arrow; Tap and Press world actions must remain available.
   for(const [pointerId,direction] of [[31,'forward'],[32,'back'],[33,'left'],[34,'right']]){
