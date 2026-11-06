@@ -185,6 +185,26 @@ test('enforces two-cell door clearance and excavation depth bounds',()=>{
  assert.equal(dug.world.blocks.at(-1).y,-2);
 });
 
+test('keeps indexed terrain columns accurate after placement, removal, excavation, fill and clear',()=>{
+ const edit=sandbox.create(fixture());
+ assert.equal(edit.surfaceHeightAt(30.5,30.5),0);
+ const low=edit.addBlock({type:'stone',x:30,y:0,z:30}).world.blocks.at(-1);
+ assert.equal(edit.surfaceHeightAt(30.5,30.5),1);
+ const high=edit.addBlock({type:'stone',x:30,y:3,z:30}).world.blocks.at(-1);
+ assert.equal(edit.surfaceHeightAt(30.5,30.5),4);
+ edit.remove(high.key);
+ assert.equal(edit.surfaceHeightAt(30.5,30.5),1);
+ edit.remove(low.key);
+ assert.equal(edit.surfaceHeightAt(30.5,30.5),0);
+ edit.excavateGround(32,32);
+ assert.equal(edit.surfaceHeightAt(32.5,32.5),-1);
+ edit.fillExcavation(32,32,{type:'stone'});
+ assert.equal(edit.surfaceHeightAt(32.5,32.5),0);
+ edit.addBlock({type:'stone',x:33,y:0,z:33});
+ assert.equal(edit.surfaceHeightAt(33.5,33.5),1);
+ edit.clearPlacedBlocks();
+ assert.equal(edit.surfaceHeightAt(33.5,33.5),0);
+});
 test('limits new digging to exactly 55 blocks and rejects the 56th layer atomically',()=>{
  const world=fixture();
  world.excavations=[];
