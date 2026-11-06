@@ -109,15 +109,24 @@ const {chromium}=require('playwright');
    if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
   };
   const togglePlayModeFromSettings=async()=>{
-   await openSettingsPanel();
-   const characterSection=page.locator('details.settings-section').filter({hasText:'Characters & Animals'});
-   if(!(await characterSection.evaluate(element=>element.open)))await characterSection.locator('summary').click();
-   await page.locator('#play-mode').click();
+   await page.locator('#view-toggle').click();
+   const inPlay=(await page.locator('#play-mode').textContent()).trim()==='Exit Play Mode';
+   await page.locator('[data-view-mode="'+(inPlay?'build':'third')+'"]').click();
   };
 
   // Exercise a real build action and wait for the version-1 device save.
-  await openSettingsPanel();
-  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
+  await page.locator('[data-hud-tool="green"]').click();
+  await page.locator('#quick-picker-content .hud-picker-grid button').filter({hasText:'Grass'}).click();
+  await page.locator('#quick-picker-content .hud-picker-primary').click();
+  const beforePausedBuild=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length);
+  await page.locator('[data-hud-tool="pause-build"]').click();
+  assert.equal(await page.locator('[data-hud-tool="pause-build"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.buildPaused),true);
+  await page.locator('#add').evaluate(button=>button.click());
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length),beforePausedBuild,
+   'The hand must block the older Place-on-face action as well as canvas taps.');
+  await page.locator('[data-hud-tool="pause-build"]').click();
+  assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.buildPaused),false);
   await page.locator('#add').evaluate(button=>button.click());
   const immediateBuild=await page.evaluate(()=>({
    selectedMaterial:document.getElementById('block-type')?.value,
@@ -174,9 +183,8 @@ const {chromium}=require('playwright');
    const world=JSON.parse(await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1')));
    return (world.animals||[]).length;
   });
-  await openSettingsPanel();
-  await page.locator('#hud-choices-animal-species [data-value="cat"]').click();
-  await page.locator('#animal-place').click();
+  await page.locator('[data-hud-tool="animal"]').click();
+  await page.locator('#quick-picker-content .hud-picker-grid button').filter({hasText:'Cat'}).click();
   const canvas=page.locator('#three-world'),bounds=await canvas.boundingBox();
   let placed=false;
   for(const [fx,fy] of [[.88,.84],[.12,.84],[.88,.34],[.12,.34],[.5,.88],[.94,.55],[.06,.55]]){
@@ -235,12 +243,12 @@ const {chromium}=require('playwright');
   });
   const cacheCheck=await page.evaluate(async()=>{
    const names=await caches.keys();
-   const name=names.find(value=>value==='diycraft-shell-v77');
+   const name=names.find(value=>value==='diycraft-shell-v78');
    if(!name)return {name:null,assets:[]};
    const cache=await caches.open(name),requests=await cache.keys();
    return {name,assets:requests.map(request=>new URL(request.url).pathname)};
   });
-  assert.equal(cacheCheck.name,'diycraft-shell-v77','The updated offline worker must install the Three.js shell cache.');
+  assert.equal(cacheCheck.name,'diycraft-shell-v78','The updated offline worker must install the Three.js shell cache.');
   for(const asset of ['/diycraft/three-world-live.js','/diycraft/js/three.js','/diycraft/js/three-viewport.js','/diycraft/js/three-world-storage.js','/diycraft/js/three-world-starter.js','/diycraft/js/three-plant-geometry.js','/diycraft/js/three-compact-hud.js','/diycraft/js/three-world-file-save.js']){
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);
