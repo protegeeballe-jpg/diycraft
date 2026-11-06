@@ -70,7 +70,13 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
    return world.blocks.length>=expected;
   },firstCount+1,{timeout:15000});
   const afterBuild=JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes)));
+  const liveAfterBuild=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.blockCount);
+  console.log('device-file build verification:',JSON.stringify({
+   firstCount,expected:firstCount+1,liveAfterBuild,fileCount:afterBuild.blocks.length,
+   writes:fileStore.writes,feedback:await page.locator('#device-file-feedback').textContent()
+  }));
   assert.ok(afterBuild.blocks.length>=firstCount+1,'Edits must reach the selected device file automatically.');
+  assert.equal(liveAfterBuild,afterBuild.blocks.length,'The saved device file must match the current live world after autosave settles.');
   console.log('PASS automatic device-file autosave after building');
 
   // A transient write failure must preserve the older file and allow retrying current in-memory edits.
