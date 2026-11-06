@@ -413,7 +413,7 @@ const {chromium}=require('playwright');
   // Persist the combined changes and verify a clean reload reconstructs them.
   await openSettingsPanel();
   await page.locator('#save-now').click();
-  await page.waitForFunction(()=>document.getElementById('backup-feedback').textContent.includes('Saved successfully'),null,{timeout:15000});
+  await page.waitForFunction(()=>/Saved to browser recovery|Saved to .* and browser recovery/.test(document.getElementById('backup-feedback').textContent),null,{timeout:15000});
   const saved=await page.evaluate(async()=>{
    const raw=await window.DIYCraftThreeWorldStorage.decode(localStorage.getItem('diycraft_peaceful_voxel_v1'));
    const world=JSON.parse(raw);
