@@ -4,6 +4,11 @@ const fs=require('node:fs');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright');
 const deviceFileFormat=require('../js/three-world-file-save.js');
+
+async function showSettingsPanel(page){
+ if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
+ await page.locator('#device-file-connect').waitFor({state:'visible'});
+}
 const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n function toBytes(base64){\n  const binary=atob(base64),out=new Uint8Array(binary.length);\n  for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);\n  return out;\n }\n function toBase64(bytes){\n  let binary='';\n  for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));\n  return btoa(binary);\n }\n const handle={\n  kind:'file',name:'MyWorld.diycraft',\n  async queryPermission(options){return options.mode==='read'?'granted':await window.__diyPermissionGet();},\n  async requestPermission(){return window.__diyPermissionRequest();},\n  async getFile(){\n   const encoded=await window.__diyFileRead();\n   return new File([encoded?toBytes(encoded):new Uint8Array(0)],this.name,{type:'application/vnd.diycraft.world'});\n  },\n  async createWritable(){\n   let staged=null;\n   return {\n    async write(value){\n     if(value instanceof Uint8Array)staged=new Uint8Array(value);\n     else if(value instanceof ArrayBuffer)staged=new Uint8Array(value);\n     else if(value instanceof Blob)staged=new Uint8Array(await value.arrayBuffer());\n     else throw new TypeError('Unexpected file payload.');\n    },\n    async close(){\n     if(!staged)throw new Error('No staged bytes.');\n     await window.__diyFileWrite(toBase64(staged));\n    },\n    async abort(){staged=null;}\n   };\n  }\n };\n const database={\n  objectStoreNames:{contains(){return true;}},\n  transaction(){\n   const tx={\n    objectStore(){\n     return {\n      get(){\n       const request={result:sessionStorage.getItem(marker)==='1'?handle:undefined};\n       setTimeout(()=>tx.oncomplete?.(),0);\n       return request;\n      },\n      put(){\n       const request={result:'primary'};\n       sessionStorage.setItem(marker,'1');\n       setTimeout(()=>tx.oncomplete?.(),0);\n       return request;\n      },\n      delete(){\n       const request={result:undefined};\n       sessionStorage.removeItem(marker);\n       setTimeout(()=>tx.oncomplete?.(),0);\n       return request;\n      }\n     };\n    },\n    abort(){}\n   };\n   return tx;\n  },\n  close(){}\n };\n Object.defineProperty(window,'indexedDB',{configurable:true,value:{\n  open(){\n   const request={};\n   setTimeout(()=>{request.result=database;request.onsuccess?.();},0);\n   return request;\n  }\n }});\n Object.defineProperty(window,'showSaveFilePicker',{configurable:true,value:async()=>handle});\n Object.defineProperty(window,'showOpenFilePicker',{configurable:true,value:async()=>[handle]});\n window.__diyFileTestHandle=handle;\n})();";
 (async()=>{
  const fileStore={bytes:Buffer.alloc(0),permission:'granted',writes:0};
@@ -41,6 +46,8 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   }
   await page.waitForFunction(()=>!!localStorage.getItem('diycraft_peaceful_voxel_v1'),null,{timeout:20000});
 
+  // Save controls live inside the settings panel; open it before interacting.
+  await showSettingsPanel(page);
   // Choose device file and create the initial .diycraft file.
   await page.locator('#device-file-connect').click();
   await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Created MyWorld.diycraft'),null,{timeout:15000});
@@ -98,6 +105,7 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   fileStore.permission='prompt';
   await page.reload({waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>document.getElementById('device-file-connect').textContent==='Reconnect world file',null,{timeout:15000});
+  await showSettingsPanel(page);
   await page.locator('#device-file-connect').click();
   await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Reconnected MyWorld.diycraft'),null,{timeout:15000});
   assert.equal(fileStore.permission,'granted');
@@ -112,6 +120,7 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   });
   await page.reload({waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>document.getElementById('device-file-connect').textContent==='Choose device file',null,{timeout:15000});
+  await showSettingsPanel(page);
   assert.ok(fileStore.bytes.length>24,'Browser data clearing must not delete the external device-file bytes.');
   // Reopen the portable copy and relink the external file.
   await page.evaluate(()=>{window.showOpenFilePicker=undefined;});
