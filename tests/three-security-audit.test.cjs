@@ -74,7 +74,7 @@ function auditPage(relativePage){
  assert.ok(legacy,relativePage+': legacy programmatic controls container is missing.');
  const legacyAttrs=parseAttributes(legacy[0]);
  // `hidden` is a boolean HTML attribute, so it may appear without an equals sign.
- assert.match(legacy[0],/(?:\\s|^)hidden(?:\\s|>|\\/)/i,
+ assert.ok(legacy[0].includes(' hidden '),relativePage+': compatibility controls must remain visually hidden.');
   relativePage+': compatibility controls must remain visually hidden.');
  assert.equal(legacyAttrs['aria-hidden'],'true',relativePage+': compatibility controls must remain hidden from assistive technology.');
  console.log('PASS '+relativePage+': CSP, unique IDs, local scripts, safe DOM and hidden compatibility controls ('+sources.length+' scripts).');
