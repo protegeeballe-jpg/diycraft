@@ -463,7 +463,8 @@ const {chromium}=require('playwright');
   // hold 0.6 seconds to dig/remove. Use real projected positions in the running scene.
   await openSettingsPanel();
   await chooseGrass();
-  await page.locator('#settings-close').click();
+  assert.equal(await page.locator('#settings-panel').isVisible(),false,
+   'Choosing Grass from the toolbar picker must close the settings panel automatically.');
   // Enter Play Mode with every movement arrow; Tap and Press world actions must remain available.
   for(const [pointerId,direction] of [[31,'forward'],[32,'back'],[33,'left'],[34,'right']]){
    const arrow=page.locator('#player-controls [data-move="'+direction+'"]');
