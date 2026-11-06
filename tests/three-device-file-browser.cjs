@@ -68,9 +68,12 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   assert.equal(linkedState.hasHandle,true,'The selected device handle must be retained in the live game.');
   console.log('PASS choose device file and create MyWorld.diycraft');
 
-  // Make a real world edit and verify automatic file saving (without clicking Save now).
-  if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
-  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
+  // Make a real world edit through the visible child-facing material icon.
+  // The linked device file should autosave without opening Settings or clicking Save now.
+  if(await page.locator('#settings-panel').isVisible())await page.locator('#settings-close').click();
+  await page.locator('[data-hud-tool="green"]').click();
+  await page.getByRole('button',{name:'Grass',exact:true}).click();
+  await page.locator('#quick-picker-content .hud-picker-primary').click();
   await page.locator('#add').evaluate(button=>button.click());
   await page.waitForFunction(async expected=>{
    const encoded=await window.__diyFileRead();if(!encoded)return false;
