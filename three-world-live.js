@@ -1701,7 +1701,16 @@ async function connectDeviceWorldFile(){
  try{
   if(primaryWorldFileHandle&&deviceWorldFileState==='error'){
    // Retry the current in-memory world; never reload the older file after a failed write.
-   const result=await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
+   let result;
+   try{
+    result=await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
+   }catch(error){
+    if(/permission|grant access|reconnect/i.test(String(error.message||error))){
+     deviceWorldFileState='permission-required';
+     deviceFilePermissionLostInSession=true;
+    }
+    throw error;
+   }
    deviceWorldFileState='connected';deviceFilePermissionLostInSession=false;
    syncDeviceFileControls('Retry successful. Saved the latest in-session world to '+(result.fileName||primaryWorldFileName)+'.');
    return;
