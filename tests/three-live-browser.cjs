@@ -107,6 +107,8 @@ const {chromium}=require('playwright');
 
   const openSettingsPanel=async()=>{
    if(!(await page.locator('#settings-panel').isVisible()))await page.locator('#settings-toggle').click();
+   const files=page.locator('details.settings-section').filter({hasText:'World file & backup'});
+   if(!(await files.evaluate(element=>element.open)))await files.locator('summary').click();
   };
   const togglePlayModeFromSettings=async()=>{
    await page.locator('#view-toggle').click();
