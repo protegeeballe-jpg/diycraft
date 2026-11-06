@@ -283,7 +283,7 @@ function setEraseMode(enabled){
  }
  showWorldFeedback(eraseMode?'Erase mode on · Tap a block to remove it.':'Erase mode off.');
 }
-eraseToggle.addEventListener('click',()=>setEraseMode(!eraseMode));
+document.getElementById('erase-toggle').addEventListener('click',()=>setEraseMode(!eraseMode));
 
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
