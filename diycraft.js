@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id), canvas=$('game'),ctx=canvas.getContext('2d',{alpha:false});
 // Practically unbounded horizontal world; nearby ground is drawn around the player each frame.
 const WORLD_LIMIT=1000000000,MAX_BLOCKS=18000,MAX_BUCKET_ITEMS=120,STORE_KEY='diycraft_peaceful_voxel_v1';
-const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000;
+const MAX_DIG_DEPTH=1000000000,MAX_NEW_DIG_DEPTH=55,GROUND_DIG_LIMIT=12000;
 const SAVE_GZIP_PREFIX='DIYCraft:gzip:v1:',SAVE_DEBOUNCE_MS=450,MAX_BACKUP_FILE_BYTES=24*1024*1024,MAX_UNCOMPRESSED_SAVE_BYTES=32*1024*1024;
 async function gzipBytes(text){
  if(typeof CompressionStream!=='function'||typeof DecompressionStream!=='function')return null;
@@ -2246,7 +2246,7 @@ function digAtScreen(px=canvas.clientWidth/2,py=canvas.clientHeight/2,hit=rayHit
  if(hit&&hit.ground){const x=hit.x,z=hit.z,depth=groundDepthAt(x,z),key=keyGround(x,z);
   if(isProtectedDigCell(x,z)){showStatus('This patch is protected for the neighbors and their homes.');return;}
   if(waterCells.has(key)){collectWaterLayer(x,z);return;}
-  if(depth>=MAX_DIG_DEPTH){showStatus('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');return;}
+  if(depth>=MAX_NEW_DIG_DEPTH){showStatus('You reached the safe digging depth: '+MAX_NEW_DIG_DEPTH+' blocks.');return;}
   if(!groundDepths.has(key)&&groundDepths.size>=GROUND_DIG_LIMIT){showStatus('This world has reached its safe excavation limit.');return;}
   if(!canStoreItem('dirt','materials')){showStatus('Your resources pouch is full. Make room before digging.');return;}
   if(!addBucketItem({type:'dirt'})){showStatus('Your Material Bucket is full.');return;}
