@@ -299,13 +299,28 @@
   const washCount=Math.max(10,Math.round((kind==='paper'?30:42)*scale*watercolorStrength));
   for(let i=0;i<washCount;i++){
    const x=random()*size,y=random()*size,rx=12+random()*44,ry=9+random()*35;
-   const tint=i%3===0?[255,244,218]:i%3===1?base.map(v=>mix(v,255,.23)):base.map(v=>mix(v,0,.18));
+   const tint=i%4===0?[255,244,218]:i%4===1?base.map(v=>mix(v,255,.23)):i%4===2?base.map(v=>mix(v,0,.15)):base.map((v,index)=>mix(v,[184,207,211][index],.12));
    const alpha=Math.min(.24,(.055+random()*.10)*watercolorStrength);
    const gradient=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.4);
    gradient.addColorStop(0,'rgba('+tint.join(',')+','+(alpha*1.8)+')');
    gradient.addColorStop(.55,'rgba('+tint.join(',')+','+alpha+')');
    gradient.addColorStop(1,'rgba('+tint.join(',')+',0)');
    c.fillStyle=gradient;c.beginPath();c.ellipse(x,y,rx,ry,random()*Math.PI,0,Math.PI*2);c.fill();
+  }
+  // Irregular pigment blooms create soft, broken watercolor edges instead of evenly
+  // spaced digital airbrush circles. Their low-opacity rims imitate pigment settling.
+  const bloomCount=Math.max(8,Math.round(13*scale*watercolorStrength));
+  for(let i=0;i<bloomCount;i++){
+   const x=random()*size,y=random()*size,rx=(10+random()*27)*scale,ry=(7+random()*21)*scale;
+   const tone=i%3===0?base.map(v=>mix(v,255,.34)):i%3===1?base.map(v=>mix(v,0,.16)):[238,220,190];
+   const alpha=.025+random()*.035,angle=random()*Math.PI*2;
+   c.save();c.translate(x,y);c.rotate(angle);c.beginPath();
+   for(let point=0;point<=12;point++){
+    const a=point/12*Math.PI*2,warp=.82+random()*.34,px=Math.cos(a)*rx*warp,py=Math.sin(a)*ry*warp;
+    if(point===0)c.moveTo(px,py);else c.lineTo(px,py);
+   }
+   c.closePath();c.fillStyle='rgba('+tone.join(',')+','+alpha+')';c.fill();
+   c.strokeStyle='rgba('+tone.join(',')+','+(alpha*.8)+')';c.lineWidth=Math.max(.45,.8*scale);c.stroke();c.restore();
   }
   if(kind.startsWith('door-')){
    const style=kind.slice(5),sx=size/256;
@@ -361,7 +376,8 @@
   const pencilCount=Math.max(220,Math.round((kind==='paper'?1420:1120)*pencilScale*pencilStrength));
   for(let i=0;i<pencilCount;i++){
    const x=random()*size,y=random()*size,len=5+random()*(kind==='grass'?24:20);
-   const angle=(random()-.5)*.9+(kind==='grass'?.28:0);
+   const grainAngle=kind==='grass'?.34:kind==='wood'?.04:kind==='leaves'?.20:kind==='stone'?.58:.12;
+   const angle=grainAngle+(random()-.5)*(kind==='stone'?1.55:1.08);
    const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len;
    const light=i%5===0;
    const tint=light?base.map(v=>mix(v,255,.62)):base.map(v=>mix(v,Math.max(0,v-62),.60));
@@ -374,7 +390,8 @@
   const crossHatchCount=Math.round(pencilCount*.24);
   for(let i=0;i<crossHatchCount;i++){
    const x=random()*size,y=random()*size,len=3+random()*(kind==='grass'?17:14);
-   const angle=(random()-.5)*.86+(kind==='grass'?1.04:.88);
+   const grainAngle=kind==='grass'?1.10:kind==='wood'?1.48:kind==='leaves'?1.02:kind==='stone'?.10:.92;
+   const angle=grainAngle+(random()-.5)*.92;
    const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len;
    const tint=i%4===0?base.map(v=>mix(v,255,.48)):base.map(v=>mix(v,Math.max(0,v-58),.52));
    const alpha=Math.min(.25,(.075+random()*.075)*pencilStrength);
@@ -390,6 +407,15 @@
   for(let i=0;i<Math.max(300,Math.round(1450*pencilScale));i++){
    const x=random()*size,y=random()*size,v=random()>.48?255:48,a=.035+random()*.085;
    c.fillStyle='rgba('+v+','+v+','+v+','+a+')';c.fillRect(x,y,.45+random()*1.1,.35+random()*.8);
+  }
+  // Fine paper fibers follow a loose, non-repeating direction and remain subtle
+  // enough that color and small details stay readable on low-resolution devices.
+  const fiberCount=Math.max(70,Math.round(150*scale));
+  for(let i=0;i<fiberCount;i++){
+   const x=random()*size,y=random()*size,len=(1.5+random()*4.5)*scale;
+   c.strokeStyle='rgba('+(random()>.5?'255,250,235':'55,58,49')+','+(.025+random()*.035)+')';
+   c.lineWidth=Math.max(.35,.55*scale);c.beginPath();c.moveTo(x,y);
+   c.lineTo(x+len*(.35+random()*.45),y+len*(random()-.5)*.28);c.stroke();
   }
   return canvas;
  }
