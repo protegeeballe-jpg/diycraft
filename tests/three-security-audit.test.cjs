@@ -73,7 +73,9 @@ function auditPage(relativePage){
  const legacy=html.match(/<div\b[^>]*id=["']legacy-control-bindings["'][^>]*>/i);
  assert.ok(legacy,relativePage+': legacy programmatic controls container is missing.');
  const legacyAttrs=parseAttributes(legacy[0]);
- assert.ok(Object.prototype.hasOwnProperty.call(legacyAttrs,'hidden'),relativePage+': compatibility controls must remain visually hidden.');
+ // `hidden` is a boolean HTML attribute, so it may appear without an equals sign.
+ assert.match(legacy[0],/(?:\\s|^)hidden(?:\\s|>|\\/)/i,
+  relativePage+': compatibility controls must remain visually hidden.');
  assert.equal(legacyAttrs['aria-hidden'],'true',relativePage+': compatibility controls must remain hidden from assistive technology.');
  console.log('PASS '+relativePage+': CSP, unique IDs, local scripts, safe DOM and hidden compatibility controls ('+sources.length+' scripts).');
 }
