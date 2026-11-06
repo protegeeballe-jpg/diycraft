@@ -351,6 +351,33 @@ const {chromium}=require('playwright');
    'Neighborhood return must use a safe position close to the original village entrance.');
   assert.match(neighborhoodVisit.status,/Welcome back! You are home in the neighborhood/);
 
+  // The original village must keep its own ground after the camera travels far away
+  // and looks back. The moving exploration floor must not be the only ground owner.
+  const distantVillage=await page.evaluate(()=>{
+   const api=window.__DIYCRAFT_THREE_EDIT__;
+   const far=api.focusNeighborhoodFromDistanceForTest(120);
+   const point=api.getGroundScreenPointForTest(0,0);
+   const target=point?.visible?api.getPointerTargetForTest(point.x,point.y):null;
+   return {
+    far,point,target,
+    coverage:api.getGroundCellCoverageForTest(0,0),
+    ground:api.getNeighborhoodGroundStats(),
+    backdrop:api.getWorldBackdropStats()
+   };
+  });
+  assert.ok(distantVillage.far,'The far-look test must move the camera away while aiming back at the village.');
+  assert.ok(Math.hypot(distantVillage.backdrop.floor.x-distantVillage.ground.center.x,
+   distantVillage.backdrop.floor.z-distantVillage.ground.center.z)>45,
+   'The camera-following terrain must be outside the neighborhood while looking back from afar.');
+  assert.ok(distantVillage.ground.grassCells>2000,
+   'A persistent fixed ground patch must cover the neighborhood and its residents.');
+  assert.equal(distantVillage.ground.center.y,0,'The neighborhood terrain must stay on the world ground plane.');
+  assert.deepEqual(distantVillage.coverage,{neighborhood:true,moving:false,owners:1,owner:'neighborhood'},
+   'The village must have exactly one ground owner, without overlapping moving terrain.');
+  assert.ok(distantVillage.point?.visible,'The village ground must remain visible from the distant camera.');
+  assert.equal(distantVillage.target?.kind,'ground',
+   'The fixed village terrain must remain raycastable for normal building and digging.');
+
   await context.setOffline(true);
   await page.reload({waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=3,null,{timeout:30000});
