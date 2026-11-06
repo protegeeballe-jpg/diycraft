@@ -93,6 +93,7 @@ function applyWorldTime(seconds){
  return palette;
 }
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
+function updateWorldBackdrop(){floor.position.x=camera.position.x;floor.position.z=camera.position.z;skyDome.position.copy(camera.position);celestialGroup.position.copy(camera.position);}
 const group=new THREE.Group();scene.add(group);
 const BLOCK_SIZE=1,boxGeometry=new THREE.BoxGeometry(BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE),tileGeometry=new THREE.BoxGeometry(BLOCK_SIZE,.13,BLOCK_SIZE),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
@@ -688,6 +689,7 @@ function renderSandbox(state){
 
   getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},modelScale:playerModelRoot?{x:playerModelRoot.scale.x,y:playerModelRoot.scale.y,z:playerModelRoot.scale.z}:null,meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
+  getWorldBackdropStats:()=>({floor:{x:floor.position.x,z:floor.position.z,width:floor.geometry.parameters.width,height:floor.geometry.parameters.height},camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},sky:{x:skyDome.position.x,y:skyDome.position.y,z:skyDome.position.z},celestial:{x:celestialGroup.position.x,y:celestialGroup.position.y,z:celestialGroup.position.z}}),
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count,skyTexture:{hasMap:skyMaterial.map===skyTexture,width:skyTexture.image.width,height:skyTexture.image.height,version:skyTexture.version,signature:(()=>{const pixels=skyTexture.image.getContext('2d').getImageData(0,0,skyTexture.image.width,skyTexture.image.height).data;let hash=2166136261;const stride=Math.max(4,Math.floor(pixels.length/4096/4)*4);for(let i=0;i<pixels.length;i+=stride){hash=Math.imul(hash^pixels[i],16777619)>>>0;hash=Math.imul(hash^pixels[i+1],16777619)>>>0;hash=Math.imul(hash^pixels[i+2],16777619)>>>0;}return hash>>>0;})()}}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
   releaseVisualTimeTest:()=>{applyWorldTime(performance.now()/1000);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -1616,7 +1618,7 @@ function animate(now){
   updatePlayerCamera();updatePlayerDiagnostics();
   syncPlayerPoseToWorld(now,false);
  }else lastPlayerPhysicsTime=now;
- applyWorldTime(now*.001);skyDome.position.copy(camera.position);celestialGroup.position.copy(camera.position);
+ applyWorldTime(now*.001);updateWorldBackdrop();
  updateDoorAnimations(now);updateWaterAndFish(now);updateAnimalInstances(now);updateAnimalCareFlash(now);updateNeighborModels(now);animatePlayerActivity(now);
  for(const item of animatedPlants){
   if(item.kind==='flower')item.object.rotation.z=Math.sin(now*.00125+item.phase)*.075;
