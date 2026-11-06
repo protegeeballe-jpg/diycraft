@@ -448,7 +448,7 @@ function addAnimal(input){
   function surfaceHeightAt(x,z,atOrBelowY=Infinity){
    if(!Number.isFinite(x)||!Number.isFinite(z)||!(Number.isFinite(atOrBelowY)||atOrBelowY===Infinity))
     throw new TypeError('Surface query coordinates and height must be finite.');
-   const bx=Math.floor(x),bz=Math.floor(z),ground=-groundDepthAt(bx,bz);
+   const bx=Math.floor(x),bz=Math.floor(z),depth=groundDepthAt(bx,bz),ground=depth>0?-depth:0;
    let highest=ground;
    // Query only the requested X/Z column. Actor grounding runs every frame, so
    // scanning every saved block for every neighbor and animal would scale poorly.
