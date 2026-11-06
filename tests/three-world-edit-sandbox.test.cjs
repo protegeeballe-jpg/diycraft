@@ -185,6 +185,35 @@ test('enforces two-cell door clearance and excavation depth bounds',()=>{
  assert.equal(dug.world.blocks.at(-1).y,-2);
 });
 
+test('limits new digging to exactly 55 blocks and rejects the 56th layer atomically',()=>{
+ const world=fixture();
+ world.excavations=[];
+ const edit=sandbox.create(world);
+ let state;
+ for(let depth=1;depth<=55;depth++){
+  state=edit.excavateGround(20,20);
+  assert.equal(state.world.excavations.find(cell=>cell.x===20&&cell.z===20).depth,depth);
+ }
+ const before=edit.getState();
+ assert.throws(()=>edit.excavateGround(20,20),/55 blocks/);
+ const after=edit.getState();
+ assert.equal(after.revision,before.revision,'A rejected 56th dig must not advance the sandbox revision.');
+ assert.equal(after.world.excavations.find(cell=>cell.x===20&&cell.z===20).depth,55);
+ assert.equal(after.world.bucket.length,before.world.bucket.length,'A rejected dig must not consume or recover inventory.');
+ assert.equal(after.world.materials.find(item=>item&&item.id==='dirt')?.count,
+  before.world.materials.find(item=>item&&item.id==='dirt')?.count,
+  'A rejected dig must not change the dirt pouch.');
+});
+test('preserves legacy saved excavations deeper than 55 without allowing further digging',()=>{
+ const world=fixture();
+ world.excavations=[{x:20,z:20,depth:60}];
+ const edit=sandbox.create(world),before=edit.getState();
+ assert.equal(edit.groundDepthAt(20.5,20.5),60);
+ assert.equal(edit.surfaceHeightAt(20.5,20.5),-60);
+ assert.throws(()=>edit.excavateGround(20,20),/55 blocks/);
+ assert.equal(edit.getState().world.excavations[0].depth,60);
+ assert.equal(edit.getState().revision,before.revision);
+});
 test('exposes the original seven roaming animals and merges saved animals without duplicate identities',()=>{
  const world=fixture();
  world.animals=[
