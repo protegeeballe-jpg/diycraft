@@ -13,6 +13,7 @@ on:
       - tests/three-live-browser.cjs
       - tests/three-device-file-browser.cjs
       - tests/three-mobile-e2e.cjs
+      - tests/three-security-audit.test.cjs
       - .github/workflows/browser-smoke.yml
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - tests/three-live-browser.cjs
       - tests/three-device-file-browser.cjs
       - tests/three-mobile-e2e.cjs
+      - tests/three-security-audit.test.cjs
       - .github/workflows/browser-smoke.yml
   workflow_dispatch:
 
@@ -49,6 +51,8 @@ jobs:
         run: node tests/three-device-file-browser.cjs
       - name: Test mobile UI, touch controls, save integrity and frame pacing
         run: node tests/three-mobile-e2e.cjs
+      - name: Audit CSP, local scripts, DOM sinks and markup
+        run: node tests/three-security-audit.test.cjs
       - name: Upload live Three.js screenshot
         if: always()
         uses: actions/upload-artifact@v4
