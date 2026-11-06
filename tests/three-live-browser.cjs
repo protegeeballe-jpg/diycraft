@@ -50,6 +50,14 @@ const {chromium}=require('playwright');
   assert.equal(initial.neighborhoodControl,true,'The production HUD must expose the Visit neighborhood control.');
   assert.equal(initial.eraseControl,true,'The production HUD must expose a direct erase mode.');
   assert.equal(initial.neighborhoodStats?.houseCount,3,'All three neighborhood houses must be present in the live 3D scene.');
+  const neighborGround=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getNeighborStats?.());
+  assert.equal(neighborGround?.total,7,'All seven roaming neighbors must remain represented.');
+  assert.ok(neighborGround.actors.every(actor=>Number.isFinite(actor.supportY)&&actor.position&&
+   Math.abs(actor.position.y-(actor.supportY+actor.footOffset))<1e-6),
+   'Every neighbor root must use the sampled terrain height plus its measured shoe support offset.');
+  const animalGround=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
+  assert.ok(animalGround?.all?.length>=7&&animalGround.all.every(animal=>Number.isFinite(animal.groundY)),
+   'Every resident and saved ground animal must receive a finite terrain support height.');
   assert.ok(initial.neighborhoodStats.houses.every(house=>house.visible&&house.meshCount>=10),'Each neighborhood house must contain visible 3D geometry.');
   assert.equal(initial.terrainStats?.hasGrassTexture,true,'The ground must use a visible painterly grass texture.');
   assert.equal(initial.hasSafetyOverlay,false,'The floating upper-right HUD must be absent from the production viewport.');
