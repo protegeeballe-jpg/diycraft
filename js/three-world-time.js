@@ -8,9 +8,9 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(protection){
  'use strict';
  const PALETTES=Object.freeze({
-  day:Object.freeze({sky:Object.freeze(['#8fc6e2','#d8e9d2','#b3d39a']),ground:'#80bd65',sun:'#fff2bc'}),
-  sunset:Object.freeze({sky:Object.freeze(['#a66e82','#e7a07e','#d7a77f']),ground:'#9a8967',sun:'#ffcb83',overlay:'rgba(255,123,79,.07)'}),
-  night:Object.freeze({sky:Object.freeze(['#14213d','#263858','#52606e']),ground:'#465848',overlay:'rgba(8,14,37,.24)'})
+  day:Object.freeze({sky:Object.freeze(['#759fb4','#b9c9b3','#8ca574']),ground:'#66894f',sun:'#e9d19a'}),
+  sunset:Object.freeze({sky:Object.freeze(['#80536b','#b97461','#a77c62']),ground:'#76684d',sun:'#dfa96c',overlay:'rgba(83,48,43,.10)'}),
+  night:Object.freeze({sky:Object.freeze(['#101a30','#202e47','#3d4d59']),ground:'#39483d',overlay:'rgba(4,8,18,.28)'})
  });
  function getPalette(timeMode,timeSeconds){
   if(!Number.isFinite(timeSeconds))throw new TypeError('Time-of-day clock must be a finite number of seconds.');
