@@ -124,9 +124,12 @@ const {chromium}=require('playwright');
   await page.locator('[data-hud-tool="pause-build"]').click();
   assert.equal(await page.locator('[data-hud-tool="pause-build"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.buildPaused),true);
-  await page.locator('#add').evaluate(button=>button.click());
+  for(const id of ['add','water-add','fish-add','fill-hole']){
+   await page.locator('#'+id).evaluate(button=>button.click());
+  }
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length),beforePausedBuild,
-   'The hand must block the older Place-on-face action as well as canvas taps.');
+   'The hand must block canvas taps and every hidden legacy block, water and creature placement route.');
+  assert.match(await page.locator('#status').textContent(),/Building is paused/);
   await page.locator('[data-hud-tool="pause-build"]').click();
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.buildPaused),false);
   await page.locator('#add').evaluate(button=>button.click());
