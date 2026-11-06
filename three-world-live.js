@@ -2142,7 +2142,6 @@ async function start(){
  window.__DIYCRAFT_THREE_EDIT__.sourceUnchanged=true;
  window.__DIYCRAFT_THREE_EDIT__.storageSource=storageLoadSource;
  window.__DIYCRAFT_THREE_EDIT__.storageReadFailed=storageReadFailed;
- window.__DIYCRAFT_THREE_EDIT__.deviceFileState=deviceWorldFileState;
  requestAnimationFrame(animate);
 }
 start().catch(error=>{status.textContent='DIYCraft could not start: '+error.message;backupFeedback.textContent='The game could not open: '+error.message;throw error;});
