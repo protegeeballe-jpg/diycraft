@@ -20,25 +20,30 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const deploymentId = '1d94e396c146f607c56be2a47b4be875f92595ab';
+            const deploymentRef = '1d94e396c146f607c56be2a47b4be875f92595ab';
             const params = {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pages_deployment_id: deploymentId
+              pages_deployment_id: deploymentRef
             };
 
-            const pages = await github.request(
-              'GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}',
-              params
-            );
-            core.info(`Pages API status for ${deploymentId}: ${pages.data.status || 'unknown'}`);
+            try {
+              const pages = await github.request(
+                'GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}',
+                params
+              );
+              core.info(`Pages API status for ${deploymentRef}: ${pages.data.status || 'unknown'}`);
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              core.warning(`No Pages deployment status record exists for ${deploymentRef}; continuing with standard deployment records.`);
+            }
 
             const listed = await github.request(
               'GET /repos/{owner}/{repo}/deployments',
               {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                sha: deploymentId,
+                sha: deploymentRef,
                 per_page: 100
               }
             );
