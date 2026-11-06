@@ -164,6 +164,7 @@ const {chromium}=require('playwright');
   assert.ok(afterBuild.world.blocks.length>=expectedBlocks,'A build action must persist the changed blocks. Expected '+expectedBlocks+' blocks from '+initial.world.blocks.length+', but storage contains '+afterBuild.world.blocks.length+'. Live sandbox count was '+immediateBuild.liveBlocks+'.');
 
   // Verify the save button does a direct, successful save.
+  await openSettingsPanel();
   await page.locator('#save-now').click();
   await page.waitForFunction(()=>/Saved to browser recovery|Saved to .* and browser recovery/.test(document.getElementById('backup-feedback').textContent),null,{timeout:10000});
 
