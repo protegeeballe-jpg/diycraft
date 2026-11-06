@@ -408,7 +408,7 @@ const {chromium}=require('playwright');
    'The right-side Fly button must toggle flight off.');
   assert.equal(await flightPad.isVisible(),false,
    'Turning flight off must hide the vertical UP/DOWN controls.');
-  await page.locator('#play-mode').click(); // Exit Play Mode before testing first-touch activation.
+  await togglePlayModeFromSettings(); // Exit Play Mode before testing first-touch activation.
   assert.equal(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.playerMode),false);
   const firstTouch=page.locator('#player-controls [data-move="forward"]');
   await firstTouch.dispatchEvent('pointerdown',{pointerId:20,pointerType:'touch',isPrimary:true,button:0,buttons:1});
