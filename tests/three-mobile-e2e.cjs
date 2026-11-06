@@ -588,11 +588,15 @@ const {chromium}=require('playwright');
 
   // Measure real frame pacing on the emulated low-end mobile profile.
   const pacing=await page.evaluate(async()=>{
-   const start=window.__DIYCRAFT_THREE_EDIT__?.frames||0,begin=performance.now();
-   await new Promise(resolve=>setTimeout(resolve,1200));
-   const end=window.__DIYCRAFT_THREE_EDIT__?.frames||0;
-   return {fps:(end-start)/((performance.now()-begin)/1000),frames:end-start};
+   const diagnostics=window.__DIYCRAFT_THREE_EDIT__,start=diagnostics?.frames||0,begin=performance.now();
+   await new Promise(resolve=>setTimeout(resolve,2000));
+   const end=diagnostics?.frames||0,elapsed=performance.now()-begin;
+   return {fps:(end-start)/(elapsed/1000),frames:end-start,elapsedMs:elapsed,
+    profile:diagnostics?.performanceProfile||null};
   });
+  console.log('Mobile low-end frame pacing diagnostic: '+JSON.stringify(pacing));
+  assert.equal(pacing.profile?.tier,'low','The emulated low-memory mobile device must select the low-end profile.');
+  assert.equal(pacing.profile?.fpsCap,30,'The low-end mobile profile must configure a 30 FPS cap.');
   assert.ok(pacing.frames>3,'The mobile renderer must continue producing frames.');
   assert.ok(pacing.fps<=34,'The low-end mobile profile must respect its 30 FPS cap (with small timing tolerance).');
   if(errors.length)throw new Error('Mobile E2E browser errors:\n'+errors.join('\n\n'));
