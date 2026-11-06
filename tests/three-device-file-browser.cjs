@@ -87,6 +87,19 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   assert.ok(afterRetry.blocks.length>=beforeFailureCount+1,'Retry must write the newest in-memory world, not reload the older file.');
   console.log('PASS failed device write is recoverable without losing newer in-memory edits');
 
+  // Permission revoked during an active session: reconnect must save the newest in-memory world.
+  const beforePermissionLoss=afterRetry.blocks.length;
+  fileStore.permission='prompt';
+  await page.locator('#add').evaluate(button=>button.click());
+  await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Device-file save paused:'),null,{timeout:15000});
+  assert.equal(await page.locator('#device-file-connect').textContent(),'Reconnect world file');
+  await page.locator('#device-file-connect').click();
+  await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('latest in-session edits were saved if permission had expired'),null,{timeout:15000});
+  const afterPermissionReconnect=JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes)));
+  assert.ok(afterPermissionReconnect.blocks.length>=beforePermissionLoss+1,
+   'Permission renewal during an active session must write the newest in-memory world, not restore stale file contents.');
+  console.log('PASS active-session permission renewal preserves unsaved in-memory edits');
+
   // Download and inspect a portable .diycraft backup.
   const [download]=await Promise.all([
    page.waitForEvent('download'),
