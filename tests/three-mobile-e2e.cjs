@@ -81,15 +81,19 @@ const {chromium}=require('playwright');
   });
   assert.deepEqual(proportions.blocks?.cellDimensions,{width:1,height:1,depth:1},
    'Regular building blocks must stay true cubes; special tiles and doors keep their intended shapes.');
-  assert.ok(proportions.plants?.flowerCount>0&&proportions.plants.flowers.every(item=>item.renderScale===.72),
-   'Every live flower and tall-grass plant must use the smaller proportional render scale.');
+  assert.ok(proportions.plants?.flowerCount>0&&proportions.plants.flowers.every(item=>
+   item.renderScale===(item.type==='flower'?.36:.72)),
+   'Live flowers must be half-size while tall grass retains its original scale.');
   assert.deepEqual(proportions.character?.modelScale,{x:.90,y:1,z:1},
    'The player avatar must be narrower without changing its height or depth.');
-  assert.equal(proportions.animals?.renderScale,.74,'All animal species must use the shared smaller scale.');
-  assert.ok(proportions.animals?.instanceScale&&
-   [proportions.animals.instanceScale.x,proportions.animals.instanceScale.y,proportions.animals.instanceScale.z]
-    .every(value=>Number.isFinite(value)&&Math.abs(value-.74)<1e-5),
-   'The actual animal instance matrix must apply the smaller scale on every axis within Float32 precision.');
+  assert.equal(proportions.animals?.renderScale,.74,'The original animal scale remains the reference size.');
+  assert.deepEqual(proportions.animals?.renderScaleBySpecies,
+   {sheep:.37,cat:.37,dog:.37,cow:.37,horse:.74,bird:.37,giraffe:.74},
+   'Sheep, cat, dog, cow and bird must be 50% smaller; horse and giraffe must remain unchanged.');
+  assert.ok(proportions.animals?.instanceScales?.length>=7&&proportions.animals.instanceScales.every(batch=>
+   batch.actual&&[batch.actual.x,batch.actual.y,batch.actual.z].every(value=>
+    Number.isFinite(value)&&Math.abs(value-batch.expected)<1e-5)),
+   'Every live animal body batch must apply its species-specific scale on all axes within Float32 precision.');
 
   // The local painterly generator must produce a visibly distinct surface for every design.
   const textureCoverage=await page.evaluate(()=>{
