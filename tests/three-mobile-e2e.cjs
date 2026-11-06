@@ -116,8 +116,30 @@ const {chromium}=require('playwright');
 
   // Settings start collapsed; compact utility and building controls stay available.
   const settingsPanel=page.locator('#settings-panel'),settingsToggle=page.locator('#settings-toggle');
-  const openSettingsPanel=async()=>{if(!(await settingsPanel.isVisible()))await settingsToggle.click();};
-  const togglePlayModeFromSettings=async()=>{await openSettingsPanel();await page.locator('#play-mode').click();};
+  const openSettingsPanel=async()=>{
+   if(!(await settingsPanel.isVisible()))await settingsToggle.click();
+   const files=page.locator('details.settings-section').filter({hasText:'World file & backup'});
+   if(!(await files.evaluate(element=>element.open)))await files.locator('summary').click();
+  };
+  const togglePlayModeFromSettings=async()=>{
+   await page.locator('#view-toggle').click();
+   const inPlay=(await page.locator('#play-mode').textContent()).trim()==='Exit Play Mode';
+   await page.locator('[data-view-mode="'+(inPlay?'build':'third')+'"]').click();
+  };
+  const openStudio=async(action)=>{
+   await page.locator('[data-hud-tool="studios"]').click();
+   await page.locator('[data-studio-action="'+action+'"]').click();
+  };
+  const chooseGrass=async()=>{
+   await page.locator('[data-hud-tool="green"]').click();
+   await page.locator('#quick-picker-content .hud-picker-grid button').filter({hasText:'Grass'}).click();
+   await page.locator('#quick-picker-content .hud-picker-primary').click();
+  };
+  const runCharacterActivity=async(activity)=>{
+   if(activity==='sit'||activity==='dance'){await page.locator('#'+activity).click();return;}
+   await page.locator('#sleep-toggle').click();
+   await page.locator('[data-sleep-action="'+activity+'"]').click();
+  };
   assert.equal(await settingsPanel.isVisible(),false,'The settings panel must start closed to maximize the world view.');
   assert.equal(await settingsToggle.getAttribute('aria-expanded'),'false','The closed panel must be reflected by the toggle.');
   assert.equal(await page.locator('#quick-tools').count(),0,'There must be no floating quick-action toolbar.');
@@ -141,7 +163,9 @@ const {chromium}=require('playwright');
   assert.ok(Math.abs(initialHud.d.bottom-initialHud.a.bottom)<3,'Both touch pads must share the same bottom alignment.');
 
   assert.equal(await page.locator('#top-controls button').count(),3,'Exactly three utility icons must appear at the upper right.');
-  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),8,'The compact build toolbar must contain eight requested tools.');
+  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),11,'The compact build toolbar must contain eleven small tools, including pause, more materials and studios.');
+  assert.equal(await page.locator('[data-hud-tool="pause-build"]').getAttribute('aria-pressed'),'false');
+  assert.equal(await page.locator('#legacy-control-bindings').isVisible(),false,'Compatibility controls must not appear as a second settings menu.');
   assert.equal(await page.locator('#settings-toggle').getAttribute('aria-expanded'),'false');
   const dpadGrid=await page.evaluate(()=>Object.fromEntries(['forward','left','back','right'].map(key=>{
    const node=document.querySelector('#player-controls [data-move="'+key+'"]');
@@ -154,35 +178,29 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#'+id).count(),1,'Legacy gesture handler #'+id+' must remain wired.');
    assert.equal(await page.locator('#'+id).isVisible(),false,'Gesture action #'+id+' must not appear as a screen control.');
   }
-  for(const section of ['Build & Materials','World & Water','Characters & Animals','Creative Studios & Collection']){
-   assert.equal(await page.locator('details.settings-section').filter({hasText:section}).count(),1,'Settings must have one organized '+section+' group.');
+  for(const section of ['World look','Advanced world actions','World file & backup']){
+   assert.equal(await page.locator('details.settings-section').filter({hasText:section}).count(),1,'Gear settings must contain the unique '+section+' category.');
   }
-  await openSettingsPanel();
-  await page.locator('#hud-choices-block-type [data-value="water"]').click();
-  assert.equal(await page.locator('#block-type').inputValue(),'water','Material selection remains available inside organized Settings.');
-  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
-  await page.locator('details.settings-section').filter({hasText:'Creative Studios & Collection'}).locator('summary').click();
-  await page.locator('#inventory-open').click();
-  assert.equal(await page.locator('#inventory-panel').isVisible(),true,'Inventory remains accessible from its Settings group.');
+  await page.locator('[data-hud-tool="water"]').click();
+  await page.locator('#quick-picker-content button').filter({hasText:'Build with water'}).click();
+  assert.equal(await page.locator('#block-type').inputValue(),'water','Water is selected from its screen icon picker.');
+  await chooseGrass();
+  await page.locator('[data-hud-tool="inventory"]').click();
+  assert.equal(await page.locator('#inventory-panel').isVisible(),true,'The backpack icon opens Inventory directly.');
   await page.locator('#inventory-close').click();
-  await openSettingsPanel();
-  await page.locator('details.settings-section').filter({hasText:'Characters & Animals'}).locator('summary').click();
-  await page.locator('#play-mode').click();
-  assert.equal(await page.locator('#player-controls').isVisible(),true,'Play Mode remains available from its organized Settings group.');
-  await openSettingsPanel();
-  await page.locator('#play-mode').click();
+  await togglePlayModeFromSettings();
+  assert.equal(await page.locator('#player-controls').isVisible(),true,'The view icon opens Play Mode.');
+  await togglePlayModeFromSettings();
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The D-pad remains available after returning to Build Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'The action pad remains available after returning to Build Mode.');
   for(const [activity,expectedX,expectedY,expectedZ] of [['sleep',.90,.72,1],['transformer',.90*1.04,1.04,1.04],['sit',.90,.82,1],['work',.90,1,1],['dance',.90,1,1]]){
-   await page.locator('#activity-mode').selectOption(activity);
-   await page.locator('#activity-apply').click();
+   await runCharacterActivity(activity);
    await page.waitForTimeout(150);
    const scale=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale);
    assert.deepEqual(scale,{x:expectedX,y:expectedY,z:expectedZ},
-    'The '+activity+' animation must preserve the narrower character width.');
+    'The '+activity+' action must preserve the narrower character width.');
   }
-  await page.locator('#activity-mode').selectOption('stop');
-  await page.locator('#activity-apply').click();
+  await runCharacterActivity('stop');
   await page.waitForTimeout(150);
   assert.deepEqual(await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.().modelScale),{x:.90,y:1,z:1},
    'Stopping an activity must restore normal height and depth while preserving the narrower width.');
@@ -213,7 +231,7 @@ const {chromium}=require('playwright');
 
   // Inventory: all four tabs must open and populate without changing the world.
   await openSettingsPanel();
-  await page.locator('#inventory-open').click();
+  await page.locator('[data-hud-tool="inventory"]').click();
   assert.equal(await page.locator('#inventory-panel').isVisible(),true);
   for(const tab of ['materials','crafted','bucket','recipes']){
    await page.locator('[data-inventory-tab="'+tab+'"]').click();
@@ -224,7 +242,7 @@ const {chromium}=require('playwright');
 
   // Character studio: preset application updates the actual player model and save state.
   await openSettingsPanel();
-  await page.locator('#character-open').click();
+  await openStudio('character');
   await page.locator('[data-character-look="artist"]').click();
   await page.locator('#character-apply').click();
   const character=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getCharacterStats?.());
@@ -233,7 +251,7 @@ const {chromium}=require('playwright');
 
   // All three designers must apply valid state into the same world sandbox.
   await openSettingsPanel();
-  await page.locator('#solid-design-open').click();
+  await page.locator('[data-hud-tool="stone"]').click();
   await page.locator('#hud-choices-solid-design-type [data-value="stone"]').click();
   await page.locator('#solid-design-color').fill('#8b91a0');
   await page.locator('#hud-choices-solid-design-texture [data-value="brick"]').click();
@@ -244,14 +262,15 @@ const {chromium}=require('playwright');
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().solidStyles?.stone?.color)),'#8b91a0');
 
   await openSettingsPanel();
-  await page.locator('#door-design-open').click();
+  await page.locator('[data-hud-tool="more-materials"]').click();
+  await page.locator('#quick-picker-content button').filter({hasText:'Open door design'}).click();
   await page.locator('#hud-choices-door-design-style [data-value="window"]').click();
   await page.locator('#door-design-color').fill('#6d9f8a');
   await page.locator('#door-design-apply').click();
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().doorDesign?.style)),'window');
 
   await openSettingsPanel();
-  await page.locator('#tile-design-open').click();
+  await page.locator('[data-hud-tool="tiles"]').click();
   await page.locator('#hud-choices-tile-design-pattern [data-value="herringbone"]').click();
   const tilePreview=await page.locator('#tile-design-chip').evaluate(element=>getComputedStyle(element).backgroundImage);
   assert.ok(tilePreview.startsWith('url("data:image/png;base64,'),
@@ -261,9 +280,10 @@ const {chromium}=require('playwright');
   assert.equal((await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getDesignStats?.().tileDesign?.pattern)),'herringbone');
 
   // Changing a solid finish must override any temporary green-picker color and reach the renderer.
-  await page.locator('#hud-choices-block-type [data-value="grass"]').click();
+  await chooseGrass();
   await page.evaluate(()=>{window.DIYCraftQuickMaterialColors.grass='#ef2244';});
-  await page.locator('#solid-design-open').click();
+  await page.locator('[data-hud-tool="green"]').click();
+  await page.locator('#quick-picker-content button').filter({hasText:'Open color and texture studio'}).click();
   await page.locator('#hud-choices-solid-design-type [data-value="grass"]').click();
   await page.locator('#solid-design-color').fill('#3c9555');
   await page.locator('#hud-choices-solid-design-texture [data-value="leaves"]').click();
@@ -307,7 +327,7 @@ const {chromium}=require('playwright');
 
   // Art Studio: draw with touch-style PointerEvents, save PNG, and render it in Gallery.
   await openSettingsPanel();
-  await page.locator('#art-open').click();
+  await openStudio('art');
   const artBefore=await page.locator('#art-canvas').evaluate(canvas=>canvas.toDataURL('image/png'));
   await page.locator('#art-name').fill('Mobile meadow');
   await page.locator('#art-canvas').evaluate(canvas=>{
@@ -327,14 +347,14 @@ const {chromium}=require('playwright');
   assert.equal(gallery?.artworks?.length,1);
   assert.equal(gallery?.artworks?.[0]?.name,'Mobile meadow');
   await openSettingsPanel();
-  await page.locator('#gallery-open').click();
+  await openStudio('gallery');
   assert.equal(await page.locator('#gallery-panel').isVisible(),true);
   assert.equal(await page.locator('#gallery-artworks .gallery-card').count(),1);
   await page.locator('#gallery-close').click();
 
   // Touch movement: pointer-down must move the player; pointer-cancel must release it.
   await togglePlayModeFromSettings();
-  assert.equal(await settingsPanel.isVisible(),true,'The controls panel must remain visible in Play Mode.');
+  assert.equal(await settingsPanel.isVisible(),false,'The gear panel closes when the view menu is used.');
   assert.equal(await page.locator('#player-controls').isVisible(),true,'The movement D-pad must appear in Play Mode.');
   assert.equal(await page.locator('#player-actions').isVisible(),true,'Jump, Fly, Dance and Sit controls must appear opposite the D-pad.');
   assert.equal(await page.locator('#player-actions .player-action-button').count(),4,'The action pad must contain Jump, Fly, Dance and Sit.');
