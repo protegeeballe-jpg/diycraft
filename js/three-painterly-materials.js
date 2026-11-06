@@ -299,7 +299,7 @@
   const washCount=Math.max(10,Math.round((kind==='paper'?30:42)*scale*watercolorStrength));
   for(let i=0;i<washCount;i++){
    const x=random()*size,y=random()*size,rx=12+random()*44,ry=9+random()*35;
-   const tint=i%4===0?[255,244,218]:i%4===1?base.map(v=>mix(v,255,.23)):i%4===2?base.map(v=>mix(v,0,.15)):base.map(v=>mix(v,[184,207,211][base.indexOf(v)]||v,.12));
+   const tint=i%4===0?[255,244,218]:i%4===1?base.map(v=>mix(v,255,.23)):i%4===2?base.map(v=>mix(v,0,.15)):base.map((v,index)=>mix(v,[184,207,211][index],.12));
    const alpha=Math.min(.24,(.055+random()*.10)*watercolorStrength);
    const gradient=c.createRadialGradient(x,y,1,x,y,Math.max(rx,ry)*1.4);
    gradient.addColorStop(0,'rgba('+tint.join(',')+','+(alpha*1.8)+')');
