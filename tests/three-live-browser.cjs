@@ -59,6 +59,22 @@ const {chromium}=require('playwright');
    skySamples.push(sky.skyTexture.signature);
   }
   assert.equal(new Set(skySamples).size,3,'Day, sunset and night must each paint a distinct sky.');
+  const distantGroundPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.focusGroundCellForTest?.(100000,-100000));
+  assert.ok(distantGroundPoint?.visible,'The ground test cell must remain visible far from the original world origin.');
+  await page.waitForFunction(()=>{
+   const stats=window.__DIYCRAFT_THREE_EDIT__?.getWorldBackdropStats?.();
+   return stats&&Math.abs(stats.floor.x-stats.camera.x)<1e-6&&Math.abs(stats.floor.z-stats.camera.z)<1e-6&&
+    Math.abs(stats.sky.x-stats.camera.x)<1e-6&&Math.abs(stats.sky.y-window.__DIYCRAFT_THREE_EDIT__?.getPlayerCamera?.()?.pos?.y||0)<1e9;
+  },null,{timeout:5000});
+  const distantBackdrop=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getWorldBackdropStats?.());
+  assert.equal(distantBackdrop.floor.width,90,'The continuous ground keeps its existing bounded 90-unit mesh.');
+  assert.ok(Math.abs(distantBackdrop.floor.x-distantBackdrop.camera.x)<1e-6&&
+   Math.abs(distantBackdrop.floor.z-distantBackdrop.camera.z)<1e-6,
+   'The ground plane must follow the camera at distant world coordinates instead of ending at the origin.');
+  assert.ok(Math.abs(distantBackdrop.sky.x-distantBackdrop.camera.x)<1e-6&&
+   Math.abs(distantBackdrop.sky.z-distantBackdrop.camera.z)<1e-6,
+   'The sky dome must remain centered on the camera while exploring distant world coordinates.');
+
   await page.evaluate(()=>{const select=document.getElementById('time-mode');select.value='day';select.dispatchEvent(new Event('change',{bubbles:true}));});
   const plantStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlantStats?.());
   assert.ok(plantStats?.flowerCount>0,'The production starter world must render actual flower meshes.');
