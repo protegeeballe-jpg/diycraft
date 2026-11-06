@@ -56,6 +56,14 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   assert.ok(fileStore.bytes.length>24,'The selected device file must contain a valid file envelope.');
   const firstWorld=JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes)));
   const firstCount=firstWorld.blocks.length;
+  const linkedState=await page.evaluate(()=>({
+   state:window.__DIYCRAFT_THREE_EDIT__?.deviceFileState,
+   hasHandle:window.__DIYCRAFT_THREE_EDIT__?.hasDeviceFileHandle,
+   remembered:window.__DIYCRAFT_THREE_EDIT__?.deviceFileRemembered
+  }));
+  console.log('device-file link state:',JSON.stringify(linkedState));
+  assert.equal(linkedState.state,'connected','The selected device file must be active after creation.');
+  assert.equal(linkedState.hasHandle,true,'The selected device handle must be retained in the live game.');
   console.log('PASS choose device file and create MyWorld.diycraft');
 
   // Make a real world edit and verify automatic file saving (without clicking Save now).
@@ -73,7 +81,8 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   const liveAfterBuild=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.blockCount);
   console.log('device-file build verification:',JSON.stringify({
    firstCount,expected:firstCount+1,liveAfterBuild,fileCount:afterBuild.blocks.length,
-   writes:fileStore.writes,feedback:await page.locator('#device-file-feedback').textContent()
+   writes:fileStore.writes,feedback:await page.locator('#device-file-feedback').textContent(),
+   runtime:await page.evaluate(()=>({state:window.__DIYCRAFT_THREE_EDIT__?.deviceFileState,hasHandle:window.__DIYCRAFT_THREE_EDIT__?.hasDeviceFileHandle,pending:window.__DIYCRAFT_THREE_EDIT__?.hasPendingDeviceFileSave,writeBusy:window.__DIYCRAFT_THREE_EDIT__?.deviceFileWriteBusy}))
   }));
   assert.ok(afterBuild.blocks.length>=firstCount+1,'Edits must reach the selected device file automatically.');
   assert.equal(liveAfterBuild,afterBuild.blocks.length,'The saved device file must match the current live world after autosave settles.');
