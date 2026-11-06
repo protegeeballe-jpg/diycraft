@@ -1609,7 +1609,8 @@ function getStorageKeyCount(){try{return deviceStorage?deviceStorage.length:0;}c
 
 function syncDeviceFileControls(message=''){
  if(deviceFileConnect)deviceFileConnect.textContent=deviceWorldFileState==='permission-required'?'Reconnect world file':
-  (deviceWorldFileState==='connected'?'Change device file':'Choose device file');
+  (deviceWorldFileState==='error'?'Retry device save':
+   (deviceWorldFileState==='connected'?'Change device file':'Choose device file'));
  if(deviceFileFeedback){
   if(message)deviceFileFeedback.textContent=message;
   else if(deviceWorldFileState==='connected')deviceFileFeedback.textContent='Linked: '+primaryWorldFileName+'. World changes are compressed and saved to this file automatically.';
@@ -1698,6 +1699,13 @@ async function importDeviceWorldText(worldText){
 async function connectDeviceWorldFile(){
  deviceFileConnect.disabled=true;
  try{
+  if(primaryWorldFileHandle&&deviceWorldFileState==='error'){
+   // Retry the current in-memory world; never reload the older file after a failed write.
+   const result=await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
+   deviceWorldFileState='connected';deviceFilePermissionLostInSession=false;
+   syncDeviceFileControls('Retry successful. Saved the latest in-session world to '+(result.fileName||primaryWorldFileName)+'.');
+   return;
+  }
   if(primaryWorldFileHandle&&deviceWorldFileState==='permission-required'){
    if(!await deviceFiles.permission(primaryWorldFileHandle,'readwrite',true))
     throw new Error('File permission was not granted. The existing file was left unchanged.');
