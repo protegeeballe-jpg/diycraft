@@ -118,7 +118,7 @@ const {chromium}=require('playwright');
 
   // Exercise a real build action and wait for the version-1 device save.
   await page.locator('[data-hud-tool="green"]').click();
-  await page.locator('#quick-picker-content .hud-picker-grid button').filter({hasText:'Grass'}).click();
+  await page.getByRole('button',{name:'Grass',exact:true}).click();
   await page.locator('#quick-picker-content .hud-picker-primary').click();
   const beforePausedBuild=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.length);
   await page.locator('[data-hud-tool="pause-build"]').click();
