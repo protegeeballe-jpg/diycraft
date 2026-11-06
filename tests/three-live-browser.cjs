@@ -64,7 +64,7 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>{
    const stats=window.__DIYCRAFT_THREE_EDIT__?.getWorldBackdropStats?.();
    return stats&&Math.abs(stats.floor.x-stats.camera.x)<1e-6&&Math.abs(stats.floor.z-stats.camera.z)<1e-6&&
-    Math.abs(stats.sky.x-stats.camera.x)<1e-6&&Math.abs(stats.sky.y-window.__DIYCRAFT_THREE_EDIT__?.getPlayerCamera?.()?.pos?.y||0)<1e9;
+    Math.abs(stats.sky.x-stats.camera.x)<1e-6&&Math.abs(stats.sky.y-stats.camera.y)<1e-6&&Math.abs(stats.sky.z-stats.camera.z)<1e-6;
   },null,{timeout:5000});
   const distantBackdrop=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getWorldBackdropStats?.());
   assert.equal(distantBackdrop.floor.width,90,'The continuous ground keeps its existing bounded 90-unit mesh.');
