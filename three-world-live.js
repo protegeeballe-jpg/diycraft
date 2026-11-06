@@ -46,7 +46,12 @@ const hemisphere=new THREE.HemisphereLight(0xfff7e9,0x788b70,.74);scene.add(hemi
 const sun=new THREE.DirectionalLight(0xfff0d5,.94);sun.position.set(-14,23,16);sun.castShadow=performanceProfile.shadows;sun.shadow.mapSize.set(performanceProfile.shadows?1024:1,performanceProfile.shadows?1024:1);scene.add(sun);
 const fill=new THREE.DirectionalLight(0xc5d9e8,.17);fill.position.set(12,9,-15);scene.add(fill);
 const materials=painterly.create(THREE,renderer,performanceProfile);
-const floorMat=new THREE.MeshStandardMaterial({color:0x789767,roughness:1});
+const groundTexture=new THREE.CanvasTexture(painterly.generateCanvas(timeVisuals.PALETTES.day.ground,0x6d795a,'grass',performanceProfile));
+groundTexture.wrapS=groundTexture.wrapT=THREE.RepeatWrapping;groundTexture.repeat.set(1,1);
+groundTexture.anisotropy=Math.min(performanceProfile.maxAnisotropy||8,renderer.capabilities.getMaxAnisotropy());
+groundTexture.encoding=THREE.sRGBEncoding;
+const floorMat=new THREE.MeshStandardMaterial({color:0xffffff,map:groundTexture,roughness:1,side:THREE.DoubleSide});
+const groundDirtMaterial=materials.get('#8b674b','dirt').clone();groundDirtMaterial.side=THREE.DoubleSide;
 const skyGeometry=new THREE.SphereGeometry(120,48,32);
 const skyCanvas=painterly.generateSkyCanvas(timeVisuals.PALETTES.day.sky,'day',performanceProfile);
 const skyTexture=new THREE.CanvasTexture(skyCanvas);
@@ -85,16 +90,156 @@ function applyWorldTime(seconds){
  sun.position.set(-14,palette.mode==='sunset'?7:23,16);
  fill.color.set(palette.mode==='night'?'#9eafd4':'#c5d9e8');
  fill.intensity=palette.mode==='night'?.22:palette.mode==='sunset'?.14:.17;
- floorMat.color.set(palette.ground);
+ groundTexture.image=painterly.generateCanvas(palette.ground,0x6d795a,'grass',performanceProfile);groundTexture.needsUpdate=true;floorMat.color.set(0xffffff);
  setSkyGradient(palette.sky,palette.mode);
  const night=palette.mode==='night',direction=night?skyDirection(-.48,.29):palette.mode==='sunset'?skyDirection(.98,.12):skyDirection(.42,.29);
  starField.visible=night;celestialDisc.material.color.set(night?'#f6f0ce':palette.sun);
  celestialDisc.position.copy(direction.multiplyScalar(105));
  return palette;
 }
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(90,90),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
-function updateWorldBackdrop(){floor.position.x=camera.position.x;floor.position.z=camera.position.z;skyDome.position.copy(camera.position);celestialGroup.position.copy(camera.position);}
+const GROUND_HALF_SIZE=45,GROUND_SIZE=GROUND_HALF_SIZE*2;
+const floor=new THREE.Mesh(new THREE.BufferGeometry(),floorMat);
+floor.frustumCulled=false;floor.receiveShadow=true;floor.userData.groundSurface=true;scene.add(floor);
+const groundDirtMesh=new THREE.Mesh(new THREE.BufferGeometry(),groundDirtMaterial);
+groundDirtMesh.frustumCulled=false;groundDirtMesh.receiveShadow=true;groundDirtMesh.userData.groundSurface=true;scene.add(groundDirtMesh);
+let groundCenterX=NaN,groundCenterZ=NaN,groundExcavationSignature='';
+function terrainBuffers(){return {vertices:[],uvs:[],indices:[]};}
+function appendTerrainQuad(buffers,points,uvs){
+ const base=buffers.vertices.length/3;
+ for(let i=0;i<4;i++){
+  buffers.vertices.push(points[i][0],points[i][1],points[i][2]);
+  buffers.uvs.push(uvs[i][0],uvs[i][1]);
+ }
+ buffers.indices.push(base,base+1,base+2,base,base+2,base+3);
+}
+function finishTerrainGeometry(buffers,stats){
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(buffers.vertices,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(buffers.uvs,2));
+ geometry.setIndex(buffers.indices);
+ geometry.computeVertexNormals();geometry.computeBoundingSphere();
+ geometry.parameters={width:GROUND_SIZE,height:GROUND_SIZE};
+ geometry.userData={...stats};
+ return geometry;
+}
+function syncGroundMesh(world,force=false){
+ const centerX=Math.round(camera.position.x),centerZ=Math.round(camera.position.z);
+ const excavations=Array.isArray(world?.excavations)?world.excavations:[];
+ const signature=excavations.map(cell=>cell&&Number.isFinite(cell.x)&&Number.isFinite(cell.z)
+  ?String(cell.x)+','+String(cell.z)+','+String(cell.depth||0):'').sort().join('|');
+ if(!force&&centerX===groundCenterX&&centerZ===groundCenterZ&&signature===groundExcavationSignature)return false;
+ const depths=new Map();
+ excavations.forEach(cell=>{
+  if(cell&&Number.isInteger(cell.x)&&Number.isInteger(cell.z)&&Number.isFinite(cell.depth)&&cell.depth>0)
+   depths.set(cell.x+','+cell.z,Math.min(playerPhysics.CONSTANTS.maxDigDepth,Math.floor(cell.depth)));
+ });
+ const grass=terrainBuffers(),dirt=terrainBuffers();let grassCellCount=0,holeCellCount=0,dirtFaceCount=0;
+ const uvFor=(x,z)=>[
+  [(x+GROUND_HALF_SIZE)/4,(z+GROUND_HALF_SIZE)/4],
+  [(x+GROUND_HALF_SIZE)/4,(z+GROUND_HALF_SIZE+1)/4],
+  [(x+GROUND_HALF_SIZE+1)/4,(z+GROUND_HALF_SIZE+1)/4],
+  [(x+GROUND_HALF_SIZE+1)/4,(z+GROUND_HALF_SIZE)/4]
+ ];
+ for(let lx=-GROUND_HALF_SIZE;lx<GROUND_HALF_SIZE;lx++){
+  for(let lz=-GROUND_HALF_SIZE;lz<GROUND_HALF_SIZE;lz++){
+   const wx=centerX+lx,wz=centerZ+lz,depth=depths.get(wx+','+wz)||0,uv=uvFor(lx,lz);
+   if(depth<=0){
+    appendTerrainQuad(grass,[[lx,0,lz],[lx,0,lz+1],[lx+1,0,lz+1],[lx+1,0,lz]],uv);
+    grassCellCount++;continue;
+   }
+   holeCellCount++;
+   appendTerrainQuad(dirt,[[lx,-depth,lz],[lx,-depth,lz+1],[lx+1,-depth,lz+1],[lx+1,-depth,lz]],uv);
+   dirtFaceCount++;
+   const west=depths.get((wx-1)+','+wz)||0,east=depths.get((wx+1)+','+wz)||0;
+   const north=depths.get(wx+','+(wz-1))||0,south=depths.get(wx+','+(wz+1))||0;
+   const yTop=-Math.min(depth,west),yEast=-Math.min(depth,east),yNorth=-Math.min(depth,north),ySouth=-Math.min(depth,south);
+   if(depth>west){
+    appendTerrainQuad(dirt,[[lx,-depth,lz],[lx,yTop,lz],[lx,yTop,lz+1],[lx,-depth,lz+1]],
+     [[(lz+GROUND_HALF_SIZE)/4,depth/4],[(lz+GROUND_HALF_SIZE)/4,-yTop/4],[(lz+GROUND_HALF_SIZE+1)/4,-yTop/4],[(lz+GROUND_HALF_SIZE+1)/4,depth/4]]);
+    dirtFaceCount++;
+   }
+   if(depth>east){
+    appendTerrainQuad(dirt,[[lx+1,-depth,lz+1],[lx+1,yEast,lz+1],[lx+1,yEast,lz],[lx+1,-depth,lz]],
+     [[(lz+GROUND_HALF_SIZE+1)/4,depth/4],[(lz+GROUND_HALF_SIZE+1)/4,-yEast/4],[(lz+GROUND_HALF_SIZE)/4,-yEast/4],[(lz+GROUND_HALF_SIZE)/4,depth/4]]);
+    dirtFaceCount++;
+   }
+   if(depth>north){
+    appendTerrainQuad(dirt,[[lx,-depth,lz],[lx+1,-depth,lz],[lx+1,yNorth,lz],[lx,yNorth,lz]],
+     [[(lx+GROUND_HALF_SIZE)/4,depth/4],[(lx+GROUND_HALF_SIZE+1)/4,depth/4],[(lx+GROUND_HALF_SIZE+1)/4,-yNorth/4],[(lx+GROUND_HALF_SIZE)/4,-yNorth/4]]);
+    dirtFaceCount++;
+   }
+   if(depth>south){
+    appendTerrainQuad(dirt,[[lx+1,-depth,lz+1],[lx,-depth,lz+1],[lx,ySouth,lz+1],[lx+1,ySouth,lz+1]],
+     [[(lx+GROUND_HALF_SIZE+1)/4,depth/4],[(lx+GROUND_HALF_SIZE)/4,depth/4],[(lx+GROUND_HALF_SIZE)/4,-ySouth/4],[(lx+GROUND_HALF_SIZE+1)/4,-ySouth/4]]);
+    dirtFaceCount++;
+   }
+  }
+ }
+ const nextGrass=finishTerrainGeometry(grass,{grassCellCount,holeCellCount,excavationSignature:signature});
+ const nextDirt=finishTerrainGeometry(dirt,{holeCellCount,dirtFaceCount,excavationSignature:signature});
+ if(floor.geometry)floor.geometry.dispose();
+ if(groundDirtMesh.geometry)groundDirtMesh.geometry.dispose();
+ floor.geometry=nextGrass;groundDirtMesh.geometry=nextDirt;
+ floor.position.set(centerX,0,centerZ);groundDirtMesh.position.set(centerX,0,centerZ);
+ groundCenterX=centerX;groundCenterZ=centerZ;groundExcavationSignature=signature;
+ return true;
+}
+function updateWorldBackdrop(){
+ const centerX=Math.round(camera.position.x),centerZ=Math.round(camera.position.z);
+ if(centerX!==groundCenterX||centerZ!==groundCenterZ)syncGroundMesh(sandbox?.getState()?.world);
+ skyDome.position.copy(camera.position);celestialGroup.position.copy(camera.position);
+}
 const group=new THREE.Group();scene.add(group);
+const neighborhoodGroup=new THREE.Group();neighborhoodGroup.name='DIYCraft neighborhood homes';scene.add(neighborhoodGroup);
+const neighborhoodHouses=[];
+function addNeighborhoodHouseBox(root,width,height,depth,x,y,z,material,name){
+ const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),material);
+ mesh.position.set(x,y,z);mesh.castShadow=performanceProfile.shadows;mesh.receiveShadow=performanceProfile.shadows;
+ if(name)mesh.name=name;root.add(mesh);return mesh;
+}
+function buildNeighborhoodHomes(){
+ if(neighborhoodHouses.length)return;
+ const homes=[
+  {name:"Hyacinth's Cottage",x:-13,z:-7,wall:'#e7c6a7',roof:'#a96f65',door:'#815b4a'},
+  {name:"Theo's Cottage",x:10,z:-17,wall:'#b9d4c6',roof:'#668f8b',door:'#71594d'},
+  {name:'The Family Cottage',x:16,z:-9,wall:'#e8d5b8',roof:'#b97870',door:'#80604e'}
+ ];
+ homes.forEach(home=>{
+  const root=new THREE.Group();root.name=home.name;root.position.set(home.x,0,home.z);root.userData.houseName=home.name;
+  const wall=materials.get(home.wall,'brick'),roof=materials.get(home.roof,'wood'),door=materials.get(home.door,'wood');
+  const foundation=materials.get('#80654b','wood'),trim=materials.get('#f0e3ca','wood');
+  const glass=materials.get('#a9dce8','glass',{glass:true}),green=materials.get('#6b9857','leaves');
+  addNeighborhoodHouseBox(root,4.5,.16,4.5,2.15,.08,2.15,foundation,'foundation');
+  addNeighborhoodHouseBox(root,4.3,2.25,.18,2.15,1.285,.09,wall,'back-wall');
+  addNeighborhoodHouseBox(root,.18,2.25,4.12,.09,1.285,2.15,wall,'left-wall');
+  addNeighborhoodHouseBox(root,.18,2.25,4.12,4.21,1.285,2.15,wall,'right-wall');
+  addNeighborhoodHouseBox(root,1.05,2.25,.18,.525,1.285,4.12,wall,'front-left-wall');
+  addNeighborhoodHouseBox(root,1.05,2.25,.18,3.775,1.285,4.12,wall,'front-right-wall');
+  addNeighborhoodHouseBox(root,1.12,.56,.18,2.15,2.115,4.12,wall,'front-gable-wall');
+  addNeighborhoodHouseBox(root,.96,1.72,.10,2.15,.86,4.235,door,'front-door');
+  addNeighborhoodHouseBox(root,.075,1.82,.14,1.64,.91,4.245,trim,'door-frame-left');
+  addNeighborhoodHouseBox(root,.075,1.82,.14,2.66,.91,4.245,trim,'door-frame-right');
+  addNeighborhoodHouseBox(root,1.15,.10,.17,2.15,1.79,4.245,trim,'door-lintel');
+  addNeighborhoodHouseBox(root,.68,.58,.055,.525,1.12,4.235,glass,'left-window-glass');
+  addNeighborhoodHouseBox(root,.68,.58,.055,3.775,1.12,4.235,glass,'right-window-glass');
+  for(const centerX of [.525,3.775]){
+   addNeighborhoodHouseBox(root,.74,.065,.085,centerX,.795,4.255,trim,'window-sill');
+   addNeighborhoodHouseBox(root,.74,.065,.085,centerX,1.445,4.255,trim,'window-top');
+   addNeighborhoodHouseBox(root,.065,.70,.085,centerX-.34,1.12,4.255,trim,'window-left-frame');
+   addNeighborhoodHouseBox(root,.065,.70,.085,centerX+.34,1.12,4.255,trim,'window-right-frame');
+   addNeighborhoodHouseBox(root,.045,.58,.09,centerX,1.12,4.26,trim,'window-mullion');
+  }
+  addNeighborhoodHouseBox(root,1.28,.22,.56,2.15,.18,4.58,foundation,'doorstep');
+  addNeighborhoodHouseBox(root,4.75,.34,4.9,2.15,2.42,2.12,roof,'roof-lower');
+  addNeighborhoodHouseBox(root,3.95,.34,5.35,2.15,2.79,2.12,roof,'roof-middle');
+  addNeighborhoodHouseBox(root,3.08,.34,5.75,2.15,3.16,2.12,roof,'roof-ridge');
+  addNeighborhoodHouseBox(root,.48,.92,.50,3.55,3.05,.82,foundation,'chimney');
+  addNeighborhoodHouseBox(root,.62,.29,.10,.48,.24,4.43,green,'left-flower-box');
+  addNeighborhoodHouseBox(root,.62,.29,.10,3.82,.24,4.43,green,'right-flower-box');
+  neighborhoodGroup.add(root);neighborhoodHouses.push(root);
+ });
+}
+buildNeighborhoodHomes();
 const BLOCK_SIZE=1,boxGeometry=new THREE.BoxGeometry(BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE),tileGeometry=new THREE.BoxGeometry(BLOCK_SIZE,.13,BLOCK_SIZE),doorGeometry=new THREE.BoxGeometry(doorModels.dimensions.width,doorModels.dimensions.height,doorModels.dimensions.thickness);
 const plantStemGeometry=new THREE.CylinderGeometry(.025,.04,.78,6),plantLeafGeometry=new THREE.SphereGeometry(.20,8,6),plantPetalGeometry=new THREE.SphereGeometry(.15,8,6),plantCenterGeometry=new THREE.SphereGeometry(.085,8,6),grassBladeGeometry=new THREE.ConeGeometry(.065,.72,5);
 const animatedPlants=[],animalSurfaceMaterial=materials.get('#ffffff','paper');
@@ -109,7 +254,7 @@ fishGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
 ],3));
 fishGeometry.setIndex([0,2,1,0,3,2,0,4,3,0,5,4,6,8,7]);fishGeometry.computeVertexNormals();
 const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
-let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null,buildPaused=false;
+let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null,buildPaused=false,eraseMode=false;
 let deviceStorage=null,storageReadFailed=false,storageLoadSource='pending',lastAutoSaveRevision=0;
 let primaryWorldFileHandle=null,primaryWorldFileName='',deviceWorldFileState='unlinked',primaryWorldFileRemembered=false;
 let deviceFileSaveTimer=0,deviceFileWriteBusy=false,deviceFileDrainPromise=null,deviceFileFlushRequested=false,deviceFilePermissionLostInSession=false,pendingDeviceFileWorld=null;
@@ -127,6 +272,18 @@ const neighborModels=new Map();let renderedNeighborCount=0,neighborStatesCache=[
 let playerControls={moveX:0,moveZ:0,vertical:0,keys:{}},touchDirections=new Set(),touchVerticalDirections=new Set(),physicsClock=playerPhysics.createFixedStepper();
 // World interaction is gesture-first: tap builds/fills; hold digs/removes; no action buttons are needed.
 const touchControls=document.getElementById('player-controls'),touchActions=document.getElementById('player-actions'),flightVerticalControls=document.getElementById('flight-vertical-controls'),playModeButton=document.getElementById('play-mode'),cameraModeButton=document.getElementById('camera-mode'),jumpButton=document.getElementById('jump'),flightButton=document.getElementById('flight');
+const eraseToggle=document.getElementById('erase-toggle');
+function setEraseMode(enabled){
+ eraseMode=!!enabled;
+ if(eraseToggle){
+  eraseToggle.setAttribute('aria-pressed',String(eraseMode));
+  eraseToggle.classList.toggle('active',eraseMode);
+  eraseToggle.setAttribute('aria-label',eraseMode?'Exit erase mode':'Erase blocks');
+  eraseToggle.title=eraseMode?'Erase mode · tap blocks to remove':'Erase blocks · tap a block';
+ }
+ showWorldFeedback(eraseMode?'Erase mode on · Tap a block to remove it.':'Erase mode off.');
+}
+document.getElementById('erase-toggle').addEventListener('click',()=>setEraseMode(!eraseMode));
 
 let target=new THREE.Vector3(0,1,0),orbit={radius:38,theta:.62,phi:.88};
 function cameraUpdate(){
@@ -539,7 +696,7 @@ function updateAnimalInstances(now){
  });
 }
 function renderSandbox(state){
- const now=performance.now();syncDoorMotions(state,now);
+ const now=performance.now();syncDoorMotions(state,now);syncGroundMesh(state.world);
  requestedTimeMode=['day','sunset','night','auto'].includes(state.world.timeMode)?state.world.timeMode:'day';
  document.getElementById('time-mode').value=requestedTimeMode;
  applyWorldTime(now*.001);
@@ -690,6 +847,8 @@ function renderSandbox(state){
   getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},modelScale:playerModelRoot?{x:playerModelRoot.scale.x,y:playerModelRoot.scale.y,z:playerModelRoot.scale.z}:null,meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
   getWorldBackdropStats:()=>({floor:{x:floor.position.x,z:floor.position.z,width:floor.geometry.parameters.width,height:floor.geometry.parameters.height},camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},sky:{x:skyDome.position.x,y:skyDome.position.y,z:skyDome.position.z},celestial:{x:celestialGroup.position.x,y:celestialGroup.position.y,z:celestialGroup.position.z}}),
+  getTerrainStats:()=>({excavatedCells:(sandbox.getState().world.excavations||[]).length,visibleHoleCells:floor.geometry.userData.holeCellCount||0,grassCells:floor.geometry.userData.grassCellCount||0,dirtFaces:groundDirtMesh.geometry.userData.dirtFaceCount||0,hasGrassTexture:!!floorMat.map,grassTextureSize:floorMat.map?.image?.width||0}),
+  getNeighborhoodStats:()=>({houseCount:neighborhoodHouses.length,houses:neighborhoodHouses.map(house=>({name:house.userData.houseName,meshCount:house.children.filter(child=>child.isMesh).length,visible:house.visible}))}),
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count,skyTexture:{hasMap:skyMaterial.map===skyTexture,width:skyTexture.image.width,height:skyTexture.image.height,version:skyTexture.version,signature:(()=>{const pixels=skyTexture.image.getContext('2d').getImageData(0,0,skyTexture.image.width,skyTexture.image.height).data;let hash=2166136261;const stride=Math.max(4,Math.floor(pixels.length/4096/4)*4);for(let i=0;i<pixels.length;i+=stride){hash=Math.imul(hash^pixels[i],16777619)>>>0;hash=Math.imul(hash^pixels[i+1],16777619)>>>0;hash=Math.imul(hash^pixels[i+2],16777619)>>>0;}return hash>>>0;})()}}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
   releaseVisualTimeTest:()=>{applyWorldTime(performance.now()/1000);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -698,8 +857,8 @@ function renderSandbox(state){
   getPlayerCamera:()=>playerCameraPose?{pos:{...playerCameraPose.pos},yaw:playerCameraPose.yaw,pitch:playerCameraPose.pitch}:null,
   getProtectionContext:()=>currentProtectionContext(),isProtectedDigCell:(x,z)=>isProtectedTarget(x,z),
   lastPlacement:lastPlacement?{key:lastPlacement.key,x:lastPlacement.x,y:lastPlacement.y,z:lastPlacement.z,step:lastPlacement.step.slice()}:null,
-  getGroundScreenPointForTest:(x,z)=>Number.isInteger(x)&&Number.isInteger(z)?screenPointForTest(new THREE.Vector3(x+.5,-.08,z+.5)):null,
-  focusGroundCellForTest:(x,z)=>{if(!Number.isInteger(x)||!Number.isInteger(z))return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(x+.5,0,z+.5);orbit.radius=23;orbit.theta=.62;orbit.phi=.92;cameraUpdate();return screenPointForTest(new THREE.Vector3(x+.5,-.08,z+.5));},
+  getGroundScreenPointForTest:(x,z)=>Number.isInteger(x)&&Number.isInteger(z)?screenPointForTest(new THREE.Vector3(x+.5,0,z+.5)):null,
+  focusGroundCellForTest:(x,z)=>{if(!Number.isInteger(x)||!Number.isInteger(z))return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(x+.5,0,z+.5);orbit.radius=23;orbit.theta=.62;orbit.phi=.92;cameraUpdate();return screenPointForTest(new THREE.Vector3(x+.5,0,z+.5));},
   getPoolSiteProtectionForTest:()=>({site:{...protection.POOL_WORKSITE},protected:sandbox.isProtectedDigCell(14,-5,currentProtectionContext()),context:currentProtectionContext()}),
   getBlockScreenPointForTest:(key)=>{const block=blockByKey.get(key);return block?screenPointForTest(new THREE.Vector3(block.x+.5,block.y+(block.type==='tile'?.12:.98),block.z+.5)):null;},
   getPointerTargetForTest:(x,y)=>{const hit=worldTargetAtScreen(x,y);return hit?{kind:hit.kind,key:hit.key||null,x:hit.x??null,z:hit.z??null,step:hit.step||null}:null;},
@@ -946,7 +1105,7 @@ function worldTargetAtScreen(clientX,clientY){
  pointer.x=((clientX-rect.left)/rect.width)*2-1;
  pointer.y=-((clientY-rect.top)/rect.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
- const intersections=raycaster.intersectObjects([floor,...group.children],true);
+ const intersections=raycaster.intersectObjects([floor,groundDirtMesh,...group.children],true);
  for(const hit of intersections){
   if(hit.object.userData?.selectionOutline)continue;
   if(waterMesh&&hit.object===waterMesh)
@@ -958,7 +1117,7 @@ function worldTargetAtScreen(clientX,clientY){
    const step=[0,0,0];step[axis]=values[axis]>=0?1:-1;
    return {kind:'block',key,block,step,depth:hit.point.clone().project(camera).z};
   }
-  if(hit.object===floor)
+  if(hit.object===floor||hit.object===groundDirtMesh)
    return {kind:'ground',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z),depth:hit.point.clone().project(camera).z};
  }
  return null;
@@ -982,6 +1141,15 @@ function tapWorldAt(clientX,clientY,target){
  }
  const hit=target||worldTargetAtScreen(clientX,clientY);
  if(!hit){status.textContent='Tap a place in the world to build.';return;}
+ if(eraseMode){
+  if(hit.kind!=='block'){showWorldFeedback('Erase mode is on · Tap one of your blocks to remove it.');return;}
+  const block=blockByKey.get(hit.key);if(!block)return;
+  try{
+   renderSandbox(sandbox.remove(hit.key,currentProtectionContext()));
+   showWorldFeedback((block.type==='door'?'Door':block.type.replace(/_/g,' '))+' removed · Recovered in your Material Bucket.');
+  }catch(error){showWorldFeedback(error.message);}
+  return;
+ }
  try{
   const type=document.getElementById('block-type').value;
   if(hit.kind==='block'){
@@ -1558,6 +1726,55 @@ function applyPlayerActivity(){
   renderSandbox(next);lastPosePersisted={...playerPhysicsState.player};cameraUpdate();updatePlayerModel();
  }catch(error){status.textContent='Activity could not be applied: '+error.message;}
 }
+function findNeighborhoodReturnSpot(){
+ const homeX=4.5,homeZ=-5.5,step=.5,maxRing=24;
+ const waterCells=new Set((sandbox.getState().world.water||[])
+  .filter(cell=>cell&&Number(cell.level??1)>0)
+  .map(cell=>cell.x+','+cell.z));
+ for(let ring=0;ring<=maxRing;ring++){
+  for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
+   if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring)continue;
+   const x=homeX+dx*step,z=homeZ+dz*step;
+   if(Math.abs(x)>playerPhysics.CONSTANTS.worldLimit-1||Math.abs(z)>playerPhysics.CONSTANTS.worldLimit-1)continue;
+   const cellX=Math.floor(x),cellZ=Math.floor(z);
+   if(waterCells.has(cellX+','+cellZ))continue;
+   const y=sandbox.surfaceHeightAt(x,z);
+   if(!Number.isFinite(y)||y< -playerPhysics.CONSTANTS.maxDigDepth||y>58)continue;
+   if(sandbox.playerCollisionAt(x,z,y))continue;
+   return {x,y,z};
+  }
+ }
+ return null;
+}
+function visitNeighborhood(){
+ if(!sandbox||!playerPhysicsState)return false;
+ const spot=findNeighborhoodReturnSpot();
+ if(!spot){
+  showWorldFeedback('The neighborhood return spot is blocked. Clear a little space near the village and try again.');
+  return false;
+ }
+ try{
+  setPlayerPlayMode(false);
+  const player={...playerPhysicsState.player,x:spot.x,y:spot.y,z:spot.z,yaw:0,pitch:-.12};
+  playerPhysicsState={...playerPhysicsState,player,jumpVelocity:0,playerGrounded:true,flying:false,playerActivity:''};
+  const next=sandbox.setPlayerPose({x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch});
+  renderSandbox(next);
+  updatePlayerModel();
+  target.set(player.x,Math.max(1,player.y+1),player.z);
+  orbit.radius=24;orbit.theta=.62;orbit.phi=.92;
+  cameraUpdate();
+  updateNeighborModels(performance.now());
+  lastPosePersisted={x:player.x,y:player.y,z:player.z,yaw:player.yaw,pitch:player.pitch};
+  lastPosePersistAt=performance.now();
+  status.textContent='Welcome back! You are home in the neighborhood. 🌼';
+  return true;
+ }catch(error){
+  status.textContent='Neighborhood visit could not be completed: '+String(error.message||error);
+  return false;
+ }
+}
+document.getElementById('neighborhood-toggle').addEventListener('click',visitNeighborhood);
+
 function setHomeBed(){
  if(!sandbox||!playerPhysicsState)return;
  try{

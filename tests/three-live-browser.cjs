@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const liveRuntimeSource=fs.readFileSync('three-world-live.js','utf8');
-for(const id of ['world-name-apply','backup-download','backup-restore']){
+for(const id of ['world-name-apply','backup-download','backup-restore','neighborhood-toggle','erase-toggle']){
  const count=(liveRuntimeSource.match(new RegExp("getElementById\\('"+id+"'\\)\\.addEventListener\\(",'g'))||[]).length;
  assert.equal(count,1,'Production control #'+id+' must register exactly one event handler.');
 }
@@ -37,12 +37,21 @@ const {chromium}=require('playwright');
     hasSafetyOverlay:!!document.getElementById('safety'),
     hasWebGL:!!(document.getElementById('three-world')?.getContext('webgl2')||document.getElementById('three-world')?.getContext('webgl')),
     saveControls:!!document.getElementById('save-now'),
+    neighborhoodControl:!!document.getElementById('neighborhood-toggle'),
+    eraseControl:!!document.getElementById('erase-toggle'),
+    neighborhoodStats:diagnostics?.getNeighborhoodStats?.(),
+    terrainStats:diagnostics?.getTerrainStats?.(),
     runtimeScripts:[...document.scripts].map(script=>script.getAttribute('src')).filter(Boolean)
    };
   });
   assert.equal(initial.revision,'128','The live world must use the pinned local Three.js r128 build.');
   assert.equal(initial.storageSource,'starter','A clean profile must load the canonical starter-world source.');
   assert.equal(initial.storageReadFailed,false);
+  assert.equal(initial.neighborhoodControl,true,'The production HUD must expose the Visit neighborhood control.');
+  assert.equal(initial.eraseControl,true,'The production HUD must expose a direct erase mode.');
+  assert.equal(initial.neighborhoodStats?.houseCount,3,'All three neighborhood houses must be present in the live 3D scene.');
+  assert.ok(initial.neighborhoodStats.houses.every(house=>house.visible&&house.meshCount>=10),'Each neighborhood house must contain visible 3D geometry.');
+  assert.equal(initial.terrainStats?.hasGrassTexture,true,'The ground must use a visible painterly grass texture.');
   assert.equal(initial.hasSafetyOverlay,false,'The floating upper-right HUD must be absent from the production viewport.');
   const skySamples=[];
   for(const mode of ['day','sunset','night']){
@@ -63,13 +72,39 @@ const {chromium}=require('playwright');
   assert.ok(distantGroundPoint?.visible,'The ground test cell must remain visible far from the original world origin.');
   await page.waitForFunction(()=>{
    const stats=window.__DIYCRAFT_THREE_EDIT__?.getWorldBackdropStats?.();
-   return stats&&Math.abs(stats.floor.x-stats.camera.x)<1e-6&&Math.abs(stats.floor.z-stats.camera.z)<1e-6&&
+   return stats&&Math.abs(stats.floor.x-stats.camera.x)<=.5&&Math.abs(stats.floor.z-stats.camera.z)<=.5&&
     Math.abs(stats.sky.x-stats.camera.x)<1e-6&&Math.abs(stats.sky.y-stats.camera.y)<1e-6&&Math.abs(stats.sky.z-stats.camera.z)<1e-6;
   },null,{timeout:5000});
   const distantBackdrop=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getWorldBackdropStats?.());
+  // A real long-press must cut an opening through the textured ground and expose dirt walls.
+  const groundPoint=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getGroundScreenPointForTest?.(100000,-100000));
+  assert.ok(groundPoint?.visible,'The distant ground test cell must be visible and targetable.');
+  const groundCanvas=page.locator('#three-world'),groundBounds=await groundCanvas.boundingBox();
+  await groundCanvas.click({position:{x:groundPoint.x-groundBounds.x,y:groundPoint.y-groundBounds.y},delay:750});
+  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.getTerrainStats?.().visibleHoleCells===1,null,{timeout:8000});
+  const dugTerrain=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getTerrainStats?.());
+  assert.equal(dugTerrain.excavatedCells,1,'The successful dig must be stored in the world.'); 
+  assert.equal(dugTerrain.visibleHoleCells,1,'The 3D grass surface must omit the excavated cell.'); 
+  assert.ok(dugTerrain.dirtFaces>=5,'The hole must render a dirt bottom and exposed side walls.');
+  assert.ok(dugTerrain.hasGrassTexture&&dugTerrain.grassTextureSize>=64,'The ground must retain its painterly grass texture after digging.');
+
+  // A separate eraser mode lets a young builder tap a placed block instead of relying on a long press.
+  const placedForErase=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.debugPlaceObstacleForTest?.({type:'stone',x:100000,y:0,z:-100000}));
+  assert.ok(placedForErase?.key,'The test block must be placed in the live sandbox.');
+  const erasePoint=await page.evaluate(key=>window.__DIYCRAFT_THREE_EDIT__?.getBlockScreenPointForTest?.(key),placedForErase.key);
+  assert.ok(erasePoint?.visible,'The test block must be visible for eraser interaction.');
+  const eraseBounds=await groundCanvas.boundingBox();
+  await page.locator('#erase-toggle').click();
+  assert.equal(await page.locator('#erase-toggle').getAttribute('aria-pressed'),'true');
+  await groundCanvas.click({position:{x:erasePoint.x-eraseBounds.x,y:erasePoint.y-eraseBounds.y}});
+  await page.waitForFunction(key=>!window.__DIYCRAFT_THREE_EDIT__?.getState?.().world.blocks.some(block=>block.key===key),placedForErase.key,{timeout:8000});
+  assert.equal(await page.locator('#erase-toggle').getAttribute('aria-pressed'),'true','The eraser remains active for multiple mistakes.');
+  await page.locator('#erase-toggle').click();
+
+
   assert.equal(distantBackdrop.floor.width,90,'The continuous ground keeps its existing bounded 90-unit mesh.');
-  assert.ok(Math.abs(distantBackdrop.floor.x-distantBackdrop.camera.x)<1e-6&&
-   Math.abs(distantBackdrop.floor.z-distantBackdrop.camera.z)<1e-6,
+  assert.ok(Math.abs(distantBackdrop.floor.x-distantBackdrop.camera.x)<=.5&&
+   Math.abs(distantBackdrop.floor.z-distantBackdrop.camera.z)<=.5,
    'The ground plane must follow the camera at distant world coordinates instead of ending at the origin.');
   assert.ok(Math.abs(distantBackdrop.sky.x-distantBackdrop.camera.x)<1e-6&&
    Math.abs(distantBackdrop.sky.z-distantBackdrop.camera.z)<1e-6,
@@ -111,7 +146,11 @@ const {chromium}=require('playwright');
   assert.ok(birdVisualBefore.birdWingPivotY>=1,'Bird wing pivots must sit at shoulder height above the torso rather than inside it.');
   assert.ok(birdVisualBefore.quadrupedLegBatches>=1,'Ground animals must use separate pivoted leg batches.');
   assert.ok(birdVisualBefore.quadrupedLegInstances>=4,'Each ground animal must have four leg instances.');
-  await page.waitForTimeout(240);
+  await page.waitForFunction(({bird,legs})=>{
+   const current=window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.();
+   return current&&Math.abs(current.birdFlapAngle-bird)>.03&&
+    Math.abs(current.groundLegSwingAngle-legs)>.01;
+  },{bird:birdVisualBefore.birdFlapAngle,legs:birdVisualBefore.groundLegSwingAngle},{timeout:3000});
   const birdVisualAfter=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
   assert.ok(Math.abs(birdVisualAfter.birdFlapAngle-birdVisualBefore.birdFlapAngle)>.03,'Bird wings must flap over time rather than remain a static wobbling body.');
   assert.ok(Math.abs(birdVisualAfter.groundLegSwingAngle-birdVisualBefore.groundLegSwingAngle)>.01,'Ground-animal legs must swing over time instead of remaining rigid pegs.');
@@ -264,12 +303,12 @@ const {chromium}=require('playwright');
   });
   const cacheCheck=await page.evaluate(async()=>{
    const names=await caches.keys();
-   const name=names.find(value=>value==='diycraft-shell-v79');
+   const name=names.find(value=>value==='diycraft-shell-v81');
    if(!name)return {name:null,assets:[]};
    const cache=await caches.open(name),requests=await cache.keys();
    return {name,assets:requests.map(request=>new URL(request.url).pathname)};
   });
-  assert.equal(cacheCheck.name,'diycraft-shell-v79','The updated offline worker must install the Three.js shell cache.');
+  assert.equal(cacheCheck.name,'diycraft-shell-v81','The updated offline worker must install the Three.js shell cache.');
   for(const asset of ['/diycraft/three-world-live.js','/diycraft/js/three.js','/diycraft/js/three-viewport.js','/diycraft/js/three-world-storage.js','/diycraft/js/three-world-starter.js','/diycraft/js/three-plant-geometry.js','/diycraft/js/three-compact-hud.js','/diycraft/js/three-world-file-save.js']){
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);
@@ -293,6 +332,25 @@ const {chromium}=require('playwright');
   assert.ok(flowerFocus,'The live scene must expose a flower for visual close-up validation.');
   await page.waitForTimeout(220);
   await page.screenshot({path:'three-flower-closeup.png',fullPage:false});
+  // The restored house icon must safely return the player to the starter neighborhood.
+  const beforeNeighborhoodVisit=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getPlayerState()?.player);
+  assert.ok(beforeNeighborhoodVisit,'The live player state must be available before visiting the neighborhood.');
+  await page.locator('#neighborhood-toggle').click();
+  await page.waitForFunction(()=>{
+   const player=window.__DIYCRAFT_THREE_EDIT__?.getPlayerState()?.player;
+   return player&&Math.hypot(player.x-4.5,player.z+5.5)<=2&&
+    document.getElementById('status')?.textContent.includes('Welcome back! You are home in the neighborhood.');
+  },null,{timeout:8000});
+  const neighborhoodVisit=await page.evaluate(()=>({
+   player:window.__DIYCRAFT_THREE_EDIT__?.getPlayerState()?.player,
+   playMode:window.__DIYCRAFT_THREE_EDIT__?.playerMode,
+   status:document.getElementById('status')?.textContent
+  }));
+  assert.equal(neighborhoodVisit.playMode,false,'Neighborhood return must leave the player in build mode.');
+  assert.ok(Math.hypot(neighborhoodVisit.player.x-4.5,neighborhoodVisit.player.z+5.5)<=2,
+   'Neighborhood return must use a safe position close to the original village entrance.');
+  assert.match(neighborhoodVisit.status,/Welcome back! You are home in the neighborhood/);
+
   await context.setOffline(true);
   await page.reload({waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=3,null,{timeout:30000});

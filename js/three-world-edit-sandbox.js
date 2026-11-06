@@ -150,7 +150,7 @@
    const index=world.blocks.findIndex(block=>block.key===key);
    if(index<0)return state();
    const block=world.blocks[index];
-   if(isProtectedDigCell(block.x,block.z,protectionContext))throw new Error('This block is too close to a neighbor or animal. Their homes and little friends are protected!');
+   if(block.userPlaced!==true&&isProtectedDigCell(block.x,block.z,protectionContext))throw new Error('This block is too close to a neighbor or animal. Their homes and little friends are protected!');
    const bucket=Array.isArray(world.bucket)?world.bucket:(world.bucket=[]);
    if(bucket.length>=MAX_BUCKET_ITEMS)throw new RangeError('Your Material Bucket is full. Use or clear recovered blocks first.');
    const item={type:block.type};

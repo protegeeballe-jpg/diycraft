@@ -698,3 +698,21 @@ test('refuses invalid PNG data, oversized artwork, a full gallery, or a full cra
  assert.deepEqual(crafted.getState().world.crafted,craftedBefore.world.crafted);
  assert.equal(crafted.getState().revision,craftedBefore.revision);
 });
+
+test('allows the builder to remove their own blocks inside protected neighbor-home areas',()=>{
+ const edit=sandbox.create(fixture());
+ const placed=edit.addBlock({type:'stone',x:10,y:0,z:-17});
+ const key=placed.selectedKey;
+ assert.equal(placed.world.blocks.find(block=>block.key===key).userPlaced,true);
+ const removed=edit.remove(key,edit.protectionContext(0));
+ assert.equal(removed.world.blocks.some(block=>block.key===key),false);
+ assert.equal(removed.world.bucket.length,1);
+ assert.equal(removed.world.bucket[0].type,'stone');
+});
+test('continues protecting unowned blocks inside neighbor-home areas',()=>{
+ const world=fixture();
+ world.blocks.push({key:'protected-home-block',type:'stone',x:10,y:0,z:-17});
+ const edit=sandbox.create(world);
+ assert.throws(()=>edit.remove('protected-home-block'),/too close to a neighbor or animal/);
+ assert.equal(edit.getState().world.blocks.length,4);
+});

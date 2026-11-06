@@ -166,8 +166,8 @@ const {chromium}=require('playwright');
   assert.ok(initialHud.d.right<initialHud.a.left,'The always-visible lower-corner touch pads must not overlap.');
   assert.ok(Math.abs(initialHud.d.bottom-initialHud.a.bottom)<3,'Both touch pads must share the same bottom alignment.');
 
-  assert.equal(await page.locator('#top-controls button').count(),3,'Exactly three utility icons must appear at the upper right.');
-  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),12,'The compact build toolbar must contain twelve small tools, including pause, save, more materials and studios.');
+  assert.equal(await page.locator('#top-controls button').count(),4,'The neighborhood, settings, sleeping and viewing icons must appear at the upper right.');
+  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),13,'The compact build toolbar must contain thirteen small tools, including pause, erase, save, more materials and studios.');
   assert.equal(await page.locator('[data-hud-tool="pause-build"]').getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('#legacy-control-bindings').isVisible(),false,'Compatibility controls must not appear as a second settings menu.');
   assert.equal(await page.locator('#settings-toggle').getAttribute('aria-expanded'),'false');
@@ -588,11 +588,15 @@ const {chromium}=require('playwright');
 
   // Measure real frame pacing on the emulated low-end mobile profile.
   const pacing=await page.evaluate(async()=>{
-   const start=window.__DIYCRAFT_THREE_EDIT__?.frames||0,begin=performance.now();
-   await new Promise(resolve=>setTimeout(resolve,1200));
-   const end=window.__DIYCRAFT_THREE_EDIT__?.frames||0;
-   return {fps:(end-start)/((performance.now()-begin)/1000),frames:end-start};
+   const diagnostics=window.__DIYCRAFT_THREE_EDIT__,start=diagnostics?.frames||0,begin=performance.now();
+   await new Promise(resolve=>setTimeout(resolve,2000));
+   const end=diagnostics?.frames||0,elapsed=performance.now()-begin;
+   return {fps:(end-start)/(elapsed/1000),frames:end-start,elapsedMs:elapsed,
+    profile:diagnostics?.performanceProfile||null};
   });
+  console.log('Mobile low-end frame pacing diagnostic: '+JSON.stringify(pacing));
+  assert.equal(pacing.profile?.tier,'low','The emulated low-memory mobile device must select the low-end profile.');
+  assert.equal(pacing.profile?.fpsCap,30,'The low-end mobile profile must configure a 30 FPS cap.');
   assert.ok(pacing.frames>3,'The mobile renderer must continue producing frames.');
   assert.ok(pacing.fps<=34,'The low-end mobile profile must respect its 30 FPS cap (with small timing tolerance).');
   if(errors.length)throw new Error('Mobile E2E browser errors:\n'+errors.join('\n\n'));
