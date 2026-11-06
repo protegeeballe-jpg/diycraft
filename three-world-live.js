@@ -1357,10 +1357,17 @@ function waterCellInput(){
  if(!xValue||!zValue||!Number.isInteger(x)||!Number.isInteger(z))throw new TypeError('Enter whole-number X and Z coordinates for the pool.');
  return {x,z};
 }
-document.getElementById('water-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z,currentProtectionContext()));}catch(e){status.textContent=e.message;}});
+document.getElementById('water-add').addEventListener('click',()=>{
+ if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing blocks.');return;}
+ try{const cell=waterCellInput();renderSandbox(sandbox.addWaterLayer(cell.x,cell.z,currentProtectionContext()));}catch(e){status.textContent=e.message;}
+});
 document.getElementById('water-collect').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.collectWaterLayer(cell.x,cell.z,currentProtectionContext()));}catch(e){status.textContent=e.message;}});
-document.getElementById('fish-add').addEventListener('click',()=>{try{const cell=waterCellInput();renderSandbox(sandbox.addFish(cell.x,cell.z));}catch(e){status.textContent=e.message;}});
+document.getElementById('fish-add').addEventListener('click',()=>{
+ if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing.');return;}
+ try{const cell=waterCellInput();renderSandbox(sandbox.addFish(cell.x,cell.z));}catch(e){status.textContent=e.message;}
+});
 document.getElementById('fill-hole').addEventListener('click',()=>{
+ if(buildPaused){showWorldFeedback('Building is paused. Tap the hand to resume placing blocks.');return;}
  try{
   const cell=waterCellInput(),type=document.getElementById('block-type').value,input={type};
   if(type==='custom'){input.color=document.getElementById('color').value;input.texture='custom';}
