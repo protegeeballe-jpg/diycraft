@@ -301,14 +301,16 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle',timeout:60000});
    await page.waitForFunction(()=>!!navigator.serviceWorker?.controller,null,{timeout:20000});
   });
-  const cacheCheck=await page.evaluate(async()=>{
+  const shellCacheName=fs.readFileSync('sw.js','utf8').match(/const CACHE_NAME\s*=\s*['"]([^'"]+)['"]/)?.[1];
+  assert.ok(shellCacheName,'The service worker must declare its versioned shell cache name.');
+  const cacheCheck=await page.evaluate(async(expectedName)=>{
    const names=await caches.keys();
-   const name=names.find(value=>value==='diycraft-shell-v81');
+   const name=names.find(value=>value===expectedName);
    if(!name)return {name:null,assets:[]};
    const cache=await caches.open(name),requests=await cache.keys();
    return {name,assets:requests.map(request=>new URL(request.url).pathname)};
-  });
-  assert.equal(cacheCheck.name,'diycraft-shell-v81','The updated offline worker must install the Three.js shell cache.');
+  },shellCacheName);
+  assert.equal(cacheCheck.name,shellCacheName,'The updated offline worker must install its declared Three.js shell cache.');
   for(const asset of ['/diycraft/three-world-live.js','/diycraft/js/three.js','/diycraft/js/three-viewport.js','/diycraft/js/three-world-storage.js','/diycraft/js/three-world-starter.js','/diycraft/js/three-plant-geometry.js','/diycraft/js/three-compact-hud.js','/diycraft/js/three-world-file-save.js']){
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);
