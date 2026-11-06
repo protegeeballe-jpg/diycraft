@@ -371,6 +371,14 @@
    for(const y of [.28,1.55])rect(.018,y,.034,.12,'rgba(83,56,39,.74)');
    c.restore();
   }
+  // Preserve the blue watercolor pane on window doors. Pencil strokes and paper tooth
+  // should enrich the wooden frame, not obscure the small glass inset.
+  c.save();
+  if(kind==='door-window'){
+   const px=x=>x/.84*size,py=y=>(1.96-y)/1.96*size;
+   const left=px(.18),top=py(1.62),right=px(.66),bottom=py(1.14);
+   c.beginPath();c.rect(0,0,size,size);c.rect(left,top,right-left,bottom-top);c.clip('evenodd');
+  }
   // Visible colored-pencil hatching with varying stroke length, pressure and direction.
   c.lineCap='round';c.lineJoin='round';
   const pencilCount=Math.max(220,Math.round((kind==='paper'?1420:1120)*pencilScale*pencilStrength));
@@ -417,6 +425,7 @@
    c.lineWidth=Math.max(.35,.55*scale);c.beginPath();c.moveTo(x,y);
    c.lineTo(x+len*(.35+random()*.45),y+len*(random()-.5)*.28);c.stroke();
   }
+  c.restore();
   return canvas;
  }
  const SKY_STYLES=Object.freeze({
