@@ -166,9 +166,8 @@ const {chromium}=require('playwright');
   }));
   assert.ok(afterBuild.world.blocks.length>=expectedBlocks,'A build action must persist the changed blocks. Expected '+expectedBlocks+' blocks from '+initial.world.blocks.length+', but storage contains '+afterBuild.world.blocks.length+'. Live sandbox count was '+immediateBuild.liveBlocks+'.');
 
-  // Verify the save button does a direct, successful save.
-  await openSettingsPanel();
-  await page.locator('#save-now').click();
+  // Verify the visible toolbar save icon calls the existing world-save path.
+  await page.locator('[data-hud-tool="save-world"]').click();
   await page.waitForFunction(()=>/Saved to browser recovery|Saved to .* and browser recovery/.test(document.getElementById('backup-feedback').textContent),null,{timeout:10000});
 
   // Confirm that position changes in Play Mode are persisted to the same player record.
