@@ -8,7 +8,7 @@
  if(root)root.DIYCraftThreeEditSandbox=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(protectionApi){
  'use strict';
- const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99,MAX_ANIMALS=100;
+ const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_SAVED_DIG_DEPTH=1000000000,MAX_NEW_DIG_DEPTH=55,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99,MAX_ANIMALS=100;
  const ANIMAL_SPECIES=new Set(['sheep','cat','dog','cow','horse','bird','giraffe']);
  const ANIMAL_DEFAULTS={sheep:['#f0eee6','#d0b6a0'],cat:['#c5c0b6','#d0b6a0'],dog:['#c89b6d','#d0b6a0'],cow:['#f2eee5','#514b48'],horse:['#8a6347','#594337'],bird:['#e8c96d','#e8ad56'],giraffe:['#d9ad55','#9a643d']};
  const HEX=/^#[0-9a-f]{6}$/i,PNG_DATA=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -296,7 +296,7 @@ function addAnimal(input){
    if(isProtectedDigCell(x,z,protectionContext))throw new Error('This patch is protected for the neighbors and their homes.');
    const key=x+','+z,currentDepth=depthByCell.get(key)||0;
    if(waterAt(x,z))return collectWaterLayer(x,z);
-   if(currentDepth>=MAX_DIG_DEPTH)throw new RangeError('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');
+   if(currentDepth>=MAX_NEW_DIG_DEPTH)throw new RangeError('You reached the safe digging depth: '+MAX_NEW_DIG_DEPTH+' blocks.');
    if(currentDepth===0&&depthByCell.size>=MAX_GROUND_CELLS)throw new RangeError('This world has reached its safe excavation limit.');
    if(!canStoreItem('dirt','materials'))throw new Error('Your resources pouch is full. Make room before digging.');
    if(!Array.isArray(world.bucket))world.bucket=[];
