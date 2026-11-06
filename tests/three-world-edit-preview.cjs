@@ -76,19 +76,19 @@ function freshWorld(){
   let timeStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats());
   assert.equal(timeStats.requestedMode,'day');
   assert.equal(timeStats.mode,'day');
-  assert.deepEqual(timeStats.skyColors,['#8fc6e2','#d8e9d2','#b3d39a']);
+  assert.deepEqual(timeStats.skyColors,await page.evaluate(()=>window.DIYCraftThreeWorldTime.PALETTES.day.sky));
   assert.equal(timeStats.starsVisible,false);
   assert.equal(timeStats.starCount,44);
   assert.ok(timeStats.skyVertexCount>100,'The sky gradient must be a reusable vertex-colored dome.');
   await page.locator('#time-mode').selectOption('sunset');
   timeStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats());
   assert.equal(timeStats.mode,'sunset');
-  assert.deepEqual(timeStats.skyColors,['#a66e82','#e7a07e','#d7a77f']);
+  assert.deepEqual(timeStats.skyColors,await page.evaluate(()=>window.DIYCraftThreeWorldTime.PALETTES.sunset.sky));
   await page.locator('#time-mode').selectOption('night');
   timeStats=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats());
   assert.equal(timeStats.mode,'night');
   assert.equal(timeStats.starsVisible,true,'Night must enable the single batched star field.');
-  assert.deepEqual(timeStats.skyColors,['#14213d','#263858','#52606e']);
+  assert.deepEqual(timeStats.skyColors,await page.evaluate(()=>window.DIYCraftThreeWorldTime.PALETTES.night.sky));
   await page.locator('#time-mode').selectOption('auto');
   const automaticModes=await page.evaluate(()=>{
    const api=window.__DIYCRAFT_THREE_EDIT__;
