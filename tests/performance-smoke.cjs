@@ -367,7 +367,7 @@ check(nearbyExcavations === 1024 && nearbyWater === 1024 && nearbyFish === 3072,
   'Nearby queries must stay bounded while indexing 12,000 terrain cells and 36,000 fish.');
 
 
-check(source.includes('const MAX_DIG_DEPTH=1000000000,GROUND_DIG_LIMIT=12000'),
+check(source.includes('const MAX_DIG_DEPTH=1000000000,MAX_NEW_DIG_DEPTH=55,GROUND_DIG_LIMIT=12000'),
   'Underground digging and saved-world validation must support a practically unbounded one-billion-block depth.');
 check(!source.includes('for(let y=64;y>=-MAX_DIG_DEPTH;y--)'),
   'Surface-height lookup must not scan every vertical layer in a deep world.');
