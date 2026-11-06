@@ -111,7 +111,7 @@ const fishColors=['#f1ad55','#f28c72','#f2d56b','#72c4cb'];
 let sandbox=null,originalJson=null,sourceSnapshot=null,selected=null,lastPlacement=null,meshByKey=new Map(),blockByKey=new Map(),doorMotions=new Map(),playerPhysicsEnvironment=null;
 let deviceStorage=null,storageReadFailed=false,storageLoadSource='pending',lastAutoSaveRevision=0;
 let primaryWorldFileHandle=null,primaryWorldFileName='',deviceWorldFileState='unlinked',primaryWorldFileRemembered=false;
-let deviceFileSaveTimer=0,deviceFileWriteBusy=false,deviceFileDrainPromise=null,deviceFileFlushRequested=false,pendingDeviceFileWorld=null;
+let deviceFileSaveTimer=0,deviceFileWriteBusy=false,deviceFileDrainPromise=null,deviceFileFlushRequested=false,deviceFilePermissionLostInSession=false,pendingDeviceFileWorld=null;
 let saveTimer=0,saveInFlight=false,pendingSaveWorld=null,saveGeneration=0,savedGeneration=0;
 let lastPosePersisted=null,lastPosePersistAt=0,animalPlacementSpecies='';
 let waterMesh=null,fishMeshes=[],renderedFishCount=0,lastWaterAnimationAt=-Infinity;
@@ -1652,6 +1652,7 @@ async function drainDeviceFileSave(immediate=false){
    }catch(error){
     succeeded=false;const reason=String(error.message||error).slice(0,220);
     deviceWorldFileState=/permission|grant access|reconnect/i.test(reason)?'permission-required':'error';
+    if(deviceWorldFileState==='permission-required')deviceFilePermissionLostInSession=true;
     pendingDeviceFileWorld=null;syncDeviceFileControls('Device-file save paused: '+reason);
     break;
    }
@@ -1700,12 +1701,20 @@ async function connectDeviceWorldFile(){
   if(primaryWorldFileHandle&&deviceWorldFileState==='permission-required'){
    if(!await deviceFiles.permission(primaryWorldFileHandle,'readwrite',true))
     throw new Error('File permission was not granted. The existing file was left unchanged.');
-   const text=await deviceFiles.readHandle(primaryWorldFileHandle);
-   if(text)await importDeviceWorldText(text);
-   else await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
+   let text='';
+   if(deviceFilePermissionLostInSession){
+    // The player may have continued editing after permission expired. Preserve those newer in-memory edits.
+    await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
+   }else{
+    text=await deviceFiles.readHandle(primaryWorldFileHandle);
+    if(text)await importDeviceWorldText(text);
+    else await deviceFiles.writeHandle(primaryWorldFileHandle,adapter.toSavedWorld(sandbox.getState().world));
+   }
    deviceWorldFileState='connected';
-   await rememberPrimaryDeviceFile(primaryWorldFileHandle);
-   syncDeviceFileControls(text?'Reconnected '+primaryWorldFileName+' and reopened its latest world.':'Reconnected '+primaryWorldFileName+'.');
+   deviceFilePermissionLostInSession=false;
+   if(!primaryWorldFileRemembered)await rememberPrimaryDeviceFile(primaryWorldFileHandle);
+   syncDeviceFileControls(text?'Reconnected '+primaryWorldFileName+' and reopened its latest world.':
+    'Reconnected '+primaryWorldFileName+'. The latest in-session edits were saved if permission had expired.');
    return;
   }
   // Call the file picker directly from this user gesture.
@@ -1725,7 +1734,7 @@ async function connectDeviceWorldFile(){
   pendingDeviceFileWorld=null;
   // Replace the remembered pointer before switching the in-memory active target.
   await rememberPrimaryDeviceFile(handle);
-  primaryWorldFileHandle=handle;primaryWorldFileName=handle.name;deviceWorldFileState='connected';
+  primaryWorldFileHandle=handle;primaryWorldFileName=handle.name;deviceWorldFileState='connected';deviceFilePermissionLostInSession=false;
   syncDeviceFileControls(text?'Opened and linked '+handle.name+'. Automatic saves are enabled.':'Created '+handle.name+'. Automatic saves are enabled.');
  }catch(error){
   if(error?.name==='AbortError')syncDeviceFileControls('File selection cancelled. Your current world was not changed.');
@@ -1747,7 +1756,7 @@ async function openImportedPortableWorld(worldText,fileName){
  if(previous.remembered)await deviceFiles.forgetHandle();
  if(deviceFileSaveTimer){clearTimeout(deviceFileSaveTimer);deviceFileSaveTimer=0;}
  pendingDeviceFileWorld=null;
- primaryWorldFileHandle=null;primaryWorldFileName='';deviceWorldFileState='unlinked';primaryWorldFileRemembered=false;
+ primaryWorldFileHandle=null;primaryWorldFileName='';deviceWorldFileState='unlinked';primaryWorldFileRemembered=false;deviceFilePermissionLostInSession=false;
  const imported=await restoreWorldText(worldText,{saveToLinkedFile:false});
  if(!imported){
   if(previous.handle){
