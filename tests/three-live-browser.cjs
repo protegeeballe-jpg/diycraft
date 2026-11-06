@@ -362,6 +362,9 @@ const {chromium}=require('playwright');
     far,point,target,
     coverage:api.getGroundCellCoverageForTest(0,0),
     ground:api.getNeighborhoodGroundStats(),
+    houses:api.getNeighborhoodStats().houses,
+    neighbors:api.getNeighborStats().actors,
+    residents:api.getAnimalStats().residents,
     backdrop:api.getWorldBackdropStats()
    };
   });
@@ -372,6 +375,14 @@ const {chromium}=require('playwright');
   assert.ok(distantVillage.ground.grassCells>2000,
    'A persistent fixed ground patch must cover the neighborhood and its residents.');
   assert.equal(distantVillage.ground.center.y,0,'The neighborhood terrain must stay on the world ground plane.');
+  const inVillageBounds=(actor)=>actor.x>=distantVillage.ground.bounds.minX&&actor.x<distantVillage.ground.bounds.maxX&&
+   actor.z>=distantVillage.ground.bounds.minZ&&actor.z<distantVillage.ground.bounds.maxZ;
+  assert.ok(distantVillage.houses.every(house=>house.position.y===0&&inVillageBounds(house.position)),
+   'All three cottage roots must remain attached to the anchored village terrain.');
+  assert.ok(distantVillage.neighbors.length===7&&distantVillage.neighbors.every(inVillageBounds),
+   'All seven roaming neighbors must remain inside the anchored village terrain.');
+  assert.ok(distantVillage.residents.length===7&&distantVillage.residents.every(inVillageBounds),
+   'All seven resident animals must remain inside the anchored village terrain.');
   assert.deepEqual(distantVillage.coverage,{neighborhood:true,moving:false,owners:1,owner:'neighborhood'},
    'The village must have exactly one ground owner, without overlapping moving terrain.');
   assert.ok(distantVillage.point?.visible,'The village ground must remain visible from the distant camera.');
