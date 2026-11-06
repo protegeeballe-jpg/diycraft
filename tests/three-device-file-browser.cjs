@@ -11,7 +11,7 @@ async function showSettingsPanel(page){
 }
 const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n function toBytes(base64){\n  const binary=atob(base64),out=new Uint8Array(binary.length);\n  for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);\n  return out;\n }\n function toBase64(bytes){\n  let binary='';\n  for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));\n  return btoa(binary);\n }\n const handle={\n  kind:'file',name:'MyWorld.diycraft',\n  async queryPermission(options){return options.mode==='read'?'granted':await window.__diyPermissionGet();},\n  async requestPermission(){return window.__diyPermissionRequest();},\n  async getFile(){\n   const encoded=await window.__diyFileRead();\n   return new File([encoded?toBytes(encoded):new Uint8Array(0)],this.name,{type:'application/vnd.diycraft.world'});\n  },\n  async createWritable(){\n   let staged=null;\n   return {\n    async write(value){\n     if(value instanceof Uint8Array)staged=new Uint8Array(value);\n     else if(value instanceof ArrayBuffer)staged=new Uint8Array(value);\n     else if(value instanceof Blob)staged=new Uint8Array(await value.arrayBuffer());\n     else throw new TypeError('Unexpected file payload.');\n    },\n    async close(){\n     if(!staged)throw new Error('No staged bytes.');\n     await window.__diyFileWrite(toBase64(staged));\n    },\n    async abort(){staged=null;}\n   };\n  }\n };\n const database={\n  objectStoreNames:{contains(){return true;}},\n  transaction(){\n   const tx={\n    objectStore(){\n     return {\n      get(){\n       const request={result:sessionStorage.getItem(marker)==='1'?handle:undefined};\n       setTimeout(()=>tx.oncomplete?.(),0);\n       return request;\n      },\n      put(){\n       const request={result:'primary'};\n       sessionStorage.setItem(marker,'1');\n       setTimeout(()=>tx.oncomplete?.(),0);\n       return request;\n      },\n      delete(){\n       const request={result:undefined};\n       sessionStorage.removeItem(marker);\n       setTimeout(()=>tx.oncomplete?.(),0);\n       return request;\n      }\n     };\n    },\n    abort(){}\n   };\n   return tx;\n  },\n  close(){}\n };\n Object.defineProperty(window,'indexedDB',{configurable:true,value:{\n  open(){\n   const request={};\n   setTimeout(()=>{request.result=database;request.onsuccess?.();},0);\n   return request;\n  }\n }});\n Object.defineProperty(window,'showSaveFilePicker',{configurable:true,value:async()=>handle});\n Object.defineProperty(window,'showOpenFilePicker',{configurable:true,value:async()=>[handle]});\n window.__diyFileTestHandle=handle;\n})();";
 (async()=>{
- const fileStore={bytes:Buffer.alloc(0),permission:'granted',writes:0};
+ const fileStore={bytes:Buffer.alloc(0),permission:'granted',writes:0,failNextWrite:false};
  const server=spawn('python3',['-m','http.server','4173','--bind','127.0.0.1'],{stdio:'ignore'});
  const browser=await chromium.launch({headless:true,args:[
   '--enable-webgl','--ignore-gpu-blocklist','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'
@@ -21,9 +21,11 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   const page=await context.newPage(),errors=[];
   await page.exposeFunction('__diyFileRead',async()=>fileStore.bytes.toString('base64'));
   await page.exposeFunction('__diyFileWrite',async(encoded)=>{
+   if(fileStore.failNextWrite){fileStore.failNextWrite=false;throw new Error('simulated temporary file write failure');}
    fileStore.bytes=Buffer.from(encoded,'base64');fileStore.writes++;
    return {bytes:fileStore.bytes.length,writes:fileStore.writes};
   });
+  await page.exposeFunction('__diyFailNextFileWrite',async()=>{fileStore.failNextWrite=true;});
   await page.exposeFunction('__diyPermissionGet',async()=>fileStore.permission);
   await page.exposeFunction('__diyPermissionRequest',async()=>{fileStore.permission='granted';return 'granted';});
   await context.addInitScript(harness);
@@ -70,6 +72,20 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   const afterBuild=JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes)));
   assert.ok(afterBuild.blocks.length>=firstCount+1,'Edits must reach the selected device file automatically.');
   console.log('PASS automatic device-file autosave after building');
+
+  // A transient write failure must preserve the older file and allow retrying current in-memory edits.
+  const beforeFailureCount=afterBuild.blocks.length;
+  await page.evaluate(()=>window.__diyFailNextFileWrite());
+  await page.locator('#add').evaluate(button=>button.click());
+  await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Device-file save paused:'),null,{timeout:15000});
+  assert.equal(JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes))).blocks.length,beforeFailureCount,
+   'A failed staged write must not replace the previously saved device file.');
+  assert.equal(await page.locator('#device-file-connect').textContent(),'Retry device save');
+  await page.locator('#device-file-connect').click();
+  await page.waitForFunction(()=>document.getElementById('device-file-feedback').textContent.includes('Retry successful.'),null,{timeout:15000});
+  const afterRetry=JSON.parse(await deviceFileFormat.decode(new Uint8Array(fileStore.bytes)));
+  assert.ok(afterRetry.blocks.length>=beforeFailureCount+1,'Retry must write the newest in-memory world, not reload the older file.');
+  console.log('PASS failed device write is recoverable without losing newer in-memory edits');
 
   // Download and inspect a portable .diycraft backup.
   const [download]=await Promise.all([
