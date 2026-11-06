@@ -57,7 +57,7 @@ function auditPage(relativePage){
   const url=new URL(source,'https://diycraft.invalid/'+relativePage);
   assert.equal(url.origin,'https://diycraft.invalid',relativePage+': external script origin detected.');
   assert.equal(url.search,'',relativePage+': script URLs must not bypass canonical offline cache keys.');
-  const resolved=path.resolve(path.dirname(absolutePage),decodeURIComponent(url.pathname).replace(/^\//,''));
+  const resolved=path.resolve(root,decodeURIComponent(url.pathname).replace(/^\//,''));
   assert.ok(resolved===root||resolved.startsWith(root+path.sep),relativePage+': script path escapes the repository.');
   assert.ok(fs.existsSync(resolved),relativePage+': missing local script '+source+'.');
   sources.push(resolved);
