@@ -1813,7 +1813,7 @@ async function downloadDeviceWorldFile(){
 function queueWorldSave(world,immediate=false){
  if(!world||typeof world!=='object')return false;
  // The selected file is independent of browser-managed recovery storage.
- queueDeviceFileSave(world,false);
+ queueDeviceFileSave(world,immediate);
  if(storageReadFailed)return false;
  pendingSaveWorld=world;saveGeneration++;
  if(saveTimer){clearTimeout(saveTimer);saveTimer=0;}
@@ -1833,10 +1833,8 @@ async function drainWorldSave(){
    if(result.saved){
     savedGeneration=generation;
     backupFeedback.textContent='Browser recovery save updated'+(result.format==='gzip'?' (compressed).':'.');
-    queueDeviceFileSave(snapshot,false);
    }else{
     allSaved=false;backupFeedback.textContent='Browser recovery save failed: '+result.reason+' Your current world remains open.';
-    queueDeviceFileSave(snapshot,false);
     break;
    }
   }
