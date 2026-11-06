@@ -62,14 +62,14 @@ function productionGroundDigHarness(world){
   'groundDepths','MAX_DIG_DEPTH','GROUND_DIG_LIMIT','addBucketItem','MAX_BLOCKS','MAX_BUCKET_ITEMS',
   'addRenderChunkItem','excavationRenderChunks','syncExcavations','invalidateNeighborNavigation',
   'syncWaterLife','waterLevels','removeRenderChunkItem','waterRenderChunks','fishSpots','rebuildFishRenderChunks',
-  'MAX_DIG_DEPTH','GROUND_DIG_LIMIT','ITEM_META',
+  'MAX_DIG_DEPTH','GROUND_DIG_LIMIT','ITEM_META','MAX_NEW_DIG_DEPTH',
   'return ('+source.slice(digStart,digEnd).trim()+');'
  )(
   {clientWidth:100,clientHeight:100},()=>null,()=>false,()=>false,canStore,()=> 'dirt',()=>false,
   addItem,()=>{},()=>{},()=>{},world,'grass',(x,z)=>groundDepths.get(keyGround(x,z))||0,keyGround,
   waterCells,groundDepths,1000000000,12000,addBucketItem,18000,120,
   ()=>{},new Map(),syncExcavations,()=>{},syncWaterLife,new Map(),()=>{},new Map(),[],()=>{},
-  1000000000,12000,{}
+  1000000000,12000,{},55
  );
 }
 function productionFillHarness(world,selectedType='grass',selectedBucketItem=null){

@@ -50,6 +50,14 @@ const {chromium}=require('playwright');
   assert.equal(initial.neighborhoodControl,true,'The production HUD must expose the Visit neighborhood control.');
   assert.equal(initial.eraseControl,true,'The production HUD must expose a direct erase mode.');
   assert.equal(initial.neighborhoodStats?.houseCount,3,'All three neighborhood houses must be present in the live 3D scene.');
+  const neighborGround=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getNeighborStats?.());
+  assert.equal(neighborGround?.total,7,'All seven roaming neighbors must remain represented.');
+  assert.ok(neighborGround.actors.every(actor=>Number.isFinite(actor.supportY)&&actor.position&&
+   Math.abs(actor.position.y-(actor.supportY+actor.footOffset))<1e-6),
+   'Every neighbor root must use the sampled terrain height plus its measured shoe support offset.');
+  const animalGround=await page.evaluate(()=>window.__DIYCRAFT_THREE_EDIT__?.getAnimalStats?.());
+  assert.ok(animalGround?.all?.length>=7&&animalGround.all.every(animal=>Number.isFinite(animal.groundY)),
+   'Every resident and saved ground animal must receive a finite terrain support height.');
   assert.ok(initial.neighborhoodStats.houses.every(house=>house.visible&&house.meshCount>=10),'Each neighborhood house must contain visible 3D geometry.');
   assert.equal(initial.terrainStats?.hasGrassTexture,true,'The ground must use a visible painterly grass texture.');
   assert.equal(initial.hasSafetyOverlay,false,'The floating upper-right HUD must be absent from the production viewport.');
@@ -301,14 +309,16 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle',timeout:60000});
    await page.waitForFunction(()=>!!navigator.serviceWorker?.controller,null,{timeout:20000});
   });
-  const cacheCheck=await page.evaluate(async()=>{
+  const shellCacheName=fs.readFileSync('sw.js','utf8').match(/const CACHE_NAME\s*=\s*['"]([^'"]+)['"]/)?.[1];
+  assert.ok(shellCacheName,'The service worker must declare its versioned shell cache name.');
+  const cacheCheck=await page.evaluate(async(expectedName)=>{
    const names=await caches.keys();
-   const name=names.find(value=>value==='diycraft-shell-v81');
+   const name=names.find(value=>value===expectedName);
    if(!name)return {name:null,assets:[]};
    const cache=await caches.open(name),requests=await cache.keys();
    return {name,assets:requests.map(request=>new URL(request.url).pathname)};
-  });
-  assert.equal(cacheCheck.name,'diycraft-shell-v81','The updated offline worker must install the Three.js shell cache.');
+  },shellCacheName);
+  assert.equal(cacheCheck.name,shellCacheName,'The updated offline worker must install its declared Three.js shell cache.');
   for(const asset of ['/diycraft/three-world-live.js','/diycraft/js/three.js','/diycraft/js/three-viewport.js','/diycraft/js/three-world-storage.js','/diycraft/js/three-world-starter.js','/diycraft/js/three-plant-geometry.js','/diycraft/js/three-compact-hud.js','/diycraft/js/three-world-file-save.js']){
    assert.ok(cacheCheck.assets.some(path=>path.endsWith(asset.replace('/diycraft','')))||cacheCheck.assets.some(path=>path.endsWith(asset)),
     'Offline cache is missing '+asset);
@@ -350,6 +360,46 @@ const {chromium}=require('playwright');
   assert.ok(Math.hypot(neighborhoodVisit.player.x-4.5,neighborhoodVisit.player.z+5.5)<=2,
    'Neighborhood return must use a safe position close to the original village entrance.');
   assert.match(neighborhoodVisit.status,/Welcome back! You are home in the neighborhood/);
+
+  // The original village must keep its own ground after the camera travels far away
+  // and looks back. The moving exploration floor must not be the only ground owner.
+  const distantVillage=await page.evaluate(()=>{
+   const api=window.__DIYCRAFT_THREE_EDIT__;
+   const far=api.focusNeighborhoodFromDistanceForTest(120);
+   // Use the open southeast edge of the village patch, away from houses and blocks,
+   // so the ray test measures the floor rather than an object in front of it.
+   const point=api.getGroundScreenPointForTest(28,8);
+   const target=point?.visible?api.getPointerTargetForTest(point.x,point.y):null;
+   return {
+    far,point,target,
+    coverage:api.getGroundCellCoverageForTest(28,8),
+    ground:api.getNeighborhoodGroundStats(),
+    houses:api.getNeighborhoodStats().houses,
+    neighbors:api.getNeighborStats().actors,
+    residents:api.getAnimalStats().residents,
+    backdrop:api.getWorldBackdropStats()
+   };
+  });
+  assert.ok(distantVillage.far,'The far-look test must move the camera away while aiming back at the village.');
+  assert.ok(Math.hypot(distantVillage.backdrop.floor.x-distantVillage.ground.center.x,
+   distantVillage.backdrop.floor.z-distantVillage.ground.center.z)>45,
+   'The camera-following terrain must be outside the neighborhood while looking back from afar.');
+  assert.ok(distantVillage.ground.grassCells>2000,
+   'A persistent fixed ground patch must cover the neighborhood and its residents.');
+  assert.equal(distantVillage.ground.center.y,0,'The neighborhood terrain must stay on the world ground plane.');
+  const inVillageBounds=(actor)=>actor.x>=distantVillage.ground.bounds.minX&&actor.x<distantVillage.ground.bounds.maxX&&
+   actor.z>=distantVillage.ground.bounds.minZ&&actor.z<distantVillage.ground.bounds.maxZ;
+  assert.ok(distantVillage.houses.every(house=>house.position.y===0&&inVillageBounds(house.position)),
+   'All three cottage roots must remain attached to the anchored village terrain.');
+  assert.ok(distantVillage.neighbors.length===7&&distantVillage.neighbors.every(inVillageBounds),
+   'All seven roaming neighbors must remain inside the anchored village terrain.');
+  assert.ok(distantVillage.residents.length===7&&distantVillage.residents.every(inVillageBounds),
+   'All seven resident animals must remain inside the anchored village terrain.');
+  assert.deepEqual(distantVillage.coverage,{neighborhood:true,moving:false,owners:1,owner:'neighborhood'},
+   'The village must have exactly one ground owner, without overlapping moving terrain.');
+  assert.ok(distantVillage.point?.visible,'The village ground must remain visible from the distant camera.');
+  assert.equal(distantVillage.target?.kind,'ground',
+   'The fixed village terrain must remain raycastable for normal building and digging.');
 
   await context.setOffline(true);
   await page.reload({waitUntil:'domcontentloaded',timeout:60000});

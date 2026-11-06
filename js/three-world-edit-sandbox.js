@@ -8,7 +8,7 @@
  if(root)root.DIYCraftThreeEditSandbox=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(protectionApi){
  'use strict';
- const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_DIG_DEPTH=1000000000,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99,MAX_ANIMALS=100;
+ const MAX_BLOCKS=18000,MAX_COORD=1000000000,MAX_Y=64,MAX_SAVED_DIG_DEPTH=1000000000,MAX_NEW_DIG_DEPTH=55,MAX_GROUND_CELLS=12000,MAX_BUCKET_ITEMS=120,MAX_INVENTORY_SLOTS=60,MAX_STACK=99,MAX_ANIMALS=100;
  const ANIMAL_SPECIES=new Set(['sheep','cat','dog','cow','horse','bird','giraffe']);
  const ANIMAL_DEFAULTS={sheep:['#f0eee6','#d0b6a0'],cat:['#c5c0b6','#d0b6a0'],dog:['#c89b6d','#d0b6a0'],cow:['#f2eee5','#514b48'],horse:['#8a6347','#594337'],bird:['#e8c96d','#e8ad56'],giraffe:['#d9ad55','#9a643d']};
  const HEX=/^#[0-9a-f]{6}$/i,PNG_DATA=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -67,10 +67,23 @@
   const OUTFIT_STYLES=new Set(['hoodie','sweater','overalls','dress','tee']);
   const ACCESSORIES=new Set(['none','bow','flower','glasses','cap']);
   const PLAYER_COLOR_FIELDS=Object.freeze(['hair','skin','shirt','pants','shoes','eyes','accessoryColor']);
-  const occupied=new Map(),blockIndex=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
+  const occupied=new Map(),blockIndex=new Map(),blockColumns=new Map(),depthByCell=new Map((Array.isArray(world.excavations)?world.excavations:[]).map(cell=>[cell.x+','+cell.z,cell.depth]));
+  function addBlockToColumn(block){
+   const key=block.x+','+block.z;
+   if(!blockColumns.has(key))blockColumns.set(key,[]);
+   blockColumns.get(key).push(block);
+  }
+  function removeBlockFromColumn(block){
+   const key=block.x+','+block.z,column=blockColumns.get(key);
+   if(!column)return;
+   const index=column.indexOf(block);
+   if(index>=0)column.splice(index,1);
+   if(!column.length)blockColumns.delete(key);
+  }
   world.blocks.forEach(block=>{
    if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
    if(object(block)&&coord(block.x)&&Number.isInteger(block.y)&&coord(block.z)){
+    addBlockToColumn(block);
     const key=cellKey(block.x,block.y,block.z);
     if(!occupied.has(key))occupied.set(key,block.key);
     if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
@@ -137,7 +150,7 @@
      if(selectedBucketItem[field]!==undefined)block[field]=selectedBucketItem[field];
     if(input.type==='door')block.open=false;
    }
-   world.blocks.push(block);blockIndex.set(block.key,block);occupied.set(position,block.key);
+   world.blocks.push(block);blockIndex.set(block.key,block);occupied.set(position,block.key);addBlockToColumn(block);
    if(input.type==='door')occupied.set(upperPosition,block.key);
    selectedKey=block.key;
    return block;
@@ -161,7 +174,7 @@
     if(!item.texture)item.texture=block.type;
    }
    bucket.push(item);
-   world.blocks.splice(index,1);blockIndex.delete(block.key);
+   world.blocks.splice(index,1);blockIndex.delete(block.key);removeBlockFromColumn(block);
    occupied.delete(cellKey(block.x,block.y,block.z));
    if(block.type==='door')occupied.delete(cellKey(block.x,block.y+1,block.z));
    if(selectedKey===key)selectedKey=null;
@@ -296,7 +309,7 @@ function addAnimal(input){
    if(isProtectedDigCell(x,z,protectionContext))throw new Error('This patch is protected for the neighbors and their homes.');
    const key=x+','+z,currentDepth=depthByCell.get(key)||0;
    if(waterAt(x,z))return collectWaterLayer(x,z);
-   if(currentDepth>=MAX_DIG_DEPTH)throw new RangeError('You reached the safe digging depth: '+MAX_DIG_DEPTH+' blocks.');
+   if(currentDepth>=MAX_NEW_DIG_DEPTH)throw new RangeError('You reached the safe digging depth: '+MAX_NEW_DIG_DEPTH+' blocks.');
    if(currentDepth===0&&depthByCell.size>=MAX_GROUND_CELLS)throw new RangeError('This world has reached its safe excavation limit.');
    if(!canStoreItem('dirt','materials'))throw new Error('Your resources pouch is full. Make room before digging.');
    if(!Array.isArray(world.bucket))world.bucket=[];
@@ -435,10 +448,13 @@ function addAnimal(input){
   function surfaceHeightAt(x,z,atOrBelowY=Infinity){
    if(!Number.isFinite(x)||!Number.isFinite(z)||!(Number.isFinite(atOrBelowY)||atOrBelowY===Infinity))
     throw new TypeError('Surface query coordinates and height must be finite.');
-   const bx=Math.floor(x),bz=Math.floor(z),ground=-groundDepthAt(bx,bz);
+   const bx=Math.floor(x),bz=Math.floor(z),depth=groundDepthAt(bx,bz),ground=depth>0?-depth:0;
    let highest=ground;
-   for(const block of world.blocks){
-    if(block.x!==bx||block.z!==bz||block.type==='door'||block.type==='flower'||block.type==='tall_grass')continue;
+   // Query only the requested X/Z column. Actor grounding runs every frame, so
+   // scanning every saved block for every neighbor and animal would scale poorly.
+   const column=blockColumns.get(bx+','+bz)||[];
+   for(const block of column){
+    if(block.type==='door'||block.type==='flower'||block.type==='tall_grass')continue;
     const top=block.type==='tile'?block.y+.02+.13:block.y+1;
     if(top<=atOrBelowY+.18&&top>highest)highest=top;
    }
@@ -486,10 +502,11 @@ function addAnimal(input){
   world.blocks=world.blocks.filter(block=>block.userPlaced!==true&&STARTER_BLOCK_KEYS.has(cellKey(block.x,block.y,block.z)));
   const removed=before-world.blocks.length;
   if(removed){
-   blockIndex.clear();occupied.clear();
+   blockIndex.clear();occupied.clear();blockColumns.clear();
    world.blocks.forEach(block=>{
     if(object(block)&&typeof block.key==='string'&&block.key&&!blockIndex.has(block.key))blockIndex.set(block.key,block);
     if(object(block)&&coord(block.x)&&Number.isInteger(block.y)&&coord(block.z)){
+     addBlockToColumn(block);
      const key=cellKey(block.x,block.y,block.z);if(!occupied.has(key))occupied.set(key,block.key);
      if(block.type==='door'&&block.y<MAX_Y){const upper=cellKey(block.x,block.y+1,block.z);if(!occupied.has(upper))occupied.set(upper,block.key);}
     }

@@ -98,11 +98,28 @@ function applyWorldTime(seconds){
  return palette;
 }
 const GROUND_HALF_SIZE=45,GROUND_SIZE=GROUND_HALF_SIZE*2;
+// Keep the original village terrain anchored even when the camera travels far away.
+// This rectangle covers all three cottages, the starter garden, every resident route,
+// and the roaming animals, while the 90×90 camera-following patch serves exploration.
+const NEIGHBORHOOD_GROUND=Object.freeze({
+ minX:-26,maxX:30,minZ:-28,maxZ:10,
+ centerX:2,centerZ:-9,halfWidthX:28,halfWidthZ:19
+});
 const floor=new THREE.Mesh(new THREE.BufferGeometry(),floorMat);
 floor.frustumCulled=false;floor.receiveShadow=true;floor.userData.groundSurface=true;scene.add(floor);
 const groundDirtMesh=new THREE.Mesh(new THREE.BufferGeometry(),groundDirtMaterial);
 groundDirtMesh.frustumCulled=false;groundDirtMesh.receiveShadow=true;groundDirtMesh.userData.groundSurface=true;scene.add(groundDirtMesh);
-let groundCenterX=NaN,groundCenterZ=NaN,groundExcavationSignature='';
+const neighborhoodFloor=new THREE.Mesh(new THREE.BufferGeometry(),floorMat);
+neighborhoodFloor.position.set(NEIGHBORHOOD_GROUND.centerX,0,NEIGHBORHOOD_GROUND.centerZ);
+neighborhoodFloor.frustumCulled=false;neighborhoodFloor.receiveShadow=true;neighborhoodFloor.userData.groundSurface=true;scene.add(neighborhoodFloor);
+const neighborhoodDirtMesh=new THREE.Mesh(new THREE.BufferGeometry(),groundDirtMaterial);
+neighborhoodDirtMesh.position.set(NEIGHBORHOOD_GROUND.centerX,0,NEIGHBORHOOD_GROUND.centerZ);
+neighborhoodDirtMesh.frustumCulled=false;neighborhoodDirtMesh.receiveShadow=true;neighborhoodDirtMesh.userData.groundSurface=true;scene.add(neighborhoodDirtMesh);
+let groundCenterX=NaN,groundCenterZ=NaN,groundExcavationSignature='',neighborhoodGroundSignature=null;
+function isNeighborhoodGroundCell(x,z){
+ return x>=NEIGHBORHOOD_GROUND.minX&&x<NEIGHBORHOOD_GROUND.maxX&&
+  z>=NEIGHBORHOOD_GROUND.minZ&&z<NEIGHBORHOOD_GROUND.maxZ;
+}
 function terrainBuffers(){return {vertices:[],uvs:[],indices:[]};}
 function appendTerrainQuad(buffers,points,uvs){
  const base=buffers.vertices.length/3;
@@ -112,37 +129,32 @@ function appendTerrainQuad(buffers,points,uvs){
  }
  buffers.indices.push(base,base+1,base+2,base,base+2,base+3);
 }
-function finishTerrainGeometry(buffers,stats){
+function finishTerrainGeometry(buffers,stats,width,height){
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.Float32BufferAttribute(buffers.vertices,3));
  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(buffers.uvs,2));
  geometry.setIndex(buffers.indices);
  geometry.computeVertexNormals();geometry.computeBoundingSphere();
- geometry.parameters={width:GROUND_SIZE,height:GROUND_SIZE};
+ geometry.parameters={width,height};
  geometry.userData={...stats};
  return geometry;
 }
-function syncGroundMesh(world,force=false){
- const centerX=Math.round(camera.position.x),centerZ=Math.round(camera.position.z);
- const excavations=Array.isArray(world?.excavations)?world.excavations:[];
- const signature=excavations.map(cell=>cell&&Number.isFinite(cell.x)&&Number.isFinite(cell.z)
-  ?String(cell.x)+','+String(cell.z)+','+String(cell.depth||0):'').sort().join('|');
- if(!force&&centerX===groundCenterX&&centerZ===groundCenterZ&&signature===groundExcavationSignature)return false;
- const depths=new Map();
- excavations.forEach(cell=>{
-  if(cell&&Number.isInteger(cell.x)&&Number.isInteger(cell.z)&&Number.isFinite(cell.depth)&&cell.depth>0)
-   depths.set(cell.x+','+cell.z,Math.min(playerPhysics.CONSTANTS.maxDigDepth,Math.floor(cell.depth)));
- });
- const grass=terrainBuffers(),dirt=terrainBuffers();let grassCellCount=0,holeCellCount=0,dirtFaceCount=0;
+function buildTerrainWindow(centerX,centerZ,halfWidthX,halfWidthZ,depths,signature,skipNeighborhood){
+ const grass=terrainBuffers(),dirt=terrainBuffers();
+ let grassCellCount=0,holeCellCount=0,dirtFaceCount=0;
  const uvFor=(x,z)=>[
-  [(x+GROUND_HALF_SIZE)/4,(z+GROUND_HALF_SIZE)/4],
-  [(x+GROUND_HALF_SIZE)/4,(z+GROUND_HALF_SIZE+1)/4],
-  [(x+GROUND_HALF_SIZE+1)/4,(z+GROUND_HALF_SIZE+1)/4],
-  [(x+GROUND_HALF_SIZE+1)/4,(z+GROUND_HALF_SIZE)/4]
+  [x/4,z/4],
+  [x/4,(z+1)/4],
+  [(x+1)/4,(z+1)/4],
+  [(x+1)/4,z/4]
  ];
- for(let lx=-GROUND_HALF_SIZE;lx<GROUND_HALF_SIZE;lx++){
-  for(let lz=-GROUND_HALF_SIZE;lz<GROUND_HALF_SIZE;lz++){
-   const wx=centerX+lx,wz=centerZ+lz,depth=depths.get(wx+','+wz)||0,uv=uvFor(lx,lz);
+ for(let lx=-halfWidthX;lx<halfWidthX;lx++){
+  for(let lz=-halfWidthZ;lz<halfWidthZ;lz++){
+   const wx=centerX+lx,wz=centerZ+lz;
+   // The fixed village patch owns these cells; omit them from the moving patch
+   // so the two ground meshes never overlap or z-fight.
+   if(skipNeighborhood&&isNeighborhoodGroundCell(wx,wz))continue;
+   const depth=depths.get(wx+','+wz)||0,uv=uvFor(wx,wz);
    if(depth<=0){
     appendTerrainQuad(grass,[[lx,0,lz],[lx,0,lz+1],[lx+1,0,lz+1],[lx+1,0,lz]],uv);
     grassCellCount++;continue;
@@ -152,36 +164,69 @@ function syncGroundMesh(world,force=false){
    dirtFaceCount++;
    const west=depths.get((wx-1)+','+wz)||0,east=depths.get((wx+1)+','+wz)||0;
    const north=depths.get(wx+','+(wz-1))||0,south=depths.get(wx+','+(wz+1))||0;
-   const yTop=-Math.min(depth,west),yEast=-Math.min(depth,east),yNorth=-Math.min(depth,north),ySouth=-Math.min(depth,south);
+   const yWest=-Math.min(depth,west),yEast=-Math.min(depth,east);
+   const yNorth=-Math.min(depth,north),ySouth=-Math.min(depth,south);
    if(depth>west){
-    appendTerrainQuad(dirt,[[lx,-depth,lz],[lx,yTop,lz],[lx,yTop,lz+1],[lx,-depth,lz+1]],
-     [[(lz+GROUND_HALF_SIZE)/4,depth/4],[(lz+GROUND_HALF_SIZE)/4,-yTop/4],[(lz+GROUND_HALF_SIZE+1)/4,-yTop/4],[(lz+GROUND_HALF_SIZE+1)/4,depth/4]]);
+    appendTerrainQuad(dirt,[[lx,-depth,lz],[lx,yWest,lz],[lx,yWest,lz+1],[lx,-depth,lz+1]],
+     [[wz/4,depth/4],[wz/4,-yWest/4],[(wz+1)/4,-yWest/4],[(wz+1)/4,depth/4]]);
     dirtFaceCount++;
    }
    if(depth>east){
     appendTerrainQuad(dirt,[[lx+1,-depth,lz+1],[lx+1,yEast,lz+1],[lx+1,yEast,lz],[lx+1,-depth,lz]],
-     [[(lz+GROUND_HALF_SIZE+1)/4,depth/4],[(lz+GROUND_HALF_SIZE+1)/4,-yEast/4],[(lz+GROUND_HALF_SIZE)/4,-yEast/4],[(lz+GROUND_HALF_SIZE)/4,depth/4]]);
+     [[(wz+1)/4,depth/4],[(wz+1)/4,-yEast/4],[wz/4,-yEast/4],[wz/4,depth/4]]);
     dirtFaceCount++;
    }
    if(depth>north){
     appendTerrainQuad(dirt,[[lx,-depth,lz],[lx+1,-depth,lz],[lx+1,yNorth,lz],[lx,yNorth,lz]],
-     [[(lx+GROUND_HALF_SIZE)/4,depth/4],[(lx+GROUND_HALF_SIZE+1)/4,depth/4],[(lx+GROUND_HALF_SIZE+1)/4,-yNorth/4],[(lx+GROUND_HALF_SIZE)/4,-yNorth/4]]);
+     [[wx/4,depth/4],[(wx+1)/4,depth/4],[(wx+1)/4,-yNorth/4],[wx/4,-yNorth/4]]);
     dirtFaceCount++;
    }
    if(depth>south){
     appendTerrainQuad(dirt,[[lx+1,-depth,lz+1],[lx,-depth,lz+1],[lx,ySouth,lz+1],[lx+1,ySouth,lz+1]],
-     [[(lx+GROUND_HALF_SIZE+1)/4,depth/4],[(lx+GROUND_HALF_SIZE)/4,depth/4],[(lx+GROUND_HALF_SIZE)/4,-ySouth/4],[(lx+GROUND_HALF_SIZE+1)/4,-ySouth/4]]);
+     [[(wx+1)/4,depth/4],[wx/4,depth/4],[wx/4,-ySouth/4],[(wx+1)/4,-ySouth/4]]);
     dirtFaceCount++;
    }
   }
  }
- const nextGrass=finishTerrainGeometry(grass,{grassCellCount,holeCellCount,excavationSignature:signature});
- const nextDirt=finishTerrainGeometry(dirt,{holeCellCount,dirtFaceCount,excavationSignature:signature});
- if(floor.geometry)floor.geometry.dispose();
- if(groundDirtMesh.geometry)groundDirtMesh.geometry.dispose();
- floor.geometry=nextGrass;groundDirtMesh.geometry=nextDirt;
- floor.position.set(centerX,0,centerZ);groundDirtMesh.position.set(centerX,0,centerZ);
- groundCenterX=centerX;groundCenterZ=centerZ;groundExcavationSignature=signature;
+ const width=halfWidthX*2,height=halfWidthZ*2;
+ return {
+  grass:finishTerrainGeometry(grass,{grassCellCount,holeCellCount,excavationSignature:signature},width,height),
+  dirt:finishTerrainGeometry(dirt,{holeCellCount,dirtFaceCount,excavationSignature:signature},width,height)
+ };
+}
+function installTerrainWindow(pair,grassMesh,dirtMesh,centerX,centerZ){
+ if(grassMesh.geometry)grassMesh.geometry.dispose();
+ if(dirtMesh.geometry)dirtMesh.geometry.dispose();
+ grassMesh.geometry=pair.grass;dirtMesh.geometry=pair.dirt;
+ grassMesh.position.set(centerX,0,centerZ);dirtMesh.position.set(centerX,0,centerZ);
+}
+function syncGroundMesh(world,force=false){
+ const centerX=Math.round(camera.position.x),centerZ=Math.round(camera.position.z);
+ const excavations=Array.isArray(world?.excavations)?world.excavations:[];
+ const signature=excavations.map(cell=>cell&&Number.isFinite(cell.x)&&Number.isFinite(cell.z)
+  ?String(cell.x)+','+String(cell.z)+','+String(cell.depth||0):'').sort().join('|');
+ const centerChanged=centerX!==groundCenterX||centerZ!==groundCenterZ;
+ const excavationsChanged=signature!==groundExcavationSignature;
+ const neighborhoodChanged=signature!==neighborhoodGroundSignature;
+ if(!force&&!centerChanged&&!excavationsChanged&&!neighborhoodChanged)return false;
+ const depths=new Map();
+ excavations.forEach(cell=>{
+  if(cell&&Number.isInteger(cell.x)&&Number.isInteger(cell.z)&&Number.isFinite(cell.depth)&&cell.depth>0)
+   depths.set(cell.x+','+cell.z,Math.min(playerPhysics.CONSTANTS.maxDigDepth,Math.floor(cell.depth)));
+ });
+ if(force||centerChanged||excavationsChanged){
+  const active=buildTerrainWindow(centerX,centerZ,GROUND_HALF_SIZE,GROUND_HALF_SIZE,depths,signature,true);
+  installTerrainWindow(active,floor,groundDirtMesh,centerX,centerZ);
+  groundCenterX=centerX;groundCenterZ=centerZ;
+ }
+ if(force||neighborhoodChanged){
+  const home=buildTerrainWindow(NEIGHBORHOOD_GROUND.centerX,NEIGHBORHOOD_GROUND.centerZ,
+   NEIGHBORHOOD_GROUND.halfWidthX,NEIGHBORHOOD_GROUND.halfWidthZ,depths,signature,false);
+  installTerrainWindow(home,neighborhoodFloor,neighborhoodDirtMesh,
+   NEIGHBORHOOD_GROUND.centerX,NEIGHBORHOOD_GROUND.centerZ);
+  neighborhoodGroundSignature=signature;
+ }
+ groundExcavationSignature=signature;
  return true;
 }
 function updateWorldBackdrop(){
@@ -303,8 +348,10 @@ function buildNeighborModels(){
 function updateNeighborModels(now=performance.now()){
  if(!sandbox||!neighborModels.size)return;
  const timeSeconds=now/1000,actors=sandbox.characterStates(timeSeconds),cameraX=camera.position.x,cameraZ=camera.position.z;
- neighborStatesCache=actors;renderedNeighborCount=0;
- for(const actor of actors){
+ // Route positions are horizontal; sample their supporting terrain/block column.
+ neighborStatesCache=actors.map(actor=>({...actor,y:sandbox.surfaceHeightAt(actor.x,actor.z,Infinity)}));
+ renderedNeighborCount=0;
+ for(const actor of neighborStatesCache){
   const model=neighborModels.get(actor.id);if(!model)continue;
   model.update(actor,timeSeconds);
   const near=Math.hypot(actor.x-cameraX,actor.z-cameraZ)<=26;
@@ -646,15 +693,15 @@ birdLeftPivot.position.set(-.20,1.02,-.015);birdRightPivot.position.set(.20,1.02
 birdRoot.add(birdLeftPivot,birdRightPivot);
 function updateAnimalInstances(now){
  const time=now*.001,dummy=new THREE.Object3D();dummy.rotation.order='XYZ';
- const current=sandbox?sandbox.animalStates(time):animalStatesCache;
- animalStatesCache=current;
- const byId=new Map(current.map(animal=>[animal.id,animal]));
+ const source=sandbox?sandbox.animalStates(time):animalStatesCache;
+ // Ground-walking animals follow the sampled support surface; birds retain flight.
+ animalStatesCache=source.map(animal=>({...animal,groundY:sandbox?sandbox.surfaceHeightAt(animal.x,animal.z,Infinity):0}));
+ const byId=new Map(animalStatesCache.map(animal=>[animal.id,animal]));
  animalBatches.forEach(batch=>{
   batch.animals.forEach((original,index)=>{
    const animal=byId.get(original.id)||original,phase=Number.isFinite(animal.phase)?animal.phase:0;
-   const isBird=animal.species==='bird';
-   const bob=isBird?.70+Math.sin(time*3.2+phase)*.105:.04+Math.sin(time*2.2+phase)*.03;
-   dummy.position.set(animal.x,bob,animal.z);
+   const isBird=animal.species==='bird',bob=isBird?.70+Math.sin(time*3.2+phase)*.105:.04+Math.sin(time*2.2+phase)*.03;
+   dummy.position.set(animal.x,animal.groundY+bob,animal.z);
    dummy.rotation.order='XYZ';dummy.rotation.set(0,animalFacingCamera(animal),isBird?Math.cos(time*2.1+phase)*.035:Math.sin(time*1.1+phase)*.018);
    dummy.scale.setScalar(animalGeometryFactory.renderScaleFor(animal.species));dummy.updateMatrix();batch.mesh.setMatrixAt(index,dummy.matrix);
   });
@@ -663,16 +710,17 @@ function updateAnimalInstances(now){
  quadrupedLegBatches.forEach(batch=>{
   let instance=0;
   batch.animals.forEach(original=>{
-   const animal=byId.get(original.id)||original,phase=Number.isFinite(animal.phase)?animal.phase:0;
+   const animal=byId.get(original.id)||original,phase=Number.isFinite(original.phase)?original.phase:0;
    const yaw=animalFacingCamera(animal),moving=animal.moving!==false;
-   const bob=.04+Math.sin(time*2.2+phase)*.03,gait=time*7.2+phase,layout=batch.layout;
+   const groundY=Number.isFinite(animal.groundY)?animal.groundY:0,gait=time*7.2+phase,layout=batch.layout;
    const legs=[[-layout.legX,-layout.legZ,0],[layout.legX,-layout.legZ,Math.PI],[-layout.legX,layout.legZ,Math.PI],[layout.legX,layout.legZ,0]];
    legs.forEach(leg=>{
     const stride=moving?Math.sin(gait+leg[2])*.24:Math.sin(time*1.1+phase+leg[2])*.025;
     lastGroundLegAngle=stride;
     const dx=leg[0],dz=leg[1],cos=Math.cos(yaw),sin=Math.sin(yaw),animalScale=animalGeometryFactory.renderScaleFor(animal.species);
     const worldX=animal.x+(dx*cos+dz*sin)*animalScale,worldZ=animal.z+(-dx*sin+dz*cos)*animalScale;
-    dummy.position.set(worldX,bob+batch.pivotY*animalScale,worldZ);
+    // Keep feet at terrain height; body bob is deliberately not applied to leg pivots.
+    dummy.position.set(worldX,groundY+batch.pivotY*animalScale,worldZ);
     animalGeometryFactory.applyQuadrupedLegPose(dummy,yaw,stride);lastGroundLegRotationOrder=dummy.rotation.order;lastGroundLegRotationX=dummy.rotation.x;lastGroundLegRotationY=dummy.rotation.y;dummy.scale.setScalar(animalScale);dummy.updateMatrix();
     batch.mesh.setMatrixAt(instance++,dummy.matrix);
    });
@@ -683,7 +731,7 @@ function updateAnimalInstances(now){
   batch.animals.forEach((original,index)=>{
    const animal=byId.get(original.id)||original,phase=Number.isFinite(animal.phase)?animal.phase:0;
    const flap=Math.sin(time*11.5+phase)*.60;
-   lastBirdFlapAngle=flap;lastBirdFlightY=.70+Math.sin(time*3.2+phase)*.105;
+   lastBirdFlapAngle=flap;lastBirdFlightY=(Number.isFinite(animal.groundY)?animal.groundY:0)+.70+Math.sin(time*3.2+phase)*.105;
    birdRoot.position.set(animal.x,lastBirdFlightY,animal.z);birdRoot.scale.setScalar(animalGeometryFactory.renderScaleFor(animal.species));
    birdRoot.rotation.set(0,animalFacingCamera(animal),Math.cos(time*2.1+phase)*.035);
    birdLeftPivot.rotation.set(.025*Math.cos(time*11.5+phase),0,-flap);
@@ -846,9 +894,31 @@ function renderSandbox(state){
 
   getCharacterStats:()=>{const player=sandbox.getState().world.player||{};return {player:{...player},modelScale:playerModelRoot?{x:playerModelRoot.scale.x,y:playerModelRoot.scale.y,z:playerModelRoot.scale.z}:null,meshCount:playerModelRoot?playerModelRoot.children.filter(child=>child.isMesh).length:0,vertexCount:playerModelRoot?.userData.playerGeometry?.attributes.position.count||0};},
   visualTimeMode:activeVisualMode,
-  getWorldBackdropStats:()=>({floor:{x:floor.position.x,z:floor.position.z,width:floor.geometry.parameters.width,height:floor.geometry.parameters.height},camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},sky:{x:skyDome.position.x,y:skyDome.position.y,z:skyDome.position.z},celestial:{x:celestialGroup.position.x,y:celestialGroup.position.y,z:celestialGroup.position.z}}),
-  getTerrainStats:()=>({excavatedCells:(sandbox.getState().world.excavations||[]).length,visibleHoleCells:floor.geometry.userData.holeCellCount||0,grassCells:floor.geometry.userData.grassCellCount||0,dirtFaces:groundDirtMesh.geometry.userData.dirtFaceCount||0,hasGrassTexture:!!floorMat.map,grassTextureSize:floorMat.map?.image?.width||0}),
-  getNeighborhoodStats:()=>({houseCount:neighborhoodHouses.length,houses:neighborhoodHouses.map(house=>({name:house.userData.houseName,meshCount:house.children.filter(child=>child.isMesh).length,visible:house.visible}))}),
+  getWorldBackdropStats:()=>({floor:{x:floor.position.x,z:floor.position.z,width:floor.geometry.parameters.width,height:floor.geometry.parameters.height},neighborhoodGround:{x:neighborhoodFloor.position.x,z:neighborhoodFloor.position.z,width:neighborhoodFloor.geometry.parameters.width,height:neighborhoodFloor.geometry.parameters.height},camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},sky:{x:skyDome.position.x,y:skyDome.position.y,z:skyDome.position.z},celestial:{x:celestialGroup.position.x,y:celestialGroup.position.y,z:celestialGroup.position.z}}),
+  getNeighborhoodGroundStats:()=>({bounds:{minX:NEIGHBORHOOD_GROUND.minX,maxX:NEIGHBORHOOD_GROUND.maxX,minZ:NEIGHBORHOOD_GROUND.minZ,maxZ:NEIGHBORHOOD_GROUND.maxZ},center:{x:neighborhoodFloor.position.x,z:neighborhoodFloor.position.z,y:neighborhoodFloor.position.y},width:neighborhoodFloor.geometry.parameters.width,height:neighborhoodFloor.geometry.parameters.height,grassCells:neighborhoodFloor.geometry.userData.grassCellCount||0,visibleHoleCells:neighborhoodFloor.geometry.userData.holeCellCount||0,dirtFaces:neighborhoodDirtMesh.geometry.userData.dirtFaceCount||0,hasGrassTexture:neighborhoodFloor.material.map===groundTexture}),
+  getGroundCellCoverageForTest:(x,z)=>{
+   if(!Number.isInteger(x)||!Number.isInteger(z))return null;
+   const neighborhood=isNeighborhoodGroundCell(x,z);
+   const insideMoving=x>=groundCenterX-GROUND_HALF_SIZE&&x<groundCenterX+GROUND_HALF_SIZE&&
+    z>=groundCenterZ-GROUND_HALF_SIZE&&z<groundCenterZ+GROUND_HALF_SIZE;
+   const moving=insideMoving&&!neighborhood;
+   return {neighborhood,moving,owners:Number(neighborhood)+Number(moving),
+    owner:neighborhood?'neighborhood':moving?'camera-following':'none'};
+  },
+  focusNeighborhoodFromDistanceForTest:(distance=120)=>{
+   if(!Number.isFinite(distance)||distance<75)return false;
+   playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;
+   target.set(NEIGHBORHOOD_GROUND.centerX,0,NEIGHBORHOOD_GROUND.centerZ);
+   orbit.radius=distance;orbit.theta=.62;orbit.phi=1.12;cameraUpdate();updateWorldBackdrop();
+   return {camera:{x:camera.position.x,z:camera.position.z},target:{x:target.x,z:target.z},
+    neighborhoodGround:{x:neighborhoodFloor.position.x,z:neighborhoodFloor.position.z}};
+  },
+  getTerrainStats:()=>({excavatedCells:(sandbox.getState().world.excavations||[]).length,
+   visibleHoleCells:(floor.geometry.userData.holeCellCount||0)+(neighborhoodFloor.geometry.userData.holeCellCount||0),
+   grassCells:(floor.geometry.userData.grassCellCount||0)+(neighborhoodFloor.geometry.userData.grassCellCount||0),
+   dirtFaces:(groundDirtMesh.geometry.userData.dirtFaceCount||0)+(neighborhoodDirtMesh.geometry.userData.dirtFaceCount||0),
+   hasGrassTexture:!!floorMat.map,grassTextureSize:floorMat.map?.image?.width||0}),
+  getNeighborhoodStats:()=>({houseCount:neighborhoodHouses.length,houses:neighborhoodHouses.map(house=>({name:house.userData.houseName,meshCount:house.children.filter(child=>child.isMesh).length,visible:house.visible,position:{x:house.position.x,y:house.position.y,z:house.position.z}}))}),
   getVisualTimeStats:()=>({requestedMode:requestedTimeMode,mode:activeVisualMode,skyColors:timeVisuals.PALETTES[activeVisualMode].sky.slice(),groundColor:timeVisuals.PALETTES[activeVisualMode].ground,starsVisible:starField.visible,starCount:starGeometry.attributes.position.count,discVisible:celestialDisc.visible,skyVertexCount:skyGeometry.attributes.position.count,skyTexture:{hasMap:skyMaterial.map===skyTexture,width:skyTexture.image.width,height:skyTexture.image.height,version:skyTexture.version,signature:(()=>{const pixels=skyTexture.image.getContext('2d').getImageData(0,0,skyTexture.image.width,skyTexture.image.height).data;let hash=2166136261;const stride=Math.max(4,Math.floor(pixels.length/4096/4)*4);for(let i=0;i<pixels.length;i+=stride){hash=Math.imul(hash^pixels[i],16777619)>>>0;hash=Math.imul(hash^pixels[i+1],16777619)>>>0;hash=Math.imul(hash^pixels[i+2],16777619)>>>0;}return hash>>>0;})()}}),
   setVisualTimeAtForTest:(seconds)=>{applyWorldTime(seconds);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
   releaseVisualTimeTest:()=>{applyWorldTime(performance.now()/1000);return window.__DIYCRAFT_THREE_EDIT__.getVisualTimeStats();},
@@ -867,7 +937,7 @@ function renderSandbox(state){
   getDoorAngle:(key)=>{const block=blockByKey.get(key);return block&&block.type==='door'?displayedDoorAngle(block):null;},
   getDoorVisualStats:(key)=>{const block=blockByKey.get(key),root=meshByKey.get(key);if(!block||block.type!=='door'||!root)return null;const layout=doorModels.create(block),panel=root.children.find(child=>child.isMesh),image=panel?.material?.map?.image,ctx=image?.getContext?.('2d');const sample=(x,y)=>{if(!ctx)return null;const px=Math.max(0,Math.min(image.width-1,Math.round(x/.84*image.width))),py=Math.max(0,Math.min(image.height-1,Math.round((1.96-y)/1.96*image.height))),v=ctx.getImageData(px,py,1,1).data;return {r:v[0],g:v[1],b:v[2]};};return {style:layout.style,textureKind:layout.textureKind,color:layout.color,orientation:layout.orientation,pivot:layout.pivot,baseAngle:layout.baseAngle,textureWidth:image?.width||0,textureHeight:image?.height||0,hasPainterlyMap:!!image,styleSample:sample(layout.style==='window'?.42:.43,layout.style==='window'?1.38:1.43)};},
   getWaterStats:()=>{const matrix=fishMeshes[0]?.mesh.instanceMatrix.array;return {cells:(sandbox.getState().world.water||[]).length,fish:(sandbox.getState().world.fish||[]).length,renderedFish:renderedFishCount,waterVertices:waterMesh?waterMesh.geometry.attributes.position.count:0,surfaceY:waterMesh?waterMesh.geometry.attributes.position.getY(0):null,fishAngle:matrix?Math.atan2(matrix[8],matrix[0]):null};},
-  getAnimalStats:()=>({renderScale:animalGeometryFactory.renderScale,renderScaleBySpecies:Object.fromEntries(animalGeometryFactory.species.map(species=>[species,animalGeometryFactory.renderScaleFor(species)])),instanceScales:animalBatches.map(batch=>{const matrix=batch.mesh.instanceMatrix.array;return {species:batch.species,count:batch.animals.length,expected:animalGeometryFactory.renderScaleFor(batch.species),actual:matrix?{x:Math.hypot(matrix[0],matrix[1],matrix[2]),y:Math.hypot(matrix[4],matrix[5],matrix[6]),z:Math.hypot(matrix[8],matrix[9],matrix[10])}:null};}),instanceScale:animalBatches[0]?.mesh.instanceMatrix.array?(()=>{const matrix=animalBatches[0].mesh.instanceMatrix.array;return {x:Math.hypot(matrix[0],matrix[1],matrix[2]),y:Math.hypot(matrix[4],matrix[5],matrix[6]),z:Math.hypot(matrix[8],matrix[9],matrix[10])};})():null,animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,birdWingBatches:birdWingBatches.length,birdWingInstances:birdWingBatches.reduce((count,batch)=>count+batch.animals.length,0),birdFlapAngle:lastBirdFlapAngle,birdFlightY:lastBirdFlightY,birdWingPivotY:birdLeftPivot.position.y,quadrupedLegBatches:quadrupedLegBatches.length,quadrupedLegInstances:quadrupedLegBatches.reduce((count,batch)=>count+batch.animals.length*4,0),groundLegSwingAngle:lastGroundLegAngle,groundLegRotationOrder:lastGroundLegRotationOrder,groundLegRotationX:lastGroundLegRotationX,groundLegRotationY:lastGroundLegRotationY,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);const actors=Number.isFinite(timeSeconds)?sandbox.characterStates(timeSeconds):neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getPersistenceStats:()=>{const state=sandbox.getState();return {name:state.world.name,sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),revision:state.revision,lastAutoSaveRevision,saveGeneration,savedGeneration,saveInFlight,hasPendingSave:!!pendingSaveWorld,pendingBlocks:pendingSaveWorld?.blocks?.length||0,saveTimerActive:!!saveTimer,storageReadFailed};},getState:()=>sandbox.getState()};
+  getAnimalStats:()=>({renderScale:animalGeometryFactory.renderScale,renderScaleBySpecies:Object.fromEntries(animalGeometryFactory.species.map(species=>[species,animalGeometryFactory.renderScaleFor(species)])),instanceScales:animalBatches.map(batch=>{const matrix=batch.mesh.instanceMatrix.array;return {species:batch.species,count:batch.animals.length,expected:animalGeometryFactory.renderScaleFor(batch.species),actual:matrix?{x:Math.hypot(matrix[0],matrix[1],matrix[2]),y:Math.hypot(matrix[4],matrix[5],matrix[6]),z:Math.hypot(matrix[8],matrix[9],matrix[10])}:null};}),instanceScale:animalBatches[0]?.mesh.instanceMatrix.array?(()=>{const matrix=animalBatches[0].mesh.instanceMatrix.array;return {x:Math.hypot(matrix[0],matrix[1],matrix[2]),y:Math.hypot(matrix[4],matrix[5],matrix[6]),z:Math.hypot(matrix[8],matrix[9],matrix[10])};})():null,animals:sandbox.getState().world.animals||[],residents:animalStatesCache.filter(animal=>residentAnimalIds.has(animal.id)),all:animalStatesCache,rendered:renderedAnimalCount,batches:animalBatches.length,birdWingBatches:birdWingBatches.length,birdWingInstances:birdWingBatches.reduce((count,batch)=>count+batch.animals.length,0),birdFlapAngle:lastBirdFlapAngle,birdFlightY:lastBirdFlightY,birdWingPivotY:birdLeftPivot.position.y,quadrupedLegBatches:quadrupedLegBatches.length,quadrupedLegInstances:quadrupedLegBatches.reduce((count,batch)=>count+batch.animals.length*4,0),groundLegSwingAngle:lastGroundLegAngle,groundLegRotationOrder:lastGroundLegRotationOrder,groundLegRotationX:lastGroundLegRotationX,groundLegRotationY:lastGroundLegRotationY,firstY:animalBatches[0]?.mesh.instanceMatrix.array[13]??null}),getAnimalScreenPoint:animalScreenPoint,focusAnimalForTest,tapAnimal:(id)=>{const point=animalScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !animalCareShade.hidden;},getAnimalCareStats:()=>({open:!animalCareShade.hidden,animal:animalCareSelection?.id||null,count:animalCareSelection?sandbox.getState().world.animalCare?.[animalCareSelection.id]||0:0,flash:!animalCareFlash.hidden,animalCare:{...(sandbox.getState().world.animalCare||{})}}),neighborCount:neighborModels.size,renderedNeighborCount,focusNeighborForTest:(id)=>{const actor=sandbox.characterStates(performance.now()/1000).find(item=>item.id===id);if(!actor||actor.sleeping)return false;playerPlayMode=false;touchControls.hidden=true;touchActions.hidden=true;target.set(actor.x,1.18,actor.z);orbit.radius=14;orbit.theta=.5;orbit.phi=.88;cameraUpdate();updateNeighborModels(performance.now());return true;},getNeighborScreenPoint:neighborScreenPoint,tapNeighbor:(id)=>{const point=neighborScreenPoint(id);if(!point)return false;clickAt(point.x,point.y);return !neighborColorShade.hidden;},getNeighborColoringStats:()=>({open:!neighborColorShade.hidden,neighbor:neighborColorName,page:neighborColorPage?.id||null,undo:neighborColorUndo.length,progress:document.getElementById('neighbor-color-progress-fill').style.width,artworks:sandbox.getState().world.artworks?.length||0}),getNeighborStats:(timeSeconds)=>{if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);if(Number.isFinite(timeSeconds))updateNeighborModels(timeSeconds*1000);const actors=neighborStatesCache;return {total:actors.length,rendered:renderedNeighborCount,actors:actors.map(actor=>({id:actor.id,name:actor.name,x:actor.x,z:actor.z,facing:actor.facing,moving:actor.moving,sleeping:actor.sleeping,phase:actor.phase,pace:actor.pace,scale:actor.scale,shirt:actor.shirt,hairStyle:actor.hairStyle,outfitStyle:actor.outfitStyle,accessory:actor.accessory,visible:!!neighborModels.get(actor.id)?.root.visible,supportY:actor.y,footOffset:neighborModels.get(actor.id)?.root.scale.y*.055||0,position:neighborModels.has(actor.id)?{x:neighborModels.get(actor.id).root.position.x,y:neighborModels.get(actor.id).root.position.y,z:neighborModels.get(actor.id).root.position.z}:null}))};},debugPlaceObstacleForTest:(input,timeSeconds=performance.now()/1000)=>{const next=sandbox.addBlock(input);renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,key:next.selectedKey,sourceUnchanged:next.sourceUnchanged};},debugRemoveObstacleForTest:(key,timeSeconds=performance.now()/1000)=>{const next=sandbox.remove(key,sandbox.protectionContext(timeSeconds));renderSandbox(next);updateNeighborModels(timeSeconds*1000);return {revision:next.revision,sourceUnchanged:next.sourceUnchanged};},getPersistenceStats:()=>{const state=sandbox.getState();return {name:state.world.name,sourceUnchanged:state.sourceUnchanged,storageKeys:getStorageKeyCount(),revision:state.revision,lastAutoSaveRevision,saveGeneration,savedGeneration,saveInFlight,hasPendingSave:!!pendingSaveWorld,pendingBlocks:pendingSaveWorld?.blocks?.length||0,saveTimerActive:!!saveTimer,storageReadFailed};},getState:()=>sandbox.getState()};
  updatePlayerDiagnostics();
  if(state.revision>lastAutoSaveRevision){lastAutoSaveRevision=state.revision;queueWorldSave(state.world,true);}
 }
@@ -1105,7 +1175,7 @@ function worldTargetAtScreen(clientX,clientY){
  pointer.x=((clientX-rect.left)/rect.width)*2-1;
  pointer.y=-((clientY-rect.top)/rect.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
- const intersections=raycaster.intersectObjects([floor,groundDirtMesh,...group.children],true);
+ const intersections=raycaster.intersectObjects([floor,groundDirtMesh,neighborhoodFloor,neighborhoodDirtMesh,...group.children],true);
  for(const hit of intersections){
   if(hit.object.userData?.selectionOutline)continue;
   if(waterMesh&&hit.object===waterMesh)
@@ -1117,7 +1187,7 @@ function worldTargetAtScreen(clientX,clientY){
    const step=[0,0,0];step[axis]=values[axis]>=0?1:-1;
    return {kind:'block',key,block,step,depth:hit.point.clone().project(camera).z};
   }
-  if(hit.object===floor||hit.object===groundDirtMesh)
+  if(hit.object===floor||hit.object===groundDirtMesh||hit.object===neighborhoodFloor||hit.object===neighborhoodDirtMesh)
    return {kind:'ground',x:Math.floor(hit.point.x),z:Math.floor(hit.point.z),depth:hit.point.clone().project(camera).z};
  }
  return null;

@@ -182,11 +182,14 @@
   const leftLift=moving?Math.max(0,Math.cos(tick*pace+phase))*.045:0;
   const rightLift=moving?Math.max(0,-Math.cos(tick*pace+phase))*.045:0;
   const armSwing=-legSwing*.72;
-  root.position.set(finite(pose.x),finite(pose.y)+bob,finite(pose.z));
+  // Shoes extend .055 units below the leg pivot. Anchor the feet to terrain and
+  // animate only the torso/arms vertically, rather than lifting the whole actor.
+  root.position.set(finite(pose.x),finite(pose.y)+.055*root.scale.y,finite(pose.z));
   root.rotation.y=finite(pose.facing);
   root.visible=!pose.sleeping;
   const limbs=root.userData.limbs;
-  limbs.leftArm.position.y=.82;limbs.rightArm.position.y=.82;
+  root.userData.bodyMesh.position.y=bob;
+  limbs.leftArm.position.y=.82+bob;limbs.rightArm.position.y=.82+bob;
   limbs.leftArm.rotation.x=armSwing;limbs.rightArm.rotation.x=-armSwing;
   limbs.leftLeg.position.y=.49+leftLift;limbs.rightLeg.position.y=.49+rightLift;
   limbs.leftLeg.rotation.x=legSwing;limbs.rightLeg.rotation.x=-legSwing;
