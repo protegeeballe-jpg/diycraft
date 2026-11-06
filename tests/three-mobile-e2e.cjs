@@ -166,8 +166,8 @@ const {chromium}=require('playwright');
   assert.ok(initialHud.d.right<initialHud.a.left,'The always-visible lower-corner touch pads must not overlap.');
   assert.ok(Math.abs(initialHud.d.bottom-initialHud.a.bottom)<3,'Both touch pads must share the same bottom alignment.');
 
-  assert.equal(await page.locator('#top-controls button').count(),3,'Exactly three utility icons must appear at the upper right.');
-  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),12,'The compact build toolbar must contain twelve small tools, including pause, save, more materials and studios.');
+  assert.equal(await page.locator('#top-controls button').count(),4,'The neighborhood, settings, sleeping and viewing icons must appear at the upper right.');
+  assert.equal(await page.locator('#build-toolbar [data-hud-tool]').count(),13,'The compact build toolbar must contain thirteen small tools, including pause, erase, save, more materials and studios.');
   assert.equal(await page.locator('[data-hud-tool="pause-build"]').getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('#legacy-control-bindings').isVisible(),false,'Compatibility controls must not appear as a second settings menu.');
   assert.equal(await page.locator('#settings-toggle').getAttribute('aria-expanded'),'false');
