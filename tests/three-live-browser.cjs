@@ -358,11 +358,13 @@ const {chromium}=require('playwright');
   const distantVillage=await page.evaluate(()=>{
    const api=window.__DIYCRAFT_THREE_EDIT__;
    const far=api.focusNeighborhoodFromDistanceForTest(120);
-   const point=api.getGroundScreenPointForTest(0,0);
+   // Use the open southeast edge of the village patch, away from houses and blocks,
+   // so the ray test measures the floor rather than an object in front of it.
+   const point=api.getGroundScreenPointForTest(28,8);
    const target=point?.visible?api.getPointerTargetForTest(point.x,point.y):null;
    return {
     far,point,target,
-    coverage:api.getGroundCellCoverageForTest(0,0),
+    coverage:api.getGroundCellCoverageForTest(28,8),
     ground:api.getNeighborhoodGroundStats(),
     houses:api.getNeighborhoodStats().houses,
     neighbors:api.getNeighborStats().actors,
