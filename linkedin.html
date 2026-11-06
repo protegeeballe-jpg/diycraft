@@ -4,12 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#d9edf0">
-  <meta name="description" content="Explore DIYCraft, a peaceful creative voxel sandbox featuring world building, terrain digging, layered water, organic waves, animals, and offline-ready play.">
+  <meta name="description" content="Play DIYCraft, a peaceful 3D voxel sandbox built with Three.js. Build, personalize, dig up to 55 blocks deep, explore a grounded village, meet friendly animals, and enjoy offline-ready play.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="DIYCraft A Peaceful Creative Voxel World">
-  <meta property="og:description" content="Build, dig, design, and explore your own peaceful world. Play DIYCraft in your browser.">
+  <meta property="og:site_name" content="DIYCraft">
+  <meta property="og:title" content="DIYCraft — A Peaceful 3D Creative World">
+  <meta property="og:description" content="Build, personalize, shape the land, and explore a peaceful 3D world with a grounded village, friendly neighbors, animals, and offline-ready play.">
+  <meta property="og:url" content="https://protegeeballe-jpg.github.io/diycraft/linkedin.html">
   <meta name="twitter:card" content="summary">
-  <title>DIYCraft</title>
+  <meta name="twitter:title" content="DIYCraft — A Peaceful 3D Creative World">
+  <meta name="twitter:description" content="A peaceful 3D voxel sandbox for building, exploring, and creative play.">
+  <title>DIYCraft — A Peaceful 3D Creative World</title>
   <style>
     :root {
       color-scheme: light;
@@ -74,11 +78,18 @@
     }
     h1 span { color: var(--teal); }
     .intro {
-      max-width: 610px;
+      max-width: 640px;
       margin: 0;
       color: var(--muted);
       font-size: clamp(16px, 2.5vw, 19px);
       line-height: 1.7;
+    }
+    .verse {
+      margin: 15px 0 0;
+      color: #52736a;
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.6;
     }
     .actions {
       display: flex;
@@ -140,7 +151,7 @@
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
-      padding: 26px clamp(22px, 5vw, 52px) 34px;
+      padding: 26px clamp(22px, 5vw, 52px) 28px;
     }
     .feature {
       padding: 17px;
@@ -150,7 +161,23 @@
     }
     .feature .icon { font-size: 23px; }
     .feature h2 { margin: 9px 0 5px; font-size: 14px; }
-    .feature p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .feature p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .details {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 clamp(22px, 5vw, 52px) 28px;
+    }
+    .detail {
+      padding: 8px 11px;
+      border: 1px solid #d5e7df;
+      border-radius: 999px;
+      color: #52736a;
+      background: #f3faf5;
+      font-size: 11px;
+      font-weight: 750;
+    }
     footer {
       display: flex;
       justify-content: space-between;
@@ -171,6 +198,7 @@
       .visual { min-height: 110px; }
       .actions { align-items: stretch; }
       .play-button, .source-button { width: 100%; }
+      .details { padding-bottom: 22px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
@@ -181,18 +209,18 @@
   <main class="shell">
     <section class="card" aria-labelledby="title">
       <div class="hero">
-        <div class="eyebrow">🌼 Peaceful creative sandbox</div>
-        <h1 id="title">Make room for <span>Artistic imagination.</span></h1>
+        <div class="eyebrow"><span aria-hidden="true">🌼</span> Peaceful 3D creative sandbox</div>
+        <h1 id="title">Make room for <span>imagination.</span></h1>
         <p class="intro">
-          Welcome to DIYCraft a peaceful and violence-free voxel world.</p>
-        </p>Let all that you do be done in love. 1 Corinthians 16:14
+          Welcome to DIYCraft, a peaceful, violence-free 3D voxel world. Build, personalize your space, shape the landscape, and explore a living neighborhood with friendly animals and roaming neighbors.
         </p>
+        <p class="verse">“Let all that you do be done in love.” — 1 Corinthians 16:14</p>
         <div class="actions">
           <a class="play-button" href="./index.html" aria-label="Play DIYCraft now">
             <span aria-hidden="true">▶</span> PLAY DIYCRAFT
           </a>
-          <a class="source-button" href="https://github.com/protegeeballe-jpg/diycraft">
-            View project source <span aria-hidden="true">↗</span>
+          <a class="source-button" href="https://github.com/protegeeballe-jpg/diycraft" target="_blank" rel="noopener noreferrer">
+            Explore the project source <span aria-hidden="true">↗</span>
           </a>
         </div>
       </div>
@@ -208,24 +236,30 @@
       <div class="features">
         <article class="feature">
           <div class="icon" aria-hidden="true">🧱</div>
-          <h2>Build your world</h2>
-          <p>Place blocks, design doors and tiles, and create safe spaces of your own.</p>
+          <h2>Build & personalize</h2>
+          <p>Place blocks, design doors and decorative tiles, customize your character, and create a world that feels like yours.</p>
         </article>
         <article class="feature">
-          <div class="icon" aria-hidden="true">💧</div>
+          <div class="icon" aria-hidden="true">⛏️</div>
           <h2>Shape the landscape</h2>
-          <p>Dig terrain, fill holes, and layer water with animated, organic waves.</p>
+          <p>Dig up to 55 blocks deep, refill the ground, build with layered water, and enjoy gentle, organic waves.</p>
         </article>
         <article class="feature">
           <div class="icon" aria-hidden="true">🌿</div>
-          <h2>Explore peacefully</h2>
-          <p>Enjoy animals, neighbors, creative freedom, and an offline-ready world.</p>
+          <h2>Explore a living village</h2>
+          <p>Walk across grounded terrain, visit the neighborhood, and meet roaming neighbors and friendly animals beneath changing skies.</p>
         </article>
+      </div>
+      <div class="details" aria-label="Game features and technical details">
+        <span class="detail">Low-end-friendly graphics profile · 30 FPS cap</span>
+        <span class="detail">Local autosave · Backup & restore</span>
+        <span class="detail">Offline-ready after game assets are cached</span>
+        <span class="detail">Day · Sunset · Night</span>
       </div>
       <footer>
         <span>Let all that you do be done in love. 1 Corinthians 16:14</span>
         <span>DIYCraft · A browser-based creative project</span>
-        <span>Built with JavaScript and Canvas 2D</span>
+        <span>Built with JavaScript, Three.js & WebGL</span>
       </footer>
     </section>
   </main>
