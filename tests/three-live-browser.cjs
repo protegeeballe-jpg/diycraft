@@ -301,7 +301,7 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle',timeout:60000});
    await page.waitForFunction(()=>!!navigator.serviceWorker?.controller,null,{timeout:20000});
   });
-  const shellCacheName=fs.readFileSync('sw.js','utf8').match(/const CACHE_NAME\\s*=\\s*['"]([^'"]+)['"]/)?.[1];
+  const shellCacheName=fs.readFileSync('sw.js','utf8').match(/const CACHE_NAME\s*=\s*['"]([^'"]+)['"]/)?.[1];
   assert.ok(shellCacheName,'The service worker must declare its versioned shell cache name.');
   const cacheCheck=await page.evaluate(async(expectedName)=>{
    const names=await caches.keys();
