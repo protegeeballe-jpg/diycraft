@@ -23,8 +23,22 @@ const harness="(()=>{\n const marker='diycraft-test-file-handle-present';\n func
   await page.exposeFunction('__diyPermissionRequest',async()=>{fileStore.permission='granted';return 'granted';});
   await context.addInitScript(harness);
   page.on('pageerror',error=>errors.push(error.stack||error.message));
+  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
+  page.on('requestfailed',request=>errors.push('REQUEST FAILED '+request.url()+' '+request.failure()?.errorText));
   await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle',timeout:60000});
-  await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=5,null,{timeout:45000});
+  try{await page.waitForFunction(()=>window.__DIYCRAFT_THREE_EDIT__?.frames>=5,null,{timeout:45000});}
+  catch(error){
+   const diagnostic=await page.evaluate(()=>({
+    pageTitle:document.title,
+    status:document.getElementById('status')?.textContent,
+    backupFeedback:document.getElementById('backup-feedback')?.textContent,
+    deviceFeedback:document.getElementById('device-file-feedback')?.textContent,
+    runtimeLoaded:!!window.__DIYCRAFT_THREE_EDIT__,
+    fileApiLoaded:!!window.DIYCraftDeviceWorldFile,
+    indexedDBType:typeof indexedDB
+   })).catch(()=>({evaluation:'failed'}));
+   throw new Error('Device-file browser startup timed out. '+JSON.stringify(diagnostic)+' Browser errors: '+errors.join('\\n')+' Original: '+error.message);
+  }
   await page.waitForFunction(()=>!!localStorage.getItem('diycraft_peaceful_voxel_v1'),null,{timeout:20000});
 
   // Choose device file and create the initial .diycraft file.
