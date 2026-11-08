@@ -78,3 +78,39 @@ assert.ok(Math.abs(h.camera.aspect-1024/768)<1e-10,'Visual viewport changes must
 const fallback=viewport.measure({clientWidth:0,clientHeight:0},{innerWidth:1280,innerHeight:720});
 assert.deepEqual(fallback,{width:1280,height:720,aspect:1280/720},'Measurement must safely fall back to the viewport while canvas layout is unavailable.');
 console.log('Three.js viewport sizing tests passed for portrait phone, landscape phone, laptop, tablet, rotation, visual-viewport changes, and pixel-ratio limits.');
+
+
+// Browser zoom and compact HUD accessibility regression checks.
+// The live and offline entry pages must both keep pinch zoom available on the
+// world canvas without changing the dedicated pointer handling on drawing tools.
+const fs = require('node:fs');
+for (const entry of ['index.html', 'offline/index.html']) {
+  const html = fs.readFileSync(entry, 'utf8');
+  const viewportTag = html.match(/<meta\s+name="viewport"\s+content="([^"]+)"/i);
+  assert.ok(viewportTag, entry + ' must declare a viewport meta tag.');
+  assert.doesNotMatch(
+    viewportTag[1],
+    /(?:^|,)\s*(?:maximum-scale|user-scalable)\s*=/i,
+    entry + ' must not disable browser zoom.'
+  );
+  assert.match(
+    html,
+    /#three-world\{[^}]*touch-action:pinch-zoom[^}]*\}/,
+    entry + ' must allow pinch zoom on the world canvas while retaining custom single-pointer game gestures.'
+  );
+
+  // Verify the visual change stays limited to icon glyphs, not tap-target size.
+  assert.match(html, /#top-controls #settings-toggle\{[^}]*font-size:15px/);
+  assert.match(html, /\.hud-icon-button\{[^}]*font-size:15px/);
+  assert.match(html, /\.hud-tool\{[^}]*font-size:15px/);
+  assert.match(html, /#player-controls \.dpad button\{font-size:15px/);
+  assert.match(html, /\.settings-section>summary \.settings-icon\{[^}]*font-size:14px/);
+  assert.match(html, /\.inventory-slot \.inventory-icon\{font-size:17px/);
+  assert.match(html, /\.character-preset \.look-icon\{font-size:18px/);
+  assert.match(html, /\.hud-icon-button\{width:34px;height:34px;min-width:34px;font-size:14px\}/);
+  assert.match(html, /#top-controls #settings-toggle\{width:34px;height:34px;min-width:34px;font-size:14px\}/);
+
+  // These surfaces intentionally capture finger drawing/held-button gestures.
+  assert.match(html, /#art-canvas\{[^}]*touch-action:none/);
+}
+console.log('Browser zoom and compact HUD accessibility regression tests passed for live and offline entry pages.');
