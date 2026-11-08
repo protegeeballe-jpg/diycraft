@@ -86,31 +86,31 @@ console.log('Three.js viewport sizing tests passed for portrait phone, landscape
 const fs = require('node:fs');
 for (const entry of ['index.html', 'offline/index.html']) {
   const html = fs.readFileSync(entry, 'utf8');
-  const viewportTag = html.match(/<meta\\s+name="viewport"\\s+content="([^"]+)"/i);
+  const viewportTag = html.match(/<meta\s+name="viewport"\s+content="([^"]+)"/i);
   assert.ok(viewportTag, entry + ' must declare a viewport meta tag.');
   assert.doesNotMatch(
     viewportTag[1],
-    /(?:^|,)\\s*(?:maximum-scale|user-scalable)\\s*=/i,
+    /(?:^|,)\s*(?:maximum-scale|user-scalable)\s*=/i,
     entry + ' must not disable browser zoom.'
   );
   assert.match(
     html,
-    /#three-world\\{[^}]*touch-action:pinch-zoom[^}]*\\}/,
+    /#three-world\{[^}]*touch-action:pinch-zoom[^}]*\}/,
     entry + ' must allow pinch zoom on the world canvas while retaining custom single-pointer game gestures.'
   );
 
   // Verify the visual change stays limited to icon glyphs, not tap-target size.
-  assert.match(html, /#top-controls #settings-toggle\\{[^}]*font-size:15px/);
-  assert.match(html, /\\.hud-icon-button\\{[^}]*font-size:15px/);
-  assert.match(html, /\\.hud-tool\\{[^}]*font-size:15px/);
-  assert.match(html, /#player-controls \\.dpad button\\{font-size:15px/);
-  assert.match(html, /\\.settings-section>summary \\.settings-icon\\{[^}]*font-size:14px/);
-  assert.match(html, /\\.inventory-slot \\.inventory-icon\\{font-size:17px/);
-  assert.match(html, /\\.character-preset \\.look-icon\\{font-size:18px/);
-  assert.match(html, /\\.hud-icon-button\\{width:34px;height:34px;min-width:34px;font-size:14px\\}/);
-  assert.match(html, /#top-controls #settings-toggle\\{width:34px;height:34px;min-width:34px;font-size:14px\\}/);
+  assert.match(html, /#top-controls #settings-toggle\{[^}]*font-size:15px/);
+  assert.match(html, /\.hud-icon-button\{[^}]*font-size:15px/);
+  assert.match(html, /\.hud-tool\{[^}]*font-size:15px/);
+  assert.match(html, /#player-controls \.dpad button\{font-size:15px/);
+  assert.match(html, /\.settings-section>summary \.settings-icon\{[^}]*font-size:14px/);
+  assert.match(html, /\.inventory-slot \.inventory-icon\{font-size:17px/);
+  assert.match(html, /\.character-preset \.look-icon\{font-size:18px/);
+  assert.match(html, /\.hud-icon-button\{width:34px;height:34px;min-width:34px;font-size:14px\}/);
+  assert.match(html, /#top-controls #settings-toggle\{width:34px;height:34px;min-width:34px;font-size:14px\}/);
 
   // These surfaces intentionally capture finger drawing/held-button gestures.
-  assert.match(html, /#art-canvas\\{[^}]*touch-action:none/);
+  assert.match(html, /#art-canvas\{[^}]*touch-action:none/);
 }
 console.log('Browser zoom and compact HUD accessibility regression tests passed for live and offline entry pages.');
