@@ -1,4 +1,4 @@
-name: Validate DIYCraft
+name: Validate DIYCraft and The Exploration
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
       - sw.js
       - three-world-live.js
       - js/three-*.js
+      - js/exploration-*.js
       - tests/three-viewport.test.cjs
       - tests/three-sky-watercolor.test.cjs
       - tests/three-world-storage.test.cjs
@@ -17,6 +18,7 @@ on:
       - tests/three-world-edit-sandbox.test.cjs
       - tests/three-animal-geometry.test.cjs
       - tests/three-plant-geometry.test.cjs
+      - tests/exploration-*.test.cjs
       - .github/workflows/validate-diycraft.yml
   pull_request:
     paths:
@@ -26,12 +28,14 @@ on:
       - sw.js
       - three-world-live.js
       - js/three-*.js
+      - js/exploration-*.js
       - tests/three-sky-watercolor.test.cjs
       - tests/three-viewport.test.cjs
       - tests/three-world-storage.test.cjs
       - tests/three-world-file-save.test.cjs
       - tests/three-world-starter.test.cjs
       - tests/three-world-edit-sandbox.test.cjs
+      - tests/exploration-*.test.cjs
       - .github/workflows/validate-diycraft.yml
   workflow_dispatch:
 
@@ -106,6 +110,14 @@ jobs:
           node --check sw.js
           node --check three-world-live.js
           for file in $(grep -oE 'src="[^"]+"' index.html | cut -d '"' -f2); do node --check "$file"; done
+      - name: Validate The Exploration state, recovery and seeded-world contracts
+        run: |
+          node --check js/exploration-state.js
+          node --check js/exploration-storage.js
+          node --check js/exploration-world.js
+          node tests/exploration-state.test.cjs
+          node tests/exploration-storage.test.cjs
+          node tests/exploration-world.test.cjs
       - name: Verify cross-device Three.js viewport proportions
         run: node tests/three-viewport.test.cjs
       - name: Run original version-1 world storage compatibility tests

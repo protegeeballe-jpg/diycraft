@@ -256,3 +256,22 @@ Do not start with infinite procedural terrain, online multiplayer, AR, unrestric
 ---
 
 **Implementation rule:** Each stage gets its own focused change set and regression checks. Do not combine terrain generation, save-schema changes, HUD redesign and survival mechanics into one large patch.
+
+
+## Implementation progress — 16 November 2026
+
+### Completed foundation work
+
+The first implementation change set is prepared for the dedicated `the-exploration` branch. It leaves the original DIYCraft entry points, renderer, service worker, legacy save adapter and `diycraft_peaceful_voxel_v1` storage key untouched.
+
+- `js/exploration-state.js` defines the strict version-1 Exploration save contract and pure gameplay-state operations. It validates player position, sparse world edits, item IDs and quantities, ten quickbar slots, four campfire ingredient slots, quest/lore/evidence progress and sparse journal pages 1–252.
+- Vitality is represented by one bounded integer from 0–10. Food consumption removes one valid food item and restores one vitality point in a single state mutation. Damage is clamped, and damage at zero vitality is a no-op.
+- The current food registry uses plant-based ingredients only. The original peaceful animal-care rule remains intact; no attack, animal-harvest or meat-drop behavior has been added.
+- `js/exploration-storage.js` uses a distinct IndexedDB database and store. Saves are versioned, revision-checked and transactionally written. Unsupported or corrupt records are preserved; normal saves are blocked until a valid backup is explicitly imported. A raw recovery export is available for diagnosis.
+- `js/exploration-world.js` provides deterministic coordinate-based biome sampling and 16×16 chunk generation inside a finite 256×256-cell world. Its authored landmarks include the Grand Library, Willowbrook Village, a community farm, Mirrorwater Lake, the Old Forest, Highland Trail and Windy Hills.
+- Three focused Node test suites cover state validation, inventory/vitality/journal rules, backup import/export and corruption protection, repeatable seeded terrain, biome coverage and chunk-boundary consistency.
+- The GitHub Actions validation workflow now runs these tests whenever the Exploration modules or tests change.
+
+### Deliberate remaining work
+
+This foundation is not yet connected to a rendered Exploration game screen. The next implementation stage is the Three.js world integration: use the generator's height field consistently for terrain meshes, player grounding and collision, then place the authored village and library structures. The original DIYCraft app remains the untouched baseline until that separate experience is ready for review.
