@@ -75,4 +75,12 @@ assert.throws(()=>state.validateSave({...starter,world:{...starter.world,edits:[
  {x:1,y:0,z:1,action:'place',itemId:'wood'},{x:1,y:0,z:1,action:'remove'}
 ]}}),/duplicate/);
 assert.throws(()=>state.validateSave({...starter,player:{...starter.player,campfire:{slots:['apple',null,null,null],cooking:{active:false,remainingSeconds:0}}}}),/raw plant foods/);
+const maxStack=state.addItems(starter,'wood',999);
+assert.equal(maxStack.added,true);
+const overflowStack=state.addItems(maxStack.save,'wood',1);
+assert.equal(overflowStack.added,false,'An item stack must not exceed the per-item limit.');
+assert.equal(overflowStack.save.player.backpack.wood,999);
+const unsafeBackpack=Object.create(null);
+unsafeBackpack.__proto__=1;
+assert.throws(()=>state.validateSave({...starter,player:{...starter.player,backpack:unsafeBackpack}}),/forbidden key/);
 console.log('The Exploration state, vitality, inventory, journal and validation tests passed.');
