@@ -46,6 +46,7 @@ on:
       - three-world-preview.html
       - three-world-preview.js
       - tests/three-world-preview.cjs
+      - tests/three-world-edit-preview.cjs
       - .github/workflows/three-world-preview.yml
   workflow_dispatch:
 
